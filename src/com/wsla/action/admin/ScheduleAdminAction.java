@@ -1,8 +1,9 @@
 package com.wsla.action.admin;
 
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 // JDK 1.8.x
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 
 // SMT Base Libs
@@ -10,19 +11,20 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.common.html.BSTableControlVO;
-import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.orm.GridDataVO;
 import com.siliconmtn.db.pool.SMTDBConnection;
-import com.siliconmtn.db.util.DatabaseException;
-import com.siliconmtn.exception.InvalidDataException;
+import com.siliconmtn.security.EncryptionException;
+import com.siliconmtn.security.StringEncrypter;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
-
 // WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
+import com.smt.sitebuilder.common.constants.Constants;
+import com.wsla.data.provider.ProviderLocationVO;
+import com.wsla.data.ticket.TicketAssignmentVO;
 // WSLA Libs
-import com.wsla.data.ticket.DefectVO;
-import com.wsla.data.ticket.TicketAttributeVO;
+import com.wsla.data.ticket.TicketScheduleVO;
+
 
 /****************************************************************************
  * <b>Title</b>: DefectAction.java
@@ -38,7 +40,7 @@ import com.wsla.data.ticket.TicketAttributeVO;
  ****************************************************************************/
 
 public class ScheduleAdminAction extends SBActionAdapter {
-	public static final String SCHEDULE_TYPE = "schedules";
+	public static final String SCHEDULE_TYPE = "events";
 	
 	/**
 	 * 
@@ -71,38 +73,15 @@ public class ScheduleAdminAction extends SBActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		log.debug("Schedule action retrieve");
+		log.debug("$$$$$$$$$$$$$$$$ Schedule action retrieve");
 		
 		String providerId = req.getParameter("providerId");
 		boolean hasActiveFlag = req.hasParameter("activeFlag");
 		int activeFlag = Convert.formatInteger(req.getParameter("activeFlag"));
 		
-		setModuleData(getSchedules(providerId, activeFlag, hasActiveFlag, new BSTableControlVO(req, TicketAttributeVO.class)));
+		setModuleData(getSchedules(providerId, activeFlag, hasActiveFlag, new BSTableControlVO(req, TicketScheduleVO.class)));
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.action.ActionRequest)
-	 */
-	@Override
-	public void build(ActionRequest req) throws ActionException {
-		log.debug("defects action build");
-		
-		DefectVO dvo = new DefectVO(req);
-		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
-
-		try {
-			if(StringUtil.isEmpty(req.getParameter("origDefectCode"))) {
-				db.insert(dvo);
-			}else {
-				db.save(dvo);
-			}
-			
-		} catch (InvalidDataException | DatabaseException e) {
-			log.error("Unable to save defect attribute", e);
-			putModuleData("", 0, false, e.getLocalizedMessage(), true);
-		}
-	}
 
 	/**
 	 * Gets a list of providers.  Since this list should be small (< 100)
@@ -111,35 +90,76 @@ public class ScheduleAdminAction extends SBActionAdapter {
 	 * @param providerId
 	 * @return
 	 */
-	public GridDataVO<DefectVO> getSchedules(String providerId,  int activeFlag, boolean hasActiveFlag, BSTableControlVO bst) {
+	public GridDataVO<TicketScheduleVO> getSchedules(String providerId,  int activeFlag, boolean hasActiveFlag, BSTableControlVO bst) {
+		
+		//TODO change from retailer to cas when one is available
 		
 		String schema = getCustomSchema();
-		StringBuilder sql = new StringBuilder(72);
-		sql.append("select a.*, b.provider_nm from ").append(schema).append("wsla_defect a left outer join ").append(schema).append("wsla_provider b on a.provider_id = b.provider_id where 1=1 ");
-		List<Object> params = new ArrayList<>();
-
-		// Filter by provider id
-		if (! StringUtil.checkVal(providerId).isEmpty()) {
-			sql.append("and a.provider_id = ? ");
-			params.add(providerId);
-		}
-
-		// Filter by search criteria
-		if (bst.hasSearch()) {
-			sql.append("and lower(defect_nm) like ? ");
-			params.add(bst.getLikeSearch().toLowerCase());
-		}
-
-		// Filter by active flag
-		if (hasActiveFlag &&  activeFlag >= 0 && activeFlag < 2) {
-			sql.append("and a.active_flg = ? ");
-			params.add(activeFlag);
-		}
+		StringBuilder sql = new StringBuilder(600);
+		sql.append("select * from  ").append(schema).append("wsla_ticket_schedule a inner join ").append(schema).append("wsla_assignment_location_view b on a.location_dest_id = b.ticket_assg_id ");
+		sql.append("inner join ").append(schema).append("wsla_ticket t on a.ticket_id = t.ticket_id ");
+		sql.append("where t.ticket_id in (select distinct(ticket_id) from ").append(schema).append("wsla_ticket_assignment where assg_type_cd = 'RETAILER') ");
+		sql.append("union ");
+		sql.append("select * from  ").append(schema).append("wsla_ticket_schedule a inner join ").append(schema).append("wsla_assignment_location_view b on a.location_src_id = b.ticket_assg_id ");
+		sql.append("inner join ").append(schema).append("wsla_ticket dt on a.ticket_id = dt.ticket_id ");
+		sql.append("where dt.ticket_id in (select distinct(ticket_id) from ").append(schema).append("wsla_ticket_assignment where assg_type_cd = 'RETAILER') ");
 		
-		sql.append(bst.getSQLOrderBy("defect_nm",  "asc"));
-		log.debug(sql);
+		GridDataVO<TicketScheduleVO> data  = new GridDataVO<>();
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			StringEncrypter se =  new StringEncrypter((String)getAttribute(Constants.ENCRYPT_KEY));
 
-		DBProcessor db = new DBProcessor(getDBConnection(), schema);
-		return db.executeSQLWithCount(sql.toString(), params, new DefectVO(), bst.getLimit(), bst.getOffset());
+			try (ResultSet rs = ps.executeQuery()) {
+				while (rs.next()) {
+					processResults(rs, data, se);
+				}
+			}
+		} catch (Exception e) {
+			log.error("could not get schedules or decrypt address ",e);
+		}
+		return data;
+	}
+
+	/**
+	 * processes the ticket schedules and loads all related data
+	 * @param rs 
+	 * @param se 
+	 * @param data 
+	 * @throws SQLException 
+	 * @throws EncryptionException 
+	 * 
+	 */
+	private void processResults(ResultSet rs, GridDataVO<TicketScheduleVO> data, StringEncrypter se) throws Exception {
+		boolean newTicket = true;
+		String assgTypeCode = rs.getString("assg_type_cd");
+		//build ticket schdule vo
+		TicketScheduleVO tc = new TicketScheduleVO(rs);
+		//loop the tickets and make sure its new or not
+		for (TicketScheduleVO d : data.getRowData() ) {
+			if (d.getTicketId().equals(tc.getTicketId())) {
+				newTicket = false;
+				tc = d;
+			}
+		}
+
+		//get the assignment and set it to the source or desc accordingly
+		TicketAssignmentVO ta = new TicketAssignmentVO(rs);
+		ProviderLocationVO pv = new ProviderLocationVO(rs);
+		
+		if ("CALLER".equals(assgTypeCode) ) {
+			pv.setAddress( se.decrypt(pv.getLocation().getAddress()));
+			pv.setAddress2(se.decrypt(pv.getLocation().getAddress2()) );
+		}
+			
+		ta.setLocation(pv);
+		//place the location on the correct sub element
+		if (tc.getLocationSourceId() != null && tc.getLocationSourceId().equals(StringUtil.checkVal(ta.getTicketAssignmentId()))) {
+			tc.setLocationSource(ta);
+		}else {
+			tc.setLocationDestination(ta);
+		}
+		//if the ticket is still new add it to the list
+		if(newTicket)data.getRowData().add(tc);
+		
 	}
 }

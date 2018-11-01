@@ -310,12 +310,16 @@ public class SelectLookupAction extends SBActionAdapter {
 		return db.executeSelect(sql.toString(), vals, new GenericVO());
 	}
 	
+
 	/**
 	 * Returns a list of matching provider locations for autocomplete
 	 * @param req
 	 * @return
 	 */
 	public List<GenericVO> getClosestCas(ActionRequest req) {
+		log.debug("UUU here ");
+		String providerId = StringUtil.checkVal(req.getParameter("providerId"));
+
 		StringBuilder term = new StringBuilder(16);
 		term.append("%").append(StringUtil.checkVal(req.getParameter("search")).toLowerCase()).append("%");
 		
@@ -329,16 +333,27 @@ public class SelectLookupAction extends SBActionAdapter {
 		sql.append("where provider_type_id = 'CAS' ");
 		sql.append("and (lower(provider_nm) like ? or lower(location_nm) like ? ");
 		sql.append("or lower(city_nm) like ? or store_no like ?) ");
-		sql.append("order by provider_nm");
+		
 		
 		List<Object> vals = new ArrayList<>();
+
 		vals.add(term);
 		vals.add(term);
 		vals.add(term);
 		vals.add(term);
+		log.debug("UU provider Id " + providerId);
+		if (!StringUtil.isEmpty(req.getParameter("providerId"))) {
+			log.debug("UUU provider Id " + providerId);
+			sql.append(" and a.provider_id = ? ");
+			vals.add(providerId);
+		}
+		
+		sql.append("order by provider_nm");
 		
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
-		return db.executeSelect(sql.toString(), vals, new GenericVO());
+		List<GenericVO> data = db.executeSelect(sql.toString(), vals, new GenericVO());
+		log.debug("UUUU data size " + data.size());
+		return data;
 	}
 
 	/**

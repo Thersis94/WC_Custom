@@ -6,10 +6,10 @@ import java.util.Date;
 
 // SMT Base Libs
 import com.siliconmtn.action.ActionRequest;
-import com.siliconmtn.data.parser.BeanDataVO;
 import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
+import com.wsla.data.provider.ProviderLocationVO;
 
 /****************************************************************************
  * <b>Title</b>: TicketScheduleVO.java
@@ -24,7 +24,7 @@ import com.siliconmtn.db.orm.Table;
  * @updates:
  ****************************************************************************/
 @Table(name="wsla_ticket_schedule")
-public class TicketScheduleVO extends BeanDataVO {
+public class TicketScheduleVO extends ProviderLocationVO {
 	
 	/**
 	 * 
@@ -41,6 +41,7 @@ public class TicketScheduleVO extends BeanDataVO {
 	// Member Variables
 	private String ticketScheduleId;
 	private String ticketId;
+	private String ticketNumber;
 	private String ledgerEntryId;
 	private String locationSourceId;
 	private String locationDestinationId;
@@ -49,8 +50,6 @@ public class TicketScheduleVO extends BeanDataVO {
 	private String signatureText;
 	private int productValidatedFlag;
 	private String notesText;
-	private Date createDate;
-	private Date updateDate;
 	private Date scheduleDate;
 	private Date completeDate;
 	
@@ -235,14 +234,14 @@ public class TicketScheduleVO extends BeanDataVO {
 	 */
 	@Column(name="create_dt", isInsertOnly=true, isAutoGen=true)
 	public Date getCreateDate() {
-		return createDate;
+		return super.getCreateDate();
 	}
 
 	/**
 	 * @param createDate the createDate to set
 	 */
 	public void setCreateDate(Date createDate) {
-		this.createDate = createDate;
+		super.setCreateDate(createDate);
 	}
 
 	/**
@@ -250,14 +249,14 @@ public class TicketScheduleVO extends BeanDataVO {
 	 */
 	@Column(name="update_dt", isUpdateOnly=true, isAutoGen=true)
 	public Date getUpdateDate() {
-		return updateDate;
+		return super.getUpdateDate();
 	}
 
 	/**
 	 * @param updateDate the updateDate to set
 	 */
 	public void setUpdateDate(Date updateDate) {
-		this.updateDate = updateDate;
+		super.setUpdateDate(updateDate);
 	}
 
 	/**
@@ -333,6 +332,21 @@ public class TicketScheduleVO extends BeanDataVO {
 	@BeanSubElement
 	public void setLedger(TicketLedgerVO ledger) {
 		this.ledger = ledger;
+	}
+
+	/**
+	 * @return the ticketNumber
+	 */
+	@Column(name="ticket_no", isReadOnly=true)
+	public String getTicketNumber() {
+		return ticketNumber;
+	}
+
+	/**
+	 * @param ticketNumber the ticketNumber to set
+	 */
+	public void setTicketNumber(String ticketNumber) {
+		this.ticketNumber = ticketNumber;
 	}
 }
 
