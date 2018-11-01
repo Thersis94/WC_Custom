@@ -13,6 +13,7 @@ import com.siliconmtn.exception.InvalidDataException;
 // WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.wsla.data.ticket.StatusCodeVO;
+import com.wsla.data.ticket.StatusNotificationVO;
 
 /****************************************************************************
  * <b>Title</b>: StatusCodeAction.java
@@ -78,15 +79,49 @@ public class StatusCodeAction extends SBActionAdapter {
 	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
-		log.info("Building ...");
+		log.debug("Building ...");
 		
-		StatusCodeVO status = new StatusCodeVO(req);
-		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		try {
-			db.update(status);
+			if (req.hasParameter("notification")) {
+				putModuleData(saveStatusNotification(req));
+			} else {
+				putModuleData(saveStatus(req));
+			}
 		} catch (InvalidDataException | DatabaseException e) {
 			putModuleData("", 0, false, e.getLocalizedMessage(), true);
 		}
+	}
+	
+	/**
+	 * Saves the core status info
+	 * @param req
+	 * @return
+	 * @throws InvalidDataException
+	 * @throws DatabaseException
+	 */
+	public StatusCodeVO saveStatus(ActionRequest req) 
+	throws InvalidDataException, DatabaseException {
+		StatusCodeVO status = new StatusCodeVO(req);
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		db.update(status);
+		
+		return status;
+	}
+	
+	/**
+	 * Adds a notification type for the given status
+	 * @param req
+	 * @return
+	 * @throws InvalidDataException
+	 * @throws DatabaseException
+	 */
+	public StatusNotificationVO saveStatusNotification(ActionRequest req) 
+	throws InvalidDataException, DatabaseException {
+		StatusNotificationVO ntfcn = new StatusNotificationVO(req);
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		db.save(ntfcn);
+		
+		return ntfcn;
 	}
 }
 

@@ -1,5 +1,6 @@
 package com.wsla.action;
 
+// WSLA Statics
 import static com.wsla.action.admin.ProductCategoryAction.PROD_CAT_ID;
 import static com.wsla.action.admin.ProductMasterAction.REQ_PRODUCT_ID;
 import static com.wsla.action.admin.ProviderAction.REQ_PROVIDER_ID;
@@ -30,6 +31,7 @@ import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.wsla.action.admin.InventoryAction;
+
 //WSLA Libs
 import com.wsla.action.admin.ProductCategoryAction;
 import com.wsla.action.admin.ProductMasterAction;
@@ -37,6 +39,7 @@ import com.wsla.action.admin.ProviderAction;
 import com.wsla.action.admin.ProviderLocationAction;
 import com.wsla.action.admin.WarrantyAction;
 import com.wsla.action.ticket.CASSelectionAction;
+import com.wsla.common.WSLALocales;
 import com.wsla.data.product.ProductVO;
 import com.wsla.data.product.WarrantyType;
 import com.wsla.data.provider.ProviderLocationVO;
@@ -99,6 +102,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		keyMap.put("acCas", new GenericVO("getAcCas", Boolean.TRUE));
 		keyMap.put("closestCas", new GenericVO("getClosestCas", Boolean.TRUE));
 		keyMap.put("inventorySuppliers", new GenericVO("getInventorySuppliers", Boolean.TRUE));
+		keyMap.put("emailCampaigns", new GenericVO("getEmailCampaigns", Boolean.TRUE));
 	}
 
 	/**
@@ -323,6 +327,7 @@ public class SelectLookupAction extends SBActionAdapter {
 	 */
 	public List<GenericVO> getClosestCas(ActionRequest req) {
 		String ticketId = req.getParameter("ticketId");
+		log.info(getAdminUser(req));
 		UserVO user = (UserVO)getAdminUser(req).getUserExtendedInfo();
 		
 		CASSelectionAction csa = new CASSelectionAction(getDBConnection(), attributes);
@@ -330,7 +335,7 @@ public class SelectLookupAction extends SBActionAdapter {
 	}
 	
 	/**
-	 * Returns a list of matching provider locations for autocomplete
+	 * Returns a list of matching provider locations for auto-complete
 	 * @param req
 	 * @return
 	 */
@@ -384,8 +389,10 @@ public class SelectLookupAction extends SBActionAdapter {
 	 */
 	public List<GenericVO> getLocales() {
 		List<GenericVO> data = new ArrayList<>(8);
-		data.add(new GenericVO("en_US", "US English"));
-		data.add(new GenericVO("es_MX", "MX Spanish"));
+		
+		for (WSLALocales val : WSLALocales.values()) {
+			data.add(new GenericVO(val, val.getDesc()));
+		}
 
 		return data;
 	}
@@ -525,5 +532,22 @@ public class SelectLookupAction extends SBActionAdapter {
 	public List<GenericVO> getInventorySuppliers(ActionRequest req) {
 		String partId = req.getParameter(REQ_PRODUCT_ID, req.getParameter("custProductId"));
 		return new InventoryAction(getAttributes(), getDBConnection()).listInvetorySuppliers(partId);
+	}
+	
+	/**
+	 * Gets a list of email campaigns utilized for notifications
+	 * @param req
+	 * @return
+	 */
+	public List<GenericVO> getEmailCampaigns(ActionRequest req) {
+		SiteVO site = (SiteVO)req.getAttribute(Constants.SITE_DATA);
+		StringBuilder sql = new StringBuilder(156);
+		sql.append("select campaign_instance_id as key, instance_nm as value ");
+		sql.append("from email_campaign a ");
+		sql.append("inner join email_campaign_instance b on a.email_campaign_id = b.email_campaign_id ");
+		sql.append("where organization_id = ? and slug_txt like 'PORTAL_%' ");
+		
+		DBProcessor db = new DBProcessor(getDBConnection());
+		return db.executeSelect(sql.toString(), Arrays.asList(site.getOrganizationId()), new GenericVO());
 	}
 }
