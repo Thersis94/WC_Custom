@@ -926,7 +926,7 @@ public class ProductManagementAction extends ManagementAction {
 				break;
 			case PRODUCTATTRIBUTE:
 				ProductAttributeVO attr = new ProductAttributeVO(req);
-				saveAttribute(attr, db, req.getParameter("tab"));
+				saveAttribute(attr, db, req.getBooleanParameter("archiveFlg"));
 				break;
 			case ATTRIBUTE:
 				try {
@@ -1206,14 +1206,14 @@ public class ProductManagementAction extends ManagementAction {
 	 * @param db
 	 * @throws ActionException
 	 */
-	protected void saveAttribute(ProductAttributeVO attr, DBProcessor db, String tab) throws ActionException {
+	protected void saveAttribute(ProductAttributeVO attr, DBProcessor db, boolean createArchive) throws ActionException {
 		try {
 			if (StringUtil.isEmpty(attr.getProductAttributeId())) {
 				attr.setProductAttributeId(new UUIDGenerator().getUUID());
 				attr.setProductAttributeGroupId(attr.getProductAttributeId());
 				db.insert(attr);
 			} else {
-				if("attributes".equals(tab)) {
+				if(createArchive) {
 					//Clone Existing Attribute Values
 					archiveAttribute(attr.getProductAttributeId(), db);
 				}
