@@ -795,7 +795,7 @@ public class CompanyManagementAction extends ManagementAction {
 			case COMPANYLINK:
 			case COMPANYATTACH:
 				CompanyAttributeVO attr = new CompanyAttributeVO(req);
-				saveAttribute(attr, db, req.getParameter("tab"));
+				saveAttribute(attr, db, req.getBooleanParameter("archiveFlg"));
 				break;
 			case ATTRIBUTE:
 				CompanyAttributeTypeVO t = new CompanyAttributeTypeVO(req);
@@ -907,7 +907,7 @@ public class CompanyManagementAction extends ManagementAction {
 	 * @param db
 	 * @throws ActionException
 	 */
-	protected void saveAttribute(CompanyAttributeVO attr, DBProcessor db, String tab) throws ActionException {
+	protected void saveAttribute(CompanyAttributeVO attr, DBProcessor db, boolean createArchive) throws ActionException {
 		try {
 			if (StringUtil.isEmpty(attr.getCompanyAttributeId())) {
 				attr.setCompanyAttributeId(new UUIDGenerator().getUUID());
@@ -916,7 +916,7 @@ public class CompanyManagementAction extends ManagementAction {
 			} else {
 
 				//Clone Existing Attribute Values
-				if("attributes".equals(tab)) {
+				if(createArchive) {
 					archiveAttribute(attr.getCompanyAttributeId(), db);
 				}
 
