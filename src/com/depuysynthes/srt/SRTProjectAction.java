@@ -710,7 +710,7 @@ public class SRTProjectAction extends SimpleActionAdapter {
 		SRTRosterVO rosterVO = SRTUtil.getRoster(req);
 
 		Map<String, LockVO> locks = null;
-		if(req.getBooleanParameter("myLocks"))
+		if(req.getBooleanParameter("myLocks") || req.hasParameter(SRT_PROJECT_ID))
 			locks = getMyLocks(req);
 		else if (req.getBooleanParameter("allLocks")) {
 			locks = getAllLocks(req);
@@ -737,7 +737,8 @@ public class SRTProjectAction extends SimpleActionAdapter {
 		}
 
 		//Place a status of the number of locks released.
-		this.putModuleData(StringUtil.join("Released ", Integer.toString(lockCnt), " locks."));
+		if(!req.hasParameter(SRT_PROJECT_ID))
+			this.putModuleData(StringUtil.join("Released ", Integer.toString(lockCnt), " locks."));
 	}
 
 	/**

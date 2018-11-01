@@ -1,6 +1,7 @@
 package com.depuysynthes.srt.data;
 
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -244,7 +245,7 @@ public class RequestDataProcessor extends AbstractDataProcessor {
 		p.setProjectType("NEW");
 		p.setProjectStatus("UNASSIGNED");
 		p.setPriority("STANDARD");
-		p.setCreateDt(Convert.getCurrentTimestamp());
+		p.setCreateDt(Calendar.getInstance().getTime());
 
 		return p;
 	}

@@ -11,4 +11,5 @@ load database
 	including only table names like 'originalrequest' in schema 'dbo'
 	including only table names like 'obsolete' in schema 'dbo'
 	including only table names like 'notes' in schema 'dbo'
-	including only table names like 'MfgOrderTypes' in schema 'dbo';
+	including only table names like 'MfgOrderTypes' in schema 'dbo'
+	including only table names like 'QuotedDeliveryDateHistory' in schema 'dbo';
