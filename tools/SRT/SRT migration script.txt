@@ -1,22 +1,93 @@
+Core SRT Platform and Legacy Site Migration
+
 1.	Update DB connections in pgLoader Scripts, WC_Custom/scripts/srt/user_import_config.properties to be pointed to proper Locations
-2.	Ensure db connection is pointed at proper location and run pgloader scripts with aabnp.load and customs.load found in WC_Custom/tools/SRT (>1 min)
+	TODO - May Require Production Access.  Confer with James M.
+
+2.	Verify All Modules that need copied have clonable set to true.
+	All SRT Custom Modules
+	Form Builder Module
+
+3.	Run Site Copy of Staging SRT into Production.  Ensure Change Site Id is set if necessary.  Will confirm week of launch on final ID. 
+	2:50
+
+4.	Verify Copy successful.(~2 min)
+	4:00
+
+5.	Ensure db connection is pointed at proper location and run pgloader scripts with aabnp.load and customs.load found in WC_Custom/tools/SRT (>1 min)
 		./pgloader aabnp.load
 		./pgloader customs.load
+	7:03 - Have a recurring seemingly random issue in program where connection resets mid copy.  Only known solution is delete dbo from server and re-run.
 
-3.	Run V20180131.140600--feature-srt-2-migration-script.sql (~1min)
-4.	Run Site Copy of SRT to target Instance.  Raptor Depuy DB is current master for exports and the insert record to access that location in admintool is below. (~1min)
-	jdbc:postgresql://playstation:5432/raptor_webcrescendo_depuyb?defaultRowFetchSize=25&amp;prepareThreshold=3|org.postgresql.Driver|raptor|sqll0gin
+6.	Run srt-migration.sql (~2-5min)
+	8:08 - Ensure script is run with proper user to ensure permissions/Ownership is correct.
 
-5.	Verify Copy successful and update WC_Custom/scripts/srt/user_import_config.properties SiteId if different than new and ensure db connection is pointed at proper location.  Production is looking like it will expect DPY_SYN_38 unless things change.
+7.	Update WC_Custom/scripts/srt/user_import_config.properties (~2 min)
+	SiteId if different than new and ensure db connection is pointed at proper location.  Production is looking like it will expect DPY_SYN_42 unless things change.
+	Ensure emailSuffixDefault and opCoId properties are enabled under the US_SPINE Set.
+	8:57
 
-6.  Run WC_Custom/srt/com/depuysynthes/srt/util/SRTUserImport to import users (Takes awhile ~25-30 min locally).
+8.  Run WC_Custom/srt/com/depuysynthes/srt/util/SRTLegacyUserImporter to import users (Takes awhile ~25-30 min locally).
+	Start 18:09 - Ran into permission problems.  Had to grant ownership and permissions to all SRT* tables
+	End 1:44:20 - Will look at creating a user-import.sh so that this can be run on server avoiding VPN Data Round Trip.
 
-7.  Run V20180213.211400--feature-srt-2-migration-script-part-2.sql to migrate SRT Data to Custom Tables. (2-5 min);
+	While Running...
+		Verify SSO Info is correct
+		Verify Code has been pushed
+		Verify Login Module is correct.  DepuySSO Login Module did not copy. (Non cloneable)
 
-8.	Update and Run Solr Indexers with (~1min)
+9.  Run srt-migration-part-2.sql to migrate SRT Data to Custom Tables. (2-5 min);
+	Note: DBeaver is not respecting transacted Queries right now.  Had to run as autocommit on latest Migration.
+	2:04:30 - DBeaver ran with transactions fine.  Believe previous issues to be related to Dev Environment.  Think time will come down if script can be run on server instead of in DBeaver.
+
+10.	Update and Run Solr Indexers with
 		customIndex_XX=com.depuysynthes.srt.util.SRTProjectIndexer
+	2:43:00
 
-9.	Add Billy as User to site and verify everything looks good.
-10.	Rebind Solr Search to SRT Solr Search Action.  Is not updating properly atm.
+11.	Add Billy as User to site and verify everything looks good.
+	2:30:00 - User lines at end of migration-2 script work with full backup.  Fail with Local stripped db.
 
-Total Migration Timeframe ~40min
+Total Migration Timeframe ~60 min.
+Total Migration Actual - 2Hr 43Min
+	Believe can shave off 30 min by avoiding permission problems and having code pushed ahead of time. possible more by running code locally on servers.
+
+US Ortho Migration
+
+1.  Get Latest Excel Exports from OpCO.
+
+2.  Create FlatFiles CSV DataSource in DBeaver pointing to files.
+
+3.	Export Legacy2014-2015 table to dbo.us_ortho_2014_2015.  Bind Columns as is.	(~1Min)
+	1:52
+4.	Export Legacy2016-2017 table to dbo.us_ortho_2014_2015.	(~1Min)
+		Bind c -> color
+		Bind terr -> territory
+		Bind Terr Cost -> Territory Cost
+		Rest are New columns
+	3:02
+5.	Export Legacy2016-2017 table to dbo.us_ortho_2014_2015.	(~1Min)
+	DePuy Order Number # -> DePuy Order Number
+	terr -> territory
+	Bind others using Rules from step 4.  New columns should match to existing now.
+	3:58
+6.	Export GTINS File to dbo.us_ortho_gtins	(~1Min)
+	4:30
+7.	Export team file to dbo.us_ortho_team	(~1Min)
+	5:16
+8.	Run srt-us-ortho-migration.sql	(~2-5Min)
+	6:25
+9.	Update WC_Custom/scripts/srt/user_import_config.properties (~2 min)
+	Ensure emailSuffixDefault and opCoId properties are enabled under the US_ORTHO Set.
+	7:43
+10.  Run WC_Custom/srt/com/depuysynthes/srt/util/USOrthoUserImport to import users (~2-5 min).
+	9:40
+11.	Run srt-us-ortho-migration-part-2.sql	(~5Min)
+	Note: DBeaver is not respecting transacted Queries right now.  Had to run as autocommit on latest Migration.
+	13:38
+12. Run WC_Custom/srt/com/depuysynthes/srt/util/USOrthoAddressImporter to update user addresses (~10-15 min).
+	20:48
+13.	Update and Run Solr Indexers
+	50:00
+Total US_Ortho Migration Time Frame ~40 min
+	Effective Migration 20Min, Migration will be performed once at launch.
+
+Effective Total Migration ~2.5 - 3 hours

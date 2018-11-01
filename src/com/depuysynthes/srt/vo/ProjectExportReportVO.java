@@ -20,10 +20,11 @@ public class ProjectExportReportVO {
 	//Holds Column Name and Index for easier refactoring in future.
 		private enum HeaderEnum {
 			//PROJECT Values
-			PROJECT_ID("Project Id"),
+			//PROJECT_ID("Project Id"),
 			CO_PROJECT_ID("OPCo Project Id"),
 			OP_CO_ID("OpCo"),
 			PROJECT_NM("Project Name"),
+			PROJECT_DESC("Project Desc."),
 			PROJECT_TYPE("Project Type"),
 			PRIORITY("Priority"),
 			HOSPITAL_PO("Hospital PO"),
@@ -49,12 +50,16 @@ public class ProjectExportReportVO {
 			WAREHOUSE_TRACKING("Warehouse Tracking No"),
 			MFG_DT_CHANGE_REASON("Manufacturing Date Change Reason"),
 			WAREHOUSE_SALES_NO("Warehouse Sales No"),
+			MFG_ORDER_TYPE_ID("Mfg. Order Type Id"),
 
 			//REQUEST Values
 			REQUEST_ID("Request Id"),
 			HOSPITAL_NM("Hospital Name"),
 			SURGEON_NM("Surgeon Name"),
-			DESCRIPTION("Description"),
+			SALES_CONSULT_NM("Sales Consultant Name"),
+			AREA("Area Name"),
+			REGION("Region Name"),
+			DESCRIPTION("Request Description"),
 			TERRITORY_ID("Territory Id"),
 			ESTIMATED_ROI("Estimated ROI"),
 			REQ_QTY_NO("Requested Qty No"),
@@ -73,7 +78,7 @@ public class ProjectExportReportVO {
 			//MASTER Record Values
 			MASTER_RECORD_ID("Master Record Id"),
 			PART_NO("Part No"),
-			TITLE_TXT("Title Text"),
+			TITLE_TXT("Master Record Title Text"),
 			QUALITY_SYSTEM("Quality System"),
 			PROD_TYPE("Product Type"),
 			COMPLEXITY("Complexity"),
