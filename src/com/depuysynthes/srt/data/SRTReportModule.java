@@ -5,7 +5,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -93,7 +92,7 @@ public class SRTReportModule extends AbstractWorkflowModule {
 		List<String> mrAttributes = loadMrAttributes();
 
 		log.debug("loading Lists");
-		Map<String, Map<String, String>> lists = loadLists();
+		Map<String, Map<String, String>> lists = SRTUtil.loadLists(getConnection());
 
 		log.debug("loading Projects");
 		//Get all projects contained in projectIds list.
@@ -170,52 +169,6 @@ public class SRTReportModule extends AbstractWorkflowModule {
 				log.debug("Problem translating field on record: " + p.getProjectId());
 			}
 		}
-	}
-
-	/**
-	 * Load Data Lists to replace GUID/Keys with Friendly Text.
-	 * @return
-	 * @throws SQLException
-	 */
-	private Map<String, Map<String, String>> loadLists() throws SQLException {
-		Map<String, Map<String, String>> lists = new HashMap<>();
-		try(PreparedStatement ps = getConnection().prepareStatement(loadListsSql())) {
-			ps.setString(1, SRTUtil.SRT_ORG_ID);
-			ResultSet rs = ps.executeQuery();
-
-			String listKey = null;
-			Map<String, String> listData = new HashMap<>();
-			while(rs.next()) {
-				if(!rs.getString("LIST_ID").equals(listKey)) {
-					if(listKey != null) {
-						lists.put(listKey, listData);
-					}
-					listData = new HashMap<>();
-					listKey = rs.getString("LIST_ID");
-				}
-				listData.put(rs.getString("VALUE_TXT"), rs.getString("LABEL_TXT"));
-			}
-			if(listKey != null)
-				lists.put(listKey, listData);
-		}
-		return lists;
-	}
-
-	/**
-	 * Build Data List Retrieval Sql.
-	 * @return
-	 */
-	private String loadListsSql() {
-		StringBuilder sql = new StringBuilder(200);
-		sql.append(DBUtil.SELECT_CLAUSE).append("l.list_id, d.label_txt, d.value_txt ");
-		sql.append(DBUtil.FROM_CLAUSE).append("list l ");
-		sql.append(DBUtil.INNER_JOIN).append("list_data d ");
-		sql.append("on l.list_id = d.list_id ");
-		sql.append(DBUtil.WHERE_CLAUSE).append("l.organization_id = ? ");
-		sql.append("and list_nm like '%SRT%' ");
-		sql.append(DBUtil.ORDER_BY).append("list_id");
-		log.debug(sql.toString());
-		return sql.toString();
 	}
 
 	/**
