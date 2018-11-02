@@ -37,6 +37,7 @@ import com.wsla.action.admin.ProductSetAction;
 import com.wsla.action.admin.ProviderAction;
 import com.wsla.action.admin.WarrantyAction;
 import com.wsla.action.ticket.TicketEditAction;
+import com.wsla.common.WSLAConstants;
 import com.wsla.data.product.ProductVO;
 import com.wsla.data.product.WarrantyType;
 import com.wsla.data.provider.ProviderType;
@@ -484,7 +485,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		UserVO user = (UserVO) getAdminUser(req).getUserExtendedInfo();
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		Locale locale = StringUtil.isEmpty(user.getLocale()) ? site.getLocale() : new Locale(user.getLocale());
-		ResourceBundle bundle = ResourceBundle.getBundle("com.wsla.common.bundle.messages", locale); 
+		ResourceBundle bundle = ResourceBundle.getBundle(WSLAConstants.RESOURCE_BUNDLE, locale); 
 		
 		List<GenericVO> data = new ArrayList<>();
 		for (TicketScheduleVO.TypeCode type : TicketScheduleVO.TypeCode.values()) {
