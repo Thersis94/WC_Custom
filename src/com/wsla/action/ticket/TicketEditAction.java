@@ -133,7 +133,7 @@ public class TicketEditAction extends SBActionAdapter {
 		if (activity) sql.append("and activity_type_cd != 'COMMENT' ");
 		else sql.append("and activity_type_cd = 'COMMENT' ");
 		sql.append("order by priority_ticket_flg desc, a.create_dt desc ");
-		log.info(sql);
+		log.debug(sql);
 		List<Node> comments = new ArrayList<>();
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, ticketId);
@@ -251,7 +251,9 @@ public class TicketEditAction extends SBActionAdapter {
 		
 		sql.append(DBUtil.SELECT_FROM_STAR).append(getCustomSchema());
 		sql.append("wsla_ticket_assignment a ");
-		sql.append("where ticket_id = ? ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(getCustomSchema());
+		sql.append("wsla_provider_location b on a.location_id = b.location_id ");
+		sql.append("where a.ticket_id = ? ");
 		
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		return db.executeSelect(sql.toString(), Arrays.asList(ticketId), new TicketAssignmentVO());
