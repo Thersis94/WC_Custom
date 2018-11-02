@@ -120,7 +120,7 @@ public class AjaxControllerFacadeAction extends FacadeActionAdapter {
 		if (! req.hasParameter("json")) return;
 		loadActionByType(req.getParameter(SELECTOR_KEY, DEFAULT_TYPE)).retrieve(req);
 	}
-
+	
 	/*
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.action.ActionRequest)
