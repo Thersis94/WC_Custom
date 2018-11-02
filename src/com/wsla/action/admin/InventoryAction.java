@@ -1,5 +1,7 @@
 package com.wsla.action.admin;
 
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -149,5 +151,47 @@ public class InventoryAction extends SBActionAdapter {
 
 		DBProcessor db = new DBProcessor(getDBConnection(), schema);
 		return db.executeSelect(sql.toString(), params, new GenericVO(), "key");
+	}
+
+
+	/**
+	 * Add or subtract inventory from the item_master - "this product at this location"
+	 * @param productId of part
+	 * @param locationId holding the inventory
+	 * @param qnty to increment or decrement
+	 * @throws ActionException 
+	 */
+	public void recordInventory(String productId, String locationId, int qnty) 
+			throws ActionException {
+		String schema = getCustomSchema();
+		String updSql = StringUtil.join("update ", schema, "wsla_location_item_master ",
+				"set actual_qnty_no=actual_qnty_no+? where product_id=? and location_id=?");
+		log.debug(updSql);
+
+		int cnt = 0;
+		try (PreparedStatement ps = dbConn.prepareStatement(updSql)) {
+			ps.setInt(1, qnty);
+			ps.setString(2, productId);
+			ps.setString(3, locationId);
+			cnt = ps.executeUpdate();
+			log.debug(String.format("updated %d item_master records", cnt));
+
+		} catch (SQLException sqle) {
+			throw new ActionException(sqle);
+		}
+		//we're done if we updated an existing record
+		if (cnt > 0) return;
+
+		// Need to add inventory record.  Easiest done with a VO & DBProcessor
+		LocationItemMasterVO vo = new LocationItemMasterVO();
+		vo.setQuantityOnHand(qnty);
+		vo.setProductId(productId);
+		vo.setLocationId(locationId);
+		DBProcessor db = new DBProcessor(getDBConnection(), schema);
+		try {
+			db.insert(vo);
+		} catch (Exception e) {
+			throw new ActionException(e);
+		}
 	}
 }

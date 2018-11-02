@@ -1,5 +1,6 @@
 package com.wsla.action.admin;
 
+import java.util.Arrays;
 import java.util.List;
 
 // SMT Base Libs
@@ -10,9 +11,11 @@ import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
+import com.siliconmtn.util.StringUtil;
 // WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.wsla.data.ticket.StatusCodeVO;
+import com.wsla.data.ticket.StatusNotificationVO;
 
 /****************************************************************************
  * <b>Title</b>: StatusCodeAction.java
@@ -50,12 +53,48 @@ public class StatusCodeAction extends SBActionAdapter {
 	
 	/*
 	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#delete(com.siliconmtn.action.ActionRequest)
+	 */
+	public void deleteNotification(ActionRequest req) 
+	throws InvalidDataException, DatabaseException {
+		
+		StatusNotificationVO statusNote = new StatusNotificationVO();
+		statusNote.setStatusNotificationId(req.getParameter("statusNotificationId"));
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		db.delete(statusNote);
+	}
+	
+	/*
+	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#list(com.siliconmtn.action.ActionRequest)
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		if (! req.hasParameter("json")) return;
-		setModuleData(getStatusCodes());
+		
+		if (req.hasParameter("statusCode")) 
+			setModuleData(getNotifications(req.getParameter("statusCode")));
+		else 
+			setModuleData(getStatusCodes());
+	}
+	
+	/**
+	 * Gets the notifications for a given statusCode
+	 * @param statusCode
+	 * @return
+	 */
+	public List<StatusNotificationVO> getNotifications(String statusCode) {
+		StringBuilder sql = new StringBuilder(256);
+		sql.append("select * from ").append(getCustomSchema());
+		sql.append("wsla_ticket_status_notification a ");
+		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema());
+		sql.append("wsla_ticket_status b on a.status_cd = b.status_cd ");
+		sql.append("inner join email_campaign_instance d ");
+		sql.append("on a.campaign_instance_id = d.campaign_instance_id ");
+		sql.append("where a.status_cd = ? order by instance_nm ");
+		
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		return db.executeSelect(sql.toString(), Arrays.asList(statusCode), new StatusNotificationVO());
 	}
 	
 	/**
@@ -78,15 +117,55 @@ public class StatusCodeAction extends SBActionAdapter {
 	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
-		log.info("Building ...");
+		log.debug("Building ...");
 		
-		StatusCodeVO status = new StatusCodeVO(req);
-		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		try {
-			db.update(status);
+			if (req.hasParameter("notification")) {
+				putModuleData(saveStatusNotification(req));
+			} else if (req.hasParameter("statusNotificationId")) {
+				deleteNotification(req);
+			} else {
+				putModuleData(saveStatus(req));
+			}
 		} catch (InvalidDataException | DatabaseException e) {
 			putModuleData("", 0, false, e.getLocalizedMessage(), true);
 		}
+	}
+	
+	/**
+	 * Saves the core status info
+	 * @param req
+	 * @return
+	 * @throws InvalidDataException
+	 * @throws DatabaseException
+	 */
+	public StatusCodeVO saveStatus(ActionRequest req) 
+	throws InvalidDataException, DatabaseException {
+		StatusCodeVO status = new StatusCodeVO(req);
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		db.update(status);
+		
+		return status;
+	}
+	
+	/**
+	 * Adds a notification type for the given status
+	 * @param req
+	 * @return
+	 * @throws InvalidDataException
+	 * @throws DatabaseException
+	 */
+	public StatusNotificationVO saveStatusNotification(ActionRequest req) 
+	throws InvalidDataException, DatabaseException {
+		
+		String delim = StringUtil.getDelimitedList(req.getParameterValues("roleId"), false, ",");
+		req.setParameter("roleId", delim, false);
+		StatusNotificationVO ntfcn = new StatusNotificationVO(req);
+		log.info(ntfcn);
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		db.save(ntfcn);
+		
+		return ntfcn;
 	}
 }
 

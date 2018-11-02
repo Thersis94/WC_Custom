@@ -160,7 +160,7 @@ public class TicketEditAction extends SBActionAdapter {
 		if (activity) sql.append("and activity_type_cd != 'COMMENT' ");
 		else sql.append("and activity_type_cd = 'COMMENT' ");
 		sql.append("order by priority_ticket_flg desc, a.create_dt desc ");
-		log.info(sql);
+		log.debug(sql);
 		List<Node> comments = new ArrayList<>();
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, ticketId);

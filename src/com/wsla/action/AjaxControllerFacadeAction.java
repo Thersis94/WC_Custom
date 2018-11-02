@@ -14,6 +14,8 @@ import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.wsla.action.admin.BatchImport;
 import com.wsla.action.admin.DefectAction;
 import com.wsla.action.admin.DiagnosticAction;
+import com.wsla.action.admin.HarvestApprovalAction;
+import com.wsla.action.admin.HarvestPartsAction;
 import com.wsla.action.admin.InventoryAction;
 import com.wsla.action.admin.ProductCategoryAction;
 import com.wsla.action.admin.ProductCategoryXRAction;
@@ -100,6 +102,8 @@ public class AjaxControllerFacadeAction extends FacadeActionAdapter {
 		actionMap.put("productWarranty", ProductWarrantyAction.class);
 		actionMap.put("warranty", WarrantyAction.class);
 		actionMap.put("inventory", InventoryAction.class);
+		actionMap.put("harvestApproval", HarvestApprovalAction.class);
+		actionMap.put("harvestParts", HarvestPartsAction.class);
 	}
 
 	/*
@@ -122,7 +126,7 @@ public class AjaxControllerFacadeAction extends FacadeActionAdapter {
 		if (! req.hasParameter("json")) return;
 		loadActionByType(req.getParameter(SELECTOR_KEY, DEFAULT_TYPE)).retrieve(req);
 	}
-
+	
 	/*
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.action.ActionRequest)
