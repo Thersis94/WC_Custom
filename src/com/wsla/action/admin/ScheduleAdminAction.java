@@ -98,11 +98,11 @@ public class ScheduleAdminAction extends SBActionAdapter {
 		StringBuilder sql = new StringBuilder(600);
 		sql.append("select * from  ").append(schema).append("wsla_ticket_schedule a inner join ").append(schema).append("wsla_assignment_location_view b on a.location_dest_id = b.ticket_assg_id ");
 		sql.append("inner join ").append(schema).append("wsla_ticket t on a.ticket_id = t.ticket_id ");
-		sql.append("where t.ticket_id in (select distinct(ticket_id) from ").append(schema).append("wsla_ticket_assignment where assg_type_cd = 'RETAILER') ");
+		sql.append("where t.ticket_id in (select distinct(ticket_id) from ").append(schema).append("wsla_ticket_assignment where assg_type_cd = 'CAS') ");
 		sql.append("union ");
 		sql.append("select * from  ").append(schema).append("wsla_ticket_schedule a inner join ").append(schema).append("wsla_assignment_location_view b on a.location_src_id = b.ticket_assg_id ");
 		sql.append("inner join ").append(schema).append("wsla_ticket dt on a.ticket_id = dt.ticket_id ");
-		sql.append("where dt.ticket_id in (select distinct(ticket_id) from ").append(schema).append("wsla_ticket_assignment where assg_type_cd = 'RETAILER') ");
+		sql.append("where dt.ticket_id in (select distinct(ticket_id) from ").append(schema).append("wsla_ticket_assignment where assg_type_cd = 'CAS') ");
 		
 		GridDataVO<TicketScheduleVO> data  = new GridDataVO<>();
 		

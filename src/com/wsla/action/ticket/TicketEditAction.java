@@ -118,7 +118,6 @@ public class TicketEditAction extends SBActionAdapter {
 				boolean isActivity = req.getBooleanParameter("activity");
 				putModuleData(getComments(req.getParameter(TICKET_ID), req.getBooleanParameter("isEndUser"), isActivity));
 
-				putModuleData(getComments(req.getParameter(TICKET_ID)));
 			} else if (json && req.hasParameter("schedule")) {
 				putModuleData(getSchedule(req.getParameter(TICKET_ID), req.getParameter(REQ_TICKET_SCHEDULE_ID)));
 			} else if (json && req.hasParameter("assets")) {
