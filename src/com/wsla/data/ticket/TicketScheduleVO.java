@@ -49,6 +49,7 @@ public class TicketScheduleVO extends BeanDataVO {
 	private String signatureText;
 	private int productValidatedFlag;
 	private String notesText;
+	private String recordTypeCode;
 	private Date createDate;
 	private Date updateDate;
 	private Date scheduleDate;
@@ -228,6 +229,21 @@ public class TicketScheduleVO extends BeanDataVO {
 	 */
 	public void setNotesText(String notesText) {
 		this.notesText = notesText;
+	}
+
+	/**
+	 * @return the recordTypeCode
+	 */
+	@Column(name="record_type_cd")
+	public String getRecordTypeCode() {
+		return recordTypeCode;
+	}
+
+	/**
+	 * @param recordTypeCode the recordTypeCode to set
+	 */
+	public void setRecordTypeCode(String recordTypeCode) {
+		this.recordTypeCode = recordTypeCode;
 	}
 
 	/**

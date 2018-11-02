@@ -230,8 +230,9 @@ public class TicketEditAction extends SBActionAdapter {
 		ticket.setAssignments(getAssignments(ticket.getTicketId()));
 		
 		// Get the schedule
-		ticket.setSchedule(getSchedule(ticket.getTicketId(), null));
-		populateScheduleAssignments(ticket.getSchedule(), ticket.getAssignments());
+		List<TicketScheduleVO> schedules = getSchedule(ticket.getTicketId(), null);
+		ticket.addSchedules(schedules);
+		populateScheduleAssignments(schedules, ticket.getAssignments());
 		
 		return ticket;
 	}
