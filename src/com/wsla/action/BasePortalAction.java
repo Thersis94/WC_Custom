@@ -1,7 +1,5 @@
 package com.wsla.action;
 
-// JDK 1.8.x
-import java.util.Map;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -16,7 +14,6 @@ import com.siliconmtn.security.PhoneVO;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.RandomAlphaNumeric;
 import com.siliconmtn.util.StringUtil;
-
 // WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.user.ProfileManager;
@@ -43,12 +40,8 @@ import com.wsla.data.ticket.UserVO;
  * @since Sep 29, 2018
  * @updates:
  ****************************************************************************/
-
 public class BasePortalAction extends SBActionAdapter {
 
-	/**
-	 * 
-	 */
 	public BasePortalAction() {
 		super();
 	}
@@ -59,44 +52,48 @@ public class BasePortalAction extends SBActionAdapter {
 	public BasePortalAction(ActionInitVO actionInit) {
 		super(actionInit);
 	}
-	
+
+
 	/**
 	 * 
 	 * @param summary if the summary is passed, the first param will be added to the bean
 	 * @param req
 	 * @throws InvalidDataException
 	 * @throws DatabaseException
+	 * TODO Either accept a single String summary, or not ignore the addtl array values
 	 */
 	public TicketLedgerVO addLedger(String userId, ActionRequest req, StatusCode statusCode, String... summary) 
-	throws InvalidDataException, DatabaseException {
+			throws InvalidDataException, DatabaseException {
 		// Create the ledger and fill out the bean
 		TicketLedgerVO ledger = new TicketLedgerVO(req);
-		if (summary != null && summary.length > 0) ledger.setSummary(summary[0]);
 		ledger.setStatusCode(statusCode);
-		
+
+		if (summary != null && summary.length > 0) 
+			ledger.setSummary(summary[0]);
+
 		// Add the user's profile id and user id
-		if (StringUtil.isEmpty(ledger.getDispositionBy())) {
+		if (StringUtil.isEmpty(ledger.getDispositionBy()))
 			ledger.setDispositionBy(userId);
-		}
-		
+
 		// Add the ledger entry
-		this.addLedger(ledger);
-		
+		addLedger(ledger);
+
 		return ledger;
 	}
-	
+
+
 	/**
-	 * 
+	 * Save the LedgerVO to the database
 	 * @param ledger
 	 * @throws InvalidDataException
 	 * @throws DatabaseException
 	 */
 	public void addLedger(TicketLedgerVO ledger) throws InvalidDataException, DatabaseException {
-		
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		db.insert(ledger);
 	}
-	
+
+
 	/**
 	 * Saves the user information and associated profile.
 	 * @param site SMT Site information.  Needed to set proper roles and authentication
@@ -108,114 +105,98 @@ public class BasePortalAction extends SBActionAdapter {
 	 * @throws Exception
 	 */
 	public void saveUser(SiteVO site, UserVO user, boolean hasAuth, boolean hasLoc) 
-	throws Exception {
-		ProfileManager pm = ProfileManagerFactory.getInstance(attributes);
-		if (user.getProfile() == null) throw new InvalidDataException("Profile must be present");
-		
-		Map<String, Object> fieldMap = getProfileExtended(user, pm, hasAuth, hasLoc);
+			throws Exception {
+		if (user.getProfile() == null) 
+			throw new InvalidDataException("Profile must be present");
 
-		// Update / add the profile.  if new, allow communications to them
-		if (StringUtil.isEmpty(user.getProfileId())) {
-			pm.updateProfile(user.getProfile(), getDBConnection());
-			user.setProfileId(user.getProfile().getProfileId());
-		} else {
-			pm.updateProfilePartially(fieldMap, user.getProfile(), getDBConnection());
+		UserDataVO profile = user.getProfile();
+		boolean isInsert = StringUtil.isEmpty(profile.getProfileId());
+
+		//transpose some data between the UserVO and UserDataVO
+		configureProfile(user, profile);
+
+		//create or update the auth record before saving the profile
+		if (hasAuth && StringUtil.isEmpty(profile.getAuthenticationId()))
+			profile.setAuthenticationId(addAuthenticationRecord(user));
+
+		// Update / add the profile.
+		ProfileManager pm = ProfileManagerFactory.getInstance(attributes);
+		pm.updateProfile(profile, getDBConnection());
+
+		// opt-in the user if this is a new record
+		if (isInsert) {
+			pm.assignCommunicationFlg(site.getOrganizationId(), profile.getProfileId(), 
+					profile.getAllowCommunication(), getDBConnection(),null);
 		}
-		
+
+		//put the saved/updated UserDataVO back onto the UserVO
+		user.setProfile(profile);
+
+		if (StringUtil.isEmpty(user.getProfileId()))
+			user.setProfileId(profile.getProfileId());
+
 		// Update / add the role
-		if (hasAuth) this.saveRole(site, user, user.getActiveFlag() == 1);
-		
+		if (hasAuth)
+			saveRole(site, user, user.getActiveFlag() == 1);
+
 		// Update / add the wsla user  Search for the user id if its not assigned
 		// This avoids duplicating the user record
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema()); 
-		if (StringUtil.isEmpty(user.getUserId())) 
+		if (StringUtil.isEmpty(user.getUserId()))
 			user.setUserId(getUserIdByProfileId(user.getProfileId()));
-		
+
 		db.save(user);
 	}
-	
+
 	/**
 	 * Checks for the existence of a user id based upon a profile id
 	 * @param profileId
 	 * @return
 	 * @throws SQLException
 	 */
-	public String getUserIdByProfileId(String profileId) throws SQLException {
-		
-		StringBuilder sql = new StringBuilder(64);
-		sql.append("select user_id from ").append(getCustomSchema()).append("wsla_user ");
-		sql.append("where profile_id = ?");
-		
-		String userId = null;
-		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+	public String getUserIdByProfileId(String profileId) {
+		String sql = StringUtil.join("select user_id from ", getCustomSchema(), "wsla_user where profile_id = ?");
+		log.debug(sql);
+
+		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
 			ps.setString(1, profileId);
-			try (ResultSet rs = ps.executeQuery()) {
-				if (rs.next()) userId = rs.getString(1);
-			}
+			ResultSet rs = ps.executeQuery();
+			if (rs.next())
+				return rs.getString(1);
+
+		} catch (SQLException sqle) {
+			log.warn("could not find existing user.  Message: " + sqle.getMessage());
 		}
-		
-		return userId;
+		return null;
 	}
-	
+
+
 	/**
-	 * Processes the extra data for the profile
-	 * @param profile
+	 * Transpose certain data from UserVO to UserDataVO for saving to the WC core
 	 * @param user
-	 * @return
-	 * @throws DatabaseException 
-	 * @throws com.siliconmtn.exception.DatabaseException 
+	 * @param profile
 	 */
-	protected Map<String, Object> getProfileExtended(UserVO user, ProfileManager pm, boolean hasAuth, boolean hasLoc) 
-	throws com.siliconmtn.exception.DatabaseException {
-		UserDataVO profile = user.getProfile();
-		Map<String, Object> fieldMap = profile.getDataMap();
+	private void configureProfile(UserVO user, UserDataVO profile) {
 		profile.setEmailAddress(user.getEmail());
 		profile.setAllowCommunication(1);
-		
-		// Add the country and language of the locale is present
+
+		// Add the country and language of the locale if present
 		if (! StringUtil.isEmpty(user.getLocale())) {
 			profile.setCountryCode(user.getLocale().substring(3));
 			profile.setLanguage(user.getLocale().substring(0,2));
-			fieldMap.put("LANGUAGE_CD", profile.getLanguage());
-		} else {
-			fieldMap.remove("COUNTRY_CD");
-			fieldMap.remove("LANGUAGE_CD");
+			log.debug(String.format("Set country=%s and language=%s from Locale %s", 
+					profile.getCountryCode(), profile.getLanguage(), user.getLocale()));
 		}
-		
-		// Add the phones if present
+
+		// Replace (recreate) the phone#s now that we have established a country code
 		if (! StringUtil.isEmpty(profile.getMobilePhone()))
 			profile.addPhone(new PhoneVO(PhoneVO.MOBILE_PHONE, profile.getMobilePhone(), profile.getCountryCode()));
-		
+
 		if (! StringUtil.isEmpty(profile.getWorkPhone()))
 			profile.addPhone(new PhoneVO(PhoneVO.WORK_PHONE, profile.getWorkPhone(), profile.getCountryCode()));
-		
-		
-		// Check to see if the user already exists in the system
-		if (StringUtil.isEmpty(profile.getProfileId())) {
-			profile.setProfileId(pm.checkProfile(profile, getDBConnection()));
-		}
-		
-		// If the profile is new, go get a new record
-		if (hasAuth && StringUtil.isEmpty(profile.getAuthenticationId())) {
-			profile.setAuthenticationId(addAuthenticationRecord(user));
-		}
-		
-		// Set the fields to be updated
-		if (! hasLoc) fieldMap.remove("ADDRESS2_TXT");
-		if (! hasLoc) fieldMap.remove("ADDRESS_TXT");
-		if (! hasLoc) fieldMap.remove("BIRTH_YEAR_NO");
-		if (! hasLoc) fieldMap.remove("CASS_VALIDATE_FLG");
-		if (! hasLoc) fieldMap.remove("CITY_NM");
-		if (! hasLoc) fieldMap.remove("LATITUDE_NO");
-		if (! hasLoc) fieldMap.remove("LONGITUDE_NO");
-		fieldMap.remove("MAIN_PHONE_TXT");
-		fieldMap.remove("MIDDLE_NM");
-		fieldMap.remove("PASSWORD_TXT");
-		if (! hasLoc) fieldMap.remove("VALID_ADDRESS_FLG");
-		
-		return profile.getDataMap();
 	}
-	
+
+
 	/**
 	 * Adds the auth record for a new user.  Checks for the existence (in case 
 	 * there is a record for that user) 
@@ -229,32 +210,30 @@ public class BasePortalAction extends SBActionAdapter {
 		String authId = login.checkAuth(user.getEmail());
 		if (StringUtil.isEmpty(authId))
 			authId = login.saveAuthRecord(null, user.getEmail(), RandomAlphaNumeric.generateRandom(10), 1);
-		
+
 		return authId;
 	}
-	
+
+
 	/**
 	 * Updates or saves the profile role value for the user
-	 * @param req
 	 * @param site
-	 * @param profile
-	 * @param active
-	 * @throws DatabaseException
-	 * @throws com.siliconmtn.exception.DatabaseException 
+	 * @param user
+	 * @param isActive
+	 * @return the RoleVO created by the method, which contains any generated PKID
+	 * @throws com.siliconmtn.exception.DatabaseException
 	 */
-	protected void saveRole(SiteVO site, UserVO user, boolean active) 
-	throws com.siliconmtn.exception.DatabaseException {
-
+	protected SBUserRole saveRole(SiteVO site, UserVO user, boolean isActive) 
+			throws com.siliconmtn.exception.DatabaseException {
 		SBUserRole role = new SBUserRole();
 		role.setOrganizationId(site.getOrganizationId());
-		role.setSiteId(site.getSiteId());
-		role.setRoleId(user.getRoleId());
+		role.setSiteId(StringUtil.checkVal(site.getAliasPathParentId(), site.getSiteId())); //use parent site
+		role.setProfileRoleId(user.getProfileRoleId());
 		role.setProfileId(user.getProfileId());
-		role.setProfileRoleId(user.getProfileId());
-		role.setStatusId(active ? SecurityController.STATUS_ACTIVE : SecurityController.STATUS_DISABLED);
-		
-		ProfileRoleManager prm = new ProfileRoleManager();
-		prm.addRole(role, getDBConnection());
+		role.setRoleId(user.getRoleId());
+		role.setStatusId(isActive ? SecurityController.STATUS_ACTIVE : SecurityController.STATUS_DISABLED);
+
+		new ProfileRoleManager().addRole(role, getDBConnection());
+		return role;
 	}
 }
-

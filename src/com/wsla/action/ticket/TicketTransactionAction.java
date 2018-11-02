@@ -12,6 +12,8 @@ import com.wsla.action.ticket.transaction.DiagnosticTransaction;
 import com.wsla.action.ticket.transaction.ProviderLocationTransaction;
 // WSLA libs
 import com.wsla.action.ticket.transaction.TicketAssetTransaction;
+import com.wsla.action.ticket.transaction.TicketAssignmentTransaction;
+import com.wsla.action.ticket.transaction.TicketCommentTransaction;
 import com.wsla.action.ticket.transaction.UserTransaction;
 import com.wsla.action.ticket.transaction.TicketScheduleTransaction;
 
@@ -64,6 +66,8 @@ public class TicketTransactionAction extends FacadeActionAdapter {
 		actionMap.put(ProviderLocationTransaction.AJAX_KEY, ProviderLocationTransaction.class);
 		actionMap.put(DiagnosticTransaction.AJAX_KEY, DiagnosticTransaction.class);
 		actionMap.put("schedule", TicketScheduleTransaction.class);
+		actionMap.put(TicketCommentTransaction.AJAX_KEY, TicketCommentTransaction.class);
+		actionMap.put(TicketAssignmentTransaction.AJAX_KEY, TicketAssignmentTransaction.class);
 	}
 
 	/*
