@@ -66,6 +66,7 @@ public class TicketVO extends BeanDataVO {
 		
 	// Member Variables
 	private String ticketId;
+	private String parentId;
 	private String ticketIdText;
 	private String description;
 	private String productWarrantyId;
@@ -338,6 +339,14 @@ public class TicketVO extends BeanDataVO {
 	@Column(name="unit_location_cd")
 	public UnitLocation getUnitLocation() {
 		return unitLocation;
+	}
+
+	/**
+	 * @return the parentId
+	 */
+	@Column(name="parent_id")
+	public String getParentId() {
+		return parentId;
 	}
 
 	/**
@@ -653,6 +662,13 @@ public class TicketVO extends BeanDataVO {
 	 */
 	public void setUnitLocation(UnitLocation unitLocation) {
 		this.unitLocation = unitLocation;
+	}
+
+	/**
+	 * @param parentId the parentId to set
+	 */
+	public void setParentId(String parentId) {
+		this.parentId = parentId;
 	}
 }
 

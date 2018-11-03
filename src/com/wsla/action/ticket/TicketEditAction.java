@@ -6,9 +6,9 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 // SMT Base Libs
@@ -19,32 +19,26 @@ import com.siliconmtn.data.Node;
 import com.siliconmtn.data.Tree;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
+import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.security.UserDataVO;
-import com.siliconmtn.util.RandomAlphaNumeric;
 import com.siliconmtn.util.StringUtil;
-import com.siliconmtn.util.UUIDGenerator;
+
 // WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.user.ProfileManager;
 import com.smt.sitebuilder.action.user.ProfileManagerFactory;
-import com.wsla.common.WSLAConstants;
 import com.wsla.data.product.ProductSerialNumberVO;
 import com.wsla.data.product.ProductWarrantyVO;
 import com.wsla.data.ticket.DefectVO;
 import com.wsla.data.ticket.DiagnosticRunVO;
-import com.wsla.data.ticket.LedgerSummary;
-import com.wsla.data.ticket.StatusCode;
 import com.wsla.data.ticket.TicketAssignmentVO;
-import com.wsla.data.ticket.TicketAssignmentVO.TypeCode;
 import com.wsla.data.ticket.TicketAttributeVO;
 import com.wsla.data.ticket.TicketCommentVO;
 import com.wsla.data.ticket.TicketDataVO;
 import com.wsla.data.ticket.TicketLedgerVO;
 import com.wsla.data.ticket.TicketVO;
-import com.wsla.data.ticket.TicketVO.Standing;
-import com.wsla.data.ticket.TicketVO.UnitLocation;
 import com.wsla.data.ticket.UserVO;
 
 /****************************************************************************
@@ -89,54 +83,13 @@ public class TicketEditAction extends SBActionAdapter {
 	
 	/**
 	 * 
-	 * @param req
-	 * @throws ActionException
-	 * @throws com.siliconmtn.db.util.DatabaseException 
-	 * @throws InvalidDataException 
+	 * @param dbConn
+	 * @param attributes
 	 */
-	public void copyTicket(ActionRequest req) 
-	throws InvalidDataException, com.siliconmtn.db.util.DatabaseException {
-		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
-		
-		// Load ticket core data
-		TicketVO ticket = getBaseTicket(req.getParameter("ticketIdText"));
-		String originalTicketId = ticket.getTicketId();
-		ticket.setStatusCode(StatusCode.USER_CALL_DATA_INCOMPLETE);
-		ticket.setUnitLocation(UnitLocation.WSLA);
-		ticket.setStandingCode(Standing.GOOD);
-		ticket.setUpdateDate(null);
-		ticket.setCreateDate(new Date());
-		ticket.setTicketId(new UUIDGenerator().getUUID());
-		ticket.setTicketIdText(RandomAlphaNumeric.generateRandom(WSLAConstants.TICKET_RANDOM_CHARS));
-		db.insert(ticket);
-		
-		// Load ticket data
-		for (TicketDataVO tdvo : this.getExtendedData(originalTicketId, null)) {
-			tdvo.setTicketId(ticket.getTicketId());
-			tdvo.setDataEntryId(new UUIDGenerator().getUUID());
-			tdvo.setUpdateDate(null);
-			tdvo.setCreateDate(new Date());
-			db.insert(tdvo);
-		}
-		
-		// Load User and Retailer Assignments
-		List<TypeCode> types = Arrays.asList(TypeCode.CALLER, TypeCode.OEM, TypeCode.RETAILER);
-		for (TicketAssignmentVO assign : getAssignments(originalTicketId)) {
-			if (! types.contains(assign.getTypeCode())) continue;
-			assign.setTicketId(ticket.getTicketId());
-			assign.setTicketAssignmentId(new UUIDGenerator().getUUID());
-			assign.setUpdateDate(null);
-			assign.setCreateDate(new Date());
-			db.insert(assign);
-		}
-		
-		// Add Ledger
-		UserVO user = ((UserVO)getAdminUser(req).getUserExtendedInfo());
-		TicketLedgerVO ledger = new TicketLedgerVO();
-		ledger.setStatusCode(StatusCode.USER_CALL_DATA_INCOMPLETE);
-		ledger.setDispositionBy(user.getUserId());
-		ledger.setSummary(LedgerSummary.TICKET_CLONED.summary);
-		db.insert(ledger);
+	public TicketEditAction(SMTDBConnection dbConn, Map<String, Object> attributes) {
+		super();
+		this.dbConn = dbConn;
+		this.attributes = attributes;
 	}
 
 	/*
