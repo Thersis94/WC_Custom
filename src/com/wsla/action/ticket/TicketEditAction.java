@@ -6,6 +6,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -21,22 +22,29 @@ import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.security.UserDataVO;
+import com.siliconmtn.util.RandomAlphaNumeric;
 import com.siliconmtn.util.StringUtil;
-
+import com.siliconmtn.util.UUIDGenerator;
 // WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.user.ProfileManager;
 import com.smt.sitebuilder.action.user.ProfileManagerFactory;
+import com.wsla.common.WSLAConstants;
 import com.wsla.data.product.ProductSerialNumberVO;
 import com.wsla.data.product.ProductWarrantyVO;
 import com.wsla.data.ticket.DefectVO;
 import com.wsla.data.ticket.DiagnosticRunVO;
+import com.wsla.data.ticket.LedgerSummary;
+import com.wsla.data.ticket.StatusCode;
 import com.wsla.data.ticket.TicketAssignmentVO;
+import com.wsla.data.ticket.TicketAssignmentVO.TypeCode;
 import com.wsla.data.ticket.TicketAttributeVO;
 import com.wsla.data.ticket.TicketCommentVO;
 import com.wsla.data.ticket.TicketDataVO;
 import com.wsla.data.ticket.TicketLedgerVO;
 import com.wsla.data.ticket.TicketVO;
+import com.wsla.data.ticket.TicketVO.Standing;
+import com.wsla.data.ticket.TicketVO.UnitLocation;
 import com.wsla.data.ticket.UserVO;
 
 /****************************************************************************
@@ -77,6 +85,58 @@ public class TicketEditAction extends SBActionAdapter {
 	 */
 	public TicketEditAction(ActionInitVO actionInit) {
 		super(actionInit);
+	}
+	
+	/**
+	 * 
+	 * @param req
+	 * @throws ActionException
+	 * @throws com.siliconmtn.db.util.DatabaseException 
+	 * @throws InvalidDataException 
+	 */
+	public void copyTicket(ActionRequest req) 
+	throws InvalidDataException, com.siliconmtn.db.util.DatabaseException {
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		
+		// Load ticket core data
+		TicketVO ticket = getBaseTicket(req.getParameter("ticketIdText"));
+		String originalTicketId = ticket.getTicketId();
+		ticket.setStatusCode(StatusCode.USER_CALL_DATA_INCOMPLETE);
+		ticket.setUnitLocation(UnitLocation.WSLA);
+		ticket.setStandingCode(Standing.GOOD);
+		ticket.setUpdateDate(null);
+		ticket.setCreateDate(new Date());
+		ticket.setTicketId(new UUIDGenerator().getUUID());
+		ticket.setTicketIdText(RandomAlphaNumeric.generateRandom(WSLAConstants.TICKET_RANDOM_CHARS));
+		db.insert(ticket);
+		
+		// Load ticket data
+		for (TicketDataVO tdvo : this.getExtendedData(originalTicketId, null)) {
+			tdvo.setTicketId(ticket.getTicketId());
+			tdvo.setDataEntryId(new UUIDGenerator().getUUID());
+			tdvo.setUpdateDate(null);
+			tdvo.setCreateDate(new Date());
+			db.insert(tdvo);
+		}
+		
+		// Load User and Retailer Assignments
+		List<TypeCode> types = Arrays.asList(TypeCode.CALLER, TypeCode.OEM, TypeCode.RETAILER);
+		for (TicketAssignmentVO assign : getAssignments(originalTicketId)) {
+			if (! types.contains(assign.getTypeCode())) continue;
+			assign.setTicketId(ticket.getTicketId());
+			assign.setTicketAssignmentId(new UUIDGenerator().getUUID());
+			assign.setUpdateDate(null);
+			assign.setCreateDate(new Date());
+			db.insert(assign);
+		}
+		
+		// Add Ledger
+		UserVO user = ((UserVO)getAdminUser(req).getUserExtendedInfo());
+		TicketLedgerVO ledger = new TicketLedgerVO();
+		ledger.setStatusCode(StatusCode.USER_CALL_DATA_INCOMPLETE);
+		ledger.setDispositionBy(user.getUserId());
+		ledger.setSummary(LedgerSummary.TICKET_CLONED.summary);
+		db.insert(ledger);
 	}
 
 	/*
@@ -173,6 +233,34 @@ public class TicketEditAction extends SBActionAdapter {
 	 * @throws SQLException
 	 */
 	public TicketVO getCompleteTicket(String ticketIdText) throws SQLException, DatabaseException  {
+		// Get the base ticket data
+		TicketVO ticket = getBaseTicket(ticketIdText);
+		
+		// Get the user's profile
+		ticket.getOriginator().setProfile(getProfile(ticket.getOriginator().getProfileId()));
+		
+		// Get the product info
+		ticket.setProductSerial(getProductInfo(ticket.getProductSerialId()));
+		
+		// Get the warranty info
+		ticket.setWarranty(getWarranty(ticket.getProductWarrantyId()));
+		
+		// Get the extended data
+		ticket.setTicketData(getExtendedData(ticket.getTicketId(), null));
+		
+		// Get the assignments
+		ticket.setAssignments(getAssignments(ticket.getTicketId()));
+		
+		
+		return ticket;
+	}
+	
+	/**
+	 * Gets the core ticket information
+	 * @param ticketIdText
+	 * @return
+	 */
+	public TicketVO getBaseTicket(String ticketIdText) {
 		StringBuilder sql = new StringBuilder(256);
 		sql.append(DBUtil.SELECT_FROM_STAR).append(getCustomSchema());
 		sql.append("wsla_ticket a ");
@@ -191,25 +279,7 @@ public class TicketEditAction extends SBActionAdapter {
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		List<TicketVO> tickets = db.executeSelect(sql.toString(), Arrays.asList(ticketIdText), new TicketVO());
 		if (tickets.isEmpty()) return new TicketVO();
-		TicketVO ticket = tickets.get(0);
-
-		// Get the user's profile
-		ticket.getOriginator().setProfile(getProfile(ticket.getOriginator().getProfileId()));
-		
-		// Get the product info
-		ticket.setProductSerial(getProductInfo(ticket.getProductSerialId()));
-		
-		// Get the warranty info
-		ticket.setWarranty(getWarranty(ticket.getProductWarrantyId()));
-		
-		// Get the extended data
-		ticket.setTicketData(getExtendedData(ticket.getTicketId(), null));
-		
-		// Get the assignments
-		ticket.setAssignments(getAssignments(ticket.getTicketId()));
-		
-		
-		return ticket;
+		else return tickets.get(0);
 	}
 	
 	/**
@@ -315,7 +385,7 @@ public class TicketEditAction extends SBActionAdapter {
 	 */
 	public String getDefectName(String defectCode) throws InvalidDataException, 
 	com.siliconmtn.db.util.DatabaseException {
-		
+		if (StringUtil.isEmpty(defectCode)) return "";
 		DefectVO dvo = new DefectVO();
 		dvo.setDefectCode(defectCode);
 		
