@@ -60,6 +60,8 @@ public enum StatusCode {
 	HARVEST_DENIED_SHIPPED ("Harvest Denied Shipped"),
 	HARVEST_APPROVED ("Harvest Approved"),
 	HARVEST_COMPLETE("Harvest Complete"),
+	HARVEST_RETURN("Return to OEM"),
+	HARVEST_REPAIR("Repair Product"),
 	CLOSED ("Ticket Closed");
 	
 	public final String codeName;
