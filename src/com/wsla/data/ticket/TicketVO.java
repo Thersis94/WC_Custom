@@ -126,14 +126,12 @@ public class TicketVO extends BeanDataVO {
 	 */
 	public TicketVO(ResultSet rs) {
 		super(rs);
-		setLocked();
 	}
 	
 	/**
 	 * Determines if the ticket is locked
 	 */
 	private void setLocked() {
-		
 		if (lockedDate == null) ticketLocked = false;
 		else {
 			try {
@@ -597,6 +595,7 @@ public class TicketVO extends BeanDataVO {
 	 */
 	public void setLockedDate(Date lockedDate) {
 		this.lockedDate = lockedDate;
+		setLocked();
 	}
 
 	/**
