@@ -84,6 +84,7 @@ public class TicketVO extends BeanDataVO {
 	private String oemId;
 	private String userId;
 	private String statusName;
+	private boolean ticketLocked;
 
 	// Bean Sub-Element
 	private List<TicketDataVO> ticketData = new ArrayList<>(32);
@@ -125,6 +126,23 @@ public class TicketVO extends BeanDataVO {
 	 */
 	public TicketVO(ResultSet rs) {
 		super(rs);
+		setLocked();
+	}
+	
+	/**
+	 * Determines if the ticket is locked
+	 */
+	private void setLocked() {
+		
+		if (lockedDate == null) ticketLocked = false;
+		else {
+			try {
+				DateDiff diff = new DateDiff(lockedDate, new Date());
+				if (diff.getMinutes() < 120) ticketLocked = true;
+			} catch (Exception e) {
+				ticketLocked = false;
+			}
+		}
 	}
 
 	/**
@@ -298,6 +316,13 @@ public class TicketVO extends BeanDataVO {
 		return lockedDate;
 	}
 
+	/**
+	 * @return the ticketLocked
+	 */
+	public boolean isTicketLocked() {
+		return ticketLocked;
+	}
+	
 	/**
 	 * @return the retailerId
 	 */
@@ -566,6 +591,8 @@ public class TicketVO extends BeanDataVO {
 	}
 
 	/**
+	 * When setting the locked date, it looks to see how long the ticket has been
+	 * locked. If less than 2 hours, it stays locked, otherwise, the ticket is unlocked
 	 * @param lockedDate the lockedDate to set
 	 */
 	public void setLockedDate(Date lockedDate) {
