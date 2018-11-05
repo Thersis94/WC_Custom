@@ -45,6 +45,8 @@ import com.wsla.action.admin.WarrantyAction;
 import com.wsla.action.admin.WarrantyAction.ServiceTypeCode;
 import com.wsla.action.ticket.TicketEditAction;
 import com.wsla.action.ticket.CASSelectionAction;
+import com.wsla.action.ticket.TicketEditAction;
+import com.wsla.common.WSLAConstants;
 import com.wsla.common.WSLALocales;
 import com.wsla.data.product.ProductVO;
 import com.wsla.data.product.WarrantyType;
@@ -110,9 +112,9 @@ public class SelectLookupAction extends SBActionAdapter {
 		keyMap.put("category", new GenericVO("getProductCategories", Boolean.TRUE));
 		keyMap.put("acRetailer", new GenericVO("getRetailerACList", Boolean.TRUE));
 		keyMap.put("categoryGroup", new GenericVO("getCategoryGroups", Boolean.FALSE));
-		keyMap.put("acCas", new GenericVO("getClosestCas", Boolean.TRUE));
 		keyMap.put("ticketAssignment", new GenericVO("getTicketAssignments", Boolean.TRUE));
 		keyMap.put("scheduleTransferType", new GenericVO("getScheduleTransferTypes", Boolean.TRUE));
+		keyMap.put("acCas", new GenericVO("getAcCas", Boolean.TRUE));
 		keyMap.put("closestCas", new GenericVO("getClosestCas", Boolean.TRUE));
 		keyMap.put("inventorySuppliers", new GenericVO("getInventorySuppliers", Boolean.TRUE));
 		keyMap.put("emailCampaigns", new GenericVO("getEmailCampaigns", Boolean.TRUE));
@@ -590,7 +592,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		UserVO user = (UserVO) getAdminUser(req).getUserExtendedInfo();
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		Locale locale = StringUtil.isEmpty(user.getLocale()) ? site.getLocale() : new Locale(user.getLocale());
-		ResourceBundle bundle = ResourceBundle.getBundle("com.wsla.common.bundle.messages", locale); 
+		ResourceBundle bundle = ResourceBundle.getBundle(WSLAConstants.RESOURCE_BUNDLE, locale); 
 		
 		List<GenericVO> data = new ArrayList<>();
 		for (TicketScheduleVO.TypeCode type : TicketScheduleVO.TypeCode.values()) {
@@ -599,6 +601,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		
 		return data;
 }
+
 	/**
 	 * Return a list of provider locations who have inventory (records).
 	 * Optionally - inventory for a specific productId or custProductId (case insensitive)

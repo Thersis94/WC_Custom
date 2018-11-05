@@ -230,8 +230,9 @@ public class TicketEditAction extends SBActionAdapter {
 		ticket.setAssignments(getAssignments(ticket.getTicketId()));
 		
 		// Get the schedule
-		ticket.setSchedule(getSchedule(ticket.getTicketId(), null));
-		populateScheduleAssignments(ticket.getSchedule(), ticket.getAssignments());
+		List<TicketScheduleVO> schedules = getSchedule(ticket.getTicketId(), null);
+		ticket.addSchedules(schedules);
+		populateScheduleAssignments(schedules, ticket.getAssignments());
 		
 		return ticket;
 	}
@@ -306,7 +307,8 @@ public class TicketEditAction extends SBActionAdapter {
 		sql.append("wsla_user b on a.user_id = b.user_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(getCustomSchema());
 		sql.append("wsla_provider_location c on a.location_id = c.location_id ");
-		sql.append("where ticket_id = ? ");
+		sql.append("where a.ticket_id = ? ");
+		log.debug(sql);
 		
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		List<TicketAssignmentVO> data = db.executeSelect(sql.toString(), Arrays.asList(ticketId), new TicketAssignmentVO());
@@ -408,8 +410,7 @@ public class TicketEditAction extends SBActionAdapter {
 		
 		sql.append("order by a.create_dt ");
 		
-		log.debug("Ticket Schedule SQL: " + sql);
-		log.debug(params);
+		log.debug(sql);
 		
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		return db.executeSelect(sql.toString(), params, new TicketScheduleVO());
@@ -421,13 +422,13 @@ public class TicketEditAction extends SBActionAdapter {
 	 * @param schedules
 	 * @param assignments
 	 */
-	private void populateScheduleAssignments (List<TicketScheduleVO> schedules, List<TicketAssignmentVO> assignments) {
+	public void populateScheduleAssignments (List<TicketScheduleVO> schedules, List<TicketAssignmentVO> assignments) {
 		for (TicketScheduleVO schedule : schedules) {
 			for (TicketAssignmentVO assignment : assignments) {
-				if (assignment.getTicketAssignmentId().equals(schedule.getLocationSourceId())) {
-					schedule.setLocationSource(assignment);
-				} else if (assignment.getTicketAssignmentId().equals(schedule.getLocationDestinationId())) {
-					schedule.setLocationDestination(assignment);
+				if (assignment.getTicketAssignmentId().equals(schedule.getCasLocationId())) {
+					schedule.setCasLocation(assignment);
+				} else if (assignment.getTicketAssignmentId().equals(schedule.getOwnerLocationId())) {
+					schedule.setOwnerLocation(assignment);
 				}
 			}
 		}

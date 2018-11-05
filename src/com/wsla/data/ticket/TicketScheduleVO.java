@@ -43,19 +43,22 @@ public class TicketScheduleVO extends ProviderLocationVO {
 	private String ticketId;
 	private String ticketNumber;
 	private String ledgerEntryId;
-	private String locationSourceId;
-	private String locationDestinationId;
+	private String casLocationId;
+	private String ownerLocationId;
 	private TypeCode typeCode;
 	private String signerName;
 	private String signatureText;
 	private int productValidatedFlag;
 	private String notesText;
+	private String recordTypeCode;
+	private Date createDate;
+	private Date updateDate;
 	private Date scheduleDate;
 	private Date completeDate;
 	
 	// Bean Sub-Elements
-	private TicketAssignmentVO locationSource;
-	private TicketAssignmentVO locationDestination;
+	private TicketAssignmentVO casLocation;
+	private TicketAssignmentVO ownerLocation;
 	private TicketLedgerVO ledger;
 
 	/**
@@ -125,33 +128,33 @@ public class TicketScheduleVO extends ProviderLocationVO {
 	}
 
 	/**
-	 * @return the locationSourceId
+	 * @return the casLocationId
 	 */
-	@Column(name="location_src_id")
-	public String getLocationSourceId() {
-		return locationSourceId;
+	@Column(name="cas_location_id")
+	public String getCasLocationId() {
+		return casLocationId;
 	}
 
 	/**
-	 * @param locationSourceId the locationSourceId to set
+	 * @param casLocationId the casLocationId to set
 	 */
-	public void setLocationSourceId(String locationSourceId) {
-		this.locationSourceId = locationSourceId;
+	public void setCasLocationId(String casLocationId) {
+		this.casLocationId = casLocationId;
 	}
 
 	/**
-	 * @return the locationDestinationId
+	 * @return the ownerLocationId
 	 */
-	@Column(name="location_dest_id")
-	public String getLocationDestinationId() {
-		return locationDestinationId;
+	@Column(name="owner_location_id")
+	public String getOwnerLocationId() {
+		return ownerLocationId;
 	}
 
 	/**
-	 * @param locationDestinationId the locationDestinationId to set
+	 * @param ownerLocationId the ownerLocationId to set
 	 */
-	public void setLocationDestinationId(String locationDestinationId) {
-		this.locationDestinationId = locationDestinationId;
+	public void setOwnerLocationId(String ownerLocationId) {
+		this.ownerLocationId = ownerLocationId;
 	}
 
 	/**
@@ -230,6 +233,21 @@ public class TicketScheduleVO extends ProviderLocationVO {
 	}
 
 	/**
+	 * @return the recordTypeCode
+	 */
+	@Column(name="record_type_cd")
+	public String getRecordTypeCode() {
+		return recordTypeCode;
+	}
+
+	/**
+	 * @param recordTypeCode the recordTypeCode to set
+	 */
+	public void setRecordTypeCode(String recordTypeCode) {
+		this.recordTypeCode = recordTypeCode;
+	}
+
+	/**
 	 * @return the createDate
 	 */
 	@Column(name="create_dt", isInsertOnly=true, isAutoGen=true)
@@ -290,33 +308,33 @@ public class TicketScheduleVO extends ProviderLocationVO {
 	}
 
 	/**
-	 * @return the locationSource
+	 * @return the casLocation
 	 */
-	public TicketAssignmentVO getLocationSource() {
-		return locationSource;
+	public TicketAssignmentVO getCasLocation() {
+		return casLocation;
 	}
 
 	/**
-	 * @param locationSource the locationSource to set
+	 * @param casLocation the casLocation to set
 	 */
 	@BeanSubElement
-	public void setLocationSource(TicketAssignmentVO locationSource) {
-		this.locationSource = locationSource;
+	public void setCasLocation(TicketAssignmentVO casLocation) {
+		this.casLocation = casLocation;
 	}
 
 	/**
-	 * @return the locationDestination
+	 * @return the ownerLocation
 	 */
-	public TicketAssignmentVO getLocationDestination() {
-		return locationDestination;
+	public TicketAssignmentVO getOwnerLocation() {
+		return ownerLocation;
 	}
 
 	/**
-	 * @param locationDestination the locationDestination to set
+	 * @param ownerLocation the ownerLocation to set
 	 */
 	@BeanSubElement
-	public void setLocationDestination(TicketAssignmentVO locationDestination) {
-		this.locationDestination = locationDestination;
+	public void setOwnerLocation(TicketAssignmentVO ownerLocation) {
+		this.ownerLocation = ownerLocation;
 	}
 
 	/**
