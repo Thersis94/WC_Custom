@@ -1,7 +1,10 @@
 package com.wsla.action.admin;
 
+// JDK 1.8.x
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
@@ -9,9 +12,11 @@ import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
+import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.util.StringUtil;
+
 // WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.wsla.data.ticket.StatusCodeVO;
@@ -42,6 +47,17 @@ public class StatusCodeAction extends SBActionAdapter {
 	 */
 	public StatusCodeAction() {
 		super();
+	}
+	
+	/**
+	 * Helper constructor
+	 * @param dbConn
+	 * @param attributes
+	 */
+	public StatusCodeAction(SMTDBConnection dbConn, Map<String, Object> attributes) {
+		super();
+		this.dbConn = dbConn;
+		this.attributes = attributes;
 	}
 
 	/**
@@ -75,7 +91,7 @@ public class StatusCodeAction extends SBActionAdapter {
 		if (req.hasParameter("statusCode")) 
 			setModuleData(getNotifications(req.getParameter("statusCode")));
 		else 
-			setModuleData(getStatusCodes());
+			setModuleData(getStatusCodes(null));
 	}
 	
 	/**
@@ -101,14 +117,21 @@ public class StatusCodeAction extends SBActionAdapter {
 	 * Gets all of the status codes
 	 * @return
 	 */
-	public List<StatusCodeVO> getStatusCodes() {
+	public List<StatusCodeVO> getStatusCodes(String roleId) {
 		StringBuilder sql = new StringBuilder(128);
+		List<Object> vals = new ArrayList<>();
+		
 		sql.append("select * from ").append(getCustomSchema()).append("wsla_ticket_status a ");
-		sql.append(DBUtil.LEFT_OUTER_JOIN).append("role b on a.role_id = b.role_id ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append("role b on a.role_id = b.role_id where 1=1 ");
+		if (! StringUtil.isEmpty(roleId)) {
+			sql.append("and a.role_id = ? ");
+			vals.add(roleId);
+		}
+		
 		sql.append("order by status_nm");
 		
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
-		return db.executeSelect(sql.toString(), null, new StatusCodeVO());
+		return db.executeSelect(sql.toString(), vals, new StatusCodeVO());
 	}
 
 	/*

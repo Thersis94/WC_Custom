@@ -63,6 +63,7 @@ public class TicketVO extends BeanDataVO {
 		
 	// Member Variables
 	private String ticketId;
+	private String parentId;
 	private String ticketIdText;
 	private String description;
 	private String productWarrantyId;
@@ -83,6 +84,7 @@ public class TicketVO extends BeanDataVO {
 	private String oemId;
 	private String userId;
 	private String statusName;
+	private boolean ticketLocked;
 
 	// Bean Sub-Element
 	private List<TicketDataVO> ticketData = new ArrayList<>(32);
@@ -125,6 +127,21 @@ public class TicketVO extends BeanDataVO {
 	 */
 	public TicketVO(ResultSet rs) {
 		super(rs);
+	}
+	
+	/**
+	 * Determines if the ticket is locked
+	 */
+	private void setLocked() {
+		if (lockedDate == null) ticketLocked = false;
+		else {
+			try {
+				DateDiff diff = new DateDiff(lockedDate, new Date());
+				if (diff.getMinutes() < 120) ticketLocked = true;
+			} catch (Exception e) {
+				ticketLocked = false;
+			}
+		}
 	}
 
 	/**
@@ -299,6 +316,13 @@ public class TicketVO extends BeanDataVO {
 	}
 
 	/**
+	 * @return the ticketLocked
+	 */
+	public boolean isTicketLocked() {
+		return ticketLocked;
+	}
+	
+	/**
 	 * @return the retailerId
 	 */
 	@Column(name="retailer_id")
@@ -336,6 +360,14 @@ public class TicketVO extends BeanDataVO {
 	@Column(name="unit_location_cd")
 	public UnitLocation getUnitLocation() {
 		return unitLocation;
+	}
+
+	/**
+	 * @return the parentId
+	 */
+	@Column(name="parent_id")
+	public String getParentId() {
+		return parentId;
 	}
 
 	/**
@@ -590,10 +622,13 @@ public class TicketVO extends BeanDataVO {
 	}
 
 	/**
+	 * When setting the locked date, it looks to see how long the ticket has been
+	 * locked. If less than 2 hours, it stays locked, otherwise, the ticket is unlocked
 	 * @param lockedDate the lockedDate to set
 	 */
 	public void setLockedDate(Date lockedDate) {
 		this.lockedDate = lockedDate;
+		setLocked();
 	}
 
 	/**
@@ -683,5 +718,12 @@ public class TicketVO extends BeanDataVO {
 	 */
 	public void setUnitLocation(UnitLocation unitLocation) {
 		this.unitLocation = unitLocation;
+	}
+
+	/**
+	 * @param parentId the parentId to set
+	 */
+	public void setParentId(String parentId) {
+		this.parentId = parentId;
 	}
 }
