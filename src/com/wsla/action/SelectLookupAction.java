@@ -328,7 +328,6 @@ public class SelectLookupAction extends SBActionAdapter {
 	 */
 	public List<GenericVO> getClosestCas(ActionRequest req) {
 		String ticketId = req.getParameter("ticketId");
-		log.info(getAdminUser(req));
 		UserVO user = (UserVO)getAdminUser(req).getUserExtendedInfo();
 		
 		CASSelectionAction csa = new CASSelectionAction(getDBConnection(), attributes);
