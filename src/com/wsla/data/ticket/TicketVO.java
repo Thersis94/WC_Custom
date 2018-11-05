@@ -136,7 +136,7 @@ public class TicketVO extends BeanDataVO {
 		else {
 			try {
 				DateDiff diff = new DateDiff(lockedDate, new Date());
-				if (diff.getMinutes() < 120) ticketLocked = true;
+				if (diff.getTotalMinutes() < 120) ticketLocked = true;
 			} catch (Exception e) {
 				ticketLocked = false;
 			}
