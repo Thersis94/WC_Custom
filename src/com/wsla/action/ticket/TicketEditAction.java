@@ -88,6 +88,17 @@ public class TicketEditAction extends SBActionAdapter {
 	public TicketEditAction(ActionInitVO actionInit) {
 		super(actionInit);
 	}
+	
+	/**
+	 * 
+	 * @param dbConn
+	 * @param attributes
+	 */
+	public TicketEditAction(SMTDBConnection dbConn, Map<String, Object> attributes) {
+		super();
+		this.dbConn = dbConn;
+		this.attributes = attributes;
+	}
 
 	/**
 	 * Overloaded constructor used for calling between actions.
@@ -200,26 +211,9 @@ public class TicketEditAction extends SBActionAdapter {
 	 * @throws SQLException
 	 */
 	public TicketVO getCompleteTicket(String ticketIdText) throws SQLException, DatabaseException  {
-		StringBuilder sql = new StringBuilder(256);
-		sql.append(DBUtil.SELECT_FROM_STAR).append(getCustomSchema());
-		sql.append("wsla_ticket a ");
-		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema());
-		sql.append("wsla_user b on a.originator_user_id = b.user_id ");
-		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema());
-		sql.append("wsla_provider c on a.oem_id = c.provider_id ");
-		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema());
-		sql.append("wsla_ticket_status s on a.status_cd = s.status_cd ");
-		sql.append(DBUtil.LEFT_OUTER_JOIN).append("role r on s.role_id = r.role_id ");
-		sql.append(DBUtil.LEFT_OUTER_JOIN).append(getCustomSchema());
-		sql.append("wsla_provider_location d on a.retailer_id = d.location_id ");
-		sql.append("where ticket_no = ? ");
+		// Get the base ticket data
+		TicketVO ticket = getBaseTicket(ticketIdText);
 		
-		// Gets the base ticket info
-		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
-		List<TicketVO> tickets = db.executeSelect(sql.toString(), Arrays.asList(ticketIdText), new TicketVO());
-		if (tickets.isEmpty()) return new TicketVO();
-		TicketVO ticket = tickets.get(0);
-
 		// Get the user's profile
 		ticket.getOriginator().setProfile(getProfile(ticket.getOriginator().getProfileId()));
 		
@@ -240,6 +234,33 @@ public class TicketEditAction extends SBActionAdapter {
 		populateScheduleAssignments(ticket.getSchedule(), ticket.getAssignments());
 		
 		return ticket;
+	}
+	
+	/**
+	 * Gets the core ticket information
+	 * @param ticketIdText
+	 * @return
+	 */
+	public TicketVO getBaseTicket(String ticketIdText) {
+		StringBuilder sql = new StringBuilder(256);
+		sql.append(DBUtil.SELECT_FROM_STAR).append(getCustomSchema());
+		sql.append("wsla_ticket a ");
+		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema());
+		sql.append("wsla_user b on a.originator_user_id = b.user_id ");
+		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema());
+		sql.append("wsla_provider c on a.oem_id = c.provider_id ");
+		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema());
+		sql.append("wsla_ticket_status s on a.status_cd = s.status_cd ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append("role r on s.role_id = r.role_id ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(getCustomSchema());
+		sql.append("wsla_provider_location d on a.retailer_id = d.location_id ");
+		sql.append("where ticket_no = ? ");
+		
+		// Gets the base ticket info
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		List<TicketVO> tickets = db.executeSelect(sql.toString(), Arrays.asList(ticketIdText), new TicketVO());
+		if (tickets.isEmpty()) return new TicketVO();
+		else return tickets.get(0);
 	}
 	
 	/**
@@ -355,7 +376,7 @@ public class TicketEditAction extends SBActionAdapter {
 	 */
 	public String getDefectName(String defectCode) throws InvalidDataException, 
 	com.siliconmtn.db.util.DatabaseException {
-		
+		if (StringUtil.isEmpty(defectCode)) return "";
 		DefectVO dvo = new DefectVO();
 		dvo.setDefectCode(defectCode);
 		

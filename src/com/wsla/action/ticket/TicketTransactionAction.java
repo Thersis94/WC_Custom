@@ -10,10 +10,13 @@ import com.siliconmtn.action.ActionRequest;
 import com.smt.sitebuilder.action.FacadeActionAdapter;
 import com.wsla.action.ticket.transaction.DiagnosticTransaction;
 import com.wsla.action.ticket.transaction.ProviderLocationTransaction;
+
 // WSLA libs
 import com.wsla.action.ticket.transaction.TicketAssetTransaction;
 import com.wsla.action.ticket.transaction.TicketAssignmentTransaction;
+import com.wsla.action.ticket.transaction.TicketCloneTransaction;
 import com.wsla.action.ticket.transaction.TicketCommentTransaction;
+import com.wsla.action.ticket.transaction.TicketDataTransaction;
 import com.wsla.action.ticket.transaction.UserTransaction;
 import com.wsla.action.ticket.transaction.TicketScheduleTransaction;
 
@@ -68,6 +71,8 @@ public class TicketTransactionAction extends FacadeActionAdapter {
 		actionMap.put(TicketScheduleTransaction.AJAX_KEY, TicketScheduleTransaction.class);
 		actionMap.put(TicketCommentTransaction.AJAX_KEY, TicketCommentTransaction.class);
 		actionMap.put(TicketAssignmentTransaction.AJAX_KEY, TicketAssignmentTransaction.class);
+		actionMap.put(TicketCloneTransaction.AJAX_KEY, TicketCloneTransaction.class);
+		actionMap.put(TicketDataTransaction.AJAX_KEY, TicketDataTransaction.class);
 	}
 
 	/*
