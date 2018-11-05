@@ -21,6 +21,8 @@ import com.wsla.data.ticket.LedgerSummary;
 import com.wsla.data.ticket.TicketAssignmentVO;
 import com.wsla.data.ticket.TicketLedgerVO;
 import com.wsla.data.ticket.TicketScheduleVO;
+import com.wsla.data.ticket.TicketVO;
+import com.wsla.data.ticket.TicketVO.UnitLocation;
 import com.wsla.data.ticket.UserVO;
 
 /****************************************************************************
@@ -41,6 +43,16 @@ public class TicketScheduleTransaction extends SBActionAdapter {
 	 * Indicates that a scheduled item is being picked up or dropped off
 	 */
 	public static final String REQ_COMPLETE = "complete";
+	
+	/**
+	 * Ticket schedule pre-repair indicator
+	 */
+	public static final String PRE_REPAIR = "preRepair";
+	
+	/**
+	 * Ticket schedule post repair indicatior
+	 */
+	public static final String POST_REPAIR = "postRepair";
 	
 	/**
 	 * 
@@ -70,11 +82,18 @@ public class TicketScheduleTransaction extends SBActionAdapter {
 			else
 				ts = saveSchedule(req);
 
+			// Add in the details of the ticket assignments that this schedule is using
 			TicketEditAction tea = new TicketEditAction(getAttributes(), getDBConnection());
 			List<TicketScheduleVO> tsList = tea.getSchedule(null, ts.getTicketScheduleId());
 			List<TicketAssignmentVO> taList = tea.getAssignments(ts.getTicketId());
 			tea.populateScheduleAssignments(tsList, taList);
-			putModuleData(tsList.get(0));
+			ts = tsList.get(0);
+			
+			// Make sure the unit location is current (requires the assignment data to set)
+			if (req.hasParameter(REQ_COMPLETE))
+				updateUnitLocation(ts);
+			
+			putModuleData(ts);
 			
 		} catch (InvalidDataException | DatabaseException | com.siliconmtn.exception.DatabaseException e) {
 			log.error("Unable to save ticket schedule", e);
@@ -113,6 +132,7 @@ public class TicketScheduleTransaction extends SBActionAdapter {
 	public TicketScheduleVO completeSchedule(ActionRequest req) throws InvalidDataException, DatabaseException {
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		TicketScheduleVO ts = new TicketScheduleVO(req);
+		ts.setUpdateDate(new Date());
 		modifyNotes(ts);
 		UserVO user = (UserVO) getAdminUser(req).getUserExtendedInfo();
 		
@@ -178,6 +198,25 @@ public class TicketScheduleTransaction extends SBActionAdapter {
 		}
 		
 		ts.setNotesText(note.toString());
+	}
+	
+	/**
+	 * Set's the ticket's unit location based on the schedule assignments and schedule record type
+	 * 
+	 * @param ts
+	 * @throws DatabaseException 
+	 * @throws InvalidDataException 
+	 */
+	private void updateUnitLocation(TicketScheduleVO ts) throws InvalidDataException, DatabaseException {
+		String unitLoc = ts.getRecordTypeCode().equals(PRE_REPAIR) ? ts.getCasLocation().getTypeCode().toString() : ts.getOwnerLocation().getTypeCode().toString();
+		UnitLocation location = UnitLocation.valueOf(unitLoc);
+		
+		TicketVO ticket = new TicketVO();
+		ticket.setTicketId(ts.getTicketId());
+		ticket.setUnitLocation(location);
+
+		TicketTransaction tt = new TicketTransaction(getAttributes(), getDBConnection());
+		tt.updateUnitLocation(ticket);
 	}
 }
 
