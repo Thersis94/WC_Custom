@@ -78,7 +78,7 @@ public class TicketTransaction extends SBActionAdapter {
 
 			putModuleData(ticket);
 			
-		} catch (InvalidDataException | DatabaseException e) {
+		} catch (DatabaseException e) {
 			log.error("Unable to save ticket micro transaction", e);
 			putModuleData("", 0, false, e.getLocalizedMessage(), true);
 		}
@@ -91,7 +91,7 @@ public class TicketTransaction extends SBActionAdapter {
 	 * @throws DatabaseException 
 	 * @throws InvalidDataException 
 	 */
-	public TicketVO updateUnitLocation(TicketVO ticket) throws InvalidDataException, DatabaseException {
+	public TicketVO updateUnitLocation(TicketVO ticket) throws DatabaseException {
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		ticket.setUpdateDate(new Date());
 

@@ -40,6 +40,11 @@ import com.wsla.data.ticket.UserVO;
 
 public class TicketScheduleTransaction extends SBActionAdapter {
 	/**
+	 * Key for the Ajax Controller to utilize when calling this class
+	 */
+	public static final String AJAX_KEY = "schedule";
+	
+	/**
 	 * Indicates that a scheduled item is being picked up or dropped off
 	 */
 	public static final String REQ_COMPLETE = "complete";
@@ -207,7 +212,7 @@ public class TicketScheduleTransaction extends SBActionAdapter {
 	 * @throws DatabaseException 
 	 * @throws InvalidDataException 
 	 */
-	private void updateUnitLocation(TicketScheduleVO ts) throws InvalidDataException, DatabaseException {
+	private void updateUnitLocation(TicketScheduleVO ts) throws DatabaseException {
 		String unitLoc = ts.getRecordTypeCode().equals(PRE_REPAIR) ? ts.getCasLocation().getTypeCode().toString() : ts.getOwnerLocation().getTypeCode().toString();
 		UnitLocation location = UnitLocation.valueOf(unitLoc);
 		
