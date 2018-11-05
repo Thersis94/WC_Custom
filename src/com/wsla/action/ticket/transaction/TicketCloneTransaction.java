@@ -165,9 +165,10 @@ public class TicketCloneTransaction extends SBActionAdapter {
 	 * @param tea
 	 * @throws InvalidDataException
 	 * @throws DatabaseException
+	 * @throws com.siliconmtn.exception.DatabaseException 
 	 */
 	public List<TicketAssignmentVO> processAssignments(DBProcessor db, TicketVO ticket, TicketEditAction tea) 
-	throws InvalidDataException, DatabaseException {
+	throws InvalidDataException, DatabaseException, com.siliconmtn.exception.DatabaseException {
 		List<TypeCode> types = Arrays.asList(TypeCode.CALLER, TypeCode.OEM, TypeCode.RETAILER);
 		List<TicketAssignmentVO> assignments = tea.getAssignments(ticket.getParentId());
 		
