@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 // SMT Base Libs
@@ -18,6 +19,7 @@ import com.siliconmtn.data.Node;
 import com.siliconmtn.data.Tree;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
+import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.security.UserDataVO;
@@ -77,6 +79,17 @@ public class TicketEditAction extends SBActionAdapter {
 	 */
 	public TicketEditAction(ActionInitVO actionInit) {
 		super(actionInit);
+	}
+	
+	/**
+	 * 
+	 * @param dbConn
+	 * @param attributes
+	 */
+	public TicketEditAction(SMTDBConnection dbConn, Map<String, Object> attributes) {
+		super();
+		this.dbConn = dbConn;
+		this.attributes = attributes;
 	}
 
 	/*
@@ -173,6 +186,34 @@ public class TicketEditAction extends SBActionAdapter {
 	 * @throws SQLException
 	 */
 	public TicketVO getCompleteTicket(String ticketIdText) throws SQLException, DatabaseException  {
+		// Get the base ticket data
+		TicketVO ticket = getBaseTicket(ticketIdText);
+		
+		// Get the user's profile
+		ticket.getOriginator().setProfile(getProfile(ticket.getOriginator().getProfileId()));
+		
+		// Get the product info
+		ticket.setProductSerial(getProductInfo(ticket.getProductSerialId()));
+		
+		// Get the warranty info
+		ticket.setWarranty(getWarranty(ticket.getProductWarrantyId()));
+		
+		// Get the extended data
+		ticket.setTicketData(getExtendedData(ticket.getTicketId(), null));
+		
+		// Get the assignments
+		ticket.setAssignments(getAssignments(ticket.getTicketId()));
+		
+		
+		return ticket;
+	}
+	
+	/**
+	 * Gets the core ticket information
+	 * @param ticketIdText
+	 * @return
+	 */
+	public TicketVO getBaseTicket(String ticketIdText) {
 		StringBuilder sql = new StringBuilder(256);
 		sql.append(DBUtil.SELECT_FROM_STAR).append(getCustomSchema());
 		sql.append("wsla_ticket a ");
@@ -191,25 +232,7 @@ public class TicketEditAction extends SBActionAdapter {
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		List<TicketVO> tickets = db.executeSelect(sql.toString(), Arrays.asList(ticketIdText), new TicketVO());
 		if (tickets.isEmpty()) return new TicketVO();
-		TicketVO ticket = tickets.get(0);
-
-		// Get the user's profile
-		ticket.getOriginator().setProfile(getProfile(ticket.getOriginator().getProfileId()));
-		
-		// Get the product info
-		ticket.setProductSerial(getProductInfo(ticket.getProductSerialId()));
-		
-		// Get the warranty info
-		ticket.setWarranty(getWarranty(ticket.getProductWarrantyId()));
-		
-		// Get the extended data
-		ticket.setTicketData(getExtendedData(ticket.getTicketId(), null));
-		
-		// Get the assignments
-		ticket.setAssignments(getAssignments(ticket.getTicketId()));
-		
-		
-		return ticket;
+		else return tickets.get(0);
 	}
 	
 	/**
@@ -315,7 +338,7 @@ public class TicketEditAction extends SBActionAdapter {
 	 */
 	public String getDefectName(String defectCode) throws InvalidDataException, 
 	com.siliconmtn.db.util.DatabaseException {
-		
+		if (StringUtil.isEmpty(defectCode)) return "";
 		DefectVO dvo = new DefectVO();
 		dvo.setDefectCode(defectCode);
 		
