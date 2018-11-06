@@ -91,7 +91,7 @@ public class TicketListAction extends SimpleActionAdapter {
 		sql.append(DBUtil.SELECT_CLAUSE).append("a.ticket_id, ticket_no, provider_nm, ");
 		sql.append("product_nm, status_nm, first_nm, last_nm, location_nm, ");
 		sql.append("a.create_dt, email_address_txt, locked_by_id, a.product_serial_id, ");
-		sql.append("serial_no_txt, oem_id ");
+		sql.append("serial_no_txt, oem_id, locked_dt ");
 		
 		// Build the select for the count query
 		StringBuilder cSql = new StringBuilder(768);

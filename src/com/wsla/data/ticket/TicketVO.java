@@ -63,6 +63,7 @@ public class TicketVO extends BeanDataVO {
 		
 	// Member Variables
 	private String ticketId;
+	private String parentId;
 	private String ticketIdText;
 	private String description;
 	private String productWarrantyId;
@@ -83,10 +84,12 @@ public class TicketVO extends BeanDataVO {
 	private String oemId;
 	private String userId;
 	private String statusName;
+	private boolean ticketLocked;
 
 	// Bean Sub-Element
 	private List<TicketDataVO> ticketData = new ArrayList<>(32);
 	private List<TicketAssignmentVO> assignments = new ArrayList<>();
+	private Map<String, TicketScheduleVO> schedule = new HashMap<>();
 	private List<TicketLedgerVO> timeline = new ArrayList<>();
 	private List<DiagnosticRunVO> diagnosticRun = new ArrayList<>();
 	private ProductSerialNumberVO productSerial = new ProductSerialNumberVO();
@@ -124,6 +127,21 @@ public class TicketVO extends BeanDataVO {
 	 */
 	public TicketVO(ResultSet rs) {
 		super(rs);
+	}
+	
+	/**
+	 * Determines if the ticket is locked
+	 */
+	private void setLocked() {
+		if (lockedDate == null) ticketLocked = false;
+		else {
+			try {
+				DateDiff diff = new DateDiff(lockedDate, new Date());
+				if (diff.getMinutes() < 120) ticketLocked = true;
+			} catch (Exception e) {
+				ticketLocked = false;
+			}
+		}
 	}
 
 	/**
@@ -298,6 +316,13 @@ public class TicketVO extends BeanDataVO {
 	}
 
 	/**
+	 * @return the ticketLocked
+	 */
+	public boolean isTicketLocked() {
+		return ticketLocked;
+	}
+	
+	/**
 	 * @return the retailerId
 	 */
 	@Column(name="retailer_id")
@@ -335,6 +360,14 @@ public class TicketVO extends BeanDataVO {
 	@Column(name="unit_location_cd")
 	public UnitLocation getUnitLocation() {
 		return unitLocation;
+	}
+
+	/**
+	 * @return the parentId
+	 */
+	@Column(name="parent_id")
+	public String getParentId() {
+		return parentId;
 	}
 
 	/**
@@ -377,6 +410,13 @@ public class TicketVO extends BeanDataVO {
 	 */
 	public List<TicketAssignmentVO> getAssignments() {
 		return assignments;
+	}
+
+	/**
+	 * @return the schedule
+	 */
+	public Map<String, TicketScheduleVO> getSchedule() {
+		return schedule;
 	}
 
 	/**
@@ -482,6 +522,31 @@ public class TicketVO extends BeanDataVO {
 	}
 
 	/**
+	 * @param schedule the schedule to set
+	 */
+	public void setSchedule(Map<String, TicketScheduleVO> schedule) {
+		this.schedule = schedule;
+	}
+
+	/**
+	 * 
+	 * @param schedule
+	 */
+	@BeanSubElement
+	public void addSchedule(TicketScheduleVO schedule) {
+		this.schedule.put(schedule.getRecordTypeCode(), schedule);
+	}
+
+	/**
+	 * 
+	 * @param schedule
+	 */
+	public void addSchedules(List<TicketScheduleVO> schedules) {
+		for (TicketScheduleVO ts : schedules)
+			addSchedule(ts);
+	}
+
+	/**
 	 * @param timeline the timeline to set
 	 */
 	public void setTimeline(List<TicketLedgerVO> timeline) {
@@ -557,10 +622,13 @@ public class TicketVO extends BeanDataVO {
 	}
 
 	/**
+	 * When setting the locked date, it looks to see how long the ticket has been
+	 * locked. If less than 2 hours, it stays locked, otherwise, the ticket is unlocked
 	 * @param lockedDate the lockedDate to set
 	 */
 	public void setLockedDate(Date lockedDate) {
 		this.lockedDate = lockedDate;
+		setLocked();
 	}
 
 	/**
@@ -650,5 +718,12 @@ public class TicketVO extends BeanDataVO {
 	 */
 	public void setUnitLocation(UnitLocation unitLocation) {
 		this.unitLocation = unitLocation;
+	}
+
+	/**
+	 * @param parentId the parentId to set
+	 */
+	public void setParentId(String parentId) {
+		this.parentId = parentId;
 	}
 }

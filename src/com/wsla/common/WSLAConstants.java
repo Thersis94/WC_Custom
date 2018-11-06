@@ -33,6 +33,11 @@ public class WSLAConstants {
 	public static final int TICKET_RANDOM_CHARS = 8;
 	
 	/**
+	 * WSLA Resource Bundle
+	 */
+	public static final String RESOURCE_BUNDLE = "com.wsla.common.bundle.messages";
+	
+	/**
 	 * "References" email header suffix for tickets, to denote where the
 	 * reference came from in a chain of references. 
 	 */

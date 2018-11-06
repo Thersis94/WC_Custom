@@ -9,11 +9,11 @@ import static com.wsla.action.admin.ProviderAction.REQ_PROVIDER_ID;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.ResourceBundle;
 
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
@@ -24,22 +24,26 @@ import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.orm.GridDataVO;
+import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.EnumUtil;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
-import com.wsla.action.admin.HarvestPartsAction;
-import com.wsla.action.admin.InventoryAction;
 
-//WSLA Libs
+// WSLA Libs
+import com.wsla.action.admin.InventoryAction;
+import com.wsla.action.admin.HarvestPartsAction;
 import com.wsla.action.admin.ProductCategoryAction;
 import com.wsla.action.admin.ProductMasterAction;
 import com.wsla.action.admin.ProviderAction;
 import com.wsla.action.admin.ProviderLocationAction;
+import com.wsla.action.admin.StatusCodeAction;
 import com.wsla.action.admin.WarrantyAction;
 import com.wsla.action.ticket.CASSelectionAction;
+import com.wsla.action.ticket.TicketEditAction;
+import com.wsla.common.WSLAConstants;
 import com.wsla.common.WSLALocales;
 import com.wsla.data.product.ProductVO;
 import com.wsla.data.product.WarrantyType;
@@ -47,6 +51,10 @@ import com.wsla.data.provider.ProviderLocationVO;
 import com.wsla.data.provider.ProviderType;
 import com.wsla.data.ticket.ProductHarvestVO;
 import com.wsla.data.ticket.StatusCode;
+import com.wsla.data.ticket.TicketAssignmentVO;
+import com.wsla.data.ticket.TicketAssignmentVO.TypeCode;
+import com.wsla.data.ticket.TicketScheduleVO;
+import com.wsla.data.ticket.StatusCodeVO;
 import com.wsla.data.ticket.UserVO;
 
 /****************************************************************************
@@ -81,7 +89,7 @@ public class SelectLookupAction extends SBActionAdapter {
 	 * or not the request object is needed in that method 
 	 */
 	static {
-		keyMap.put("statusCode", new GenericVO("getStatusCodes", Boolean.FALSE));
+		keyMap.put("statusCode", new GenericVO("getStatusCodes", Boolean.TRUE));
 		keyMap.put("oem", new GenericVO("getOems", Boolean.TRUE));
 		keyMap.put("attributeGroupCode", new GenericVO("getAttributeGroups", Boolean.FALSE));
 		keyMap.put("attributes", new GenericVO("getAttributes", Boolean.TRUE));
@@ -102,6 +110,8 @@ public class SelectLookupAction extends SBActionAdapter {
 		keyMap.put("category", new GenericVO("getProductCategories", Boolean.TRUE));
 		keyMap.put("acRetailer", new GenericVO("getRetailerACList", Boolean.TRUE));
 		keyMap.put("categoryGroup", new GenericVO("getCategoryGroups", Boolean.FALSE));
+		keyMap.put("ticketAssignment", new GenericVO("getTicketAssignments", Boolean.TRUE));
+		keyMap.put("scheduleTransferType", new GenericVO("getScheduleTransferTypes", Boolean.TRUE));
 		keyMap.put("acCas", new GenericVO("getAcCas", Boolean.TRUE));
 		keyMap.put("closestCas", new GenericVO("getClosestCas", Boolean.TRUE));
 		keyMap.put("inventorySuppliers", new GenericVO("getInventorySuppliers", Boolean.TRUE));
@@ -372,18 +382,15 @@ public class SelectLookupAction extends SBActionAdapter {
 	 * Returns a list of status codes and their descriptions
 	 * @return
 	 */
-	public List<GenericVO> getStatusCodes() {
+	public List<GenericVO> getStatusCodes(ActionRequest req) {
 		List<GenericVO> data = new ArrayList<>(64);
+		StatusCodeAction sca = new StatusCodeAction(getDBConnection(), getAttributes());
+		List<StatusCodeVO> codes = sca.getStatusCodes(req.getParameter("roleId"));
 
-		// Iterate the enum
-		for (StatusCode code : StatusCode.values()) {
-			data.add(new GenericVO(code.name(), code.codeName));
+		for(StatusCodeVO sc : codes) {
+			data.add(new GenericVO(sc.getStatusCode(), sc.getStatusName()));
 		}
-
-		// Sort the enum keys using a comparator
-		Collections.sort(data, Comparator.comparing(
-				GenericVO::getValue, (s1, s2) -> ((String)s1).compareTo((String)s2)));
-
+		
 		return data;
 	}
 	/**
@@ -544,6 +551,47 @@ public class SelectLookupAction extends SBActionAdapter {
 		return new ProductCategoryAction(getAttributes(), getDBConnection()).getGroupList();
 	}
 
+
+	/**
+	 * Return a list of ticket assignments for the given ticket
+	 * 
+	 * @param req
+	 * @return
+	 * @throws DatabaseException 
+	 */
+	public List<GenericVO> getTicketAssignments(ActionRequest req) throws DatabaseException {
+		String ticketId = req.getParameter("ticketId");
+		List<TicketAssignmentVO> assignments = new TicketEditAction(getAttributes(), getDBConnection()).getAssignments(ticketId);
+
+		List<GenericVO> data = new ArrayList<>();
+		for (TicketAssignmentVO assignment : assignments) {
+			String assignmentName = assignment.getTypeCode() == TypeCode.CALLER ? assignment.getUser().getFirstName() + ' ' + assignment.getUser().getLastName() : assignment.getLocation().getLocationName();
+			data.add(new GenericVO(assignment.getTicketAssignmentId(), assignmentName));
+		}
+		
+		return data;
+	}
+	
+	
+	/**
+	 * Return a list of ticket schedule transfer types
+	 * 
+	 * @param req
+	 * @return
+	 */
+	public List<GenericVO> getScheduleTransferTypes(ActionRequest req) {
+		UserVO user = (UserVO) getAdminUser(req).getUserExtendedInfo();
+		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
+		Locale locale = StringUtil.isEmpty(user.getLocale()) ? site.getLocale() : new Locale(user.getLocale());
+		ResourceBundle bundle = ResourceBundle.getBundle(WSLAConstants.RESOURCE_BUNDLE, locale); 
+		
+		List<GenericVO> data = new ArrayList<>();
+		for (TicketScheduleVO.TypeCode type : TicketScheduleVO.TypeCode.values()) {
+			data.add(new GenericVO(type.name(), bundle.getString("wsla.ticket.schedule." + type.name())));
+		}
+		
+		return data;
+	}
 
 	/**
 	 * Return a list of provider locations who have inventory (records).
