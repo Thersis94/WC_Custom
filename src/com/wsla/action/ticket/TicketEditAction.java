@@ -38,6 +38,7 @@ import com.wsla.data.ticket.TicketAttributeVO;
 import com.wsla.data.ticket.TicketCommentVO;
 import com.wsla.data.ticket.TicketDataVO;
 import com.wsla.data.ticket.TicketLedgerVO;
+import com.wsla.data.ticket.TicketScheduleVO;
 import com.wsla.data.ticket.TicketVO;
 import com.wsla.data.ticket.UserVO;
 
@@ -68,6 +69,11 @@ public class TicketEditAction extends SBActionAdapter {
 	public static final String TICKET_ID = "ticketId";
 	
 	/**
+	 * key for the value of ticket schedule id
+	 */
+	public static final String REQ_TICKET_SCHEDULE_ID = "ticketScheduleId";
+	
+	/**
 	 * 
 	 */
 	public TicketEditAction() {
@@ -92,6 +98,17 @@ public class TicketEditAction extends SBActionAdapter {
 		this.attributes = attributes;
 	}
 
+	/**
+	 * Overloaded constructor used for calling between actions.
+	 * @param attrs
+	 * @param conn
+	 */
+	public TicketEditAction(Map<String, Object> attrs, SMTDBConnection conn) {
+		this();
+		this.setAttributes(attrs);
+		this.setDBConnection(conn);
+	}
+
 	/*
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.action.ActionRequest)
@@ -106,6 +123,8 @@ public class TicketEditAction extends SBActionAdapter {
 			} else if (json && req.hasParameter("comment")) {
 				boolean isActivity = req.getBooleanParameter("activity");
 				putModuleData(getComments(req.getParameter(TICKET_ID), req.getBooleanParameter("isEndUser"), isActivity));
+			} else if (json && req.hasParameter("schedule")) {
+				putModuleData(getSchedule(req.getParameter(TICKET_ID), req.getParameter(REQ_TICKET_SCHEDULE_ID)));
 			} else if (json && req.hasParameter("assets")) {
 				putModuleData(getExtendedData(req.getParameter(TICKET_ID), req.getParameter("groupCode")));
 			} else {
@@ -204,6 +223,10 @@ public class TicketEditAction extends SBActionAdapter {
 		// Get the assignments
 		ticket.setAssignments(getAssignments(ticket.getTicketId()));
 		
+		// Get the schedule
+		List<TicketScheduleVO> schedules = getSchedule(ticket.getTicketId(), null);
+		ticket.addSchedules(schedules);
+		populateScheduleAssignments(schedules, ticket.getAssignments());
 		
 		return ticket;
 	}
@@ -268,18 +291,29 @@ public class TicketEditAction extends SBActionAdapter {
 	 * Gets the ticket assignments
 	 * @param ticketId
 	 * @return
+	 * @throws DatabaseException 
 	 */
-	public List<TicketAssignmentVO> getAssignments(String ticketId) {
+	public List<TicketAssignmentVO> getAssignments(String ticketId) throws DatabaseException {
 		StringBuilder sql = new StringBuilder(256);
-		
 		sql.append(DBUtil.SELECT_FROM_STAR).append(getCustomSchema());
 		sql.append("wsla_ticket_assignment a ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(getCustomSchema());
-		sql.append("wsla_provider_location b on a.location_id = b.location_id ");
+		sql.append("wsla_user b on a.user_id = b.user_id ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(getCustomSchema());
+		sql.append("wsla_provider_location c on a.location_id = c.location_id ");
 		sql.append("where a.ticket_id = ? ");
+		log.debug(sql);
 		
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
-		return db.executeSelect(sql.toString(), Arrays.asList(ticketId), new TicketAssignmentVO());
+		List<TicketAssignmentVO> data = db.executeSelect(sql.toString(), Arrays.asList(ticketId), new TicketAssignmentVO());
+		
+		for (TicketAssignmentVO assignment : data) {
+			if (!StringUtil.isEmpty(assignment.getUserId())) {
+				assignment.getUser().setProfile(getProfile(assignment.getUser().getProfileId()));
+			}
+		}
+		
+		return data;
 	}
 	
 	/**
@@ -347,6 +381,53 @@ public class TicketEditAction extends SBActionAdapter {
 		return dvo.getDefectName();
 	}
 	
+	/**
+	 * Gets the schedule data for an entire ticket or an individual record
+	 * 
+	 * @param ticketId
+	 * @param ticketScheduleId
+	 * @return
+	 */
+	public List<TicketScheduleVO> getSchedule(String ticketId, String ticketScheduleId) {
+		StringBuilder sql = new StringBuilder(256);
+		sql.append(DBUtil.SELECT_FROM_STAR).append(getCustomSchema());
+		sql.append("wsla_ticket_schedule a ");
+		
+		List<Object> params = new ArrayList<>();
+		if (!StringUtil.isEmpty(ticketId)) {
+			sql.append("where a.ticket_id = ? ");
+			params.add(ticketId);
+		} else if (!StringUtil.isEmpty(ticketScheduleId)) {
+			sql.append("where a.ticket_schedule_id = ? ");
+			params.add(ticketScheduleId);
+		}
+		
+		sql.append("order by a.create_dt ");
+		
+		log.debug(sql);
+		
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		return db.executeSelect(sql.toString(), params, new TicketScheduleVO());
+	}
+	
+	/**
+	 * Adds assignment addresses/data from a ticket into the schedule data 
+	 * 
+	 * @param schedules
+	 * @param assignments
+	 */
+	public void populateScheduleAssignments (List<TicketScheduleVO> schedules, List<TicketAssignmentVO> assignments) {
+		for (TicketScheduleVO schedule : schedules) {
+			for (TicketAssignmentVO assignment : assignments) {
+				if (assignment.getTicketAssignmentId().equals(schedule.getCasLocationId())) {
+					schedule.setCasLocation(assignment);
+				} else if (assignment.getTicketAssignmentId().equals(schedule.getOwnerLocationId())) {
+					schedule.setOwnerLocation(assignment);
+				}
+			}
+		}
+	}
+
 	/**
 	 * 
 	 * @param ticketId
