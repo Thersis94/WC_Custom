@@ -10,6 +10,7 @@ import com.siliconmtn.data.parser.BeanDataVO;
 import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
+import com.siliconmtn.gis.GeocodeLocation;
 import com.wsla.data.provider.ProviderLocationVO;
 
 /****************************************************************************
@@ -81,6 +82,42 @@ public class TicketAssignmentVO extends BeanDataVO {
 		super(rs);
 	}
 
+	/**
+	 * Returns the location regardless of whether the assignment is a
+	 * user or a provider location.
+	 * 
+	 * @return
+	 */
+	public GeocodeLocation getAssignmentLocation() {
+		if (TypeCode.CALLER.equals(typeCode)) {
+			if (user == null || user.getProfile() == null) {
+				return null;
+			} else {
+				return user.getProfile().getLocation();
+			}
+		} else {
+			return location;
+		}
+	}
+	
+	/**
+	 * Returns a name regardless of whether the assignment is a
+	 * user or a provider location.
+	 * 
+	 * @return
+	 */
+	public String getAssignmentName() {
+		if (TypeCode.CALLER.equals(typeCode)) {
+			if (user == null) {
+				return null;
+			} else {
+				return user.getFirstName() + ' ' + user.getLastName();
+			}
+		} else {
+			return location.getLocationName();
+		}
+	}
+	
 	/**
 	 * @return the ticketAssignmentId
 	 */
