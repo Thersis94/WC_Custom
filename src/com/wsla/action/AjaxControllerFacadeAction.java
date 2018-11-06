@@ -25,6 +25,8 @@ import com.wsla.action.admin.ProductSetAction;
 import com.wsla.action.admin.ProductWarrantyAction;
 import com.wsla.action.admin.ProviderAction;
 import com.wsla.action.admin.ProviderLocationAction;
+import com.wsla.action.ticket.PartsAction;
+import com.wsla.action.ticket.ShipmentAction;
 import com.wsla.action.ticket.TicketAttributeAction;
 import com.wsla.action.ticket.TicketEditAction;
 import com.wsla.action.ticket.TicketLedgerAction;
@@ -102,6 +104,10 @@ public class AjaxControllerFacadeAction extends FacadeActionAdapter {
 		actionMap.put("inventory", InventoryAction.class);
 		actionMap.put("harvestApproval", HarvestApprovalAction.class);
 		actionMap.put("harvestParts", HarvestPartsAction.class);
+
+		//these are actually ticket actions - should be called through the ticket controller
+		actionMap.put("parts", PartsAction.class);
+		actionMap.put("shipment", ShipmentAction.class);
 	}
 
 	/*
@@ -124,7 +130,7 @@ public class AjaxControllerFacadeAction extends FacadeActionAdapter {
 		if (! req.hasParameter("json")) return;
 		loadActionByType(req.getParameter(SELECTOR_KEY, DEFAULT_TYPE)).retrieve(req);
 	}
-	
+
 	/*
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.action.ActionRequest)

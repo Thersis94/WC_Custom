@@ -172,7 +172,7 @@ public class TicketEditAction extends SBActionAdapter {
 	 * @return
 	 * @throws SQLException
 	 */
-	public TicketVO getCompleteTicket(String ticketIdText) throws SQLException, DatabaseException  {
+	public TicketVO getCompleteTicket(String ticketIdText) throws DatabaseException  {
 		StringBuilder sql = new StringBuilder(256);
 		sql.append(DBUtil.SELECT_FROM_STAR).append(getCustomSchema());
 		sql.append("wsla_ticket a ");

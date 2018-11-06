@@ -30,6 +30,7 @@ import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
+import com.wsla.action.admin.HarvestPartsAction;
 import com.wsla.action.admin.InventoryAction;
 
 //WSLA Libs
@@ -44,6 +45,7 @@ import com.wsla.data.product.ProductVO;
 import com.wsla.data.product.WarrantyType;
 import com.wsla.data.provider.ProviderLocationVO;
 import com.wsla.data.provider.ProviderType;
+import com.wsla.data.ticket.ProductHarvestVO;
 import com.wsla.data.ticket.StatusCode;
 import com.wsla.data.ticket.UserVO;
 
@@ -94,6 +96,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		keyMap.put("prefix", new GenericVO("getPrefix", Boolean.FALSE));
 		keyMap.put("defect", new GenericVO("getDefects", Boolean.TRUE));
 		keyMap.put("product", new GenericVO("getProducts", Boolean.TRUE));
+		keyMap.put("productSetParts", new GenericVO("getProductSetParts", Boolean.TRUE));
 		keyMap.put("warranty", new GenericVO("getWarrantyList", Boolean.TRUE));
 		keyMap.put("warrantyType", new GenericVO("getWarrantyTypeList", Boolean.FALSE));
 		keyMap.put("category", new GenericVO("getProductCategories", Boolean.TRUE));
@@ -171,7 +174,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		return db.executeSelect(sql.toString(), null, new GenericVO());
 
 	}
-	
+
 	/**
 	 * 
 	 * @param req
@@ -182,12 +185,12 @@ public class SelectLookupAction extends SBActionAdapter {
 		StringBuilder sql = new StringBuilder(128);
 		sql.append("select attribute_cd as key, attribute_nm as value from ");
 		sql.append(getCustomSchema()).append("wsla_ticket_attribute where 1=1 ");
-		
+
 		if (req.hasParameter("groupCode")) {
 			sql.append("and attribute_group_cd = ? ");
 			vals.add(req.getParameter("groupCode"));
 		}
-		
+
 		sql.append("order by attribute_nm");
 
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
@@ -319,7 +322,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		return db.executeSelect(sql.toString(), vals, new GenericVO());
 	}
-	
+
 	/**
 	 * Gets the list of the closest cas
 	 * @param req
@@ -329,11 +332,11 @@ public class SelectLookupAction extends SBActionAdapter {
 		String ticketId = req.getParameter("ticketId");
 		log.info(getAdminUser(req));
 		UserVO user = (UserVO)getAdminUser(req).getUserExtendedInfo();
-		
+
 		CASSelectionAction csa = new CASSelectionAction(getDBConnection(), attributes);
 		return csa.getUserSelectionList(ticketId, user.getLocale());
 	}
-	
+
 	/**
 	 * Returns a list of matching provider locations for auto-complete
 	 * @param req
@@ -342,7 +345,7 @@ public class SelectLookupAction extends SBActionAdapter {
 	public List<GenericVO> getAcCas(ActionRequest req) {
 		StringBuilder term = new StringBuilder(16);
 		term.append("%").append(StringUtil.checkVal(req.getParameter("search")).toLowerCase()).append("%");
-		
+
 		StringBuilder sql = new StringBuilder(512);
 		sql.append("select location_id as key, coalesce(provider_nm, '') || ' - ' ");
 		sql.append("|| coalesce(location_nm, '') || ' (' || coalesce(store_no, '') || ')  ' ");
@@ -354,13 +357,13 @@ public class SelectLookupAction extends SBActionAdapter {
 		sql.append("and (lower(provider_nm) like ? or lower(location_nm) like ? ");
 		sql.append("or lower(city_nm) like ? or store_no like ?) ");
 		sql.append("order by provider_nm");
-		
+
 		List<Object> vals = new ArrayList<>();
 		vals.add(term);
 		vals.add(term);
 		vals.add(term);
 		vals.add(term);
-		
+
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		return db.executeSelect(sql.toString(), vals, new GenericVO());
 	}
@@ -389,7 +392,7 @@ public class SelectLookupAction extends SBActionAdapter {
 	 */
 	public List<GenericVO> getLocales() {
 		List<GenericVO> data = new ArrayList<>(8);
-		
+
 		for (WSLALocales val : WSLALocales.values()) {
 			data.add(new GenericVO(val, val.getDesc()));
 		}
@@ -466,6 +469,25 @@ public class SelectLookupAction extends SBActionAdapter {
 		return data;
 	}
 
+	/**
+	 * Returns a list of products that are part of the set matching the passed serial#
+	 * @return
+	 */
+	public List<GenericVO> getProductSetParts(ActionRequest req) {
+		HarvestPartsAction hpa =  new HarvestPartsAction(getAttributes(), getDBConnection());
+		BSTableControlVO bst = new BSTableControlVO(req, ProductHarvestVO.class);
+		bst.setLimit(1000);
+		bst.setOffset(0);
+		GridDataVO<ProductHarvestVO> products = hpa.loadBOM(req.getParameter("productSerialId"), bst);
+
+		List<GenericVO> data = new ArrayList<>(products.getTotal());
+		for (ProductVO product : products.getRowData()) {
+			data.add(new GenericVO(product.getProductId(), product.getProductName()	));
+		}
+
+		return data;
+	}
+
 
 	/**
 	 * Returns a list of warranties in the DB
@@ -531,9 +553,10 @@ public class SelectLookupAction extends SBActionAdapter {
 	 */
 	public List<GenericVO> getInventorySuppliers(ActionRequest req) {
 		String partId = req.getParameter(REQ_PRODUCT_ID, req.getParameter("custProductId"));
-		return new InventoryAction(getAttributes(), getDBConnection()).listInvetorySuppliers(partId);
+		Integer min = req.getIntegerParameter("minInventory"); //the minimum inventory to be on hand in order to match
+		return new InventoryAction(getAttributes(), getDBConnection()).listInvetorySuppliers(partId, min);
 	}
-	
+
 	/**
 	 * Gets a list of email campaigns utilized for notifications
 	 * @param req
@@ -546,7 +569,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		sql.append("from email_campaign a ");
 		sql.append("inner join email_campaign_instance b on a.email_campaign_id = b.email_campaign_id ");
 		sql.append("where organization_id = ? and slug_txt like 'PORTAL_%' ");
-		
+
 		DBProcessor db = new DBProcessor(getDBConnection());
 		return db.executeSelect(sql.toString(), Arrays.asList(site.getOrganizationId()), new GenericVO());
 	}
