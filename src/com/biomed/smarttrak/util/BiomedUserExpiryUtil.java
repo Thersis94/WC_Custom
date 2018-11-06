@@ -61,6 +61,7 @@ public class BiomedUserExpiryUtil extends CommandLineUtil {
 
 		try(PreparedStatement ps = dbConn.prepareStatement(getUserSql())) {
 			ps.setInt(1, 0);
+			ps.setString(2, "T");
 			ResultSet rs = ps.executeQuery();
 
 			while(rs.next()) {
@@ -81,7 +82,8 @@ public class BiomedUserExpiryUtil extends CommandLineUtil {
 		sql.append(DBUtil.SELECT_CLAUSE).append("user_id ");
 		sql.append(DBUtil.FROM_CLAUSE).append(props.get(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("biomedgps_user ").append(DBUtil.WHERE_CLAUSE);
-		sql.append("expiration_dt < current_date and active_flg != ?");
+		sql.append("expiration_dt < current_date and active_flg != ? ");
+		sql.append("and status_cd = ?");
 
 		log.info(sql.toString());
 		return sql.toString();
