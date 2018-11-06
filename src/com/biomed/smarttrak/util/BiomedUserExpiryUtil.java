@@ -48,8 +48,11 @@ public class BiomedUserExpiryUtil extends CommandLineUtil {
 		log.info("Loading Users");
 		List<String> userIds = loadActiveExpiredUsers();
 		log.info(String.format("Loaded %d Users", userIds.size()));
-		if(!userIds.isEmpty())
+		if(!userIds.isEmpty()) {
 			updateExpiredUser(userIds);
+		} else {
+			log.info("No Users to Deactivate.  Terminating.");
+		}
 	}
 
 	/**
@@ -85,7 +88,7 @@ public class BiomedUserExpiryUtil extends CommandLineUtil {
 		sql.append("expiration_dt < current_date and active_flg != ? ");
 		sql.append("and status_cd = ?");
 
-		log.info(sql.toString());
+		log.debug(sql.toString());
 		return sql.toString();
 	}
 
@@ -103,6 +106,8 @@ public class BiomedUserExpiryUtil extends CommandLineUtil {
 				ps.setString(i++, userId);
 			}
 			ps.executeUpdate();
+
+			log.info(String.format("Deactivated %d Users", userIds.size()));
 		} catch (SQLException e) {
 			log.error("Error Processing Code", e);
 		}
@@ -120,7 +125,7 @@ public class BiomedUserExpiryUtil extends CommandLineUtil {
 		DBUtil.preparedStatmentQuestion(userCnt, sql);
 		sql.append(")");
 
-		log.info(sql.toString());
+		log.debug(sql.toString());
 		return sql.toString();
 	}
 
