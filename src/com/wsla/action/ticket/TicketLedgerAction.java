@@ -3,6 +3,7 @@ package com.wsla.action.ticket;
 // JDK 1.8.x
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
@@ -10,6 +11,7 @@ import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
+import com.siliconmtn.db.pool.SMTDBConnection;
 // WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.wsla.data.ticket.TicketLedgerVO;
@@ -45,6 +47,17 @@ public class TicketLedgerAction extends SBActionAdapter {
 		super(actionInit);
 	}
 
+	/**
+	 * 
+	 * @param dbConn
+	 * @param attributes
+	 */
+	public TicketLedgerAction(SMTDBConnection dbConn, Map<String, Object> attributes) {
+		super();
+		this.dbConn = dbConn;
+		this.attributes = attributes;
+	}
+	
 	/*
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.action.ActionRequest)
