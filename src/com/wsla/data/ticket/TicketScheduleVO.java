@@ -6,10 +6,10 @@ import java.util.Date;
 
 // SMT Base Libs
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.data.parser.BeanDataVO;
 import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
-import com.wsla.data.provider.ProviderLocationVO;
 
 /****************************************************************************
  * <b>Title</b>: TicketScheduleVO.java
@@ -24,7 +24,7 @@ import com.wsla.data.provider.ProviderLocationVO;
  * @updates:
  ****************************************************************************/
 @Table(name="wsla_ticket_schedule")
-public class TicketScheduleVO extends ProviderLocationVO {
+public class TicketScheduleVO extends BeanDataVO {
 	
 	/**
 	 * 
@@ -57,8 +57,8 @@ public class TicketScheduleVO extends ProviderLocationVO {
 	private Date completeDate;
 	
 	// Bean Sub-Elements
-	private TicketAssignmentVO casLocation;
-	private TicketAssignmentVO ownerLocation;
+	private CASTicketAssignmentVO casLocation;
+	private OwnerTicketAssignmentVO ownerLocation;
 	private TicketLedgerVO ledger;
 
 	/**
@@ -252,14 +252,14 @@ public class TicketScheduleVO extends ProviderLocationVO {
 	 */
 	@Column(name="create_dt", isInsertOnly=true, isAutoGen=true)
 	public Date getCreateDate() {
-		return super.getCreateDate();
+		return createDate;
 	}
 
 	/**
 	 * @param createDate the createDate to set
 	 */
 	public void setCreateDate(Date createDate) {
-		super.setCreateDate(createDate);
+		this.createDate = createDate;
 	}
 
 	/**
@@ -267,14 +267,14 @@ public class TicketScheduleVO extends ProviderLocationVO {
 	 */
 	@Column(name="update_dt", isUpdateOnly=true, isAutoGen=true)
 	public Date getUpdateDate() {
-		return super.getUpdateDate();
+		return updateDate;
 	}
 
 	/**
 	 * @param updateDate the updateDate to set
 	 */
 	public void setUpdateDate(Date updateDate) {
-		super.setUpdateDate(updateDate);
+		this.updateDate = updateDate;
 	}
 
 	/**
@@ -318,8 +318,8 @@ public class TicketScheduleVO extends ProviderLocationVO {
 	 * @param casLocation the casLocation to set
 	 */
 	@BeanSubElement
-	public void setCasLocation(TicketAssignmentVO casLocation) {
-		this.casLocation = casLocation;
+	public void setCasLocation(CASTicketAssignmentVO casLocation) {
+		this.casLocation = casLocation ;
 	}
 
 	/**
@@ -333,8 +333,8 @@ public class TicketScheduleVO extends ProviderLocationVO {
 	 * @param ownerLocation the ownerLocation to set
 	 */
 	@BeanSubElement
-	public void setOwnerLocation(TicketAssignmentVO ownerLocation) {
-		this.ownerLocation = ownerLocation;
+	public void setOwnerLocation(OwnerTicketAssignmentVO ownerLocation) {
+		this.ownerLocation =  ownerLocation;
 	}
 
 	/**

@@ -45,14 +45,12 @@ import com.wsla.action.admin.WarrantyAction;
 import com.wsla.action.admin.WarrantyAction.ServiceTypeCode;
 import com.wsla.action.ticket.TicketEditAction;
 import com.wsla.action.ticket.CASSelectionAction;
-import com.wsla.action.ticket.TicketEditAction;
 import com.wsla.common.WSLAConstants;
 import com.wsla.common.WSLALocales;
 import com.wsla.data.product.ProductVO;
 import com.wsla.data.product.WarrantyType;
 import com.wsla.data.provider.ProviderLocationVO;
 import com.wsla.data.provider.ProviderType;
-import com.wsla.data.ticket.StatusCode;
 import com.wsla.data.ticket.TicketAssignmentVO;
 import com.wsla.data.ticket.TicketAssignmentVO.TypeCode;
 import com.wsla.data.ticket.TicketScheduleVO;
@@ -355,7 +353,7 @@ public class SelectLookupAction extends SBActionAdapter {
 	 * @return
 	 */
 	public List<GenericVO> getClosestCas(ActionRequest req) {
-		String providerId = StringUtil.checkVal(req.getParameter("providerId"));
+		
 		String ticketId = req.getParameter("ticketId");
 		log.info(getAdminUser(req));
 		UserVO user = (UserVO)getAdminUser(req).getUserExtendedInfo();
@@ -370,6 +368,7 @@ public class SelectLookupAction extends SBActionAdapter {
 	 * @return
 	 */
 	public List<GenericVO> getAcCas(ActionRequest req) {
+		String providerId = req.getParameter("providerId");
 		StringBuilder term = new StringBuilder(16);
 		term.append("%").append(StringUtil.checkVal(req.getParameter("search")).toLowerCase()).append("%");
 		
@@ -391,6 +390,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		vals.add(term);
 		vals.add(term);
 		vals.add(term);
+		
 		log.debug("UU provider Id " + providerId);
 		if (!StringUtil.isEmpty(req.getParameter("providerId"))) {
 			log.debug("UUU provider Id " + providerId);
