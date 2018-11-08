@@ -3,6 +3,8 @@ package com.wsla.action;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Locale;
+import java.util.ResourceBundle;
 
 // SMT Base Libs
 import com.siliconmtn.action.ActionInitVO;
@@ -20,9 +22,11 @@ import com.smt.sitebuilder.action.user.ProfileManager;
 import com.smt.sitebuilder.action.user.ProfileManagerFactory;
 import com.smt.sitebuilder.action.user.ProfileRoleManager;
 import com.smt.sitebuilder.common.SiteVO;
+import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.security.SBUserRole;
 import com.smt.sitebuilder.security.SecurityController;
 import com.smt.sitebuilder.security.UserLogin;
+import com.wsla.common.WSLAConstants;
 import com.wsla.data.ticket.StatusCode;
 import com.wsla.data.ticket.TicketLedgerVO;
 import com.wsla.data.ticket.UserVO;
@@ -235,5 +239,19 @@ public class BasePortalAction extends SBActionAdapter {
 
 		new ProfileRoleManager().addRole(role, getDBConnection());
 		return role;
+	}
+	
+	/**
+	 * Returns the resource bundle for the logged in user
+	 * 
+	 * @param req
+	 * @return
+	 */
+	public ResourceBundle getResourceBundle(ActionRequest req) {
+		UserVO user = (UserVO) getAdminUser(req).getUserExtendedInfo();
+		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
+		Locale locale = StringUtil.isEmpty(user.getLocale()) ? site.getLocale() : new Locale(user.getLocale());
+		
+		return ResourceBundle.getBundle(WSLAConstants.RESOURCE_BUNDLE, locale); 
 	}
 }
