@@ -1,5 +1,7 @@
 package com.wsla.action.admin;
 
+import java.util.ArrayList;
+import java.util.List;
 // JDK 1.8.x
 import java.util.Map;
 
@@ -7,10 +9,15 @@ import java.util.Map;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.db.DBUtil;
+import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.pool.SMTDBConnection;
-
+import com.siliconmtn.db.util.DatabaseException;
+import com.siliconmtn.exception.InvalidDataException;
+import com.siliconmtn.util.StringUtil;
 // WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
+import com.wsla.data.product.WarrantyBillableVO;
 
 /****************************************************************************
  * <b>Title</b>: WarrantyBillableAction.java
@@ -27,6 +34,11 @@ import com.smt.sitebuilder.action.SBActionAdapter;
  ****************************************************************************/
 public class WarrantyBillableAction extends SBActionAdapter {
 
+	/**
+	 * Key for the Ajax Controller to utilize when calling this class
+	 */
+	public static final String AJAX_KEY = "warrantyBillable";
+	
 	/**
 	 * 
 	 */
@@ -59,7 +71,33 @@ public class WarrantyBillableAction extends SBActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
+		setModuleData(getBillableActivities(req.getParameter("warrantyId")));
+	}
+	
+	/**
+	 * Gets the list of billable activities and their costs for a given warranty
+	 * @param warrantyId
+	 * @return
+	 */
+	public List<WarrantyBillableVO> getBillableActivities(String warrantyId) {
+		if (StringUtil.isEmpty(warrantyId)) return new ArrayList<>();
 		
+		List<Object> vals = new ArrayList<>();
+		vals.add(warrantyId);
+		
+		StringBuilder sql = new StringBuilder(336);
+		sql.append("select a.*, b.cost_no, warranty_id, ");
+		sql.append("coalesce(warranty_billable_id, replace(newid(), '-', '')) as warranty_billable_id ");
+		sql.append("from ").append(getCustomSchema()).append("wsla_billable_activity a ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(getCustomSchema());
+		sql.append("wsla_warranty_billable_xr b "); 
+		sql.append("on a.billable_activity_cd = b.billable_activity_cd and warranty_id = ? ");
+		sql.append("where active_flg = 1 ");
+		sql.append("order by activity_nm ");
+		log.debug(sql.length() + "|" + sql);
+		
+		DBProcessor db = new DBProcessor(getDBConnection());
+		return db.executeSelect(sql.toString(), vals, new WarrantyBillableVO());
 	}
 	
 	/*
@@ -69,6 +107,18 @@ public class WarrantyBillableAction extends SBActionAdapter {
 	@Override
 	public void build(ActionRequest req) throws ActionException {
 		
+		WarrantyBillableVO wbvo = new WarrantyBillableVO(req);
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		
+		// Delete the record and then insert.  This is easier than determining the 
+		// If the record exists
+		try {
+			delete(req);
+			db.insert(wbvo);
+		} catch (Exception e) {
+			log.error("Unable to process warranty billiable update", e);
+			setModuleData(wbvo, 0, e.getLocalizedMessage());
+		}
 	}
 	
 	/*
@@ -77,6 +127,14 @@ public class WarrantyBillableAction extends SBActionAdapter {
 	 */
 	@Override
 	public void delete(ActionRequest req) throws ActionException {
+		WarrantyBillableVO wbvo = new WarrantyBillableVO(req);
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		
+		try {
+			db.delete(wbvo);
+		} catch (InvalidDataException | DatabaseException e) {
+			throw new ActionException("Unable to delete row", e);
+		}
 		
 	}
 }

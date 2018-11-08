@@ -104,7 +104,7 @@ public class BillableActivityVO extends BeanDataVO {
 	/**
 	 * @return the createDate
 	 */
-	@Column(name="create_dt", isInsertOnly=true)
+	@Column(name="create_dt", isInsertOnly=true, isAutoGen=true)
 	public Date getCreateDate() {
 		return createDate;
 	}

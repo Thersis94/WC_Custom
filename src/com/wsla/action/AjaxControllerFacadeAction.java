@@ -34,6 +34,7 @@ import com.wsla.action.ticket.TicketOverviewAction;
 import com.wsla.action.admin.ProviderLocationUserAction;
 import com.wsla.action.admin.StatusCodeAction;
 import com.wsla.action.admin.WarrantyAction;
+import com.wsla.action.admin.WarrantyBillableAction;
 
 /****************************************************************************
  * <b>Title</b>: AjaxControllerFacadeAction.java
@@ -94,6 +95,7 @@ public class AjaxControllerFacadeAction extends FacadeActionAdapter {
 		actionMap.put(DefectAction.DEFECTS_TYPE, DefectAction.class);
 		actionMap.put(DiagnosticAction.DIAGNOSTIC_TYPE , DiagnosticAction.class);
 		actionMap.put(BillableActivityAction.AJAX_KEY , BillableActivityAction.class);
+		actionMap.put(WarrantyBillableAction.AJAX_KEY , WarrantyBillableAction.class);
 		actionMap.put("productMaster", ProductMasterAction.class);
 		actionMap.put("productSet", ProductSetAction.class);
 		actionMap.put("productSerial", ProductSerialAction.class);
