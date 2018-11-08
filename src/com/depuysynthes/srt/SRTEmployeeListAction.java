@@ -54,7 +54,7 @@ public class SRTEmployeeListAction extends SimpleActionAdapter {
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		EmployeeType type = EnumUtil.safeValueOf(EmployeeType.class, req.getParameter("employeeType"));
-		String opCoId = SRTUtil.getOpCO(req);
+		String opCoId = req.hasParameter("opCoId") ? req.getParameter("opCoId") : SRTUtil.getOpCO(req);
 		if(type != null) {
 			List<ListDataVO> employees = loadEmployees(type, opCoId);
 			List<GenericVO> data = employees

@@ -78,6 +78,7 @@ public class SRTProjectMilestoneVO extends MilestoneVO {
 		setProjectMilestoneXRId(util.getStringVal("PROJ_MILESTONE_XR_ID", rs));
 		setMilestoneDt(util.getDateVal("MILESTONE_DT", rs));
 		setCampaignInstanceId(util.getStringVal("CAMPAIGN_INSTANCE_ID", rs));
+		setActiveFlg(util.getIntegerVal("ACTIVE_FLG", rs));
 	}
 
 	/**

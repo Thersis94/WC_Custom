@@ -66,9 +66,9 @@ public abstract class AbstractSmarttrakRSSFeed {
 	protected UUIDGenerator uuid;
 	protected String feedName;
 
+	private String  storeArticleQuery;
 	private Map<String, Long> accessTimes;
 	private static final long LAG_TIME_MS = 2000;
-
 
 	/**
 	 * @param args
@@ -84,8 +84,18 @@ public abstract class AbstractSmarttrakRSSFeed {
 		groups = new ArrayList<>();
 		uuid = new UUIDGenerator();
 		accessTimes = new HashMap<>(5000);
+		prepQueries();
 	}
 
+	private void prepQueries() {
+		StringBuilder sql = new StringBuilder(250);
+		sql.append("insert into ").append(customDb);
+		sql.append("biomedgps_rss_filtered_article (rss_article_filter_id, ");
+		sql.append("feed_group_id, article_status_cd, rss_article_id, filter_title_txt, ");
+		sql.append("filter_article_txt, create_dt, match_no) values (?,?,?,?,?,?,?,?)");
+
+		storeArticleQuery = sql.toString();
+	}
 	/**
 	 * Abstract run method to be implemented by concrete subclasses.
 	 */
@@ -161,32 +171,32 @@ public abstract class AbstractSmarttrakRSSFeed {
 	 * @param article
 	 */
 	protected void storeArticle(RSSArticleVO article) {
-		StringBuilder sql = new StringBuilder(200);
-		sql.append("insert into ").append(customDb);
-		sql.append("biomedgps_rss_filtered_article (rss_article_filter_id, ");
-		sql.append("feed_group_id, article_status_cd, rss_article_id, filter_title_txt, ");
-		sql.append("filter_article_txt, create_dt, match_no) values (?,?,?,?,?,?,?,?)");
-
 		long start = System.currentTimeMillis();
-		DBProcessor dbp = new DBProcessor(dbConn, customDb);
 		try {
-			//save the article itself
+			/*
+			 * This check is verifying the article is unique in the system.
+			 * Currently is preventing duplicates from aggregate feeds showing up
+			 * as newer articles.
+			 */
 			if (!articleExists(article)) {
+				DBProcessor dbp = new DBProcessor(dbConn, customDb);
+
 				dbp.insert(article);
 				log.debug("created rss_article " + article.getArticleGuid());
+
+				// Save a list of filtered matches tied to the article
+				// only if the article is new. If we already saved this article
+				// it is not breaking news and doesn't to be filtered and put into feeds.
+				dbp.executeBatch(storeArticleQuery, buildArticleFilterVals(article));
+				log.info("write took " + (System.currentTimeMillis()-start) + "ms");
+
 			} else {
 				log.info("Article Already Exists: " + article.getRssArticleId());
 			}
 
-			// Save a list of filtered matches tied to the article
-			// only if the article is new. If we already saved this article
-			// it is not breaking news and doesn't to be filtered and put into feeds.
-			dbp.executeBatch(sql.toString(), buildArticleFilterVals(article));
-
 		} catch (InvalidDataException | DatabaseException e) {
 			log.error("Error Saving Articles", e);
 		}
-		log.info("write took " + (System.currentTimeMillis()-start) + "ms");
 	}
 
 

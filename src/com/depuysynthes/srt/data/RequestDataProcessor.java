@@ -1,6 +1,7 @@
 package com.depuysynthes.srt.data;
 
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -8,6 +9,7 @@ import java.util.Map;
 import com.depuysynthes.srt.SRTRequestAction;
 import com.depuysynthes.srt.util.SRTUtil;
 import com.depuysynthes.srt.vo.SRTFileVO;
+import com.depuysynthes.srt.vo.SRTNoteVO;
 import com.depuysynthes.srt.vo.SRTProjectVO;
 import com.depuysynthes.srt.vo.SRTRequestAddressVO;
 import com.depuysynthes.srt.vo.SRTRequestVO;
@@ -54,7 +56,7 @@ public class RequestDataProcessor extends AbstractDataProcessor {
 		ADDRESS_2("address2"), CITY("city"), STATE("state"),
 		ZIP("zipCode"), REQUEST_ADDRESS_ID("requestAddressId"), OP_CO_ID("opCoId"),
 		ATTACHMENT_1("attachment1"), ATTACHMENT_2("attachment2"),
-		ATTACHMENT_3("attachment3");
+		ATTACHMENT_3("attachment3"), SALES_ROSTER_ID("rosterId");
 
 		private String reqParam;
 		private RequestField(String reqParam) {
@@ -155,11 +157,21 @@ public class RequestDataProcessor extends AbstractDataProcessor {
 	 * @param request - The SRTRequestVO to be saved.
 	 * @param address - The SRTRequestAddressVO to be saved.
 	 * @param project - The SRTProjectVO to be saved.
+	 * @throws DatabaseException 
 	 */
-	public void saveRequestData(SRTRequestVO request, SRTRequestAddressVO address, SRTProjectVO project) {
-		DBProcessor dbp = new DBProcessor(dbConn, (String)attributes.get(Constants.CUSTOM_DB_SCHEMA));
+	public void saveRequestData(SRTRequestVO request, SRTRequestAddressVO address, SRTProjectVO project) throws DatabaseException {
+		boolean isAutoCommit = false;
 
+		//Wrap entire Data Process in a DB Transactions.
 		try {
+
+			//Store current Commit Status.
+			isAutoCommit = dbConn.getAutoCommit();
+
+			//Turn off Auto Commit
+			dbConn.setAutoCommit(false);
+
+			DBProcessor dbp = new DBProcessor(dbConn, (String)attributes.get(Constants.CUSTOM_DB_SCHEMA));
 
 			//Save the SRTRequestVO
 			dbp.save(request);
@@ -178,13 +190,45 @@ public class RequestDataProcessor extends AbstractDataProcessor {
 			if(project != null) {
 				project.setRequestId(request.getRequestId());
 				new ProjectDataProcessor(dbConn, attributes, req).saveProjectRecord(project);
+
+				buildNote(project);
 			}
 
 		} catch(Exception e) {
-			log.error("Could not save SRT Request", e);
+			log.error("Could not save SRT Project", e);
+			DBUtil.rollback(dbConn);
+			throw new DatabaseException("Error Saving SRT Request.", e);
+		} finally {
+
+			//If database was in autocommit mode originally, set it back.
+			if(isAutoCommit)
+				DBUtil.setAutoCommit(dbConn, isAutoCommit);
 		}
 	}
 
+
+	/**
+	 * Build a Note containing the Request Description to preserve Original
+	 * Requestors Description.
+	 * @param project
+	 * @throws com.siliconmtn.db.util.DatabaseException
+	 * @throws InvalidDataException
+	 */
+	private void buildNote(SRTProjectVO project) throws InvalidDataException, com.siliconmtn.db.util.DatabaseException {
+		//Build a Note off the Request.
+		SRTNoteVO note = new SRTNoteVO(req);
+		SRTRosterVO roster = SRTUtil.getRoster(req);
+
+		//Set RosterData
+		note.setRosterId(roster.getRosterId());
+		note.setFirstName(roster.getFirstName());
+		note.setLastName(roster.getLastName());
+		note.setCreateDt(Convert.getCurrentTimestamp());
+		note.setNoteTxt(project.getProjectDesc());
+
+		new DBProcessor(dbConn, (String)attributes.get(Constants.CUSTOM_DB_SCHEMA)).save(note);
+
+	}
 
 	/**
 	 * Build the Project Record for this request on inserts only.
@@ -197,10 +241,11 @@ public class RequestDataProcessor extends AbstractDataProcessor {
 		if(p.getProjectName().length() > 100) {
 			p.setProjectName(p.getProjectName().substring(0, 100) + "...");
 		}
+		p.setProjectDesc(req.getParameter(RequestField.DESCRIPTION.getReqParam()));
 		p.setProjectType("NEW");
 		p.setProjectStatus("UNASSIGNED");
 		p.setPriority("STANDARD");
-		p.setCreateDt(Convert.getCurrentTimestamp());
+		p.setCreateDt(Calendar.getInstance().getTime());
 
 		return p;
 	}
@@ -258,12 +303,12 @@ public class RequestDataProcessor extends AbstractDataProcessor {
 		//Prep Request Record Update Fields.
 		List<String> fields = new ArrayList<>();
 		fields.add("charge_to");
-		fields.add("request_desc");
 		fields.add("hospital_nm");
 		fields.add("surgeon_nm");
 		fields.add("reason_for_request");
 		fields.add("estimated_roi");
 		fields.add("qty_no");
+		fields.add("roster_id");
 
 		//Build Request Update Query
 		StringBuilder sql = new StringBuilder(300);
@@ -284,32 +329,13 @@ public class RequestDataProcessor extends AbstractDataProcessor {
 		//If we saved the Request, Process the Address.
 		if(resCnt > 0) {
 
-			//Prep Request Address Record Update Fields
-			List<String> fields2 = new ArrayList<>();
-			fields2.add("address_txt");
-			fields2.add("address2_txt");
-			fields2.add("city_nm");
-			fields2.add("state_cd");
-			fields2.add("zip_cd");
-
-			//Build Request Address Update Query.
-			StringBuilder sql2 = new StringBuilder(300);
-			cnt = 0;
-
-			sql2.append(DBUtil.UPDATE_CLAUSE).append(schema).append("DPY_SYN_SRT_REQUEST_ADDRESS set ");
-			for (String field : fields2) {
-				sql2.append(cnt++ > 0 ? ", " : "").append(field).append(" = ? ");
-			}
-			sql2.append(DBUtil.WHERE_CLAUSE).append("request_id = ?");
-			fields2.add("request_id");
-
 			//Save Request Address.
 			SRTRequestAddressVO reqAddrVO = new SRTRequestAddressVO(req);
 			DBProcessor dbp2 = new DBProcessor(dbConn, schema);
-			resCnt = dbp2.executeSqlUpdate(sql2.toString(), reqAddrVO, fields2);
-
-			//Check if we saved the Request Address.
-			if(resCnt == 0) {
+			try {
+				dbp2.save(reqAddrVO);
+			} catch (InvalidDataException e) {
+				log.error("Error Saving Address", e);
 				throw new com.siliconmtn.db.util.DatabaseException("Unable to save Request Address");
 			}
 		} else {
