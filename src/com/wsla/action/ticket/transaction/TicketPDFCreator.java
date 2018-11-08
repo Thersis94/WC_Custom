@@ -1,22 +1,23 @@
 package com.wsla.action.ticket.transaction;
 
-import java.io.File;
-
-import org.apache.commons.io.FileUtils;
-
-// JDK 1.8.x
+//JDK 1.8.x
+import java.util.ResourceBundle;
 
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.report.PDFGenerator;
-
+import com.smt.sitebuilder.action.AbstractSBReportVO;
 // WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
+import com.smt.sitebuilder.action.report.vo.DownloadReportVO;
+import com.smt.sitebuilder.common.constants.Constants;
 import com.wsla.action.ticket.TicketEditAction;
 import com.wsla.action.ticket.TicketLedgerAction;
+import com.wsla.common.WSLAConstants;
 import com.wsla.data.ticket.TicketVO;
+import com.wsla.data.ticket.UserVO;
 
 /****************************************************************************
  * <b>Title</b>: TicketPDFCreator.java
@@ -57,22 +58,45 @@ public class TicketPDFCreator extends SBActionAdapter {
 	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
-		log.info("Building PDF: " + req.getParameter("ticketIdText"));
+		// Determine path dynamically to the template file
 		String path = "/Users/james/Code/git/java/WebCrescendo/binary/service_order.ftl";
-		String pdfPath = "/Users/james/Code/git/java/WebCrescendo/binary/service_order.pdf";
+		
 		String ticketIdText = req.getParameter("ticketIdText");
 		TicketEditAction tea = new TicketEditAction(getDBConnection(), getAttributes());
 		TicketLedgerAction tla = new TicketLedgerAction(getDBConnection(), getAttributes());
+		
+		UserVO user = (UserVO) this.getAdminUser(req).getUserExtendedInfo();
+		ResourceBundle rb = ResourceBundle.getBundle(WSLAConstants.RESOURCE_BUNDLE, user.getUserLocale());
+		
 		try {
+			// Retrieve all of the ticket data
 			TicketVO ticket = tea.getCompleteTicket(ticketIdText);
 			ticket.setTimeline(tla.getLedgerForTicket(ticketIdText));
-			PDFGenerator pdf = new PDFGenerator(path, ticket);
-			byte[] pdfFile = pdf.generate();
-			FileUtils.writeByteArrayToFile(new File(pdfPath), pdfFile);
+			ticket.setDiagnosticRun(tea.getDiagnostics(ticket.getTicketId()));
 			
+			// Generate the pdf
+			PDFGenerator pdf = new PDFGenerator(path, ticket, rb);
+			byte[] pdfFile = pdf.generate();
+			getReportObj(ticket, pdfFile, req);
 		} catch (Exception e) {
-			log.info("Unable to retrieve ticket data", e);
+			log.error("Unable to retrieve ticket data", e);
 			setModuleData(null, 0, e.getLocalizedMessage());
 		}
+	}
+	
+	/**
+	 * Builds the WC Report Object to be streamed
+	 * @param ticket
+	 * @param pdf
+	 * @param req
+	 * @return
+	 */
+	public void getReportObj(TicketVO ticket, byte[] pdf, ActionRequest req) {
+		
+		AbstractSBReportVO report = new DownloadReportVO();
+		report.setFileName("so_" + ticket.getTicketIdText() + ".pdf");
+		report.setData(pdf);
+		req.setAttribute(Constants.BINARY_DOCUMENT_REDIR, Boolean.TRUE);
+		req.setAttribute(Constants.BINARY_DOCUMENT, report);
 	}
 }

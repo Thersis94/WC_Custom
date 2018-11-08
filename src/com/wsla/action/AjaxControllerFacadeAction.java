@@ -12,6 +12,7 @@ import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.AdminConstants;
 // WSLA Libs
 import com.wsla.action.admin.BatchImport;
+import com.wsla.action.admin.BillableActivityAction;
 import com.wsla.action.admin.DefectAction;
 import com.wsla.action.admin.DiagnosticAction;
 import com.wsla.action.admin.HarvestApprovalAction;
@@ -92,6 +93,7 @@ public class AjaxControllerFacadeAction extends FacadeActionAdapter {
 		actionMap.put(StatusCodeAction.AJAX_KEY, StatusCodeAction.class);
 		actionMap.put(DefectAction.DEFECTS_TYPE, DefectAction.class);
 		actionMap.put(DiagnosticAction.DIAGNOSTIC_TYPE , DiagnosticAction.class);
+		actionMap.put(BillableActivityAction.AJAX_KEY , BillableActivityAction.class);
 		actionMap.put("productMaster", ProductMasterAction.class);
 		actionMap.put("productSet", ProductSetAction.class);
 		actionMap.put("productSerial", ProductSerialAction.class);

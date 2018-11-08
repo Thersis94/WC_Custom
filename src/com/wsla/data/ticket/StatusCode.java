@@ -65,6 +65,7 @@ public enum StatusCode {
 	CLOSED ("Ticket Closed");
 	
 	public final String codeName;
+	public String getCodeName() { return codeName; }
 	StatusCode(String codeName) { this.codeName = codeName; }
 }
 
