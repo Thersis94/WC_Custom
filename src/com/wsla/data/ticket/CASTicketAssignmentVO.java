@@ -45,6 +45,8 @@ public class CASTicketAssignmentVO extends TicketAssignmentVO {
 		this.setlocationData(rs);
 	}
 
+
+
 	/**
 	 * @param rs
 	 * @throws SQLException 

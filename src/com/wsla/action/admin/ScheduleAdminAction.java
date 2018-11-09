@@ -2,7 +2,6 @@ package com.wsla.action.admin;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.SQLException;
 // JDK 1.8.x
 import java.util.Map;
 
@@ -13,16 +12,11 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.common.html.BSTableControlVO;
 import com.siliconmtn.db.orm.GridDataVO;
 import com.siliconmtn.db.pool.SMTDBConnection;
-import com.siliconmtn.security.EncryptionException;
-import com.siliconmtn.security.StringEncrypter;
 import com.siliconmtn.util.Convert;
 // WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
-import com.smt.sitebuilder.common.constants.Constants;
-import com.wsla.data.provider.ProviderLocationVO;
 import com.wsla.data.ticket.CASTicketAssignmentVO;
 import com.wsla.data.ticket.OwnerTicketAssignmentVO;
-import com.wsla.data.ticket.TicketAssignmentVO;
 // WSLA Libs
 import com.wsla.data.ticket.TicketScheduleVO;
 
@@ -74,7 +68,7 @@ public class ScheduleAdminAction extends SBActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		log.debug("$$$$$$$$$$$$$$$$ Schedule action retrieve");
+		log.debug("Schedule action retrieve");
 		
 		String providerId = req.getParameter("providerId");
 		boolean hasActiveFlag = req.hasParameter("activeFlag");
@@ -92,8 +86,7 @@ public class ScheduleAdminAction extends SBActionAdapter {
 	 * @return
 	 */
 	public GridDataVO<TicketScheduleVO> getSchedules(String providerId,  int activeFlag, boolean hasActiveFlag, BSTableControlVO bst) {
-		//TODO filter by CAS type?
-		String schema = getCustomSchema();
+
 		StringBuilder sql = new StringBuilder(780);
 		sql.append("select t.ticket_no,  ts.*, ");
 		sql.append("ov.ticket_assg_id as own_ticket_assg_id, ov.location_id as own_location_id, ov.location_id as own_user_id, ts.ticket_id as own_ticket_id, 1 as own_owner_flg, ov.assg_type_cd as own_assg_type_cd,  ");
@@ -109,7 +102,6 @@ public class ScheduleAdminAction extends SBActionAdapter {
 		GridDataVO<TicketScheduleVO> data  = new GridDataVO<>();
 		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			StringEncrypter se =  new StringEncrypter((String)getAttribute(Constants.ENCRYPT_KEY));
 
 			try (ResultSet rs = ps.executeQuery()) {
 				while (rs.next()) {
@@ -120,19 +112,11 @@ public class ScheduleAdminAction extends SBActionAdapter {
 					tso.setCasLocation(cta);
 					tso.setOwnerLocation(ota);
 						
-					log.debug("LLLL "+ota.getLocation());
 					data.getRowData().add(tso);
 				}
 			}
 		} catch (Exception e) {
 			log.error("could not get schedules or decrypt address ",e);
-		}
-		
-		
-		for (TicketScheduleVO d: data.getRowData()) {
-			log.debug("### loop " + d.getTicketNumber());
-			log.debug("#CC"+d.getCasLocation().getLocation());
-			log.debug("#OO"+d.getOwnerLocation().getLocation());
 		}
 
 		return data;

@@ -5,7 +5,6 @@ import java.sql.SQLException;
 import java.util.Date;
 
 import com.siliconmtn.action.ActionRequest;
-import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.Column;
 import com.wsla.data.provider.ProviderLocationVO;
 
@@ -45,6 +44,7 @@ public class OwnerTicketAssignmentVO extends TicketAssignmentVO {
 		super(rs);
 		this.setlocationData(rs);
 	}
+
 
 	/**
 	 * @param rs

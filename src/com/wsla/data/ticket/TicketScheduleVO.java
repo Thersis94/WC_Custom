@@ -57,8 +57,8 @@ public class TicketScheduleVO extends BeanDataVO {
 	private Date completeDate;
 	
 	// Bean Sub-Elements
-	private CASTicketAssignmentVO casLocation;
-	private OwnerTicketAssignmentVO ownerLocation;
+	private TicketAssignmentVO casLocation;
+	private TicketAssignmentVO ownerLocation;
 	private TicketLedgerVO ledger;
 
 	/**
@@ -318,7 +318,7 @@ public class TicketScheduleVO extends BeanDataVO {
 	 * @param casLocation the casLocation to set
 	 */
 	@BeanSubElement
-	public void setCasLocation(CASTicketAssignmentVO casLocation) {
+	public void setCasLocation(TicketAssignmentVO casLocation) {
 		this.casLocation = casLocation ;
 	}
 
@@ -333,7 +333,7 @@ public class TicketScheduleVO extends BeanDataVO {
 	 * @param ownerLocation the ownerLocation to set
 	 */
 	@BeanSubElement
-	public void setOwnerLocation(OwnerTicketAssignmentVO ownerLocation) {
+	public void setOwnerLocation(TicketAssignmentVO ownerLocation) {
 		this.ownerLocation =  ownerLocation;
 	}
 
