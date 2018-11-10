@@ -20,6 +20,7 @@ import com.ernieyu.feedparser.FeedParserFactory;
 import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.StringUtil;
 
 /****************************************************************************
  * <b>Title:</b> RSSDataFeed.java
@@ -163,10 +164,19 @@ public class RSSDataFeed extends AbstractSmarttrakRSSFeed {
 		long start = System.currentTimeMillis();
 		for (RSSArticleVO article : articles) {
 			for (RSSFeedGroupVO fg : f.getGroups()) {
-				if (!articleExists(article, fg.getFeedGroupId(), existsIds)) {
+
+				//Only process new Articles that aren't in system.  If an articleIs is present, this article exists.
+				if (!articleExists(article, fg.getFeedGroupId(), existsIds) && StringUtil.isEmpty(article.getRssArticleId())) {
 					applyFilter(article, fg.getFeedGroupId(), Convert.formatBoolean(f.getUseFiltersNo()));
+				} else {
+
+					//Flush out the filtered articles and stop processing on it.
+					log.info("Article Already Processed.");
+					article.flushFilteredText();
+					break;
 				}
 			}
+
 			if (!article.getFilterVOs().isEmpty()) {
 				//Save Articles.
 				storeArticle(article);

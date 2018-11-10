@@ -23,6 +23,7 @@ import com.siliconmtn.data.report.GenericReport;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.orm.GridDataVO;
+import com.siliconmtn.db.orm.SQLTotalVO;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.security.StringEncrypter;
@@ -68,7 +69,26 @@ public class SRTRosterAction extends SimpleActionAdapter {
 	public static final String REQ_ROSTER_ID = "rosterId";
 	public static final String USER_TABLE_NAME = "userTableName";
 	public static final String DB_ROSTER_ID = "ROSTER_ID";
+	public enum SRTRole {SRT_SALES("37488a2f8b837b6fc0a801c439e530f1", new String [] {"8"}),
+						SRT_VIEW_ONLY("b8263da88ba14c28c0a801c496dbff24", new String [] {"6"}),
+						SRT_EMPLOYEE("10", new String [] {"2","3","4","5"}),
+						SRT_ADMIN("100", new String [] {"1","7"});
+	private String roleId;
+	private String [] workgroupIds;
 
+	SRTRole(String roleId, String [] workgroupIds) {
+			this.roleId = roleId;
+			this.workgroupIds = workgroupIds;
+		}
+
+		public String getRoleId() {
+			return roleId;
+		}
+
+		public String [] getWorkgroupIds() {
+			return workgroupIds;
+		}
+	}
 	public SRTRosterAction() {
 		super();
 	}
@@ -130,7 +150,7 @@ public class SRTRosterAction extends SimpleActionAdapter {
 	private List<GenericVO> loadSRTList(String listId, ActionRequest req) throws ActionException {
 		log.debug(listId);
 		req.setParameter(ListAction.REQ_LIST_ID, listId);
-		ActionControllerFactoryImpl.loadAction(ListAction.class.getName(), this).retrieve(req);
+		ActionControllerFactoryImpl.loadAction(ListAction.class, this).retrieve(req);
 		ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
 		return (List<GenericVO>) mod.getActionData();
 	}
@@ -170,10 +190,13 @@ public class SRTRosterAction extends SimpleActionAdapter {
 		String rosterId = req.hasParameter(REQ_ROSTER_ID) ? req.getParameter(REQ_ROSTER_ID) : null;
 		String opCoId = ((SRTRosterVO)req.getSession().getAttribute(Constants.USER_DATA)).getOpCoId();
 		String workgroupId = req.getParameter("workgroupId");
+		String search = StringUtil.checkVal(req.getParameter("search")).toLowerCase();
+		String profileId = req.getParameter(UserAction.REQ_PROFILE_ID);
+		boolean showInActive = req.getBooleanParameter("showInactive") || !StringUtil.isEmpty(rosterId);
 		boolean loadProfileData = false;
 
 		//Build Sql
-		String sql = formatRetrieveQuery(schema, rosterId, workgroupId);
+		String sql = formatRetrieveQuery(schema, rosterId, workgroupId, search, showInActive);
 
 		//Build Params
 		List<Object> params = new ArrayList<>();
@@ -186,7 +209,24 @@ public class SRTRosterAction extends SimpleActionAdapter {
 			params.add(workgroupId);
 		}
 
+		if(!StringUtil.isEmpty(search)) {
+			search = StringUtil.join("%", search, "%");
+			params.add(search);
+			params.add(search);
+		}
+
 		GridDataVO<SRTRosterVO> rosters = new DBProcessor(dbConn, getCustomSchema()).executeSQLWithCount(sql, params, new SRTRosterVO(), req.getIntegerParameter("limit", SRTUtil.DEFAULT_RPP), req.getIntegerParameter("offset", 0));
+
+		/*
+		 * If no rosters were found but we have a profileId, 
+		 * this is an add and we should load basic data. 
+		 */
+		if(rosters.getRowData().isEmpty() && !StringUtil.isEmpty(profileId)) {
+			SRTRosterVO r = new SRTRosterVO();
+			r.setProfileId(profileId);
+			rosters.setRowData(Arrays.asList(r));
+			rosters.setSqlTotal(new SQLTotalVO(1));
+		}
 
 		if(!rosters.getRowData().isEmpty()) {
 			try {
@@ -214,6 +254,7 @@ public class SRTRosterAction extends SimpleActionAdapter {
 		//fail-fast if there's no user to load responses for, or too many users
 		if (users == null || users.isEmpty() || users.size() != 1)
 			return;
+		SiteVO site = (SiteVO)req.getAttribute(Constants.SITE_DATA);
 
 		//load the registration form
 		ActionInitVO actionInit = new ActionInitVO();
@@ -228,7 +269,7 @@ public class SRTRosterAction extends SimpleActionAdapter {
 		SRTRosterVO user = users.get(0);
 		ResponseLoader rl = new ResponseLoader();
 		rl.setDbConn(dbConn);
-		rl.loadRegistrationResponses(user, SRTUtil.PUBLIC_SITE_ID);
+		rl.loadRegistrationResponses(user, site.getSiteId());
 
 		//load the user's profile data
 		callProfileManager(user, req, false);
@@ -238,22 +279,34 @@ public class SRTRosterAction extends SimpleActionAdapter {
 
 	/**
 	 * Formats the account retrieval query.
+	 * @param schema
+	 * @param rosterId
+	 * @param workgroupId
+	 * @param search
+	 * @param showInActive
 	 * @return
 	 */
-	protected String formatRetrieveQuery(String schema, String rosterId, String workgroupId) {
-		StringBuilder sql = new StringBuilder(300);
+	protected String formatRetrieveQuery(String schema, String rosterId, String workgroupId, String search, boolean showInActive) {
+		StringBuilder sql = new StringBuilder(400);
 		sql.append(DBUtil.SELECT_FROM_STAR);
 		sql.append(schema).append("dpy_syn_srt_roster ");
 		sql.append(DBUtil.WHERE_1_CLAUSE);
 		sql.append("and op_co_id=? ");
+		if(!showInActive) {
+			sql.append("and is_active = 1 ");
+		}
 		if (!StringUtil.isEmpty(rosterId)) {
 			sql.append("and roster_id=? ");
 		}
 
 		if(!StringUtil.isEmpty(workgroupId)) {
-			sql.append("and workgroup_id = ?");
+			sql.append("and workgroup_id = ? ");
 		}
-		sql.append(DBUtil.ORDER_BY).append(" workgroup_id");
+
+		if(!StringUtil.isEmpty(search)) {
+			sql.append("and (concat(lower(first_nm), ' ', lower(last_nm)) like ? or lower(roster_email_address_txt) like ?) ");
+		}
+		sql.append(DBUtil.ORDER_BY).append(" last_nm, first_nm, workgroup_id");
 		log.debug(sql);
 		return sql.toString();
 	}
@@ -273,12 +326,10 @@ public class SRTRosterAction extends SimpleActionAdapter {
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("dpy_syn_srt_roster a ");
 		sql.append("on a.profile_id=b.profile_id ");
 		if(isEmailSearch) {
-			sql.append("and b.search_email_txt = ? ");
+			sql.append(DBUtil.WHERE_CLAUSE).append("b.search_email_txt = ? ");
 		} else {
 			sql.append(DBUtil.WHERE_CLAUSE).append(" a.wwid = ?");
 		}
-
-		log.debug(sql + " " + email);
 
 		Map<String, String> data = new HashMap<>();
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
@@ -304,7 +355,7 @@ public class SRTRosterAction extends SimpleActionAdapter {
 	@Override
 	public void build(ActionRequest req) throws ActionException {
 		if(req.hasParameter("filePathText")) {
-			ActionControllerFactoryImpl.loadAction(SRTRosterImportAction.class.getName(), this).build(req);
+			ActionControllerFactoryImpl.loadAction(SRTRosterImportAction.class, this).build(req);
 			return;
 		}
 		//ajax hook for quick-saving notes:
@@ -312,6 +363,7 @@ public class SRTRosterAction extends SimpleActionAdapter {
 			saveStatus(req);
 			return;
 		}
+		SiteVO site = (SiteVO)req.getAttribute(Constants.SITE_DATA);
 
 		SRTRosterVO user = new SRTRosterVO(req);
 
@@ -322,7 +374,7 @@ public class SRTRosterAction extends SimpleActionAdapter {
 		callProfileManager(user, req, true);
 
 		//check & create profile_role if needed
-		saveProfileRole(user, false);
+		saveProfileRole(site.getSiteId(), user, false);
 
 		//save their registration data
 		saveRegistrationData(req, user);
@@ -339,9 +391,11 @@ public class SRTRosterAction extends SimpleActionAdapter {
 	 */
 	@Override
 	public void delete(ActionRequest req) throws ActionException {
+		SiteVO site = (SiteVO)req.getAttribute(Constants.SITE_DATA);
+
 		SRTRosterVO user = new SRTRosterVO(req);
 		saveRecord(user, true); //De-Activates them from SRT.
-		saveProfileRole(user, true); //revoke website access
+		saveProfileRole(site.getSiteId(), user, true); //revoke website access
 		setupRedirect(req);
 	}
 
@@ -421,9 +475,9 @@ public class SRTRosterAction extends SimpleActionAdapter {
 	 * @param user
 	 * @throws ActionException
 	 */
-	protected void saveProfileRole(SRTRosterVO user, boolean isDelete) throws ActionException {
+	public void saveProfileRole(String siteId, SRTRosterVO user, boolean isDelete) throws ActionException {
 		ProfileRoleManager prm = new ProfileRoleManager();
-		SBUserRole role = new SBUserRole(SRTUtil.PUBLIC_SITE_ID);
+		SBUserRole role = new SBUserRole(siteId);
 		role.setStatusId(SecurityController.STATUS_ACTIVE);
 		role.setProfileId(user.getProfileId());
 
@@ -453,11 +507,20 @@ public class SRTRosterAction extends SimpleActionAdapter {
 	protected void setRoleId(SBUserRole role, SRTRosterVO user) {
 		//determine the role id
 		if (user.isAdmin()) {
-			role.setRoleId(Integer.toString(SecurityController.ADMIN_ROLE_LEVEL));
-		} else if(user.isActive()) {
-			role.setRoleId(Integer.toString(SecurityController.PUBLIC_REGISTERED_LEVEL));
+			role.setRoleId(SRTRole.SRT_ADMIN.getRoleId());
+			user.setCompanyRole(SRTRole.SRT_ADMIN.getRoleId());
+		} else if(user.isEmployee()) {
+			role.setRoleId(SRTRole.SRT_EMPLOYEE.getRoleId());
+			user.setCompanyRole(SRTRole.SRT_EMPLOYEE.getRoleId());
+		} else if(user.isSales()) {
+			role.setRoleId(SRTRole.SRT_SALES.getRoleId());
+			user.setCompanyRole(SRTRole.SRT_SALES.getRoleId());
+		} else if(user.isViewOnly()) {
+			role.setRoleId(SRTRole.SRT_VIEW_ONLY.getRoleId());
+			user.setCompanyRole(SRTRole.SRT_VIEW_ONLY.getRoleId());
 		} else {
 			role.setRoleId(Integer.toString(SecurityController.PUBLIC_ROLE_LEVEL));
+			user.setCompanyRole(Integer.toString(SecurityController.PUBLIC_ROLE_LEVEL));
 		}
 	}
 
@@ -473,11 +536,11 @@ public class SRTRosterAction extends SimpleActionAdapter {
 		sa.setAttributes(getAttributes());
 		sa.setDBConnection(dbConn);
 		Set<String> formFields = new HashSet<>(30);
-
+		SiteVO site = (SiteVO)req.getAttribute(Constants.SITE_DATA);
 		//possibly create a new registration record.  This would be for the 'add user' scenario
 		if (StringUtil.isEmpty(user.getRegisterSubmittalId())) {
 			req.setParameter(SBActionAdapter.SB_ACTION_ID, SRTUtil.REGISTRATION_GRP_ID);
-			user.setRegisterSubmittalId(sa.insertRegisterSubmittal(req, user.getProfileId(), SRTUtil.PUBLIC_SITE_ID));
+			user.setRegisterSubmittalId(sa.insertRegisterSubmittal(req, user.getProfileId(), site.getSiteId()));
 		}
 
 		//build a list of values to insert based on the ones we're going to delete
