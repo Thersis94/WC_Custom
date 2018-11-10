@@ -19,7 +19,9 @@ import java.util.Properties;
 import org.apache.log4j.PropertyConfigurator;
 
 import com.biomed.smarttrak.vo.UserVO.RegistrationMap;
+import com.depuysynthes.srt.SRTRosterAction.SRTRole;
 import com.depuysynthes.srt.vo.SRTRosterVO;
+import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.exception.DatabaseException;
@@ -66,9 +68,6 @@ public abstract class SRTUserImport extends CommandLineUtil {
 	private String siteId;
 	private String orgId;
 	private String registerId;
-	private String registeredRole;
-	private String adminRole;
-	private String viewOnlyRole;
 	protected String opCoId;
 	protected boolean throwErrors;
 
@@ -171,9 +170,6 @@ public abstract class SRTUserImport extends CommandLineUtil {
 		siteId = props.getProperty(SiteAction.SITE_ID);
 		schema = props.getProperty(Constants.CUSTOM_DB_SCHEMA);
 		registerId = props.getProperty("registerActionId");
-		registeredRole = props.getProperty("registeredRole");
-		adminRole = props.getProperty("adminRole");
-		viewOnlyRole = props.getProperty("viewOnlyRole");
 		opCoId = props.getProperty(SRTUtil.OP_CO_ID);
 	}
 
@@ -253,7 +249,7 @@ public abstract class SRTUserImport extends CommandLineUtil {
 			if (user.getProfileId() != null) {
 				successCnt++;
 				insertRegistrationRecords(dbConn, dataSet, user);
-				insertSourceUser(dbConn, user);
+				updateSourceUser(dbConn, user);
 				// if valid auth record, update profile/auth
 				if (hasValidAuthentication(user)) {
 					updateSourceUserProfile(dbConn, user);
@@ -282,8 +278,10 @@ public abstract class SRTUserImport extends CommandLineUtil {
 	 * @param userDivs
 	 * @throws SQLException
 	 */
-	protected void insertRegistrationRecords(Connection dbConn, Map<String, Object> record, 
-			SRTRosterVO user) {
+	protected void insertRegistrationRecords(Connection dbConn, Map<String, Object> record, SRTRosterVO user) {
+		if(!StringUtil.isEmpty(user.getRosterId())) {
+			return;
+		}
 		int idx = 1;
 		String regSubId = new UUIDGenerator().getUUID();
 		try (PreparedStatement ps = dbConn.prepareStatement(queries.get("REGSUB").toString())) {
@@ -344,6 +342,13 @@ public abstract class SRTUserImport extends CommandLineUtil {
 	 */
 	protected void findProfile(Connection dbConn, ProfileManager pm, SRTRosterVO user) throws DatabaseException {
 			user.setProfileId(pm.checkProfile(user, dbConn));
+
+			String rosterId = checkRosterRecord(user);
+			if(!StringUtil.isEmpty(rosterId)) {
+				user.setRosterId(rosterId);
+			} else {
+				log.debug("User Not Found");
+			}
 	}
 
 	/**
@@ -395,15 +400,68 @@ public abstract class SRTUserImport extends CommandLineUtil {
 	 * @param dbConn
 	 * @param sUser
 	 */
-	protected void insertSourceUser(Connection dbConn, SRTRosterVO sUser) {
-
+	protected void updateSourceUser(Connection dbConn, SRTRosterVO sUser) {
 		try {
+			boolean isInsert = true;
+			if(!StringUtil.isEmpty(sUser.getRosterId())) {
+				isInsert=false;
+			}
 			new DBProcessor(dbConn, schema).save(sUser);
-			log.debug("inserted source user record for user_id|profile_id: " + sUser.getCoRosterId() + "|" + sUser.getProfileId());
+			if(isInsert)
+				log.debug(String.format("inserted roster record for roster_id|co_roster_id|profile_id: %s|%s|%s", sUser.getRosterId(), sUser.getCoRosterId(), sUser.getProfileId()));
+			else 
+				log.debug(String.format("updated roster record for roster_id|co_roster_id|profile_id: %s|%s|%s", sUser.getRosterId(), sUser.getCoRosterId(), sUser.getProfileId()));
 		} catch(InvalidDataException | com.siliconmtn.db.util.DatabaseException sqle) {
 			log.error("Error inserting source user, ", sqle);
 			failedSourceUserInserts.put(sUser.getCoRosterId(),sUser.getProfileId());
 		}
+	}
+
+	/**
+	 * Looks for a Roster Record related to the passed SRTRosterVO 
+	 * @param sUser
+	 * @return
+	 */
+	private String checkRosterRecord(SRTRosterVO sUser) {
+		StringBuilder sql = new StringBuilder(200);
+		sql.append(DBUtil.SELECT_CLAUSE).append("profile_id, roster_id, register_submittal_id ").append(DBUtil.FROM_CLAUSE);
+		sql.append(schema).append("dpy_syn_srt_roster ").append(DBUtil.WHERE_CLAUSE);
+
+		//Build Where Clause dependent on data available from Roster User. 
+		if(!StringUtil.isEmpty(sUser.getProfileId())) {
+			sql.append("profile_id = ? and op_co_id = ?");	
+		} else {
+			sql.append("co_roster_id = ? and op_co_id = ?");
+		}
+
+		try(PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+
+			//Populate PreparedStatement Variables
+			if(!StringUtil.isEmpty(sUser.getProfileId())) {
+				ps.setString(1, sUser.getProfileId());
+			} else {
+				ps.setString(1, sUser.getCoRosterId());
+			}
+
+			ps.setString(2, sUser.getOpCoId());
+			ResultSet rs = ps.executeQuery();
+			if(rs.next()) {
+
+				//Set ProfileId if not present on the User Record.
+				if(StringUtil.isEmpty(sUser.getProfileId())) {
+					sUser.setProfileId(rs.getString("profile_id"));
+				}
+
+				//Set RegisterSubmittalId
+				sUser.setRegisterSubmittalId(rs.getString("register_submittal_id"));
+
+				//Return the Roster_id
+				return rs.getString("roster_id");
+			}
+		} catch (SQLException e) {
+			log.error("Error Processing Code", e);
+		}
+		return null;
 	}
 
 	/**
@@ -579,6 +637,7 @@ public abstract class SRTUserImport extends CommandLineUtil {
 		user.setArea(StringUtil.checkVal(dataSet.get(ImportField.AREA_ID.name())));
 		user.setAccountNo(StringUtil.checkVal(dataSet.get(ImportField.ACCOUNT_NO.name())));
 		user.setEngineeringContact(StringUtil.checkVal(dataSet.get(ImportField.ENGINEERING_CONTACT.name())));
+		user.setWwid(StringUtil.checkVal(dataSet.get(ImportField.WWID.name()), null));
 		// parse user's email.
 
 		return user;
@@ -627,13 +686,18 @@ public abstract class SRTUserImport extends CommandLineUtil {
 	 */
 	private Object checkRole(String tmpVal) {
 		switch(Convert.formatInteger(tmpVal)) {
-			case 5:
-				return registeredRole;
+			case 1:
 			case 7:
-				return adminRole;
+				return SRTRole.SRT_ADMIN.getRoleId();
+			case 2:
+			case 3:
+			case 4:
+			case 5:
+				return SRTRole.SRT_EMPLOYEE.getRoleId();
+			case 8:
+				return SRTRole.SRT_SALES.getRoleId();
 			default:
-				return viewOnlyRole;
-				
+				return SRTRole.SRT_VIEW_ONLY.getRoleId();
 		}
 	}
 

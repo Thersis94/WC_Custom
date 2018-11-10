@@ -64,6 +64,10 @@ public class SRTProjectSolrVO extends SolrDocumentVO implements HumanNameIntfc {
 	private String mfgPoToVendor;
 	private String salesOrderFromWarehouse;
 	private String reasonForRequest;
+	private String makeFromOrderNo;
+	private int cancelled;
+	private int onHold;
+	private int fromSratch;
 
 	public SRTProjectSolrVO() {
 		super();
@@ -164,7 +168,7 @@ public class SRTProjectSolrVO extends SolrDocumentVO implements HumanNameIntfc {
 	 * @return the engineerNm
 	 */
 	@Column(name="engineer_nm")
-	@SolrField(name="engineerNm_s")
+	@SolrField(name="engineerNm_t")
 	public String getEngineerNm() {
 		return engineerNm;
 	}
@@ -182,7 +186,7 @@ public class SRTProjectSolrVO extends SolrDocumentVO implements HumanNameIntfc {
 	 * @return the designerNm
 	 */
 	@Column(name="designer_nm")
-	@SolrField(name="designerNm_s")
+	@SolrField(name="designerNm_t")
 	public String getDesignerNm() {
 		return designerNm;
 	}
@@ -200,7 +204,7 @@ public class SRTProjectSolrVO extends SolrDocumentVO implements HumanNameIntfc {
 	 * @return the qualityEngineerNm
 	 */
 	@Column(name="quality_engineer_nm")
-	@SolrField(name="qaNm_s")
+	@SolrField(name="qaNm_t")
 	public String getQualityEngineerNm() {
 		return qualityEngineerNm;
 	}
@@ -235,7 +239,7 @@ public class SRTProjectSolrVO extends SolrDocumentVO implements HumanNameIntfc {
 	 * @return the surgeonName
 	 */
 	@Column(name="surgeon_nm")
-	@SolrField(name="surgeonName_s")
+	@SolrField(name="surgeonName_t")
 	public String getSurgeonName() {
 		return surgeonName;
 	}
@@ -243,7 +247,7 @@ public class SRTProjectSolrVO extends SolrDocumentVO implements HumanNameIntfc {
 	/**
 	 * @return the salesRepName
 	 */
-	@SolrField(name="salesRep_s")
+	@SolrField(name="salesRep_t")
 	public String getSalesRepName() {
 		return StringUtil.join(firstNm, " ", lastNm);
 	}
@@ -252,7 +256,7 @@ public class SRTProjectSolrVO extends SolrDocumentVO implements HumanNameIntfc {
 	 * @return the poNumber
 	 */
 	@Column(name="hospital_po")
-	@SolrField(name="poNumber_s")
+	@SolrField(name="poNumber_t")
 	public String getPoNumber() {
 		return poNumber;
 	}
@@ -474,7 +478,7 @@ public class SRTProjectSolrVO extends SolrDocumentVO implements HumanNameIntfc {
 	 * @return the requestDescription
 	 */
 	@Column(name="request_desc")
-	@SolrField(name="requestDescription_s")
+	@SolrField(name="requestDescription_t")
 	public String getRequestDescription() {
 		return requestDescription;
 	}
@@ -483,7 +487,7 @@ public class SRTProjectSolrVO extends SolrDocumentVO implements HumanNameIntfc {
 	 * @return the projectNo
 	 */
 	@Column(name="co_project_id")
-	@SolrField(name="coProjectId_s")
+	@SolrField(name="coProjectId_t")
 	public String getProjectNo() {
 		return projectNo;
 	}
@@ -510,7 +514,7 @@ public class SRTProjectSolrVO extends SolrDocumentVO implements HumanNameIntfc {
 	 * @return the specialInstructions
 	 */
 	@Column(name="special_instructions")
-	@SolrField(name="specialInstructions_s")
+	@SolrField(name="specialInstructions_t")
 	public String getSpecialInstructions() {
 		return specialInstructions;
 	}
@@ -519,7 +523,7 @@ public class SRTProjectSolrVO extends SolrDocumentVO implements HumanNameIntfc {
 	 * @return the mfgPoToVendor
 	 */
 	@Column(name="mfg_po_to_vendor")
-	@SolrField(name="mfgPoToVendor_s")
+	@SolrField(name="mfgPoToVendor_t")
 	public String getMfgPoToVendor() {
 		return mfgPoToVendor;
 	}
@@ -528,7 +532,7 @@ public class SRTProjectSolrVO extends SolrDocumentVO implements HumanNameIntfc {
 	 * @return the salesOrderFromWarehouse
 	 */
 	@Column(name="warehouse_tracking_no")
-	@SolrField(name="warehouseTrackingNo_s")
+	@SolrField(name="warehouseTrackingNo_t")
 	public String getSalesOrderFromWarehouse() {
 		return salesOrderFromWarehouse;
 	}
@@ -537,7 +541,7 @@ public class SRTProjectSolrVO extends SolrDocumentVO implements HumanNameIntfc {
 	 * @return the reasonForRequest
 	 */
 	@Column(name="reason_for_request")
-	@SolrField(name="reasonForRequest_s")
+	@SolrField(name="reasonForRequest_t")
 	public String getReasonForRequest() {
 		return reasonForRequest;
 	}
@@ -680,5 +684,69 @@ public class SRTProjectSolrVO extends SolrDocumentVO implements HumanNameIntfc {
 	 */
 	public void addMakeFromPartNo(String makeFromPartNo) {
 		makeFromPartNos.add(makeFromPartNo);
+	}
+
+	/**
+	 * @return the cancelled
+	 */
+	@Column(name="project_cancelled_flg")
+	@SolrField(name="cancelledFlg_i")
+	public int getCancelledFlg() {
+		return cancelled;
+	}
+
+	/**
+	 * @return the onHold
+	 */
+	@Column(name="project_hold_flg")
+	@SolrField(name="holdFlg_i")
+	public int getOnHoldFlg() {
+		return onHold;
+	}
+
+	/**
+	 * @return the fromSratch
+	 */
+	@Column(name="make_from_scratch")
+	@SolrField(name="makeFromScratch_i")
+	public int getromSratch() {
+		return fromSratch;
+	}
+
+	/**
+	 * @param cancelled the cancelled to set.
+	 */
+	public void setCancelledFlg(int cancelled) {
+		this.cancelled = cancelled;
+	}
+
+	/**
+	 * @param onHold the onHold to set.
+	 */
+	public void setOnHoldFlg(int onHold) {
+		this.onHold = onHold;
+	}
+
+	/**
+	 * @param fromSratch the fromSratch to set.
+	 */
+	public void setFromSratch(int fromSratch) {
+		this.fromSratch = fromSratch;
+	}
+
+	/**
+	 * @return the makeFromOrderNo
+	 */
+	@Column(name="make_from_order_no")
+	@SolrField(name="makeFromOrderNo_s")
+	public String getMakeFromOrderNo() {
+		return makeFromOrderNo;
+	}
+
+	/**
+	 * @param makeFromOrderNo the makeFromOrderNo to set.
+	 */
+	public void setMakeFromOrderNo(String makeFromOrderNo) {
+		this.makeFromOrderNo = makeFromOrderNo;
 	}
 }
