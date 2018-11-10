@@ -11,7 +11,7 @@ import com.siliconmtn.db.pool.SMTDBConnection;
  * <b>Description:</b> Standard SRT User Importer.
  * <b>Copyright:</b> Copyright (c) 2018
  * <b>Company:</b> Silicon Mountain Technologies
- * 
+ *
  * @author Billy Larsen
  * @version 3.3.1
  * @since Jun 18, 2018
@@ -69,7 +69,7 @@ public class SRTLegacyUserImporter extends SRTUserImport {
 		sql.append("then first_nm else '(NO NAME)' end as last_nm, ");
 		sql.append("concat('\"', salesrep, '\"') as USER_NAME, ");
 		sql.append("0 as allow_comm_flg, ");
-		sql.append("null as wwid, ");
+		sql.append("null as WWID, ");
 		sql.append("'0' as IS_ACTIVE, ");
 		sql.append("'0' as ROLE_TXT, ");
 		sql.append("null as ADDRESS_TXT, ");
@@ -78,7 +78,7 @@ public class SRTLegacyUserImporter extends SRTUserImport {
 		sql.append("null as ZIP_CD, ");
 		sql.append("null as EMAIL_ADDRESS_TXT, ");
 		sql.append("EMAIL_ADDRESS_TXT as ROSTER_EMAIL_ADDRESS_TXT, ");
-		sql.append("'6' as workgroup_id, ");
+		sql.append("'8' as workgroup_id, ");
 		sql.append("null as PASSWORD_TXT, ");
 		sql.append("MOBILE_PHONE_TXT, ");
 		sql.append("cast(territoryid as varchar) as TERRITORY_ID, ");
@@ -96,9 +96,6 @@ public class SRTLegacyUserImporter extends SRTUserImport {
 		sql.append("jdeacctnumber in (select customerId from dbo.tbl_pt_sales_roster) ");
 		sql.append("or lower(salesrepemail) in (select lower(email) from dbo.tbl_pt_sales_roster) ");
 		sql.append("or concat(first_nm, ' ', last_nm) in (select firstlast from dbo.tbl_pt_sales_roster)) ");
-		sql.append("and p.projectid not in (");
-		sql.append("select cast(CO_ROSTER_ID as int) from custom.dpy_syn_srt_roster ");
-		sql.append("where CO_ROSTER_ID not like 'ADM_%' and CO_ROSTER_ID not like 'SR_%') ");
 		return sql;
 	}
 
@@ -109,9 +106,9 @@ public class SRTLegacyUserImporter extends SRTUserImport {
 		sql.append("r.last_name as last_nm, ");
 		sql.append("concat('\"', firstlast, '\"') as USER_NAME, ");
 		sql.append("1 as allow_comm_flg, ");
-		sql.append("r.wwid, ");
+		sql.append("r.wwid as WWID, ");
 		sql.append("'1' as IS_ACTIVE, ");
-		sql.append("'5' as ROLE_TXT, ");
+		sql.append("'8' as ROLE_TXT, ");
 		sql.append("r.address as ADDRESS_TXT, ");
 		sql.append("r.city as CITY_NM, ");
 		sql.append("r.state as STATE_CD, ");
@@ -130,8 +127,6 @@ public class SRTLegacyUserImporter extends SRTUserImport {
 		sql.append("concat('SR_', r.id) as CO_ROSTER_ID, ");
 		sql.append("'replace' as ENGINEERING_CONTACT ");
 		sql.append(DBUtil.FROM_CLAUSE).append("dbo.tbl_pt_sales_roster r ");
-		sql.append("where concat('SR_', r.id) not in (select CO_ROSTER_ID from custom.dpy_syn_srt_roster) ");
-
 		return sql;
 	}
 
@@ -163,7 +158,6 @@ public class SRTLegacyUserImporter extends SRTUserImport {
 		sql.append("concat('ADM_', userid) as CO_ROSTER_ID, ");
 		sql.append("srtcontact2 as ENGINEERING_CONTACT ");
 		sql.append(DBUtil.FROM_CLAUSE).append("dbo.users ");
-		sql.append("where concat('ADM_', userid) not in (select CO_ROSTER_ID from custom.dpy_syn_srt_roster) ");
 		return sql;
 	}
 }
