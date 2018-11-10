@@ -40,6 +40,8 @@ public class StatusCodeVO extends BeanDataVO {
 	private String statusName;
 	private String roleId;
 	private String roleName;
+	private String nextStepUrl;
+	private int needsReload;
 	private int activeFlag;
 	private Date createDate;
 	private Date updateDate;
@@ -106,6 +108,20 @@ public class StatusCodeVO extends BeanDataVO {
 	@Column(name="role_nm", isReadOnly=true)
 	public String getRoleName() {
 		return roleName;
+	}
+
+	/**
+	 * @return the nextStepUrl
+	 */
+	public String getNextStepUrl() {
+		return nextStepUrl;
+	}
+
+	/**
+	 * @return the needsReload
+	 */
+	public int getNeedsReload() {
+		return needsReload;
 	}
 
 	/**
@@ -179,6 +195,20 @@ public class StatusCodeVO extends BeanDataVO {
 	 */
 	public void setRoleName(String roleName) {
 		this.roleName = roleName;
+	}
+
+	/**
+	 * @param nextStepUrl the nextStepUrl to set
+	 */
+	public void setNextStepUrl(String nextStepUrl) {
+		this.nextStepUrl = nextStepUrl;
+	}
+
+	/**
+	 * @param needsReload the needsReload to set
+	 */
+	public void setNeedsReload(int needsReload) {
+		this.needsReload = needsReload;
 	}
 
 	/**

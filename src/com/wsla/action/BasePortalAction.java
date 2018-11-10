@@ -4,12 +4,14 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Locale;
+import java.util.Map;
 import java.util.ResourceBundle;
 
 // SMT Base Libs
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.DBProcessor;
+import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.security.PhoneVO;
@@ -57,7 +59,17 @@ public class BasePortalAction extends SBActionAdapter {
 		super(actionInit);
 	}
 
-
+	/**
+	 * 
+	 * @param dbConn
+	 * @param attributes
+	 */
+	public BasePortalAction(SMTDBConnection dbConn, Map<String, Object> attributes) {
+		super();
+		this.dbConn = dbConn;
+		this.attributes = attributes;
+	}
+	
 	/**
 	 * 
 	 * @param summary if the summary is passed, the first param will be added to the bean

@@ -65,8 +65,8 @@ public class NextStepVO extends BeanDataVO {
 			setPrompt("");
 		}
 		
-		setButtonUrl(status.nextStepUrl);
-		setNeedsReload(status.nextStepNeedsReload);
+		setButtonUrl("");
+		setNeedsReload(false);
 	}
 
 	/**
