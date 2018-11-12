@@ -193,7 +193,7 @@ public class GridChartAction extends SBActionAdapter {
 	private void buildGridExcel(ActionRequest req) {
 		GridClipboardReport rpt = new GridClipboardReport();
 		rpt.setData(req.getParameter("tableData"));
-		rpt.setFileName("Current Grid Data.xls");
+		rpt.setFileName(req.getParameter("chartName")+".xls");
 		req.setAttribute(Constants.BINARY_DOCUMENT_REDIR, true);
 		req.setAttribute(Constants.BINARY_DOCUMENT, rpt);
 	}

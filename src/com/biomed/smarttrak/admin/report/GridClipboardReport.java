@@ -28,7 +28,7 @@ public class GridClipboardReport extends AbstractSBReportVO {
 	@Override
 	public byte[] generateReport() {
 
-		String[] rowData = tableData.split("`");
+		String[] rowData = tableData.split("`", -1);
 		
 		Map<String, String> header = getHeaderRow(rowData);
 		List<Map<String, Object>> rows = getDataRows(rowData);
@@ -47,7 +47,7 @@ public class GridClipboardReport extends AbstractSBReportVO {
 	 */
 	private Map<String, String> getHeaderRow(String[] rowData) {
 		Map<String, String> header = new LinkedHashMap<>();
-		String[] headerData = rowData[0].split("\\|");
+		String[] headerData = rowData[0].split("\\|", -1);
 		for (int i = 0; i < headerData.length; i++) {
 			header.put("col_" + i, headerData[i]);
 		}
@@ -66,7 +66,7 @@ public class GridClipboardReport extends AbstractSBReportVO {
 		
 		for (int i = 1; i < rowData.length; i++) {
 			Map<String, Object> row = new LinkedHashMap<>();
-			String[] singleRowData = rowData[i].split("\\|");
+			String[] singleRowData = rowData[i].split("\\|", -1);
 			for (int j = 0; j < singleRowData.length; j++) {
 				row.put("col_" + j, singleRowData[j]);
 			}
