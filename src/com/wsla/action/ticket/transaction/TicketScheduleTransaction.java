@@ -2,9 +2,9 @@ package com.wsla.action.ticket.transaction;
 
 import java.util.Arrays;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.ResourceBundle;
 
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
@@ -15,18 +15,14 @@ import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
-import com.smt.sitebuilder.util.MessageParser;
-import com.smt.sitebuilder.util.MessageParser.MessageType;
-import com.smt.sitebuilder.util.ParseException;
+import com.wsla.action.BasePortalAction;
 // WC Libs
 import com.wsla.action.ticket.BaseTransactionAction;
 import com.wsla.action.ticket.TicketEditAction;
 
 // WSLA Libs
 import com.wsla.data.ticket.LedgerSummary;
-import com.wsla.data.ticket.NextStepVO;
 import com.wsla.data.ticket.StatusCode;
-import com.wsla.data.ticket.StatusCodeVO;
 import com.wsla.data.ticket.TicketAssignmentVO;
 import com.wsla.data.ticket.TicketLedgerVO;
 import com.wsla.data.ticket.TicketScheduleVO;
@@ -106,6 +102,11 @@ public class TicketScheduleTransaction extends BaseTransactionAction {
 			// Make sure the unit location is current (requires the assignment data to set)
 			if (req.hasParameter(REQ_COMPLETE))
 				updateUnitLocation(ts);
+			
+			// Build the next step
+			Map<String, Object> params = new HashMap<>();
+			params.put("ticketId", ts.getTicketId());
+			buildNextStep(StatusCode.UNLISTED_SERIAL_NO, new BasePortalAction().getResourceBundle(req), params, false);
 			
 			putModuleData(ts);
 			
@@ -231,26 +232,6 @@ public class TicketScheduleTransaction extends BaseTransactionAction {
 
 		TicketTransaction tt = new TicketTransaction(getAttributes(), getDBConnection());
 		tt.updateUnitLocation(ticket);
-	}
-
-	/* (non-Javadoc)
-	 * @see com.wsla.action.ticket.BaseTransactionAction#getNextStep()
-	 */
-	@Override
-	public void buildNextStep(StatusCode status, ResourceBundle bundle, Map<String, Object> params) throws InvalidDataException {
-		StatusCodeVO sc = new StatusCodeVO();
-		sc.setStatusCode(status.name());
-		
-		try {
-			DBProcessor dbp = new DBProcessor(getDBConnection(), getCustomSchema());
-			dbp.getByPrimaryKey(sc);
-
-			nextStep = new NextStepVO(status, bundle);
-			nextStep.setButtonUrl(MessageParser.parse(sc.getNextStepUrl(), params, sc.getNextStepUrl(), MessageType.TEXT));
-			nextStep.setNeedsReload(Convert.formatBoolean(sc.getNeedsReload()));
-		} catch (InvalidDataException | DatabaseException | ParseException e) {
-			throw new InvalidDataException(e);
-		}
 	}
 }
 

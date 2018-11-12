@@ -29,9 +29,10 @@ public class NextStepVO extends BeanDataVO {
 	private static final long serialVersionUID = 7595095552093529941L;
 	
 	// Member Variables
-	private String prompt;
+	private String promptText;
 	private String buttonUrl;
-	private boolean needsReload;
+	private String buttonName;
+	private boolean needsReloadFlag;
 	
 	/**
 	 * 
@@ -60,27 +61,28 @@ public class NextStepVO extends BeanDataVO {
 	 */
 	public NextStepVO(StatusCode status, ResourceBundle bundle) {
 		try {
-			setPrompt(bundle.getString("wsla.ticket.nextStep." + status.name()));
+			setPromptText(bundle.getString("wsla.ticket.nextStep." + status.name()));
 		} catch (MissingResourceException e) {
-			setPrompt("");
+			setPromptText("");
 		}
 		
 		setButtonUrl("");
-		setNeedsReload(false);
+		setButtonName("");
+		setNeedsReloadFlag(false);
 	}
 
 	/**
-	 * @return the prompt
+	 * @return the promptText
 	 */
-	public String getPrompt() {
-		return prompt;
+	public String getPromptText() {
+		return promptText;
 	}
 
 	/**
-	 * @param prompt the prompt to set
+	 * @param promptText the promptText to set
 	 */
-	public void setPrompt(String prompt) {
-		this.prompt = prompt;
+	public void setPromptText(String promptText) {
+		this.promptText = promptText;
 	}
 
 	/**
@@ -98,17 +100,31 @@ public class NextStepVO extends BeanDataVO {
 	}
 
 	/**
-	 * @return the needsReload
+	 * @return the buttonName
 	 */
-	public boolean isNeedsReload() {
-		return needsReload;
+	public String getButtonName() {
+		return buttonName;
 	}
 
 	/**
-	 * @param needsReload the needsReload to set
+	 * @param buttonName the buttonName to set
 	 */
-	public void setNeedsReload(boolean needsReload) {
-		this.needsReload = needsReload;
+	public void setButtonName(String buttonName) {
+		this.buttonName = buttonName;
+	}
+
+	/**
+	 * @return the needsReloadFlag
+	 */
+	public boolean isNeedsReloadFlag() {
+		return needsReloadFlag;
+	}
+
+	/**
+	 * @param needsReloadFlag the needsReloadFlag to set
+	 */
+	public void setNeedsReloadFlag(boolean needsReloadFlag) {
+		this.needsReloadFlag = needsReloadFlag;
 	}
 }
 

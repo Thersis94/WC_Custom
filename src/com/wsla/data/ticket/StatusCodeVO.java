@@ -41,7 +41,6 @@ public class StatusCodeVO extends BeanDataVO {
 	private String roleId;
 	private String roleName;
 	private String nextStepUrl;
-	private int needsReload;
 	private int activeFlag;
 	private Date createDate;
 	private Date updateDate;
@@ -113,15 +112,9 @@ public class StatusCodeVO extends BeanDataVO {
 	/**
 	 * @return the nextStepUrl
 	 */
+	@Column(name="next_step_url")
 	public String getNextStepUrl() {
 		return nextStepUrl;
-	}
-
-	/**
-	 * @return the needsReload
-	 */
-	public int getNeedsReload() {
-		return needsReload;
 	}
 
 	/**
@@ -202,13 +195,6 @@ public class StatusCodeVO extends BeanDataVO {
 	 */
 	public void setNextStepUrl(String nextStepUrl) {
 		this.nextStepUrl = nextStepUrl;
-	}
-
-	/**
-	 * @param needsReload the needsReload to set
-	 */
-	public void setNeedsReload(int needsReload) {
-		this.needsReload = needsReload;
 	}
 
 	/**
