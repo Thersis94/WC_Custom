@@ -189,11 +189,10 @@ public class FeaturedInsightsAction extends SBActionAdapter {
 		DBProcessor db = new DBProcessor(dbConn);
 		Map<String, List<Object>> psValues = new HashMap<>();
 
-		String[] order = req.getParameterValues("orderNo");
 		String[] ids = req.getParameterValues(INSIGHT_ID);
-		for (int i=0; i < order.length; i++) {
+		for (int i=0; i < ids.length; i++) {
 			List<Object> values = new ArrayList<>();
-			values.add(Convert.formatInteger(order[i]));
+			values.add(i+1);
 			values.add(ids[i]);
 			psValues.put(ids[i], values);
 		}
