@@ -3,6 +3,8 @@ package com.wsla.action;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.ResourceBundle;
@@ -10,6 +12,7 @@ import java.util.ResourceBundle;
 // SMT Base Libs
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.db.util.DatabaseException;
@@ -265,5 +268,44 @@ public class BasePortalAction extends SBActionAdapter {
 		Locale locale = StringUtil.isEmpty(user.getLocale()) ? site.getLocale() : new Locale(user.getLocale());
 		
 		return ResourceBundle.getBundle(WSLAConstants.RESOURCE_BUNDLE, locale); 
+	}
+	
+	/**
+	 * Get the base user data for the user id
+	 * 
+	 * @param userId
+	 * @return
+	 * @throws SQLException 
+	 */
+	public UserVO getUser(String userId) throws SQLException {
+		UserVO user = new UserVO();
+		user.setUserId(userId);
+		
+		try {
+			DBProcessor dbp = new DBProcessor(getDBConnection(), getCustomSchema());
+			dbp.getByPrimaryKey(user);
+		} catch (InvalidDataException | DatabaseException e) {
+			throw new SQLException(e);
+		}
+
+		return user;
+	}
+	
+	/**
+	 * Returns a list of users for a given role
+	 * 
+	 * @param roleId
+	 * @return
+	 */
+	public List<UserVO> getUsersByRole(String roleId) {
+		StringBuilder sql = new StringBuilder(256);
+		sql.append(DBUtil.SELECT_FROM_STAR).append(getCustomSchema());
+		sql.append("wsla_user u ");
+		sql.append(DBUtil.INNER_JOIN).append("profile p on u.profile_id = p.profile_id ");
+		sql.append(DBUtil.INNER_JOIN).append("profile_role pr on p.profile_id = pr.profile_id ");
+		sql.append("where role_id = ? ");
+		
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		return db.executeSelect(sql.toString(), Arrays.asList(roleId), new UserVO());
 	}
 }

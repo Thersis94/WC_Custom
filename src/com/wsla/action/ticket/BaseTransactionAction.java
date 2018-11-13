@@ -1,5 +1,6 @@
 package com.wsla.action.ticket;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.ResourceBundle;
 
@@ -75,7 +76,7 @@ public class BaseTransactionAction extends SBActionAdapter {
 		dbp.save(ticket);
 		
 		// Send the notification and add the ledger entry
-		processNotification(ticketId, userId, newStatus);
+		processNotification(ticket.getTicketIdText(), userId, newStatus);
 		addLedger(ticketId, userId, newStatus, summary, location);
 	}
 
@@ -83,18 +84,27 @@ public class BaseTransactionAction extends SBActionAdapter {
 	 * Calls an appropriate notification workflow for the given status.
 	 * Uses data from the ticket to localize the notifications.
 	 * 
-	 * @param ticketId
+	 * @param ticketIdText
 	 * @param status
 	 */
-	public void processNotification(String ticketId, String userId, StatusCode status) {
+	public void processNotification(String ticketIdText, String userId, StatusCode status) {
 		// Lookup the workflow Id
 		WorkflowLookupUtil wlu = new WorkflowLookupUtil(getDBConnection());
 		String workflowId = wlu.getWorkflowFromLookupId(WorkflowLookup.WSLA_NOTIFICATION.name()).getWorkflowId();
 		
+		// Exclude anything that may not be serializable, a requirement of the message sender
+		Map<String, Object> wfAttributes = new HashMap<>();
+		for(Map.Entry<String, Object> item : getAttributes().entrySet()) {
+			if(!(item.getValue() instanceof String))
+				continue;
+			
+			wfAttributes.put(item.getKey(), item.getValue());
+		}
+		
 		// Setup the workflow message
 		WorkflowMessageVO wmv = new WorkflowMessageVO(workflowId);
-		wmv.addAllParameters(getAttributes());
-		wmv.addParameter(NotificationWorkflowModule.TICKET_ID, ticketId);
+		wmv.addAllParameters(wfAttributes);
+		wmv.addParameter(NotificationWorkflowModule.TICKET_ID_TEXT, ticketIdText);
 		wmv.addParameter(NotificationWorkflowModule.USER_ID, userId);
 		wmv.addParameter(NotificationWorkflowModule.STATUS_CODE, status);
 		

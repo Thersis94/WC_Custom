@@ -108,10 +108,6 @@ public class TicketScheduleTransaction extends BaseTransactionAction {
 			params.put("ticketId", ts.getTicketId());
 			buildNextStep(StatusCode.UNLISTED_SERIAL_NO, new BasePortalAction().getResourceBundle(req), params, false);
 			
-			// Test Sending Notifications
-			UserVO user = (UserVO) getAdminUser(req).getUserExtendedInfo();
-			this.processNotification(ts.getTicketId(), user.getUserId(), StatusCode.UNLISTED_SERIAL_NO);
-			
 			putModuleData(ts);
 			
 		} catch (InvalidDataException | DatabaseException | com.siliconmtn.exception.DatabaseException e) {
