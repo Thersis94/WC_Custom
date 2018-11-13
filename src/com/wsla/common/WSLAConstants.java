@@ -38,6 +38,13 @@ public class WSLAConstants {
 	public static final String RESOURCE_BUNDLE = "com.wsla.common.bundle.messages";
 	
 	/**
+	 * Workflow lookup keys
+	 */
+	public enum WorkflowLookup {
+		WSLA_NOTIFICATION
+	}
+	
+	/**
 	 * "References" email header suffix for tickets, to denote where the
 	 * reference came from in a chain of references. 
 	 */

@@ -40,8 +40,8 @@ public class StatusCodeVO extends BeanDataVO {
 	private String statusName;
 	private String roleId;
 	private String roleName;
-	private String nextStepUrl;
 	private int activeFlag;
+	private String nextStepUrl;
 	private Date createDate;
 	private Date updateDate;
 	

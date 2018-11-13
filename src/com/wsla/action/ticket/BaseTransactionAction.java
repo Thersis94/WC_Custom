@@ -8,19 +8,23 @@ import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
-
+import com.siliconmtn.workflow.WorkflowLookupUtil;
+import com.siliconmtn.workflow.data.WorkflowMessageVO;
 // WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.util.MessageParser;
 import com.smt.sitebuilder.util.ParseException;
+import com.smt.sitebuilder.util.WorkflowSender;
 import com.smt.sitebuilder.util.MessageParser.MessageType;
 import com.wsla.action.BasePortalAction;
+import com.wsla.common.WSLAConstants.WorkflowLookup;
 import com.wsla.data.ticket.NextStepVO;
 import com.wsla.data.ticket.StatusCode;
 import com.wsla.data.ticket.StatusCodeVO;
 import com.wsla.data.ticket.TicketLedgerVO;
 import com.wsla.data.ticket.TicketVO;
 import com.wsla.data.ticket.TicketVO.UnitLocation;
+import com.wsla.util.NotificationWorkflowModule;
 
 /****************************************************************************
  * <b>Title</b>: BaseTransactionAction.java
@@ -64,12 +68,14 @@ public class BaseTransactionAction extends SBActionAdapter {
 		TicketVO ticket = new TicketVO();
 		ticket.setTicketId(ticketId);
 		
+		// Save the new status
 		DBProcessor dbp = new DBProcessor(getDBConnection(), getCustomSchema());
 		dbp.getByPrimaryKey(ticket);
 		ticket.setStatusCode(newStatus);
 		dbp.save(ticket);
 		
-		processNotification(ticketId, newStatus);
+		// Send the notification and add the ledger entry
+		processNotification(ticketId, userId, newStatus);
 		addLedger(ticketId, userId, newStatus, summary, location);
 	}
 
@@ -80,8 +86,21 @@ public class BaseTransactionAction extends SBActionAdapter {
 	 * @param ticketId
 	 * @param status
 	 */
-	public void processNotification(String ticketId, StatusCode status) {
-		// TODO: call the notification workflow
+	public void processNotification(String ticketId, String userId, StatusCode status) {
+		// Lookup the workflow Id
+		WorkflowLookupUtil wlu = new WorkflowLookupUtil(getDBConnection());
+		String workflowId = wlu.getWorkflowFromLookupId(WorkflowLookup.WSLA_NOTIFICATION.name()).getWorkflowId();
+		
+		// Setup the workflow message
+		WorkflowMessageVO wmv = new WorkflowMessageVO(workflowId);
+		wmv.addAllParameters(getAttributes());
+		wmv.addParameter(NotificationWorkflowModule.TICKET_ID, ticketId);
+		wmv.addParameter(NotificationWorkflowModule.USER_ID, userId);
+		wmv.addParameter(NotificationWorkflowModule.STATUS_CODE, status);
+		
+		// Send the workflow to the engine
+		WorkflowSender ws = new WorkflowSender(getAttributes());
+		ws.sendWorkflow(wmv);
 	}
 	
 	/**
@@ -96,6 +115,7 @@ public class BaseTransactionAction extends SBActionAdapter {
 	 * @throws InvalidDataException 
 	 */
 	public String addLedger(String ticketId, String userId, StatusCode status, String summary, UnitLocation location) throws InvalidDataException, DatabaseException {
+		// Create a new ledger record
 		TicketLedgerVO ledger = new TicketLedgerVO();
 		ledger.setDispositionBy(userId);
 		ledger.setTicketId(ticketId);
@@ -103,12 +123,14 @@ public class BaseTransactionAction extends SBActionAdapter {
 		ledger.setSummary(summary);
 		//ledger.setUnitLocation(location)
 		
+		// Get status data to be added to the ledger
 		DBProcessor dbp = new DBProcessor(getDBConnection(), getCustomSchema());
 		StatusCodeVO sc = new StatusCodeVO();
 		sc.setStatusCode(status.name());
 		dbp.getByPrimaryKey(sc);
 		//ledger.setBillableActivityCode(sc.getBillableActivityCode())
 		
+		// Add the ledger entry
 		BasePortalAction bpa = new BasePortalAction(getDBConnection(), getAttributes());
 		bpa.addLedger(ledger);
 		
@@ -139,6 +161,7 @@ public class BaseTransactionAction extends SBActionAdapter {
 			DBProcessor dbp = new DBProcessor(getDBConnection(), getCustomSchema());
 			dbp.getByPrimaryKey(sc);
 
+			// Create the next step data
 			nextStep = new NextStepVO(status, bundle);
 			nextStep.setButtonUrl(MessageParser.parse(sc.getNextStepUrl(), params, sc.getNextStepUrl(), MessageType.TEXT));
 			nextStep.setButtonName(sc.getStatusName());
