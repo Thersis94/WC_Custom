@@ -5,12 +5,17 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.apache.log4j.Logger;
 
+import com.depuysynthes.srt.SRTMilestoneAction;
+import com.depuysynthes.srt.util.SRTUtil.SRTList;
+import com.depuysynthes.srt.vo.SRTMasterRecordVO;
+import com.depuysynthes.srt.vo.SRTProjectMilestoneVO;
 import com.depuysynthes.srt.vo.SRTProjectVO;
 import com.depuysynthes.srt.vo.SRTRequestAddressVO;
 import com.depuysynthes.srt.vo.SRTRequestVO;
@@ -21,6 +26,7 @@ import com.siliconmtn.sb.email.util.EmailCampaignBuilderUtil;
 import com.siliconmtn.sb.email.vo.EmailRecipientVO;
 import com.siliconmtn.security.EncryptionException;
 import com.siliconmtn.security.StringEncrypter;
+import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.user.ProfileManagerFactory;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -37,6 +43,7 @@ import com.smt.sitebuilder.common.constants.Constants;
  * @since Mar 10, 2017
  ****************************************************************************/
 public class SRTEmailUtil {
+	private static final int EMAIL_DELIVERY_DT_OFFSET = 14;
 	private Logger log;
 	private EmailCampaignBuilderUtil ecbu;
 	private SMTDBConnection dbConn = null;
@@ -62,6 +69,15 @@ public class SRTEmailUtil {
 	 */
 	public void sendEmail(String projectId, String campaignInstanceId) {
 		SRTProjectVO project = loadProject(projectId);
+
+		SRTMilestoneAction sma = new SRTMilestoneAction();
+		sma.setAttributes(attributes);
+		sma.setDBConnection(dbConn);
+
+		//Populate Milestones.
+		sma.populateMilestones(Arrays.asList(project));
+
+		//Build and Send Emails.
 		sendEmails(project, campaignInstanceId);
 	}
 
@@ -76,7 +92,7 @@ public class SRTEmailUtil {
 	protected String getProjectSql() {
 		String customDb = (String)attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(600);
-		sql.append("select p.*, r.*, u.*, a.* ").append(DBUtil.FROM_CLAUSE).append(customDb);
+		sql.append("select p.project_id, p.create_dt, r.*, u.*, a.* ").append(DBUtil.FROM_CLAUSE).append(customDb);
 		sql.append("DPY_SYN_SRT_PROJECT p ");
 		sql.append(DBUtil.INNER_JOIN).append(customDb).append("DPY_SYN_SRT_REQUEST r ");
 		sql.append("on p.request_id = r.request_id ");
@@ -153,15 +169,51 @@ public class SRTEmailUtil {
 	 * Builds Email Config map from Project Record
 	 * (contains Request and Requestor Profile data).
 	 * 
-	 * TODO - Need params that should be available to Email.
 	 * @param p
 	 * @return
 	 */
 	protected Map<String, Object> buildEmailProps(SRTProjectVO p) {
-		SRTRosterVO roster = p.getRequest().getRequestor();
 		Map<String, Object> config = new HashMap<>();
-		config.put("firstName", StringUtil.checkVal(roster.getFirstName()));
-		config.put("lastName", StringUtil.checkVal(roster.getLastName()));
+
+		try {
+			Map<String, Map<String, String>> lists = SRTUtil.loadLists(dbConn);
+			SRTRequestVO req = p.getRequest();
+			req.setChargeTo(lists.get(SRTUtil.getListId(req.getOpCoId(), SRTList.CHARGE_TO)).get(req.getChargeTo()));
+			req.setReason(lists.get(SRTUtil.getListId(req.getOpCoId(), SRTList.REQ_REASON)).get(req.getReason()));
+
+			SRTRosterVO roster = req.getRequestor();
+			config.put("firstName", StringUtil.checkVal(roster.getFirstName()));
+			config.put("lastName", StringUtil.checkVal(roster.getLastName()));
+			config.put("requestorNm", roster.getFullName());
+			config.put("engineeringContact", StringUtil.checkVal(roster.getEngineeringContact(), "SRT Admin at srtgroupma@its.jnj.com"));
+			config.put("projectStartDt", p.getCreateDt());
+			config.put("surgeonNm", req.getSurgeonNm());
+			config.put("quantity", req.getQtyNo());
+			config.put("reason", req.getReason());
+			config.put("reqDesc", req.getDescription());
+			config.put("chargedTo", req.getChargeTo());
+
+			if(!p.getMasterRecords().isEmpty()) {
+				SRTMasterRecordVO mrv = p.getMasterRecords().get(0);
+				config.put("partNo", StringUtil.checkVal(mrv.getPartNo(), "Your requested part"));
+				config.put("partTitle", StringUtil.checkVal(mrv.getTitleTxt(), "Part Title"));
+			} else {
+				config.put("partNo", "Your requested part");
+				config.put("partTitle", "Part Title");
+			}
+			config.put("projectNm", p.getProjectName());
+			SRTProjectMilestoneVO origDelivDt = p.getMilestone("ORIG_MFG_DEL_DT");
+			Calendar c = Calendar.getInstance();
+			if(origDelivDt != null && origDelivDt.getMilestoneDt() != null) {
+				c.setTime(origDelivDt.getMilestoneDt());
+			}
+
+			//Add 14 days to date per requirements.
+			c.add(Calendar.DATE, EMAIL_DELIVERY_DT_OFFSET);
+			config.put("origMfgDelivDt", Convert.formatDate(c.getTime()));
+		} catch (SQLException e) {
+			log.error("Error Processing Code", e);
+		}
 		return config;
 	}
 }
