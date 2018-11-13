@@ -1,6 +1,9 @@
 package com.depuysynthes.srt.util;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -11,10 +14,13 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.log4j.Logger;
 
+import com.depuysynthes.srt.vo.SRTOpCoVO;
 import com.depuysynthes.srt.vo.SRTProjectVO;
 import com.depuysynthes.srt.vo.SRTRosterVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.DBUtil;
+import com.siliconmtn.db.orm.DBProcessor;
+import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.security.EncryptionException;
@@ -39,7 +45,7 @@ public class SRTUtil {
 	private static Logger log = Logger.getLogger(SRTUtil.class);
 
 	public static final String SRT_ORG_ID = "DPY_SYN";
-	public static final String PUBLIC_SITE_ID = "DPY_SYN_38";
+	public static final String PUBLIC_SITE_ID = "DPY_SYN_42";
 	public static final String OP_CO_ID = "opCoId";
 	public static final String ADMIN_PATH = "/manage";
 	public static final String REGISTRATION_GRP_ID = "38ae1841baf997aec0a80255c7bd6f31";
@@ -49,7 +55,7 @@ public class SRTUtil {
 						PRODUCT_TYPE, COMPLEXITY, LABEL_STATUS, PROD_CAT,
 						PROD_FAMILY, DEPARTMENT, OBSOLETE, MILESTONE, PROJ_TYPE,
 						PROJ_PRIORITY, MAKE_FROM_SCRATCH, PROJ_VENDOR, PROJ_STATUS,
-						PROJ_MFG_CHANGE_REASON, SRT_TERRITORIES, SRT_AREA, SRT_REGION}
+						PROJ_MFG_CHANGE_REASON, SRT_TERRITORIES, SRT_AREA, SRT_REGION, PROJ_MFG_ORDER_TYPE}
 
 	public enum SrtPage {MASTER_RECORD("/master-record"), PROJECT("/projects"), REQUEST("/request-form");
 		private String urlPath;
@@ -106,6 +112,23 @@ public class SRTUtil {
 			return r.getOpCoId();
 		}
 		return null;
+	}
+
+	/**
+	 * Helper method returns List of OpCo VOs in the system.  If we move to in
+	 * tool management, this should be migrated to an action.
+	 *
+	 * @param dbConn - Database Connection
+	 * @param schema - Custom DB Schema
+	 * @return - List of SRTOpCoVO's
+	 */
+	public static List<SRTOpCoVO> loadOpCos(SMTDBConnection dbConn, String schema) {
+		StringBuilder sql = new StringBuilder();
+		sql.append(DBUtil.SELECT_CLAUSE).append("distinct o.*").append(DBUtil.FROM_CLAUSE);
+		sql.append(schema).append("dpy_syn_srt_project p ").append(DBUtil.INNER_JOIN);
+		sql.append(schema).append("dpy_syn_srt_op_co o on p.op_co_id = o.op_co_id");
+
+		return new DBProcessor(dbConn, schema).executeSelect(sql.toString(), null, new SRTOpCoVO());
 	}
 
 	/**
@@ -211,5 +234,52 @@ public class SRTUtil {
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(" list_data ").append(alias);
 		sql.append(" on ").append(alias).append(".value_txt = ").append(columnNm);
 		sql.append(" and ").append(alias).append(".list_id = ? ");
+	}
+
+
+	/**
+	 * Load Data Lists to replace GUID/Keys with Friendly Text.
+	 * @return
+	 * @throws SQLException
+	 */
+	public static Map<String, Map<String, String>> loadLists(Connection dbConn) throws SQLException {
+		Map<String, Map<String, String>> lists = new HashMap<>();
+		try(PreparedStatement ps = dbConn.prepareStatement(loadListsSql())) {
+			ps.setString(1, SRTUtil.SRT_ORG_ID);
+			ResultSet rs = ps.executeQuery();
+
+			String listKey = null;
+			Map<String, String> listData = new HashMap<>();
+			while(rs.next()) {
+				if(!rs.getString("LIST_ID").equals(listKey)) {
+					if(listKey != null) {
+						lists.put(listKey, listData);
+					}
+					listData = new HashMap<>();
+					listKey = rs.getString("LIST_ID");
+				}
+				listData.put(rs.getString("VALUE_TXT"), rs.getString("LABEL_TXT"));
+			}
+			if(listKey != null)
+				lists.put(listKey, listData);
+		}
+		return lists;
+	}
+
+	/**
+	 * Build Data List Retrieval Sql.
+	 * @return
+	 */
+	private static String loadListsSql() {
+		StringBuilder sql = new StringBuilder(200);
+		sql.append(DBUtil.SELECT_CLAUSE).append("l.list_id, d.label_txt, d.value_txt ");
+		sql.append(DBUtil.FROM_CLAUSE).append("list l ");
+		sql.append(DBUtil.INNER_JOIN).append("list_data d ");
+		sql.append("on l.list_id = d.list_id ");
+		sql.append(DBUtil.WHERE_CLAUSE).append("l.organization_id = ? ");
+		sql.append("and list_nm like '%SRT%' ");
+		sql.append(DBUtil.ORDER_BY).append("list_id");
+		log.debug(sql.toString());
+		return sql.toString();
 	}
 }
