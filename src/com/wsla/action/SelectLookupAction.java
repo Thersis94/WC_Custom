@@ -9,6 +9,7 @@ import static com.wsla.action.admin.ProviderAction.REQ_PROVIDER_ID;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -43,6 +44,7 @@ import com.wsla.action.admin.StatusCodeAction;
 import com.wsla.action.admin.WarrantyAction;
 import com.wsla.action.ticket.CASSelectionAction;
 import com.wsla.action.ticket.TicketEditAction;
+import com.wsla.action.ticket.TicketListAction;
 import com.wsla.common.WSLAConstants;
 import com.wsla.common.WSLALocales;
 import com.wsla.data.product.ProductVO;
@@ -111,10 +113,12 @@ public class SelectLookupAction extends SBActionAdapter {
 		keyMap.put("acRetailer", new GenericVO("getRetailerACList", Boolean.TRUE));
 		keyMap.put("categoryGroup", new GenericVO("getCategoryGroups", Boolean.FALSE));
 		keyMap.put("ticketAssignment", new GenericVO("getTicketAssignments", Boolean.TRUE));
+		keyMap.put("tickets", new GenericVO("getTickets", Boolean.TRUE));
 		keyMap.put("scheduleTransferType", new GenericVO("getScheduleTransferTypes", Boolean.TRUE));
 		keyMap.put("acCas", new GenericVO("getAcCas", Boolean.TRUE));
 		keyMap.put("closestCas", new GenericVO("getClosestCas", Boolean.TRUE));
 		keyMap.put("inventorySuppliers", new GenericVO("getInventorySuppliers", Boolean.TRUE));
+		keyMap.put("locationInventory", new GenericVO("getLocationInventory", Boolean.TRUE));
 		keyMap.put("emailCampaigns", new GenericVO("getEmailCampaigns", Boolean.TRUE));
 	}
 
@@ -390,7 +394,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		for(StatusCodeVO sc : codes) {
 			data.add(new GenericVO(sc.getStatusCode(), sc.getStatusName()));
 		}
-		
+
 		return data;
 	}
 	/**
@@ -568,11 +572,22 @@ public class SelectLookupAction extends SBActionAdapter {
 			String assignmentName = assignment.getTypeCode() == TypeCode.CALLER ? assignment.getUser().getFirstName() + ' ' + assignment.getUser().getLastName() : assignment.getLocation().getLocationName();
 			data.add(new GenericVO(assignment.getTicketAssignmentId(), assignmentName));
 		}
-		
+
 		return data;
 	}
-	
-	
+
+
+	/**
+	 * Return a list of tickets - optionally by status
+	 * @param req
+	 * @return
+	 */
+	public List<GenericVO> getTickets(ActionRequest req) {
+		TicketListAction tla = new TicketListAction(getAttributes(), getDBConnection());
+		return tla.getTickets(EnumUtil.safeValueOf(StatusCode.class, req.getParameter("statusCode")));
+	}
+
+
 	/**
 	 * Return a list of ticket schedule transfer types
 	 * 
@@ -584,12 +599,12 @@ public class SelectLookupAction extends SBActionAdapter {
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		Locale locale = StringUtil.isEmpty(user.getLocale()) ? site.getLocale() : new Locale(user.getLocale());
 		ResourceBundle bundle = ResourceBundle.getBundle(WSLAConstants.RESOURCE_BUNDLE, locale); 
-		
+
 		List<GenericVO> data = new ArrayList<>();
 		for (TicketScheduleVO.TypeCode type : TicketScheduleVO.TypeCode.values()) {
 			data.add(new GenericVO(type.name(), bundle.getString("wsla.ticket.schedule." + type.name())));
 		}
-		
+
 		return data;
 	}
 
@@ -603,6 +618,33 @@ public class SelectLookupAction extends SBActionAdapter {
 		String partId = req.getParameter(REQ_PRODUCT_ID, req.getParameter("custProductId"));
 		Integer min = req.getIntegerParameter("minInventory"); //the minimum inventory to be on hand in order to match
 		return new InventoryAction(getAttributes(), getDBConnection()).listInvetorySuppliers(partId, min);
+	}
+
+	/**
+	 * Return a list of available products (inventory) at the given location.
+	 * @param req
+	 * @return
+	 */
+	public List<GenericVO> getLocationInventory(ActionRequest req) {
+		String schema = getCustomSchema();
+		String locationId = req.getParameter("locationId");
+		String providerId = req.getParameter("providerId");
+
+		//turn the locationId into a providerId if providerId is empty
+		if (StringUtil.isEmpty(providerId)) {
+			String sql = StringUtil.join("select provider_id as key from ", schema,"wsla_provider_location ",
+					"where location_id=?");
+			log.debug(sql);
+			DBProcessor db = new DBProcessor(getDBConnection(), schema);
+			List<GenericVO> data = db.executeSelect(sql, Arrays.asList(locationId), new GenericVO());
+			providerId = !data.isEmpty() ? (String)data.get(0).getKey() : null;
+		}
+		//stop here if we couldn't find the providerId
+		if (StringUtil.isEmpty(providerId)) 
+			return Collections.emptyList();
+
+		ProductMasterAction pa = new ProductMasterAction(getAttributes(), getDBConnection());
+		return pa.listProducts(providerId, Integer.valueOf(1), Integer.valueOf(0));
 	}
 
 	/**

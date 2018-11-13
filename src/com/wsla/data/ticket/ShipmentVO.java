@@ -31,9 +31,12 @@ public class ShipmentVO extends BeanDataVO {
 	private String shippedById; //is-a userId, the person who created the shipment
 	private String fromLocationId; //is-a providerLocationId
 	private String toLocationId; //is-a providerLocationId
+	private ShipmentStatus status;
 	private CarrierType carrierType;
 	private String trackingNo;
 	private String commentsText;
+	private String purchaseOrder;
+	private double cost;
 	private Date shipmentDate;
 	private Date createDate;
 	private Date updateDate;
@@ -43,9 +46,14 @@ public class ShipmentVO extends BeanDataVO {
 	//JSTL
 	private String fromLocationName;
 	private String toLocationName;
+	private String ticketIdText;
 
 	public enum CarrierType {
-		FEDEX, UPS, DHL
+		DHL, ESTAFETA, FEDEX, UPS
+	}
+
+	public enum ShipmentStatus {
+		CREATED, BACKORDERED, SHIPPED, RECEIVED
 	}
 
 	public ShipmentVO() {
@@ -116,6 +124,30 @@ public class ShipmentVO extends BeanDataVO {
 		return updateDate;
 	}
 
+	public List<PartVO> getParts() {
+		return parts;
+	}
+
+	@Column(name="status_cd")
+	public ShipmentStatus getStatus() {
+		return status;
+	}
+
+	@Column(name="cost_no")
+	public double getCost() {
+		return cost;
+	}
+
+	@Column(name="purchase_order_txt")
+	public String getPurchaseOrder() {
+		return purchaseOrder;
+	}
+
+	@Column(name="ticket_no")
+	public String getTicketIdText() {
+		return ticketIdText;
+	}
+
 	public void setShipmentId(String shipmentId) {
 		this.shipmentId = shipmentId;
 	}
@@ -148,10 +180,6 @@ public class ShipmentVO extends BeanDataVO {
 		this.shipmentDate = shipmentDate;
 	}
 
-	public List<PartVO> getParts() {
-		return parts;
-	}
-
 	public void setParts(List<PartVO> parts) {
 		this.parts = parts;
 	}
@@ -159,7 +187,8 @@ public class ShipmentVO extends BeanDataVO {
 	@BeanSubElement
 	public void addPart(PartVO part) {
 		if (parts == null) parts = new ArrayList<>();
-		this.parts.add(part);
+		if (part == null || StringUtil.isEmpty(part.getPartId())) return; 
+		parts.add(part);
 	}
 
 	public void setFromLocationName(String fromLocationName) {
@@ -176,5 +205,21 @@ public class ShipmentVO extends BeanDataVO {
 
 	public void setUpdateDate(Date updateDate) {
 		this.updateDate = updateDate;
+	}
+
+	public void setStatus(ShipmentStatus status) {
+		this.status = status;
+	}
+
+	public void setPurchaseOrder(String purchaseOrder) {
+		this.purchaseOrder = purchaseOrder;
+	}
+
+	public void setCost(double cost) {
+		this.cost = cost;
+	}
+
+	public void setTicketIdText(String ticketIdText) {
+		this.ticketIdText = ticketIdText;
 	}
 }

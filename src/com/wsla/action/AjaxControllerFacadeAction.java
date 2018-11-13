@@ -17,6 +17,8 @@ import com.wsla.action.admin.DiagnosticAction;
 import com.wsla.action.admin.HarvestApprovalAction;
 import com.wsla.action.admin.HarvestPartsAction;
 import com.wsla.action.admin.InventoryAction;
+import com.wsla.action.admin.LogisticsAction;
+import com.wsla.action.admin.LogisticsPartsAction;
 import com.wsla.action.admin.ProductCategoryAction;
 import com.wsla.action.admin.ProductCategoryXRAction;
 import com.wsla.action.admin.ProductMasterAction;
@@ -104,6 +106,8 @@ public class AjaxControllerFacadeAction extends FacadeActionAdapter {
 		actionMap.put("inventory", InventoryAction.class);
 		actionMap.put("harvestApproval", HarvestApprovalAction.class);
 		actionMap.put("harvestParts", HarvestPartsAction.class);
+		actionMap.put("logistics", LogisticsAction.class);
+		actionMap.put("logisticsParts", LogisticsPartsAction.class);
 
 		//these are actually ticket actions - should be called through the ticket controller
 		actionMap.put("parts", PartsAction.class);
