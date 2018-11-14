@@ -822,7 +822,7 @@ public class GridVO extends BeanDataVO {
 			seriesLabel = cTitle;
 		} else {
 			series[index - deletedRows.size()] = cTitle;
-			seriesTxtFlg[index - deletedRows.size()] = ((Double)column.get("txtFlg")).intValue();
+			seriesTxtFlg[index - deletedRows.size()] = (Convert.formatDouble(StringUtil.checkVal(column.get("txtFlg")), 0)).intValue();
 		}
 	}
 	

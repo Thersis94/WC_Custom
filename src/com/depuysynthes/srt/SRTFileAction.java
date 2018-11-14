@@ -10,6 +10,7 @@ import java.util.stream.Collectors;
 
 import com.depuysynthes.srt.vo.SRTFileVO;
 import com.depuysynthes.srt.vo.SRTRosterVO;
+import com.siliconmtn.action.ActionControllerFactoryImpl;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
@@ -68,6 +69,24 @@ public class SRTFileAction extends SimpleActionAdapter {
 		} else if(req.hasParameter(RelationType.REQUEST.getReqParamNm()) || req.hasParameter(RelationType.MASTER_RECORD.getReqParamNm())){
 			List<SRTFileVO> files = loadFiles(req.getParameter("requestId"), req.getParameter("masterRecordId"));
 			putModuleData(files, files.size(), false);
+		}
+	}
+
+	@Override
+	public void build(ActionRequest req) throws ActionException {
+
+		//Accept Delete File Requests.
+		if(req.getBooleanParameter("isDelete")) {
+			delete(req);
+		}
+	}
+
+	@Override
+	public void delete(ActionRequest req) throws ActionException {
+
+		//Verify profileDocumentId is on req and delete.  Custom Record will cascade.
+		if(req.hasParameter(ProfileDocumentAction.PROFILE_DOC_ID)) {
+			ActionControllerFactoryImpl.loadAction(ProfileDocumentAction.class, this).delete(req);
 		}
 	}
 
@@ -154,14 +173,12 @@ public class SRTFileAction extends SimpleActionAdapter {
 	 */
 	private void processProfileDocumentRequest(String profileDocumentId, RelationType rel, String relId) throws ActionException {
 		String schema = getCustomSchema();
-		ProfileDocumentAction pda = new ProfileDocumentAction();
-		pda.setActionInit(actionInit);
-		pda.setDBConnection(dbConn);
-		pda.setAttributes(attributes);
+
+		ProfileDocumentAction pda = ActionControllerFactoryImpl.loadAction(ProfileDocumentAction.class, this);
 		ProfileDocumentVO pvo = pda.getDocumentByProfileDocumentId(profileDocumentId);
 
 		//This determines if they can actually see it.
-		StringBuilder sql = new StringBuilder(205);
+		StringBuilder sql = new StringBuilder(300);
 		sql.append("select count(*) from profile_document pd ");
 		sql.append("inner join ").append(schema).append("dpy_syn_srt_file f ");
 		sql.append("on f.profile_document_id = pd.profile_document_id ");

@@ -178,29 +178,32 @@ public class SRTRosterImportAction extends SimpleActionAdapter {
 	private void populateTempTable(List<SRTRosterVO> tempUserData, String tempTableNm) throws DatabaseException {
 		Map<String, List<Object>> psValues = new HashMap<>();
 		for(SRTRosterVO r : tempUserData) {
-			List<Object> data = new ArrayList<>();
-			data.add(r.getFirstName());
-			data.add(r.getLastName());
-			data.add(r.getEmailAddress());
-			data.add(r.getMainPhone());
-			data.add(r.getMobilePhone());
-			data.add(r.getAddress());
-			data.add(r.getAddress2());
-			data.add(r.getCity());
-			data.add(r.getState());
-			data.add(r.getZipCode());
-			data.add(r.getCountryCode());
-			data.add(r.getAccountNo());
-			data.add(r.getWorkgroupId());
-			data.add(r.getWwid());
-			data.add(r.getTerritoryId());
-			data.add(r.getArea());
-			data.add(r.getRegion());
-			data.add(r.getEngineeringContact());
-			data.add(0);
-			data.add(1);
-			data.add(Convert.getCurrentTimestamp());
-			psValues.put(r.getEmailAddress(), data);
+			if(!StringUtil.isEmpty(r.getEmailAddress())) {
+				List<Object> data = new ArrayList<>();
+				data.add(r.getFirstName());
+				data.add(r.getLastName());
+				data.add(r.getEmailAddress());
+				data.add(r.getMainPhone());
+				data.add(r.getMobilePhone());
+				data.add(r.getAddress());
+				data.add(r.getAddress2());
+				data.add(r.getCity());
+				data.add(r.getState());
+				data.add(r.getZipCode());
+				data.add(r.getCountryCode());
+				data.add(r.getAccountNo());
+				//data.add(r.getWorkgroupId());
+				data.add(SRTUserImportModule.SALES_ROSTER_ID);
+				data.add(r.getWwid());
+				data.add(r.getTerritoryId());
+				data.add(r.getArea());
+				data.add(r.getRegion());
+				data.add(r.getEngineeringContact());
+				data.add(0);
+				data.add(1);
+				data.add(Convert.getCurrentTimestamp());
+				psValues.put(r.getEmailAddress(), data);
+			}
 		}
 		new DBProcessor(dbConn, TEMP_SCHEMA).executeBatch(populateTempTableSql(tempTableNm), psValues);
 	}

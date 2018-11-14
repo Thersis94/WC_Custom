@@ -72,6 +72,7 @@ public class UpdatesAction extends ManagementAction {
 	public static final String STATUS_CD = "statusCd"; //req param
 	public static final String TYPE_CD = "typeCd"; //req param
 	public static final String SEARCH = "search"; //req param
+	public static final String ANNOUNCEMENT_TYPE = "announcementType"; //req param
 	private static final String COOK_UPD_START_DT = "updateStartDt";
 	private static final String COOK_UPD_END_DT = "updateEndDt";
 
@@ -279,6 +280,11 @@ public class UpdatesAction extends ManagementAction {
 		if (!StringUtil.isEmpty(hierarchies)) {
 			for (String s : hierarchies.split(","))
 				fq.add(SearchDocumentHandler.HIERARCHY + ":" + s);
+		}
+
+		String announcementType = CookieUtil.getValue("updateAnnouncementType", req.getCookies());
+		if(!StringUtil.isEmpty(announcementType)) {
+			fq.add(StringUtil.join("announcement_type_i:", announcementType));
 		}
 
 		req.setParameter("fq", fq.toArray(new String[fq.size()]), true);
