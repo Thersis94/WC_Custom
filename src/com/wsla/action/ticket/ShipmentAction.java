@@ -1,6 +1,7 @@
 package com.wsla.action.ticket;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 // SMT Base Libs
@@ -12,6 +13,9 @@ import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.orm.GridDataVO;
 import com.siliconmtn.db.pool.SMTDBConnection;
+import com.siliconmtn.db.util.DatabaseException;
+import com.siliconmtn.exception.InvalidDataException;
+import com.siliconmtn.util.StringUtil;
 // WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.wsla.data.ticket.ShipmentVO;
@@ -57,7 +61,22 @@ public class ShipmentAction extends SBActionAdapter {
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		String ticketId = req.getParameter("ticketId");
-		setModuleData(listShipments(ticketId, new BSTableControlVO(req, ShipmentVO.class)));
+		setModuleData(loadShipments(ticketId, new BSTableControlVO(req, ShipmentVO.class)));
+	}
+
+
+	/**
+	 * Save the VO to the database
+	 * @param vo
+	 * @throws ActionException
+	 */
+	public void saveShipment(ShipmentVO vo) throws ActionException {
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		try {
+			db.save(vo);
+		} catch (InvalidDataException | DatabaseException e) {
+			throw new ActionException(e);
+		}
 	}
 
 
@@ -67,23 +86,45 @@ public class ShipmentAction extends SBActionAdapter {
 	 * @param bst
 	 * @return
 	 */
-	protected GridDataVO<ShipmentVO> listShipments(String ticketId, BSTableControlVO bst) {
-		bst.setLimit(1000); //set limit high enough to not paginate.
+	protected GridDataVO<ShipmentVO> loadShipments(String ticketId, BSTableControlVO bst) {
+		GridDataVO<ShipmentVO> vo = new GridDataVO<>();
+		vo.setRowData(listShipments(ticketId, null, bst.getSQLOrderBy("s.shipment_dt, pm.product_nm", "asc")));
+		return vo;
+	}
 
+
+	/**
+	 * Load a list of Shipments either by shipmentId or if empty ticketId (the default)
+	 * @param ticketId
+	 * @param shipmentId
+	 * @param orderBy
+	 * @return
+	 */
+	public List<ShipmentVO> listShipments(String ticketId, String shipmentId, String orderBy) {
 		String schema = getCustomSchema();
+		String lookupId = ticketId;
 		StringBuilder sql = new StringBuilder(200);
 		sql.append("select s.*, p.*, pm.product_nm, frm.location_nm as from_location_nm, dst.location_nm as to_location_nm ");
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("wsla_shipment s ");
-		sql.append(DBUtil.INNER_JOIN).append(schema).append("wsla_part p on s.shipment_id=p.shipment_id and p.ticket_id=? ");
+		sql.append(DBUtil.INNER_JOIN).append(schema).append("wsla_part p on s.shipment_id=p.shipment_id ");
+		if (StringUtil.isEmpty(shipmentId)) sql.append("and p.ticket_id=? ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("wsla_product_master pm on p.product_id=pm.product_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("wsla_provider_location frm on frm.location_id=s.from_location_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("wsla_provider_location dst on dst.location_id=s.to_location_id ");
 		sql.append("where 1=1 "); //ticketId is part of the join constraint
 
-		sql.append(bst.getSQLOrderBy("s.shipment_dt, pm.product_nm",  "asc"));
+		if (!StringUtil.isEmpty(shipmentId)) {
+			sql.append("and s.shipment_id=? ");
+			lookupId = shipmentId;
+		}
+
+		if (StringUtil.isEmpty(orderBy))
+			orderBy = "order by s.shipment_dt, pm.product_nm";
+
+		sql.append(orderBy);
 		log.debug(sql);
 
 		DBProcessor db = new DBProcessor(getDBConnection(), schema);
-		return db.executeSQLWithCount(sql.toString(), Arrays.asList(ticketId), new ShipmentVO(), bst);
+		return db.executeSelect(sql.toString(), Arrays.asList(lookupId), new ShipmentVO());
 	}
 }
