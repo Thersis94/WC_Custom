@@ -28,6 +28,7 @@ public class PartVO extends ProductVO {
 	private String ticketId;
 	private String shipmentId;
 	private int quantity;
+	private int quantityReceived;
 	private int harvestedFlag;
 	private String availabilityCode;
 	private Date availabilityDate;
@@ -66,6 +67,11 @@ public class PartVO extends ProductVO {
 	@Column(name="quantity_no")
 	public int getQuantity() {
 		return quantity;
+	}
+
+	@Column(name="rcvd_qnty_no")
+	public int getQuantityReceived() {
+		return quantityReceived;
 	}
 
 	@Column(name="harvested_flg")
@@ -120,5 +126,9 @@ public class PartVO extends ProductVO {
 
 	public void setQuantityOnHand(int quantityOnHand) {
 		this.quantityOnHand = quantityOnHand;
+	}
+
+	public void setQuantityReceived(int quantityReceived) {
+		this.quantityReceived = quantityReceived;
 	}
 }

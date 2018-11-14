@@ -9,7 +9,9 @@ import com.siliconmtn.data.parser.BeanDataVO;
 import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
+import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.StringUtil;
+import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
  * <p><b>Title:</b> ShipmentVO.java</p>
@@ -38,6 +40,7 @@ public class ShipmentVO extends BeanDataVO {
 	private String purchaseOrder;
 	private double cost;
 	private Date shipmentDate;
+	private Date arrivalDate;
 	private Date createDate;
 	private Date updateDate;
 
@@ -62,6 +65,12 @@ public class ShipmentVO extends BeanDataVO {
 
 	public ShipmentVO(ActionRequest req) {
 		super(req);
+		//set shippedBy to this user if blank
+		if (StringUtil.isEmpty(getShippedById())) {
+			UserDataVO userData = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
+			UserVO user = userData != null ? (UserVO) userData.getUserExtendedInfo() : null;
+			if (user != null) setShippedById(user.getUserId());
+		}
 	}
 
 	@Column(name="shipment_id", isPrimaryKey=true)
@@ -102,6 +111,11 @@ public class ShipmentVO extends BeanDataVO {
 	@Column(name="shipment_dt")
 	public Date getShipmentDate() {
 		return shipmentDate;
+	}
+
+	@Column(name="arrival_dt")
+	public Date getArrivalDate() {
+		return arrivalDate;
 	}
 
 	@Column(name="from_location_nm", isReadOnly=true)
@@ -221,5 +235,9 @@ public class ShipmentVO extends BeanDataVO {
 
 	public void setTicketIdText(String ticketIdText) {
 		this.ticketIdText = ticketIdText;
+	}
+
+	public void setArrivalDate(Date arrivalDate) {
+		this.arrivalDate = arrivalDate;
 	}
 }
