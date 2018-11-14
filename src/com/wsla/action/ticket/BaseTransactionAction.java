@@ -7,6 +7,7 @@ import java.util.ResourceBundle;
 // SMT Base Libs
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.db.orm.DBProcessor;
+import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.workflow.WorkflowLookupUtil;
@@ -58,6 +59,17 @@ public class BaseTransactionAction extends SBActionAdapter {
 	}
 
 	/**
+	 * 
+	 * @param dbConn
+	 * @param attributes
+	 */
+	public BaseTransactionAction(SMTDBConnection dbConn, Map<String, Object> attributes) {
+		this();
+		this.dbConn = dbConn;
+		this.attributes = attributes;
+	}
+	
+	/**
 	 * Updates the ticket to the new status.
 	 * 
 	 * @param ticketId
@@ -65,7 +77,7 @@ public class BaseTransactionAction extends SBActionAdapter {
 	 * @throws DatabaseException 
 	 * @throws InvalidDataException 
 	 */
-	public void changeStatus(String ticketId, String userId, StatusCode newStatus, String summary, UnitLocation location) throws InvalidDataException, DatabaseException {
+	public TicketLedgerVO changeStatus(String ticketId, String userId, StatusCode newStatus, String summary, UnitLocation location) throws InvalidDataException, DatabaseException {
 		TicketVO ticket = new TicketVO();
 		ticket.setTicketId(ticketId);
 		
@@ -77,7 +89,7 @@ public class BaseTransactionAction extends SBActionAdapter {
 		
 		// Send the notification and add the ledger entry
 		processNotification(ticket.getTicketIdText(), userId, newStatus);
-		addLedger(ticketId, userId, newStatus, summary, location);
+		return addLedger(ticketId, userId, newStatus, summary, location);
 	}
 
 	/**
@@ -124,7 +136,7 @@ public class BaseTransactionAction extends SBActionAdapter {
 	 * @throws DatabaseException 
 	 * @throws InvalidDataException 
 	 */
-	public String addLedger(String ticketId, String userId, StatusCode status, String summary, UnitLocation location) throws InvalidDataException, DatabaseException {
+	public TicketLedgerVO addLedger(String ticketId, String userId, StatusCode status, String summary, UnitLocation location) throws InvalidDataException, DatabaseException {
 		// Create a new ledger record
 		TicketLedgerVO ledger = new TicketLedgerVO();
 		ledger.setDispositionBy(userId);
@@ -144,7 +156,7 @@ public class BaseTransactionAction extends SBActionAdapter {
 		BasePortalAction bpa = new BasePortalAction(getDBConnection(), getAttributes());
 		bpa.addLedger(ledger);
 		
-		return ledger.getLedgerEntryId();
+		return ledger;
 	}
 	
 	/**
