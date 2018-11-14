@@ -2,9 +2,7 @@ package com.wsla.action.ticket.transaction;
 
 import java.util.Arrays;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
@@ -15,14 +13,12 @@ import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
-import com.wsla.action.BasePortalAction;
 // WC Libs
 import com.wsla.action.ticket.BaseTransactionAction;
 import com.wsla.action.ticket.TicketEditAction;
 
 // WSLA Libs
 import com.wsla.data.ticket.LedgerSummary;
-import com.wsla.data.ticket.StatusCode;
 import com.wsla.data.ticket.TicketAssignmentVO;
 import com.wsla.data.ticket.TicketLedgerVO;
 import com.wsla.data.ticket.TicketScheduleVO;
@@ -102,11 +98,6 @@ public class TicketScheduleTransaction extends BaseTransactionAction {
 			// Make sure the unit location is current (requires the assignment data to set)
 			if (req.hasParameter(REQ_COMPLETE))
 				updateUnitLocation(ts);
-			
-			// Build the next step
-			Map<String, Object> params = new HashMap<>();
-			params.put("ticketId", ts.getTicketId());
-			buildNextStep(StatusCode.UNLISTED_SERIAL_NO, new BasePortalAction().getResourceBundle(req), params, false);
 			
 			putModuleData(ts);
 			
