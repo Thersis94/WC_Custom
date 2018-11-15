@@ -26,6 +26,7 @@ import com.siliconmtn.data.Tree;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.EnumUtil;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
 import com.smt.sitebuilder.common.PageVO;
@@ -61,20 +62,26 @@ public class ProductManagementAction extends ManagementAction {
 	 * Enum for ensuring that the details fields are presented in the proper order
 	 */
 	private enum DetailsField {
-		CLASSIFICATION(0),
-		APPROACH(1),
-		MARKET(2),
-		TECHNOLOGY(3),
-		INDICATION(4);
+		CLASSIFICATION(0, 2),
+		APPROACH(1, 1),
+		MARKET(2, 4),
+		TECHNOLOGY(3, 3),
+		INDICATION(4, 5);
 
 		int order;
+		int publicOrder;
 
-		DetailsField(int order) {
+		DetailsField(int order, int publicOrder) {
 			this.order = order;
+			this.publicOrder = publicOrder;
 		}
 
 		public int getOrder() {
 			return order;
+		}
+
+		public int getPublicOrder() {
+			return publicOrder;
 		}
 
 		public static DetailsField getFromString(String detailField) {
@@ -883,8 +890,14 @@ public class ProductManagementAction extends ManagementAction {
 			case ATTRIBUTE:
 				try {
 					ProductAttributeTypeVO t = new ProductAttributeTypeVO(req);
-					if (checkDups(t))
+					if (checkDups(t)) {
+						//Ensure Order No is set properly for Details.
+						DetailsField f = EnumUtil.safeValueOf(DetailsField.class, t.getParentId());
+						if(f != null) {
+							t.setOrderNo(f.getPublicOrder());
+						}
 						db.save(t);
+					}
 					if (StringUtil.isEmpty(t.getTypeCd()) && req.hasParameter("modulesetId"))
 						populateModuleSets(t, req);
 					putModuleData(t);
