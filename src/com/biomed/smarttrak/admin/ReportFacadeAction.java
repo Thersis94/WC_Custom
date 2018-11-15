@@ -14,6 +14,8 @@ import com.biomed.smarttrak.admin.report.CompanySegmentsReportVO;
 import com.biomed.smarttrak.admin.report.EmailMetricsReportAction;
 import com.biomed.smarttrak.admin.report.LinkReportAction;
 import com.biomed.smarttrak.admin.report.LinkWebReportVO;
+import com.biomed.smarttrak.admin.report.MonthlyPageViewReportAction;
+import com.biomed.smarttrak.admin.report.MonthlyPageViewReportVO;
 import com.biomed.smarttrak.admin.report.SupportReportAction;
 import com.biomed.smarttrak.admin.report.SupportReportVO;
 import com.biomed.smarttrak.admin.report.UserActivityAction;
@@ -25,6 +27,7 @@ import com.biomed.smarttrak.admin.report.UserPermissionsReportVO;
 import com.biomed.smarttrak.admin.report.UserUtilizationDailyRollupReportVO;
 import com.biomed.smarttrak.admin.report.UserUtilizationMonthlyRollupReportVO;
 import com.biomed.smarttrak.admin.report.UserUtilizationReportAction;
+import com.siliconmtn.action.ActionControllerFactoryImpl;
 // SMTBaseLibs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -64,7 +67,8 @@ public class ReportFacadeAction extends SBActionAdapter {
 		USAGE_ROLLUP_MONTHLY,
 		SUPPORT,
 		LINK,
-		EMAIL_METRICS;
+		EMAIL_METRICS,
+		MONTHLY_PAGE_VIEW;
 	}
 
 	/**
@@ -133,6 +137,9 @@ public class ReportFacadeAction extends SBActionAdapter {
 			case EMAIL_METRICS:
 				rpt = generateMetricsReport(req);
 				break;
+			case MONTHLY_PAGE_VIEW:
+				rpt = generateMonthlyPageViewReport(req);
+				break;
 			default:
 				break;
 		}
@@ -144,7 +151,8 @@ public class ReportFacadeAction extends SBActionAdapter {
 		HttpServletResponse resp = (HttpServletResponse) req.getAttribute(GlobalConfig.HTTP_RESPONSE);
 		CookieUtil.add(resp, "reportLoadingCookie", "", "/", 0);
 	}
-	
+
+
 	/*
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.action.ActionRequest)
@@ -208,7 +216,6 @@ public class ReportFacadeAction extends SBActionAdapter {
 		rpt.setData(ara.retrieveAccountsList(req));
 		return rpt;
 	}
-
 
 	/**
 	 * Generates the Account report.
@@ -366,5 +373,19 @@ public class ReportFacadeAction extends SBActionAdapter {
 		emr.setDBConnection(dbConn);
 		
 		return emr.buildReport(req);
+	}
+
+	/**
+	 * Builds the monthly pageview report
+	 * @param req
+	 * @return
+	 */
+	private AbstractSBReportVO generateMonthlyPageViewReport(ActionRequest req) {
+		log.debug("generating Monthly PageView Report...");
+		MonthlyPageViewReportAction ara = ActionControllerFactoryImpl.loadAction(MonthlyPageViewReportAction.class, this);
+
+		AbstractSBReportVO rpt = new MonthlyPageViewReportVO();
+		rpt.setData(ara.retrieveData(req));
+		return rpt;
 	}
 }
