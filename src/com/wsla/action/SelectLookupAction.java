@@ -41,8 +41,9 @@ import com.wsla.action.admin.ProviderAction;
 import com.wsla.action.admin.ProviderLocationAction;
 import com.wsla.action.admin.StatusCodeAction;
 import com.wsla.action.admin.WarrantyAction;
-import com.wsla.action.ticket.CASSelectionAction;
+import com.wsla.action.admin.WarrantyAction.ServiceTypeCode;
 import com.wsla.action.ticket.TicketEditAction;
+import com.wsla.action.ticket.CASSelectionAction;
 import com.wsla.action.ticket.TicketListAction;
 import com.wsla.common.WSLALocales;
 import com.wsla.data.product.ProductVO;
@@ -98,6 +99,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		keyMap.put("oemParts", new GenericVO("getProviderParts", Boolean.TRUE));
 		keyMap.put("providerLocations", new GenericVO("getProviderLocations", Boolean.TRUE));
 		keyMap.put("activeFlag", new GenericVO("getYesNoLookup", Boolean.FALSE));
+		keyMap.put("warrantyServiceTypeCode", new GenericVO("getServiceTypeCode", Boolean.FALSE));
 		keyMap.put("role", new GenericVO("getOrgRoles", Boolean.TRUE));
 		keyMap.put("locale", new GenericVO("getLocales", Boolean.FALSE));
 		keyMap.put("gender", new GenericVO("getGenders", Boolean.FALSE));
@@ -221,6 +223,19 @@ public class SelectLookupAction extends SBActionAdapter {
 
 		return yesNo;
 	}
+	
+	/**
+	 * loads a list of the warranty service types
+	 * @return
+	 */
+	public List<GenericVO> getServiceTypeCode(){
+		List<GenericVO> types = new ArrayList<>();
+		for (ServiceTypeCode e : WarrantyAction.ServiceTypeCode.values()) {
+			types.add(new GenericVO(e.name(),e.getValue()));
+		}
+		
+		return types;
+	}
 
 	/**
 	 * Returns the list of roles for the WSLA org
@@ -341,6 +356,7 @@ public class SelectLookupAction extends SBActionAdapter {
 	 * @return
 	 */
 	public List<GenericVO> getClosestCas(ActionRequest req) {
+		
 		String ticketId = req.getParameter("ticketId");
 		log.info(getAdminUser(req));
 		UserVO user = (UserVO)getAdminUser(req).getUserExtendedInfo();
@@ -355,6 +371,7 @@ public class SelectLookupAction extends SBActionAdapter {
 	 * @return
 	 */
 	public List<GenericVO> getAcCas(ActionRequest req) {
+		String providerId = req.getParameter("providerId");
 		StringBuilder term = new StringBuilder(16);
 		term.append("%").append(StringUtil.checkVal(req.getParameter("search")).toLowerCase()).append("%");
 
@@ -368,16 +385,24 @@ public class SelectLookupAction extends SBActionAdapter {
 		sql.append("where provider_type_id = 'CAS' ");
 		sql.append("and (lower(provider_nm) like ? or lower(location_nm) like ? ");
 		sql.append("or lower(city_nm) like ? or store_no like ?) ");
-		sql.append("order by provider_nm");
-
 		List<Object> vals = new ArrayList<>();
-		vals.add(term);
-		vals.add(term);
-		vals.add(term);
-		vals.add(term);
 
+		vals.add(term);
+		vals.add(term);
+		vals.add(term);
+		vals.add(term);
+		
+		if (!StringUtil.isEmpty(req.getParameter("providerId"))) {
+			sql.append(" and a.provider_id = ? ");
+			vals.add(providerId);
+		}
+		
+		sql.append("order by provider_nm");
+		
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
-		return db.executeSelect(sql.toString(), vals, new GenericVO());
+		List<GenericVO> data = db.executeSelect(sql.toString(), vals, new GenericVO());
+		log.debug("UUUU data size " + data.size());
+		return data;
 	}
 
 	/**
@@ -601,7 +626,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		}
 
 		return data;
-	}
+}
 
 	/**
 	 * Return a list of provider locations who have inventory (records).

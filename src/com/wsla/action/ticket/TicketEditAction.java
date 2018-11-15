@@ -29,6 +29,8 @@ import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.user.ProfileManager;
 import com.smt.sitebuilder.action.user.ProfileManagerFactory;
+import com.smt.sitebuilder.common.ModuleVO;
+import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.wsla.action.BasePortalAction;
 import com.wsla.data.product.ProductSerialNumberVO;
 import com.wsla.data.product.ProductWarrantyVO;
@@ -117,6 +119,9 @@ public class TicketEditAction extends SBActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
+		//if its the admintool do nothing at the moment
+		if(req.hasParameter("manMod")) {return;}
+		
 		String ticketNumber = req.getParameter("ticketIdText");
 		boolean json = req.getBooleanParameter("json");
 		try {
@@ -125,6 +130,7 @@ public class TicketEditAction extends SBActionAdapter {
 			} else if (json && req.hasParameter("comment")) {
 				boolean isActivity = req.getBooleanParameter("activity");
 				putModuleData(getComments(req.getParameter(TICKET_ID), req.getBooleanParameter("isEndUser"), isActivity));
+
 			} else if (json && req.hasParameter("schedule")) {
 				putModuleData(getSchedule(req.getParameter(TICKET_ID), req.getParameter(REQ_TICKET_SCHEDULE_ID)));
 			} else if (json && req.hasParameter("assets")) {
@@ -472,6 +478,50 @@ public class TicketEditAction extends SBActionAdapter {
 		List<ProductSerialNumberVO> data = db.executeSelect(sql.toString(), Arrays.asList(id), new ProductSerialNumberVO());
 		
 		return data.isEmpty() ? null : data.get(0);
+	}
+	
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.action.ActionRequest)
+	 */
+	@Override
+	public void build(ActionRequest req) throws ActionException {
+		try {
+			if (req.getBooleanParameter("isComment")) {
+				addTicketComment(new TicketCommentVO(req));
+			}
+		} catch(Exception e) {
+			log.error("Unable to perform action", e);
+			putModuleData("", 0, false, e.getLocalizedMessage(), true);
+		}
+	}
+	
+	/**
+	 * 
+	 * @param comment
+	 * @throws SQLException
+	 */
+	public void addTicketComment(TicketCommentVO comment) throws SQLException {
+		try {
+			DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+			db.save(comment);
+		} catch(Exception e) {
+			throw new SQLException("unable to save comment", e);
+		}
+	}
+	
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#list(com.siliconmtn.action.ActionRequest)
+	 */
+	@Override
+	public void list(ActionRequest req) throws ActionException {
+		
+		// Set the action to use the simple admin view
+		ModuleVO module = (ModuleVO)attributes.get(AdminConstants.ADMIN_MODULE_DATA);
+		module.setSimpleAction(true);
+		super.list(req);
+
 	}
 }
 

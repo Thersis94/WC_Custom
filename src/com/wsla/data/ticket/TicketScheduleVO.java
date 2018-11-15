@@ -41,6 +41,7 @@ public class TicketScheduleVO extends BeanDataVO {
 	// Member Variables
 	private String ticketScheduleId;
 	private String ticketId;
+	private String ticketNumber;
 	private String ledgerEntryId;
 	private String casLocationId;
 	private String ownerLocationId;
@@ -54,6 +55,8 @@ public class TicketScheduleVO extends BeanDataVO {
 	private Date updateDate;
 	private Date scheduleDate;
 	private Date completeDate;
+	private Date startDate;
+	private Date endDate;
 	
 	// Bean Sub-Elements
 	private TicketAssignmentVO casLocation;
@@ -318,7 +321,7 @@ public class TicketScheduleVO extends BeanDataVO {
 	 */
 	@BeanSubElement
 	public void setCasLocation(TicketAssignmentVO casLocation) {
-		this.casLocation = casLocation;
+		this.casLocation = casLocation ;
 	}
 
 	/**
@@ -333,7 +336,7 @@ public class TicketScheduleVO extends BeanDataVO {
 	 */
 	@BeanSubElement
 	public void setOwnerLocation(TicketAssignmentVO ownerLocation) {
-		this.ownerLocation = ownerLocation;
+		this.ownerLocation =  ownerLocation;
 	}
 
 	/**
@@ -349,6 +352,49 @@ public class TicketScheduleVO extends BeanDataVO {
 	@BeanSubElement
 	public void setLedger(TicketLedgerVO ledger) {
 		this.ledger = ledger;
+	}
+
+	/**
+	 * @return the ticketNumber
+	 */
+	@Column(name="ticket_no", isReadOnly=true)
+	public String getTicketNumber() {
+		return ticketNumber;
+	}
+
+	/**
+	 * @param ticketNumber the ticketNumber to set
+	 */
+	public void setTicketNumber(String ticketNumber) {
+		this.ticketNumber = ticketNumber;
+	}
+
+	/**
+	 * @return the startDate
+	 */
+	public Date getStartDate() {
+		return startDate;
+	}
+
+	/**
+	 * @param startDate the startDate to set
+	 */
+	public void setStartDate(Date startDate) {
+		this.startDate = startDate;
+	}
+
+	/**
+	 * @return the endDate
+	 */
+	public Date getEndDate() {
+		return endDate;
+	}
+
+	/**
+	 * @param endDate the endDate to set
+	 */
+	public void setEndDate(Date endDate) {
+		this.endDate = endDate;
 	}
 }
 

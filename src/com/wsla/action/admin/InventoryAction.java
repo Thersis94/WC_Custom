@@ -19,6 +19,7 @@ import com.siliconmtn.db.orm.GridDataVO;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
+import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 // WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
@@ -169,17 +170,19 @@ public class InventoryAction extends SBActionAdapter {
 	public void recordInventory(String productId, String locationId, int qnty) 
 			throws ActionException {
 		String schema = getCustomSchema();
-		String updSql = StringUtil.join("update ", schema, "wsla_location_item_master ",
-				"set actual_qnty_no=actual_qnty_no+? where product_id=? and location_id=?");
+		String updSql = StringUtil.join(DBUtil.UPDATE_CLAUSE, schema, "wsla_location_item_master ",
+				"set actual_qnty_no=actual_qnty_no+?, update_dt=? ",
+				"where product_id=? and location_id=?");
 		log.debug(updSql);
 
 		int cnt = 0;
 		try (PreparedStatement ps = dbConn.prepareStatement(updSql)) {
 			ps.setInt(1, qnty);
-			ps.setString(2, productId);
-			ps.setString(3, locationId);
+			ps.setTimestamp(2, Convert.getCurrentTimestamp());
+			ps.setString(3, productId);
+			ps.setString(4, locationId);
 			cnt = ps.executeUpdate();
-			log.debug(String.format("updated %d item_master records", cnt));
+			log.debug(String.format("updated %d item_master records at %s", cnt, locationId));
 
 		} catch (SQLException sqle) {
 			throw new ActionException(sqle);

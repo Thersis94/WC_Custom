@@ -70,8 +70,6 @@ public class LogisticsAction extends SBActionAdapter {
 	 * The users viewing this page are Warehouse, OEM, or CAS (Role).
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.action.ActionRequest)
-	 * TODO when a shipment is saved with status=SHIPPED (for the first time only), we need to decrement inventory from the source location.
-	 * TODO when a shipment is saved with status=RECEIVED (for the first time only), we need to increment inventory as each part is acknowledged.
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
@@ -177,7 +175,9 @@ public class LogisticsAction extends SBActionAdapter {
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("wsla_provider_location destlcn on s.to_location_id=destlcn.location_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("wsla_product_master pm on p.product_id=pm.product_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("wsla_ticket t on p.ticket_id=t.ticket_id ");
-		sql.append("where 1=1 ");
+		sql.append("where (s.status_cd != ? or (s.status_cd=? and s.shipment_dt > CURRENT_DATE-31)) "); //only show ingested items for 30 days past receipt
+		params.add(ShipmentStatus.RECEIVED.toString());
+		params.add(ShipmentStatus.RECEIVED.toString());
 
 		//fuzzy keyword search
 		String term = bst.getLikeSearch().toLowerCase();
@@ -208,11 +208,12 @@ public class LogisticsAction extends SBActionAdapter {
 		//params.add(user.getLocationId());
 		//params.add(user.getLocationId());
 
-		sql.append(bst.getSQLOrderBy("s.create_dt",  "desc"));
+		sql.append(bst.getSQLOrderBy("s.create_dt desc, pm.product_nm",  "asc"));
 		log.debug(sql);
 		log.debug(String.format("userLocationId=%s", user.getLocationId()));
 
 		//after query, adjust the count to be # of unique shipments, not total SQL rows
+		bst.setLimit(10000);
 		DBProcessor db = new DBProcessor(getDBConnection(), schema);
 		GridDataVO<ShipmentVO> grid = db.executeSQLWithCount(sql.toString(), params, new ShipmentVO(), "shipment_id", bst);
 		grid.setSqlTotal(new SQLTotalVO(grid.getRowData().size()));
