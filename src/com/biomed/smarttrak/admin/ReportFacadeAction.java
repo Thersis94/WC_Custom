@@ -139,6 +139,7 @@ public class ReportFacadeAction extends SBActionAdapter {
 				break;
 			case MONTHLY_PAGE_VIEW:
 				rpt = generateMonthlyPageViewReport(req);
+				break;
 			default:
 				break;
 		}
