@@ -1,5 +1,8 @@
 package com.wsla.action.ticket.transaction;
 
+import java.util.HashMap;
+import java.util.Map;
+
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -7,14 +10,16 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
-
+import com.siliconmtn.util.Convert;
 // WC Libs
-import com.smt.sitebuilder.action.SBActionAdapter;
-
+import com.wsla.action.BasePortalAction;
+import com.wsla.action.ticket.BaseTransactionAction;
 // WSLA Libs
 import com.wsla.data.ticket.LedgerSummary;
+import com.wsla.data.ticket.StatusCode;
 import com.wsla.data.ticket.TicketDataVO;
 import com.wsla.data.ticket.TicketLedgerVO;
+import com.wsla.data.ticket.TicketVO;
 import com.wsla.data.ticket.UserVO;
 
 /****************************************************************************
@@ -30,7 +35,7 @@ import com.wsla.data.ticket.UserVO;
  * @updates:
  ****************************************************************************/
 
-public class TicketAssetTransaction extends SBActionAdapter {
+public class TicketAssetTransaction extends BaseTransactionAction {
 	/**
 	 * Key for the Ajax Controller to utilize when calling this class
 	 */
@@ -57,7 +62,11 @@ public class TicketAssetTransaction extends SBActionAdapter {
 	@Override
 	public void build(ActionRequest req) throws ActionException {
 		try {
-			this.saveAsset(req);
+			if (req.hasParameter("isApproved")) {
+				approveAssets(req);
+			} else {
+				saveAsset(req);
+			}
 		} catch (InvalidDataException | DatabaseException e) {
 			log.error("Unable to save asset", e);
 			putModuleData("", 0, false, e.getLocalizedMessage(), true);
@@ -71,6 +80,8 @@ public class TicketAssetTransaction extends SBActionAdapter {
 	 * @throws InvalidDataException 
 	 */
 	public void saveAsset(ActionRequest req) throws InvalidDataException, DatabaseException {
+		TicketDataVO td = new TicketDataVO(req);
+		
 		// Get the DB Processor
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		
@@ -78,17 +89,37 @@ public class TicketAssetTransaction extends SBActionAdapter {
 		UserVO user = (UserVO)getAdminUser(req).getUserExtendedInfo();
 		
 		// Add a ledger entry
-		TicketLedgerVO ledger = new TicketLedgerVO(req);
-		ledger.setDispositionBy(user.getUserId());
-		ledger.setSummary(LedgerSummary.ASSET_LOADED.summary);
-		db.save(ledger);
+		TicketLedgerVO ledger = changeStatus(td.getTicketId(), user.getUserId(), StatusCode.USER_DATA_APPROVAL_PENDING, LedgerSummary.ASSET_LOADED.summary, null);
 		
-		// Build the Ticket Data
-		TicketDataVO td = new TicketDataVO(req);
+		// Build the next step
+		Map<String, Object> params = new HashMap<>();
+		params.put("ticketId", ledger.getTicketId());
+		buildNextStep(ledger.getStatusCode(), new BasePortalAction().getResourceBundle(req), params, false);
+		
+		// Build the additional Ticket Data
 		td.setLedgerEntryId(ledger.getLedgerEntryId());
 		td.setMetaValue(req.getParameter("fileName"));
 		
 		db.save(td);
+	}
+	
+	/**
+	 * Approves the assets, and moves the ticket to the next status
+	 * 
+	 * @param req
+	 * @throws DatabaseException 
+	 * @throws InvalidDataException 
+	 */
+	public void approveAssets(ActionRequest req) throws InvalidDataException, DatabaseException {
+		boolean isApproved = Convert.formatBoolean(req.getParameter("isApproved"));
+		if (!isApproved)
+			return;
+		
+		// Change status to user data complete indicating it was approved.
+		TicketVO ticket = new TicketVO(req);
+		UserVO user = (UserVO) getAdminUser(req).getUserExtendedInfo();
+		TicketLedgerVO ledger = changeStatus(ticket.getTicketId(), user.getUserId(), StatusCode.USER_DATA_COMPLETE, LedgerSummary.ASSET_APPROVED.summary, null);
+		buildNextStep(ledger.getStatusCode(), new BasePortalAction().getResourceBundle(req), new HashMap<>(), false);
 	}
 }
 

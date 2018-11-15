@@ -16,7 +16,7 @@ import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.util.StringUtil;
 
 // WC Libs
-import com.smt.sitebuilder.action.SBActionAdapter;
+import com.wsla.action.ticket.BaseTransactionAction;
 import com.wsla.data.provider.ProviderLocationVO;
 import com.wsla.data.ticket.LedgerSummary;
 import com.wsla.data.ticket.StatusCode;
@@ -38,7 +38,7 @@ import com.wsla.data.ticket.UserVO;
  * @updates:
  ****************************************************************************/
 
-public class TicketAssignmentTransaction extends SBActionAdapter {
+public class TicketAssignmentTransaction extends BaseTransactionAction {
 	/**
 	 * Key for the Ajax Controller to utilize when calling this class
 	 */

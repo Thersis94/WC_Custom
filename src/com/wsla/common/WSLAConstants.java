@@ -30,9 +30,9 @@ public class WSLAConstants {
 	public static final String RESOURCE_BUNDLE = "com.wsla.common.bundle.messages";
 
 	/**
-	 * Workflow lookup keys
+	 * Workflow slug's to lookup a workflow
 	 */
-	public enum WorkflowLookup {
+	public enum WorkflowSlug {
 		WSLA_NOTIFICATION
 	}
 	

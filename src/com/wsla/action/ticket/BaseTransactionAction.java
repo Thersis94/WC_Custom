@@ -10,6 +10,7 @@ import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
+import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.workflow.WorkflowLookupUtil;
 import com.siliconmtn.workflow.data.WorkflowMessageVO;
 // WC Libs
@@ -19,7 +20,7 @@ import com.smt.sitebuilder.util.ParseException;
 import com.smt.sitebuilder.util.WorkflowSender;
 import com.smt.sitebuilder.util.MessageParser.MessageType;
 import com.wsla.action.BasePortalAction;
-import com.wsla.common.WSLAConstants.WorkflowLookup;
+import com.wsla.common.WSLAConstants.WorkflowSlug;
 import com.wsla.data.ticket.NextStepVO;
 import com.wsla.data.ticket.StatusCode;
 import com.wsla.data.ticket.StatusCodeVO;
@@ -102,7 +103,7 @@ public class BaseTransactionAction extends SBActionAdapter {
 	public void processNotification(String ticketIdText, String userId, StatusCode status) {
 		// Lookup the workflow Id
 		WorkflowLookupUtil wlu = new WorkflowLookupUtil(getDBConnection());
-		String workflowId = wlu.getWorkflowFromLookupId(WorkflowLookup.WSLA_NOTIFICATION.name()).getWorkflowId();
+		String workflowId = wlu.getWorkflowFromSlug(WorkflowSlug.WSLA_NOTIFICATION.name()).getWorkflowId();
 		
 		// Exclude anything that may not be serializable, a requirement of the message sender
 		Map<String, Object> wfAttributes = new HashMap<>();
@@ -185,8 +186,12 @@ public class BaseTransactionAction extends SBActionAdapter {
 
 			// Create the next step data
 			nextStep = new NextStepVO(status, bundle);
-			nextStep.setButtonUrl(MessageParser.parse(sc.getNextStepUrl(), params, sc.getNextStepUrl(), MessageType.TEXT));
-			nextStep.setButtonName(sc.getStatusName());
+			
+			if (!StringUtil.isEmpty(sc.getNextStepUrl())) {
+				nextStep.setButtonUrl(MessageParser.parse(sc.getNextStepUrl(), params, sc.getNextStepUrl(), MessageType.TEXT));
+				nextStep.setButtonName(sc.getStatusName());
+			}
+
 			nextStep.setNeedsReloadFlag(needsReload);
 		} catch (InvalidDataException | DatabaseException | ParseException e) {
 			throw new InvalidDataException(e);
