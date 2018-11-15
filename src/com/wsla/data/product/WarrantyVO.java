@@ -10,6 +10,7 @@ import com.siliconmtn.data.parser.BeanDataVO;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
 import com.siliconmtn.util.StringUtil;
+import com.wsla.action.admin.WarrantyAction.ServiceTypeCode;
 
 /****************************************************************************
  * <b>Title</b>: WarrantyVO.java
@@ -31,6 +32,7 @@ public class WarrantyVO extends BeanDataVO {
 	// Member Variables
 	private String warrantyId;
 	private WarrantyType warrantyType;
+	private ServiceTypeCode serviceTypeCode;
 	private String providerId;
 	private String providerName;
 	private String description;
@@ -119,6 +121,21 @@ public class WarrantyVO extends BeanDataVO {
 	@Column(name="update_dt", isUpdateOnly=true, isAutoGen=true)
 	public Date getUpdateDate() {
 		return updateDate;
+	}
+
+	/**
+	 * @return the serviceTypeCode
+	 */
+	@Column(name="warranty_service_type_cd")
+	public ServiceTypeCode getServiceTypeCode() {
+		return serviceTypeCode;
+	}
+
+	/**
+	 * @param serviceTypeCode the serviceTypeCode to set
+	 */
+	public void setServiceTypeCode(ServiceTypeCode serviceTypeCode) {
+		this.serviceTypeCode = serviceTypeCode;
 	}
 
 	/**

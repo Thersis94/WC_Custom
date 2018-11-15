@@ -114,7 +114,12 @@ public class TicketAssignmentVO extends BeanDataVO {
 				return user.getFirstName() + ' ' + user.getLastName();
 			}
 		} else {
-			return location.getLocationName();
+			if(location == null) {
+				return null;
+			}else {
+				return location.getLocationName();
+			}
+			
 		}
 	}
 	
