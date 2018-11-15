@@ -48,7 +48,7 @@ public class MonthlyPageViewReportAction extends SimpleActionAdapter {
 	 * @param req
 	 * @return
 	 */
-	public Object retrieveData(ActionRequest req) {
+	public Map<String, Object> retrieveData(ActionRequest req) {
 		Calendar past30 = Calendar.getInstance();
 		past30.add(Calendar.DATE, -30);
 		Date startDt = req.getDateParameter(MonthlyPageViewReportVO.START_DT, past30.getTime());
