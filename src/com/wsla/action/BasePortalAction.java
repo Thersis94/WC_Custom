@@ -3,11 +3,18 @@ package com.wsla.action;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.ResourceBundle;
 
 // SMT Base Libs
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
+import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.security.PhoneVO;
@@ -20,9 +27,11 @@ import com.smt.sitebuilder.action.user.ProfileManager;
 import com.smt.sitebuilder.action.user.ProfileManagerFactory;
 import com.smt.sitebuilder.action.user.ProfileRoleManager;
 import com.smt.sitebuilder.common.SiteVO;
+import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.security.SBUserRole;
 import com.smt.sitebuilder.security.SecurityController;
 import com.smt.sitebuilder.security.UserLogin;
+import com.wsla.common.WSLAConstants;
 import com.wsla.data.ticket.StatusCode;
 import com.wsla.data.ticket.TicketLedgerVO;
 import com.wsla.data.ticket.UserVO;
@@ -53,7 +62,17 @@ public class BasePortalAction extends SBActionAdapter {
 		super(actionInit);
 	}
 
-
+	/**
+	 * 
+	 * @param dbConn
+	 * @param attributes
+	 */
+	public BasePortalAction(SMTDBConnection dbConn, Map<String, Object> attributes) {
+		super();
+		this.dbConn = dbConn;
+		this.attributes = attributes;
+	}
+	
 	/**
 	 * 
 	 * @param summary if the summary is passed, the first param will be added to the bean
@@ -235,5 +254,58 @@ public class BasePortalAction extends SBActionAdapter {
 
 		new ProfileRoleManager().addRole(role, getDBConnection());
 		return role;
+	}
+	
+	/**
+	 * Returns the resource bundle for the logged in user
+	 * 
+	 * @param req
+	 * @return
+	 */
+	public ResourceBundle getResourceBundle(ActionRequest req) {
+		UserVO user = (UserVO) getAdminUser(req).getUserExtendedInfo();
+		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
+		Locale locale = StringUtil.isEmpty(user.getLocale()) ? site.getLocale() : new Locale(user.getLocale());
+		
+		return ResourceBundle.getBundle(WSLAConstants.RESOURCE_BUNDLE, locale); 
+	}
+	
+	/**
+	 * Get the base user data for the user id
+	 * 
+	 * @param userId
+	 * @return
+	 * @throws SQLException 
+	 */
+	public UserVO getUser(String userId) throws SQLException {
+		UserVO user = new UserVO();
+		user.setUserId(userId);
+		
+		try {
+			DBProcessor dbp = new DBProcessor(getDBConnection(), getCustomSchema());
+			dbp.getByPrimaryKey(user);
+		} catch (InvalidDataException | DatabaseException e) {
+			throw new SQLException(e);
+		}
+
+		return user;
+	}
+	
+	/**
+	 * Returns a list of users for a given role
+	 * 
+	 * @param roleId
+	 * @return
+	 */
+	public List<UserVO> getUsersByRole(String roleId) {
+		StringBuilder sql = new StringBuilder(256);
+		sql.append(DBUtil.SELECT_FROM_STAR).append(getCustomSchema());
+		sql.append("wsla_user u ");
+		sql.append(DBUtil.INNER_JOIN).append("profile p on u.profile_id = p.profile_id ");
+		sql.append(DBUtil.INNER_JOIN).append("profile_role pr on p.profile_id = pr.profile_id ");
+		sql.append("where role_id = ? ");
+		
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		return db.executeSelect(sql.toString(), Arrays.asList(roleId), new UserVO());
 	}
 }

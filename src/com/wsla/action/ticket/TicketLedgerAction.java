@@ -76,7 +76,7 @@ public class TicketLedgerAction extends SBActionAdapter {
 	public List<TicketLedgerVO> getLedgerForTicket(String ticketNumber) {
 		
 		StringBuilder sql = new StringBuilder(336);
-		sql.append(DBUtil.SELECT_FROM_STAR).append("wsla_ticket t ");
+		sql.append(DBUtil.SELECT_FROM_STAR).append(getCustomSchema()).append("wsla_ticket t ");
 		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema());
 		sql.append("wsla_ticket_ledger a on t.ticket_id = a.ticket_id ");
 		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema());

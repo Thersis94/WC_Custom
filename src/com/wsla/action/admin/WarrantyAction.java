@@ -39,6 +39,21 @@ public class WarrantyAction extends SBActionAdapter {
 	public static final String REQ_WARRANTY_ID = "warrantyId";
 
 
+	//holds codes identifying if the warranty will pick up or drop off finished products
+	public enum ServiceTypeCode {
+		DROP_OFF("Drop Off"),
+		PICK_UP("Pick Up");
+		
+		private String value;
+		ServiceTypeCode(String value) {
+			this.value = value;
+		}
+		
+		public String getValue() {
+			return value;
+		}
+	}
+	
 	public WarrantyAction() {
 		super();
 	}

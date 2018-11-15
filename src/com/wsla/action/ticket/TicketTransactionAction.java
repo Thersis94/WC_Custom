@@ -1,13 +1,21 @@
 package com.wsla.action.ticket;
 
+import java.util.HashMap;
+import java.util.Map;
+
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.common.constants.GlobalConfig;
+import com.siliconmtn.util.StringUtil;
 
 //WC Libs
 import com.smt.sitebuilder.action.FacadeActionAdapter;
+import com.smt.sitebuilder.common.ModuleVO;
+import com.smt.sitebuilder.common.constants.Constants;
+import com.smt.sitebuilder.common.constants.ErrorCodes;
 import com.wsla.action.ticket.transaction.DiagnosticTransaction;
 import com.wsla.action.ticket.transaction.ProviderLocationTransaction;
 
@@ -87,6 +95,18 @@ public class TicketTransactionAction extends FacadeActionAdapter {
 	public void build(ActionRequest req) throws ActionException {
 		ActionInterface action = loadActionByType(req.getParameter(SELECT_KEY));
 		action.build(req);
+		
+		// Add in the Next Step data to the returned data
+		if (action instanceof BaseTransactionAction) {
+			ModuleVO mod = (ModuleVO) attributes.get(Constants.MODULE_DATA);
+			Map<String, Object> data = new HashMap<>();
+			data.put(GlobalConfig.SUCCESS_KEY, !mod.getErrorCondition());
+			data.put(GlobalConfig.ACTION_DATA_KEY, mod.getActionData());
+			data.put(GlobalConfig.ACTION_DATA_COUNT, mod.getDataSize());
+			data.put(ErrorCodes.ERR_JSON_ACTION, StringUtil.checkVal(mod.getErrorMessage()));
+			data.put("nextStep", ((BaseTransactionAction) action).getNextStep());
+			putModuleData(data);
+		}
 	}
 }
 

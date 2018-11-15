@@ -143,7 +143,8 @@ public class TicketOverviewAction extends BasePortalAction {
 		this.saveDiagnosticRun(ticket.getDiagnosticRun().get(0));
 		
 		// Add an item to the ledger
-		TicketLedgerVO ledger = addLedger(user.getUserId(), req, ticket.getStatusCode(), LedgerSummary.CALL_FINISHED.summary);
+		BaseTransactionAction bta = new BaseTransactionAction(getDBConnection(), getAttributes());
+		TicketLedgerVO ledger = bta.addLedger(ticket.getTicketId(), user.getUserId(), ticket.getStatusCode(), LedgerSummary.CALL_FINISHED.summary, null);
 		
 		// Save the extended data elements
 		assignDataAttributes(ticket, ledger);
@@ -218,7 +219,8 @@ public class TicketOverviewAction extends BasePortalAction {
 		ticket.addAssignment(manageTicketAssignment(user, null, ticket.getTicketId(), null, 0, TypeCode.CALLER));
 
 		// Add an item to the ledger
-		TicketLedgerVO ledger = addLedger(user.getUserId(), req, ticket.getStatusCode(), LedgerSummary.CALL_RECVD.summary);
+		BaseTransactionAction bta = new BaseTransactionAction(getDBConnection(), getAttributes());
+		TicketLedgerVO ledger = bta.addLedger(ticket.getTicketId(), user.getUserId(), ticket.getStatusCode(), LedgerSummary.CALL_RECVD.summary, null);
 		
 		// Add Data Attributes
 		assignDataAttributes(ticket, ledger);
