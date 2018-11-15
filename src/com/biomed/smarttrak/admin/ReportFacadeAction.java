@@ -8,14 +8,14 @@ import javax.servlet.http.HttpServletResponse;
 import com.biomed.smarttrak.admin.report.AccountCountReportVO;
 //WC custom
 import com.biomed.smarttrak.admin.report.AccountReportVO;
-import com.biomed.smarttrak.admin.report.AccountsPageViewReportAction;
-import com.biomed.smarttrak.admin.report.AccountsPageViewReportVO;
 import com.biomed.smarttrak.admin.report.AccountsReportAction;
 import com.biomed.smarttrak.admin.report.CompanySegmentsReportAction;
 import com.biomed.smarttrak.admin.report.CompanySegmentsReportVO;
 import com.biomed.smarttrak.admin.report.EmailMetricsReportAction;
 import com.biomed.smarttrak.admin.report.LinkReportAction;
 import com.biomed.smarttrak.admin.report.LinkWebReportVO;
+import com.biomed.smarttrak.admin.report.MonthlyPageViewReportAction;
+import com.biomed.smarttrak.admin.report.MonthlyPageViewReportVO;
 import com.biomed.smarttrak.admin.report.SupportReportAction;
 import com.biomed.smarttrak.admin.report.SupportReportVO;
 import com.biomed.smarttrak.admin.report.UserActivityAction;
@@ -58,7 +58,6 @@ public class ReportFacadeAction extends SBActionAdapter {
 	public enum ReportType {
 		ACCOUNT_REPORT,
 		ACCOUNT_COUNTS,
-		ACCOUNT_PAGE_VIEWS,
 		ACTIVITY_LOG,
 		COMPANY_SEGMENTS,
 		USER_LIST,
@@ -68,7 +67,8 @@ public class ReportFacadeAction extends SBActionAdapter {
 		USAGE_ROLLUP_MONTHLY,
 		SUPPORT,
 		LINK,
-		EMAIL_METRICS;
+		EMAIL_METRICS,
+		MONTHLY_PAGE_VIEW;
 	}
 
 	/**
@@ -106,9 +106,6 @@ public class ReportFacadeAction extends SBActionAdapter {
 			case ACCOUNT_COUNTS:
 				rpt = generateCountsReport(req);
 				break;
-			case ACCOUNT_PAGE_VIEWS:
-				rpt = generateAccountPageViewsReport(req);
-				break;
 			case ACTIVITY_LOG:
 				rpt = generateActivityLogReport(req);
 				break;
@@ -140,6 +137,8 @@ public class ReportFacadeAction extends SBActionAdapter {
 			case EMAIL_METRICS:
 				rpt = generateMetricsReport(req);
 				break;
+			case MONTHLY_PAGE_VIEW:
+				rpt = generateMonthlyPageViewReport(req);
 			default:
 				break;
 		}
@@ -214,17 +213,6 @@ public class ReportFacadeAction extends SBActionAdapter {
 		SiteVO site = (SiteVO)req.getAttribute(Constants.SITE_DATA);
 		rpt.setSite(site);
 		rpt.setData(ara.retrieveAccountsList(req));
-		return rpt;
-	}
-
-	/**
-	 * @param req
-	 * @return
-	 */
-	private AbstractSBReportVO generateAccountPageViewsReport(ActionRequest req) throws ActionException {
-		log.debug("generateAccountPageViewReport...");
-		AccountsPageViewReportAction ara = ActionControllerFactoryImpl.loadAction(AccountsPageViewReportAction.class, this);
-		AccountsPageViewReportVO rpt = ara.buildReport(req);
 		return rpt;
 	}
 
@@ -384,5 +372,19 @@ public class ReportFacadeAction extends SBActionAdapter {
 		emr.setDBConnection(dbConn);
 		
 		return emr.buildReport(req);
+	}
+
+	/**
+	 * Builds the monthly pageview report
+	 * @param req
+	 * @return
+	 */
+	private AbstractSBReportVO generateMonthlyPageViewReport(ActionRequest req) {
+		log.debug("generating Monthly PageView Report...");
+		MonthlyPageViewReportAction ara = ActionControllerFactoryImpl.loadAction(MonthlyPageViewReportAction.class, this);
+
+		AbstractSBReportVO rpt = new MonthlyPageViewReportVO();
+		rpt.setData(ara.retrieveData(req));
+		return rpt;
 	}
 }
