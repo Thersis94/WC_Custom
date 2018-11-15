@@ -22,7 +22,8 @@ public enum LedgerSummary {
 	ACTIVITY_ADDED ("An activity was added to the ticket"),
 	CAS_ASSIGNED ("A Service Center was assigned to the ticket"),
 	TICKET_CLONED ("A closed ticket was cloned"),
-	ASSET_LOADED ("User loaded an asset to the service order");
+	ASSET_LOADED ("User loaded an asset to the service order"),
+	ASSET_APPROVED ("User assets were approved");
 	
 	public final String summary;
 	LedgerSummary(String summary) { this.summary = summary; }
