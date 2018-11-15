@@ -394,9 +394,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		vals.add(term);
 		vals.add(term);
 		
-		log.debug("UU provider Id " + providerId);
 		if (!StringUtil.isEmpty(req.getParameter("providerId"))) {
-			log.debug("UUU provider Id " + providerId);
 			sql.append(" and a.provider_id = ? ");
 			vals.add(providerId);
 		}
