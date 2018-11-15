@@ -32,6 +32,7 @@ public class NextStepVO extends BeanDataVO {
 	private String promptText;
 	private String buttonUrl;
 	private String buttonName;
+	private String statusName;
 	private boolean needsReloadFlag;
 	
 	/**
@@ -66,8 +67,14 @@ public class NextStepVO extends BeanDataVO {
 			setPromptText("");
 		}
 		
+		try {
+			setButtonName(bundle.getString("wsla.ticket.nextStep.button." + status.name()));
+		} catch (MissingResourceException e) {
+			setButtonName("");
+		}
+		
 		setButtonUrl("");
-		setButtonName("");
+		setStatusName("");
 		setNeedsReloadFlag(false);
 	}
 
@@ -111,6 +118,20 @@ public class NextStepVO extends BeanDataVO {
 	 */
 	public void setButtonName(String buttonName) {
 		this.buttonName = buttonName;
+	}
+
+	/**
+	 * @return the statusName
+	 */
+	public String getStatusName() {
+		return statusName;
+	}
+
+	/**
+	 * @param statusName the statusName to set
+	 */
+	public void setStatusName(String statusName) {
+		this.statusName = statusName;
 	}
 
 	/**
