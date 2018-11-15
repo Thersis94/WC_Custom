@@ -72,8 +72,8 @@ public class TicketUtilityTransaction extends SBActionAdapter {
 	 */
 	public void sendLinkEmails(String recipient, String link) {
 		List<String> recipients = Arrays.asList(recipient.split("\\,"));
-		log.info(recipients);
-		log.info(link);
+		log.debug(recipients);
+		log.debug(link);
 		
 		//TODO Connect to Email Campaigns?
 	}
