@@ -19,6 +19,7 @@ import com.siliconmtn.db.orm.GridDataVO;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
+import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 // WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
@@ -131,20 +132,25 @@ public class InventoryAction extends SBActionAdapter {
 	/**
 	 * Generate a list of Provider Locations (<LocationId, LocationNm> pairs) bound to product inventory.
 	 * @param productIdOrModelNo productId or custProductId (model#) to filter the data by - case insensitive.
+	 * @param minInventory only used with productId - ensures the matched locationId has a minimum amount of inventory on hand.
 	 * @return List<GenericVO> Used for data filter box (selectpicker)
 	 */
-	public List<GenericVO> listInvetorySuppliers(String productIdOrModelNo) {
+	public List<GenericVO> listInvetorySuppliers(String productIdOrModelNo, Integer minInventory) {
 		String schema = getCustomSchema();
 		List<Object> params = null;
 		StringBuilder sql = new StringBuilder(250);
-		sql.append("select lcn.location_id as key, concat(p.provider_nm, ': ', lcn.location_nm, ' ', lcn.store_no) as value from ");
-		sql.append(schema).append("wsla_provider_location lcn ");
+		sql.append("select lcn.location_id as key, concat(p.provider_nm, ': ', lcn.location_nm, ' ', lcn.store_no) as value ");
+		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("wsla_provider_location lcn ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("wsla_location_item_master lim on lcn.location_id=lim.location_id ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("wsla_provider p on lcn.provider_id=p.provider_id ");
 		if (!StringUtil.isEmpty(productIdOrModelNo)) {
-			sql.append(DBUtil.INNER_JOIN).append(schema).append("wsla_product_master prod on lcn.product_id=p.product_id ");
-			sql.append("and (p.product_id=? or lower(prod.cust_prod_id=?) ");
-			params = Arrays.asList(productIdOrModelNo, productIdOrModelNo);
+			sql.append(DBUtil.INNER_JOIN).append(schema).append("wsla_product_master prod on lim.product_id=prod.product_id ");
+			sql.append("and (prod.product_id=? or lower(prod.cust_product_id)=?) ");
+			params = new ArrayList<>(Arrays.asList(productIdOrModelNo, productIdOrModelNo));
+			if (minInventory != null) {
+				sql.append("where lim.actual_qnty_no >= ? ");
+				params.add(minInventory);
+			}
 		}
 		sql.append("order by p.provider_nm, lcn.location_nm, lcn.store_no, lcn.location_id");
 		log.debug(sql);
@@ -164,17 +170,19 @@ public class InventoryAction extends SBActionAdapter {
 	public void recordInventory(String productId, String locationId, int qnty) 
 			throws ActionException {
 		String schema = getCustomSchema();
-		String updSql = StringUtil.join("update ", schema, "wsla_location_item_master ",
-				"set actual_qnty_no=actual_qnty_no+? where product_id=? and location_id=?");
+		String updSql = StringUtil.join(DBUtil.UPDATE_CLAUSE, schema, "wsla_location_item_master ",
+				"set actual_qnty_no=actual_qnty_no+?, update_dt=? ",
+				"where product_id=? and location_id=?");
 		log.debug(updSql);
 
 		int cnt = 0;
 		try (PreparedStatement ps = dbConn.prepareStatement(updSql)) {
 			ps.setInt(1, qnty);
-			ps.setString(2, productId);
-			ps.setString(3, locationId);
+			ps.setTimestamp(2, Convert.getCurrentTimestamp());
+			ps.setString(3, productId);
+			ps.setString(4, locationId);
 			cnt = ps.executeUpdate();
-			log.debug(String.format("updated %d item_master records", cnt));
+			log.debug(String.format("updated %d item_master records at %s", cnt, locationId));
 
 		} catch (SQLException sqle) {
 			throw new ActionException(sqle);

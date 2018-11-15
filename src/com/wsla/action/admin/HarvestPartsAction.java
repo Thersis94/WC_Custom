@@ -167,7 +167,7 @@ public class HarvestPartsAction extends SBActionAdapter {
 	 * @param bsTableControlVO
 	 * @return
 	 */
-	protected GridDataVO<ProductHarvestVO> loadBOM(String productSerialId, BSTableControlVO bst) {
+	public GridDataVO<ProductHarvestVO> loadBOM(String productSerialId, BSTableControlVO bst) {
 		String schema = getCustomSchema();
 		StringBuilder sql = new StringBuilder(200);
 		sql.append(DBUtil.SELECT_FROM_STAR).append(schema).append("wsla_product_harvest ph ");
