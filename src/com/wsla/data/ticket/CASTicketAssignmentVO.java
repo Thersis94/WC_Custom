@@ -63,6 +63,8 @@ public class CASTicketAssignmentVO extends TicketAssignmentVO {
 			loc.setCity(rs.getString("cas_city_nm"));
 			loc.setLocationName(rs.getString("cas_location_nm"));
 			loc.setZipCode(rs.getString("cas_zip_cd"));
+			loc.setLongitude(rs.getDouble("cas_longitude_no"));
+			loc.setLatitude(rs.getDouble("cas_latitude_no"));
 		} catch (SQLException e) {
 			log.error("could not set data to owner location",e);
 		}

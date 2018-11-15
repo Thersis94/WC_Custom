@@ -62,6 +62,9 @@ public class OwnerTicketAssignmentVO extends TicketAssignmentVO {
 			loc.setCity(rs.getString("own_city_nm"));
 			loc.setLocationName(rs.getString("own_location_nm"));
 			loc.setZipCode(rs.getString("own_zip_cd"));
+			loc.setLongitude(rs.getDouble("own_longitude_no"));
+			loc.setLatitude(rs.getDouble("own_latitude_no"));
+			
 		} catch (SQLException e) {
 			log.error("could not set data to owner location",e);
 		}
