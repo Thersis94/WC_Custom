@@ -1,6 +1,5 @@
 package com.biomed.smarttrak.admin.report;
 
-import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -47,7 +46,7 @@ public class MonthlyPageViewReportVO extends AbstractSBReportVO {
 	public static final String MARKET_DATA_KEY = "marketDataKey";
 	public static final String INSIGHT_DATA_KEY = "insightDataKey";
 
-	private Collection<MonthlyPageViewVO> pageViews;
+	private List<MonthlyPageViewVO> pageViews;
 	private Set<String> dateHeaders;
 	private List<MarketVO> markets;
 	private List<InsightVO> insights;
@@ -259,7 +258,7 @@ public class MonthlyPageViewReportVO extends AbstractSBReportVO {
 
 		//Check if this is a map and if so, pull off expected data.
 		if(o instanceof Map) {
-			pageViews = (Collection<MonthlyPageViewVO>) ((Map)o).get(PAGE_VIEW_DATA_KEY);
+			pageViews = (List<MonthlyPageViewVO>) ((Map)o).get(PAGE_VIEW_DATA_KEY);
 			markets = (List<MarketVO>) ((Map)o).get(MARKET_DATA_KEY);
 			insights = (List<InsightVO>) ((Map)o).get(INSIGHT_DATA_KEY);
 			dateHeaders = (Set<String>) ((Map)o).get(DATE_HEADER_KEY);

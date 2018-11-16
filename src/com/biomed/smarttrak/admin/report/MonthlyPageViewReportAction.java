@@ -5,6 +5,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -59,7 +60,11 @@ public class MonthlyPageViewReportAction extends SimpleActionAdapter {
 		Date endDt = req.getDateParameter(MonthlyPageViewReportVO.END_DT, Calendar.getInstance().getTime());
 
 		Map<String, Object> data = gatherPageViews(startDt, endDt);
+
+		log.debug("Loading Markets");
 		data.put(MonthlyPageViewReportVO.MARKET_DATA_KEY, loadMarketSections());
+
+		log.debug("Loading Insights");
 		data.put(MonthlyPageViewReportVO.INSIGHT_DATA_KEY, loadInsightSections());
 		data.put(MonthlyPageViewReportVO.START_DT, startDt);
 		data.put(MonthlyPageViewReportVO.END_DT, endDt);
@@ -197,8 +202,11 @@ public class MonthlyPageViewReportAction extends SimpleActionAdapter {
 			log.error("Error Loading PageViews", e);
 		}
 
+		log.debug("Sorting Page views");
+		List<MonthlyPageViewVO> pageViewData = new ArrayList<>(pageViews.values());
+        Collections.sort(pageViewData, new MonthlyPageviewComparator()); 
 		Map<String, Object> reportData = new HashMap<>();
-		reportData.put(MonthlyPageViewReportVO.PAGE_VIEW_DATA_KEY, pageViews.values());
+		reportData.put(MonthlyPageViewReportVO.PAGE_VIEW_DATA_KEY, pageViewData);
 		reportData.put(MonthlyPageViewReportVO.DATE_HEADER_KEY, dateHeaders);
 		return reportData;
 	}
@@ -209,23 +217,42 @@ public class MonthlyPageViewReportAction extends SimpleActionAdapter {
 	 */
 	private String getPageViewSql() {
 		String schema = getCustomSchema();
-		StringBuilder sql = new StringBuilder(1450);
+		StringBuilder sql = new StringBuilder(2000);
 		sql.append(DBUtil.SELECT_CLAUSE).append("concat('https://', a.site_alias_url, pu.request_uri_txt) as request_uri, ");
 		sql.append("count(pu.request_uri_txt) as hit_cnt, concat(to_char(to_timestamp (pu.visit_month_no::text, 'MM'), 'Mon'), ' ', pu.visit_year_no) as visit_dt, ");
 		sql.append("p.page_display_nm as section_nm, case when p.page_display_nm = 'Companies' then c.company_nm ");
 		sql.append("when p.page_display_nm = 'Markets' then m.market_nm when p.page_display_nm = 'Products' then pr.product_nm ");
 		sql.append("when p.page_display_nm = 'Analysis' then i.title_txt else p.page_display_nm end as page_nm ");
 		sql.append(DBUtil.FROM_CLAUSE).append("pageview_user pu ");
+
+		//Join Page data for Page Name
 		sql.append(DBUtil.INNER_JOIN).append("page p on pu.page_id = p.page_id ");
+
+		//Join Site Alias for Links
 		sql.append(DBUtil.INNER_JOIN).append("site_alias a on a.site_id = p.site_id and a.primary_flg = ? ");
+
+		//Join Company info
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("biomedgps_company c on pu.query_str_txt = c.company_id ");
+		sql.append("or (pu.request_uri_txt like '%/qs/%' and c.company_id = split_part(pu.request_uri_txt, '/qs/', 2)) ");
+
+		//Join Product Info
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("biomedgps_product pr on pu.query_str_txt = pr.product_id ");
+		sql.append("or (pu.request_uri_txt like '%/qs/%' and pr.product_id = split_part(pu.request_uri_txt, '/qs/', 2)) ");
+
+		//Join Market Info
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("biomedgps_market m on pu.query_str_txt = m.market_id ");
+		sql.append("or (pu.request_uri_txt like '%/qs/%' and m.market_id = split_part(pu.request_uri_txt, '/qs/', 2)) ");
+
+		//Join Insight Info
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("biomedgps_insight i on pu.query_str_txt = i.insight_id ");
+		sql.append("or (pu.request_uri_txt like '%/qs/%' and i.insight_id = split_part(pu.request_uri_txt, '/qs/', 2)) ");
 		sql.append(DBUtil.WHERE_CLAUSE).append("pu.site_id = ? and visit_dt between ? and ? ");
+
+		//Using a nested sub query was roughly 20% faster than a join with exclusion. 
 		sql.append("and pu.profile_id not in ("); 
 		sql.append("select profile_id from custom.biomedgps_user u where u.account_id = ? "); 
 		sql.append(") ");
+
 		sql.append(DBUtil.GROUP_BY).append("pu.request_uri_txt, pu.visit_year_no, pu.visit_month_no, p.page_display_nm, c.company_nm, m.market_nm, pr.product_nm, i.title_txt, a.site_alias_url ");
 		sql.append(DBUtil.ORDER_BY).append("pu.visit_year_no, pu.visit_month_no, pu.request_uri_txt");
 		log.debug(sql.toString());
