@@ -131,7 +131,7 @@ public class ProviderAction extends BatchImport {
 	 * @throws DatabaseException
 	 */
 	public void addTicketRetailer(ProviderVO provider)  throws InvalidDataException, DatabaseException {
-		log.info("ID: " + provider.getProviderId());
+		log.debug("ID: " + provider.getProviderId());
 		boolean newProvider = false;
 		// If the provider id is missing, add a new provider.  Provider id assigned during add
 		if (StringUtil.isEmpty(provider.getProviderId())) {
@@ -146,7 +146,7 @@ public class ProviderAction extends BatchImport {
 		provider.getLocations().get(0).setReviewFlag(1);
 		if (newProvider) provider.getLocations().get(0).setDefaultFlag(1);
 		
-		log.info("Adding provider loc: " + provider.getLocations().get(0));
+		log.debug("Adding provider loc: " + provider.getLocations().get(0));
 		// Save the location
 		ProviderLocationAction pla = new ProviderLocationAction(getAttributes(), getDBConnection());
 		pla.saveLocation(provider.getLocations().get(0));

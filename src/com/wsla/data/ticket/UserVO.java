@@ -3,6 +3,7 @@ package com.wsla.data.ticket;
 // JDK 1.8.x
 import java.sql.ResultSet;
 import java.util.Date;
+import java.util.Locale;
 
 // SMT Base Libs 3.5
 import com.siliconmtn.action.ActionRequest;
@@ -12,6 +13,7 @@ import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
 import com.siliconmtn.security.PhoneVO;
 import com.siliconmtn.security.UserDataVO;
+import com.siliconmtn.util.StringUtil;
 
 /****************************************************************************
  * <b>Title</b>: UserVO.java
@@ -75,6 +77,18 @@ public class UserVO extends BeanDataVO {
 	 */
 	public UserVO(ResultSet rs) {
 		super(rs);
+	}
+	
+	/**
+	 * Returns a Java Locale object for the corresponding locale string.  Defaults
+	 * to spanish and mexico if not provided
+	 * @return
+	 */
+	public Locale getUserLocale() {
+		if (StringUtil.isEmpty(locale)) locale = "es_MX";
+		String language = locale.substring(0, 2);
+		String country = locale.substring(3);
+		return new Locale(language, country);
 	}
 
 	/**

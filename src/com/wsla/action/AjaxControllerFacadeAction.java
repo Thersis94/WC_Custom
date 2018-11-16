@@ -12,6 +12,7 @@ import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.AdminConstants;
 // WSLA Libs
 import com.wsla.action.admin.BatchImport;
+import com.wsla.action.admin.BillableActivityAction;
 import com.wsla.action.admin.DefectAction;
 import com.wsla.action.admin.DiagnosticAction;
 import com.wsla.action.admin.HarvestApprovalAction;
@@ -38,6 +39,7 @@ import com.wsla.action.admin.ProviderLocationUserAction;
 import com.wsla.action.admin.ScheduleAdminAction;
 import com.wsla.action.admin.StatusCodeAction;
 import com.wsla.action.admin.WarrantyAction;
+import com.wsla.action.admin.WarrantyBillableAction;
 
 /****************************************************************************
  * <b>Title</b>: AjaxControllerFacadeAction.java
@@ -98,6 +100,8 @@ public class AjaxControllerFacadeAction extends FacadeActionAdapter {
 		actionMap.put(ScheduleAdminAction.SCHEDULE_TYPE, ScheduleAdminAction.class);
 		actionMap.put(DefectAction.DEFECTS_TYPE, DefectAction.class);
 		actionMap.put(DiagnosticAction.DIAGNOSTIC_TYPE , DiagnosticAction.class);
+		actionMap.put(BillableActivityAction.AJAX_KEY , BillableActivityAction.class);
+		actionMap.put(WarrantyBillableAction.AJAX_KEY , WarrantyBillableAction.class);
 		actionMap.put("productMaster", ProductMasterAction.class);
 		actionMap.put("productSet", ProductSetAction.class);
 		actionMap.put("productSerial", ProductSerialAction.class);
