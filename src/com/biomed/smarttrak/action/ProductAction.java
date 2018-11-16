@@ -245,7 +245,7 @@ public class ProductAction extends SimpleActionAdapter {
 		// Detail attributes never have a status number but shouldn't be skipped.
 		sql.append("'").append(AdminControllerAction.Status.P).append("') or STATUS_NO is null) "); 
 
-		sql.append("ORDER BY a.ORDER_NO, xr.ORDER_NO ");
+		sql.append("ORDER BY x.ORDER_NO, x.TITLE_TXT, a.order_no ");
 		log.debug(sql+"|"+product.getProductId());
 
 		List<Object> params = new ArrayList<>();
