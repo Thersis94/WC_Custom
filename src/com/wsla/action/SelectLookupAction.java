@@ -12,6 +12,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.ResourceBundle;
 
@@ -33,8 +34,11 @@ import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 
 // WSLA Libs
+import com.wsla.action.admin.BillableActivityAction;
 import com.wsla.action.admin.InventoryAction;
 import com.wsla.action.admin.HarvestPartsAction;
+
+//WSLA Libs
 import com.wsla.action.admin.ProductCategoryAction;
 import com.wsla.action.admin.ProductMasterAction;
 import com.wsla.action.admin.ProviderAction;
@@ -45,16 +49,21 @@ import com.wsla.action.admin.WarrantyAction.ServiceTypeCode;
 import com.wsla.action.ticket.TicketEditAction;
 import com.wsla.action.ticket.CASSelectionAction;
 import com.wsla.action.ticket.TicketListAction;
+import com.wsla.action.ticket.TicketEditAction;
+import com.wsla.common.WSLAConstants;
 import com.wsla.common.WSLALocales;
 import com.wsla.data.product.ProductVO;
 import com.wsla.data.product.WarrantyType;
 import com.wsla.data.provider.ProviderLocationVO;
 import com.wsla.data.provider.ProviderType;
+import com.wsla.data.ticket.StatusCode;
 import com.wsla.data.ticket.ProductHarvestVO;
 import com.wsla.data.ticket.StatusCode;
 import com.wsla.data.ticket.TicketAssignmentVO;
 import com.wsla.data.ticket.TicketAssignmentVO.TypeCode;
 import com.wsla.data.ticket.TicketScheduleVO;
+import com.wsla.data.ticket.BillableActivityVO;
+import com.wsla.data.ticket.BillableActivityVO.BillableTypeCode;
 import com.wsla.data.ticket.StatusCodeVO;
 import com.wsla.data.ticket.UserVO;
 
@@ -120,6 +129,8 @@ public class SelectLookupAction extends SBActionAdapter {
 		keyMap.put("inventorySuppliers", new GenericVO("getInventorySuppliers", Boolean.TRUE));
 		keyMap.put("locationInventory", new GenericVO("getLocationInventory", Boolean.TRUE));
 		keyMap.put("emailCampaigns", new GenericVO("getEmailCampaigns", Boolean.TRUE));
+		keyMap.put("billable", new GenericVO("getBillableCodes", Boolean.TRUE));
+		keyMap.put("billableType", new GenericVO("getBillableTypes", Boolean.FALSE));
 	}
 
 	/**
@@ -358,7 +369,6 @@ public class SelectLookupAction extends SBActionAdapter {
 	public List<GenericVO> getClosestCas(ActionRequest req) {
 		
 		String ticketId = req.getParameter("ticketId");
-		log.info(getAdminUser(req));
 		UserVO user = (UserVO)getAdminUser(req).getUserExtendedInfo();
 
 		CASSelectionAction csa = new CASSelectionAction(getDBConnection(), attributes);
@@ -682,5 +692,39 @@ public class SelectLookupAction extends SBActionAdapter {
 
 		DBProcessor db = new DBProcessor(getDBConnection());
 		return db.executeSelect(sql.toString(), Arrays.asList(site.getOrganizationId()), new GenericVO());
+	}
+	
+	/**
+	 * Gets a list of billable codes
+	 * @return
+	 */
+	public List<GenericVO> getBillableCodes(ActionRequest req) {
+		String btc = req.getParameter("billableTypeCode");
+		
+		// Get the codes
+		List<BillableActivityVO> codes = new BillableActivityAction(dbConn, attributes).getCodes(btc);
+		List<GenericVO> data = new ArrayList<>();
+		
+		// Loop the codes and convert to Generic
+		for (BillableActivityVO code : codes) {
+			if (code.getActiveFlag() == 0) continue;
+			data.add(new GenericVO(code.getBillableActivityCode(), code.getActivityName()));
+		}
+		
+		return data;
+	}
+	
+	/**
+	 * Gets a list of billable codes
+	 * @return
+	 */
+	public List<GenericVO> getBillableTypes() {
+		List<GenericVO> data = new ArrayList<>();
+		
+		for (BillableTypeCode code : BillableTypeCode.values()) {
+			data.add(new GenericVO(code.name(), code.getTypeName()));
+		}
+		
+		return data;
 	}
 }

@@ -72,7 +72,7 @@ public class TicketVO extends BeanDataVO {
 	private String lockedBy;
 	private StatusCode statusCode;
 	private Standing standingCode = Standing.GOOD;
-	private UnitLocation unitLocation = UnitLocation.CALLER;
+	private UnitLocation unitLocation;
 	private int warrantyValidFlag;
 	private Date purchaseDate;
 	private Date createDate;
@@ -137,7 +137,7 @@ public class TicketVO extends BeanDataVO {
 		else {
 			try {
 				DateDiff diff = new DateDiff(lockedDate, new Date());
-				if (diff.getMinutes() < 120) ticketLocked = true;
+				if (diff.getTotalMinutes() < 120) ticketLocked = true;
 			} catch (Exception e) {
 				ticketLocked = false;
 			}

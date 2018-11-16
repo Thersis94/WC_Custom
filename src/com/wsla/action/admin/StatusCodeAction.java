@@ -184,7 +184,7 @@ public class StatusCodeAction extends SBActionAdapter {
 		String delim = StringUtil.getDelimitedList(req.getParameterValues("roleId"), false, ",");
 		req.setParameter("roleId", delim, false);
 		StatusNotificationVO ntfcn = new StatusNotificationVO(req);
-		log.info(ntfcn);
+		log.debug(ntfcn);
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		db.save(ntfcn);
 		

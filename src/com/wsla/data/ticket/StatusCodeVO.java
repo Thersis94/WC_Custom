@@ -40,6 +40,7 @@ public class StatusCodeVO extends BeanDataVO {
 	private String statusName;
 	private String roleId;
 	private String roleName;
+	private String billableActivityCode;
 	private int activeFlag;
 	private String nextStepUrl;
 	private Date createDate;
@@ -123,6 +124,14 @@ public class StatusCodeVO extends BeanDataVO {
 	@Column(name="days_in_status", isReadOnly=true)
 	public int getDaysInStatus() {
 		return daysInStatus;
+	}
+
+	/**
+	 * @return the billableActivityCode
+	 */
+	@Column(name="billable_activity_cd")
+	public String getBillableActivityCode() {
+		return billableActivityCode;
 	}
 
 	/**
@@ -217,6 +226,13 @@ public class StatusCodeVO extends BeanDataVO {
 	 */
 	public void setGroupStatusCode(Group groupStatusCode) {
 		this.groupStatusCode = groupStatusCode;
+	}
+
+	/**
+	 * @param billableActivityCode the billableActivityCode to set
+	 */
+	public void setBillableActivityCode(String billableActivityCode) {
+		this.billableActivityCode = billableActivityCode;
 	}
 
 }
