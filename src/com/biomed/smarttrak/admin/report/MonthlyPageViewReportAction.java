@@ -3,15 +3,19 @@ package com.biomed.smarttrak.admin.report;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import com.biomed.smarttrak.action.AdminControllerAction;
+import com.biomed.smarttrak.vo.InsightVO;
+import com.biomed.smarttrak.vo.MarketVO;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.DBUtil;
@@ -55,9 +59,107 @@ public class MonthlyPageViewReportAction extends SimpleActionAdapter {
 		Date endDt = req.getDateParameter(MonthlyPageViewReportVO.END_DT, Calendar.getInstance().getTime());
 
 		Map<String, Object> data = gatherPageViews(startDt, endDt);
+		data.put(MonthlyPageViewReportVO.MARKET_DATA_KEY, loadMarketSections());
+		data.put(MonthlyPageViewReportVO.INSIGHT_DATA_KEY, loadInsightSections());
 		data.put(MonthlyPageViewReportVO.START_DT, startDt);
 		data.put(MonthlyPageViewReportVO.END_DT, endDt);
 		return data;
+	}
+
+	/**
+	 * Load Insight Sections.
+	 * @return
+	 */
+	private List<InsightVO> loadInsightSections() {
+		List<InsightVO> vos = new ArrayList<>();
+
+		try(PreparedStatement ps = dbConn.prepareStatement(getInsightSectionSql())) {
+			ResultSet rs = ps.executeQuery();
+
+			InsightVO i = null;
+			while(rs.next()) {
+				if(i == null || i.getInsightId() != rs.getString("insight_id")) {
+					if(i != null) {
+						vos.add(i);
+					}
+					i = new InsightVO();
+					i.setTitleTxt(rs.getString("title_txt"));
+					i.setInsightId(rs.getString("insight_id"));
+				}
+				i.addSection(rs.getString("section_nm"));
+			}
+
+			//Add Trailing Insight
+			vos.add(i);
+		} catch (SQLException e) {
+			log.error("Error Processing Code", e);
+		}
+		return vos;
+	}
+
+	/**
+	 * Builds Query for loading Insight Sections.
+	 * @return
+	 */
+	private String getInsightSectionSql() {
+		String schema = getCustomSchema();
+		StringBuilder sql = new StringBuilder(400);
+		sql.append(DBUtil.SELECT_CLAUSE).append(" i.insight_id, i.title_txt, s.section_nm ");
+		sql.append(DBUtil.FROM_CLAUSE).append(schema);
+		sql.append("biomedgps_insight i ");
+		sql.append(DBUtil.INNER_JOIN).append(schema).append("biomedgps_insight_section isec on i.insight_id = isec.insight_id");
+		sql.append(DBUtil.INNER_JOIN).append(schema).append("biomedgps_section s on isec.section_id = s.section_id ");
+		sql.append(DBUtil.INNER_JOIN).append(schema).append("biomedgps_section p on s.parent_id = p.section_id ");
+		sql.append(DBUtil.ORDER_BY).append("i.insight_id, p.order_no, s.order_no, i.order_no");
+		return sql.toString();
+	}
+
+	/**
+	 * Load Market Sections
+	 * @return
+	 */
+	private List<MarketVO> loadMarketSections() {
+		List<MarketVO> vos = new ArrayList<>();
+
+		try(PreparedStatement ps = dbConn.prepareStatement(getMarketSectionSql())) {
+			ResultSet rs = ps.executeQuery();
+
+			MarketVO m = null;
+			while(rs.next()) {
+				if(m == null || m.getMarketId() != rs.getString("market_id")) {
+					if(m != null) {
+						vos.add(m);
+					}
+					m = new MarketVO();
+					m.setMarketName(rs.getString("market_nm"));
+					m.setMarketId(rs.getString("market_id"));
+				}
+				m.addSection(rs.getString("section_nm"));
+			}
+
+			//Add Trailing Market
+			vos.add(m);
+		} catch (SQLException e) {
+			log.error("Error Processing Code", e);
+		}
+		return vos;
+	}
+
+	/**
+	 * Builds Query for loading Market Sections
+	 * @return
+	 */
+	private String getMarketSectionSql() {
+		String schema = getCustomSchema();
+		StringBuilder sql = new StringBuilder(400);
+		sql.append(DBUtil.SELECT_CLAUSE).append("m.market_id, m.market_nm, s.section_nm ");
+		sql.append(DBUtil.FROM_CLAUSE).append(schema);
+		sql.append("biomedgps_market m ");
+		sql.append(DBUtil.INNER_JOIN).append(schema).append("biomedgps_market_section ms on m.market_id = ms.market_id ");
+		sql.append(DBUtil.INNER_JOIN).append(schema).append("biomedgps_section s on ms.section_id = s.section_id ");
+		sql.append(DBUtil.INNER_JOIN).append(schema).append("biomedgps_section p on s.parent_id = p.section_id ");
+		sql.append(DBUtil.ORDER_BY).append("p.order_no, s.order_no, m.order_no");
+		return sql.toString();
 	}
 
 	/**
