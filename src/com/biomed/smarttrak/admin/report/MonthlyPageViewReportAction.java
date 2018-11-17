@@ -115,7 +115,7 @@ public class MonthlyPageViewReportAction extends SimpleActionAdapter {
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("biomedgps_insight_section isec on i.insight_id = isec.insight_id");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("biomedgps_section s on isec.section_id = s.section_id ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("biomedgps_section p on s.parent_id = p.section_id ");
-		sql.append(DBUtil.ORDER_BY).append("i.insight_id, p.order_no, s.order_no, i.order_no");
+		sql.append(DBUtil.ORDER_BY).append("i.insight_id, p.order_no, s.order_no, i.order_no, i.insight_id");
 		return sql.toString();
 	}
 
@@ -163,7 +163,7 @@ public class MonthlyPageViewReportAction extends SimpleActionAdapter {
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("biomedgps_market_section ms on m.market_id = ms.market_id ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("biomedgps_section s on ms.section_id = s.section_id ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("biomedgps_section p on s.parent_id = p.section_id ");
-		sql.append(DBUtil.ORDER_BY).append("p.order_no, s.order_no, m.order_no");
+		sql.append(DBUtil.ORDER_BY).append("p.order_no, s.order_no, m.order_no, m.market_id");
 		return sql.toString();
 	}
 
