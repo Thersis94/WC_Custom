@@ -96,6 +96,21 @@ public class InventoryAction extends SBActionAdapter {
 	 * @return
 	 */
 	public GridDataVO<LocationItemMasterVO> getData(String locationId, BSTableControlVO bst) {
+		GridDataVO<LocationItemMasterVO> vo = new GridDataVO<>();
+		String term = bst.getLikeSearch().toLowerCase();
+		vo.setRowData(listInventory(locationId, bst.getSQLOrderBy("p.provider_nm, lcn.location_nm, pm.product_nm",  "asc"), term));
+		return vo;
+	}
+
+
+	/**
+	 * Return a list of product inventory (counts) at the given provider_location
+	 * @param locationId
+	 * @param orderBy
+	 * @param term (search keyword)
+	 * @return
+	 */
+	public List<LocationItemMasterVO> listInventory(String locationId, String orderBy, String term) {
 		String schema = getCustomSchema();
 		List<Object> params = new ArrayList<>();
 		StringBuilder sql = new StringBuilder(200);
@@ -108,7 +123,6 @@ public class InventoryAction extends SBActionAdapter {
 		sql.append("where 1=1 ");
 
 		//fuzzy keyword search
-		String term = bst.getLikeSearch().toLowerCase();
 		if (!StringUtil.isEmpty(term)) {
 			sql.append("and (lower(p.provider_nm) like ? or lower(lcn.location_nm) like ? or lower(pm.product_nm) like ?) ");
 			params.add(term);
@@ -121,11 +135,14 @@ public class InventoryAction extends SBActionAdapter {
 			params.add(locationId);
 		}
 
-		sql.append(bst.getSQLOrderBy("p.provider_nm, lcn.location_nm, pm.product_nm",  "asc"));
+		if (StringUtil.isEmpty(orderBy))
+			orderBy = "order by p.provider_nm, lcn.location_nm, pm.product_nm";
+
+		sql.append(orderBy);
 		log.debug(sql);
 
 		DBProcessor db = new DBProcessor(getDBConnection(), schema);
-		return db.executeSQLWithCount(sql.toString(), params, new LocationItemMasterVO(), bst.getLimit(), bst.getOffset());
+		return db.executeSelect(sql.toString(), params, new LocationItemMasterVO());
 	}
 
 
