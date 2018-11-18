@@ -29,6 +29,7 @@ public class PartVO extends ProductVO {
 	private String shipmentId;
 	private int quantity;
 	private int quantityReceived;
+	private int destEstQuantity;
 	private int harvestedFlag;
 	private String availabilityCode;
 	private Date availabilityDate;
@@ -94,6 +95,11 @@ public class PartVO extends ProductVO {
 		return quantityOnHand;
 	}
 
+	@Column(name="dest_actual_qnty_no", isReadOnly=true)
+	public int getDestEstQuantity() {
+		return destEstQuantity;
+	}
+
 
 
 	public void setPartId(String partId) {
@@ -130,5 +136,9 @@ public class PartVO extends ProductVO {
 
 	public void setQuantityReceived(int quantityReceived) {
 		this.quantityReceived = quantityReceived;
+	}
+
+	public void setDestEstQuantity(int destEstQuantity) {
+		this.destEstQuantity = destEstQuantity;
 	}
 }

@@ -4,6 +4,7 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Calendar;
 import java.util.List;
 import java.util.Map;
 
@@ -118,7 +119,12 @@ public class LogisticsAction extends SBActionAdapter {
 
 			} else {
 				boolean isInsert = StringUtil.isEmpty(vo.getShipmentId());
+				//make sure shipmentDt gets set if status is shipped
+				if (ShipmentStatus.SHIPPED.equals(vo.getStatus()) && vo.getShipmentDate() == null)
+					vo.setShipmentDate(Calendar.getInstance().getTime());
+
 				db.save(vo);
+
 				//if this is a new shipment getting created, automatically put all the parts from the ticket into it
 				//the admin can remove or add on the next screen, but this is a significant convenience for them.
 				if (isInsert && req.hasParameter(REQ_TICKET_ID)) {
@@ -175,7 +181,7 @@ public class LogisticsAction extends SBActionAdapter {
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("wsla_provider_location destlcn on s.to_location_id=destlcn.location_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("wsla_product_master pm on p.product_id=pm.product_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("wsla_ticket t on p.ticket_id=t.ticket_id ");
-		sql.append("where (s.status_cd != ? or (s.status_cd=? and s.shipment_dt > CURRENT_DATE-31)) "); //only show ingested items for 30 days past receipt
+		sql.append("where (s.status_cd != ? or (s.status_cd=? and coalesce(s.shipment_dt, s.update_dt, s.create_dt) > CURRENT_DATE-31)) "); //only show ingested items for 30 days past receipt
 		params.add(ShipmentStatus.RECEIVED.toString());
 		params.add(ShipmentStatus.RECEIVED.toString());
 

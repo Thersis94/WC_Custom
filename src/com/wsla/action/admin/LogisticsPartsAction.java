@@ -128,13 +128,13 @@ public class LogisticsPartsAction extends SBActionAdapter {
 		bst.setLimit(10000);
 		String schema = getCustomSchema();
 		StringBuilder sql = new StringBuilder(200);
-		sql.append("select p.*, pm.product_nm, lim.actual_qnty_no ");
-		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("wsla_part p ");
+		sql.append("select p.*, pm.product_nm, lim.actual_qnty_no, limd.actual_qnty_no as dest_actual_qnty_no ");
+		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("wsla_shipment s ");
+		sql.append(DBUtil.INNER_JOIN).append(schema).append("wsla_part p on s.shipment_id=p.shipment_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("wsla_product_master pm on p.product_id=pm.product_id ");
-		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("wsla_ticket_assignment ta on p.ticket_id=ta.ticket_id and ta.assg_type_cd='CAS' ");
-		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("wsla_provider_location pl on ta.location_id=pl.location_id ");
-		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("wsla_location_item_master lim on pl.location_id=lim.location_id and p.product_id=lim.product_id ");
-		sql.append("where p.shipment_id=? ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("wsla_location_item_master lim on s.from_location_id=lim.location_id and p.product_id=lim.product_id ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("wsla_location_item_master limd on s.to_location_id=lim.location_id and p.product_id=lim.product_id ");
+		sql.append("where s.shipment_id=? ");
 
 		sql.append(bst.getSQLOrderBy("pm.product_nm",  "asc"));
 		log.debug(sql);
