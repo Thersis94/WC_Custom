@@ -20,6 +20,7 @@ public enum LedgerSummary {
 	SCHEDULE_TRANSFER ("Equipment transfer was scheduled"),
 	SCHEDULE_TRANSFER_COMPLETE ("Equipment was picked up or dropped off for the service order"),
 	RAN_DIAGNOSTIC ("A diagnostic was performed"),
+	DIAGNOSTIC_COMPLETED ("CAS completed the diagnostics"),
 	ACTIVITY_ADDED ("An activity was added to the ticket"),
 	CAS_ASSIGNED ("A Service Center was assigned to the ticket"),
 	TICKET_CLONED ("A closed ticket was cloned"),

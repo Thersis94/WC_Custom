@@ -1,19 +1,26 @@
 package com.wsla.action.ticket.transaction;
 
+import java.sql.SQLException;
+import java.util.HashMap;
+import java.util.ResourceBundle;
+
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
-import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
-
+import com.siliconmtn.util.Convert;
 // WC Libs
-import com.smt.sitebuilder.action.SBActionAdapter;
+import com.wsla.action.BasePortalAction;
+import com.wsla.action.ticket.BaseTransactionAction;
+import com.wsla.action.ticket.TicketEditAction;
 import com.wsla.action.ticket.TicketOverviewAction;
 import com.wsla.data.ticket.DiagnosticRunVO;
 import com.wsla.data.ticket.LedgerSummary;
+import com.wsla.data.ticket.StatusCode;
 import com.wsla.data.ticket.TicketLedgerVO;
+import com.wsla.data.ticket.TicketVO;
 import com.wsla.data.ticket.UserVO;
 
 /****************************************************************************
@@ -29,7 +36,7 @@ import com.wsla.data.ticket.UserVO;
  * @updates:
  ****************************************************************************/
 
-public class DiagnosticTransaction extends SBActionAdapter {
+public class DiagnosticTransaction extends BaseTransactionAction {
 
 	/**
 	 * Key for the Ajax Controller to utilize when calling this class
@@ -56,7 +63,11 @@ public class DiagnosticTransaction extends SBActionAdapter {
 	@Override
 	public void build(ActionRequest req) throws ActionException {
 		try {
-			this.saveDiagnosticRun(req);
+			if (req.hasParameter("isRepairable")) {
+				setRepairable(req);
+			} else {
+				saveDiagnosticRun(req);
+			}
 		} catch (Exception e) {
 			log.error("Unable to save asset", e);
 			putModuleData("", 0, false, e.getLocalizedMessage(), true);
@@ -74,20 +85,37 @@ public class DiagnosticTransaction extends SBActionAdapter {
 	public void saveDiagnosticRun(ActionRequest req) 
 	throws InvalidDataException, DatabaseException {
 		
-		// Get the WSLA User
+		// Get the WSLA User & ticket id
 		UserVO user = (UserVO)getAdminUser(req).getUserExtendedInfo();
+		String ticketId = req.getParameter(TicketEditAction.TICKET_ID);
 		
-		// Add a ledger entry
-		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
-		TicketLedgerVO ledger = new TicketLedgerVO(req);
-		ledger.setDispositionBy(user.getUserId());
-		ledger.setSummary(LedgerSummary.RAN_DIAGNOSTIC.summary);
-		db.save(ledger);
+		// Add a ledger entry & build the next step
+		TicketLedgerVO ledger = changeStatus(ticketId, user.getUserId(), StatusCode.CAS_IN_DIAG, LedgerSummary.RAN_DIAGNOSTIC.summary, null);
+		buildNextStep(ledger.getStatusCode(), new BasePortalAction().getResourceBundle(req), new HashMap<>(), false);
 		
 		DiagnosticRunVO dr = new DiagnosticRunVO(req);
 		
 		TicketOverviewAction toa = new TicketOverviewAction(attributes, dbConn);
 		toa.saveDiagnosticRun(dr);
+	}
+	
+	/**
+	 * Sets the repairable status of the equipment, and moves the ticket to the next status
+	 * 
+	 * @param req
+	 * @throws DatabaseException 
+	 * @throws InvalidDataException 
+	 * @throws SQLException 
+	 */
+	private void setRepairable(ActionRequest req) throws InvalidDataException, DatabaseException, SQLException {
+		boolean isRepairable = Convert.formatBoolean(req.getParameter("isRepairable"));
+		ResourceBundle bundle = new BasePortalAction().getResourceBundle(req);
+		
+		// Set the repairable status
+		TicketVO ticket = new TicketVO(req);
+		UserVO user = (UserVO) getAdminUser(req).getUserExtendedInfo();
+		TicketLedgerVO ledger = changeStatus(ticket.getTicketId(), user.getUserId(), isRepairable ? StatusCode.REPAIRABLE : StatusCode.UNREPAIRABLE, LedgerSummary.DIAGNOSTIC_COMPLETED.summary, null);
+		buildNextStep(ledger.getStatusCode(), bundle, new HashMap<>(), false);
 	}
 }
 

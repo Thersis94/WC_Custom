@@ -27,6 +27,7 @@ public enum StatusCode {
 	DECLINED_SERIAL_NO ("Declined Serial Number"),
 	PENDING_PICKUP ("Pickup Pending"),
 	PICKUP_COMPLETE ("Pickup Complete"),
+	CAS_IN_DIAG ("CAS Diagnotics"),
 	REPAIRABLE ("Repairable"),
 	UNREPAIRABLE ("Unrepairable"),
 	CAS_PARTS_REQUESTED ("CAS Parts Requested"),
