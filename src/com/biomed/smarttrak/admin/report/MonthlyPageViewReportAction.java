@@ -232,20 +232,22 @@ public class MonthlyPageViewReportAction extends SimpleActionAdapter {
 		sql.append(DBUtil.INNER_JOIN).append("site_alias a on a.site_id = p.site_id and a.primary_flg = ? ");
 
 		//Join Company info
-		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("biomedgps_company c on pu.query_str_txt = c.company_id ");
-		sql.append("or (pu.request_uri_txt like '%/qs/%' and c.company_id = split_part(pu.request_uri_txt, '/qs/', 2)) ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("biomedgps_company c ");
+		sql.append("on pu.request_uri_txt like '%/qs/%' and c.company_id = split_part(pu.request_uri_txt, '/qs/', 2) ");
 
 		//Join Product Info
-		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("biomedgps_product pr on pu.query_str_txt = pr.product_id ");
-		sql.append("or (pu.request_uri_txt like '%/qs/%' and pr.product_id = split_part(pu.request_uri_txt, '/qs/', 2)) ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("biomedgps_product pr ");
+		sql.append("on pu.request_uri_txt like '%/qs/%' and pr.product_id = split_part(pu.request_uri_txt, '/qs/', 2) ");
 
 		//Join Market Info
-		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("biomedgps_market m on pu.query_str_txt = m.market_id ");
-		sql.append("or (pu.request_uri_txt like '%/qs/%' and m.market_id = split_part(pu.request_uri_txt, '/qs/', 2)) ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("biomedgps_market m ");
+		sql.append("on pu.request_uri_txt like '%/qs/%' and m.market_id = split_part(pu.request_uri_txt, '/qs/', 2) ");
 
 		//Join Insight Info
-		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("biomedgps_insight i on pu.query_str_txt = i.insight_id ");
-		sql.append("or (pu.request_uri_txt like '%/qs/%' and i.insight_id = split_part(pu.request_uri_txt, '/qs/', 2)) ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("biomedgps_insight i ");
+		sql.append("on pu.request_uri_txt like '%/qs/%' and i.insight_id = split_part(pu.request_uri_txt, '/qs/', 2) ");
+
+		//Build Where Clause
 		sql.append(DBUtil.WHERE_CLAUSE).append("pu.site_id = ? and visit_dt between ? and ? ");
 
 		//Using a nested sub query was roughly 20% faster than a join with exclusion. 
