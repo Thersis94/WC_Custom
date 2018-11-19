@@ -9,7 +9,6 @@ import static com.wsla.action.admin.ProviderAction.REQ_PROVIDER_ID;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -32,13 +31,10 @@ import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
-
 // WSLA Libs
 import com.wsla.action.admin.BillableActivityAction;
-import com.wsla.action.admin.InventoryAction;
 import com.wsla.action.admin.HarvestPartsAction;
-
-//WSLA Libs
+import com.wsla.action.admin.InventoryAction;
 import com.wsla.action.admin.ProductCategoryAction;
 import com.wsla.action.admin.ProductMasterAction;
 import com.wsla.action.admin.ProviderAction;
@@ -46,23 +42,24 @@ import com.wsla.action.admin.ProviderLocationAction;
 import com.wsla.action.admin.StatusCodeAction;
 import com.wsla.action.admin.WarrantyAction;
 import com.wsla.action.admin.WarrantyAction.ServiceTypeCode;
-import com.wsla.action.ticket.TicketEditAction;
 import com.wsla.action.ticket.CASSelectionAction;
 import com.wsla.action.ticket.TicketListAction;
+import com.wsla.action.ticket.TicketEditAction;
 import com.wsla.common.LocaleWrapper;
 import com.wsla.common.WSLALocales;
+import com.wsla.data.product.LocationItemMasterVO;
 import com.wsla.data.product.ProductVO;
 import com.wsla.data.product.WarrantyType;
 import com.wsla.data.provider.ProviderLocationVO;
 import com.wsla.data.provider.ProviderType;
-import com.wsla.data.ticket.StatusCode;
+import com.wsla.data.ticket.BillableActivityVO;
+import com.wsla.data.ticket.BillableActivityVO.BillableTypeCode;
 import com.wsla.data.ticket.ProductHarvestVO;
+import com.wsla.data.ticket.StatusCode;
+import com.wsla.data.ticket.StatusCodeVO;
 import com.wsla.data.ticket.TicketAssignmentVO;
 import com.wsla.data.ticket.TicketAssignmentVO.TypeCode;
 import com.wsla.data.ticket.TicketScheduleVO;
-import com.wsla.data.ticket.BillableActivityVO;
-import com.wsla.data.ticket.BillableActivityVO.BillableTypeCode;
-import com.wsla.data.ticket.StatusCodeVO;
 import com.wsla.data.ticket.UserVO;
 
 /****************************************************************************
@@ -88,6 +85,8 @@ public class SelectLookupAction extends SBActionAdapter {
 	public static final String SELECT_KEY = "selectType";
 
 	private static final String PROVIDER_TYPE = "providerType";
+
+	private static final String REQ_SEARCH = "search";
 
 	private static Map<String, GenericVO> keyMap = new HashMap<>(16);
 
@@ -231,7 +230,7 @@ public class SelectLookupAction extends SBActionAdapter {
 
 		return yesNo;
 	}
-	
+
 	/**
 	 * loads a list of the warranty service types
 	 * @return
@@ -241,7 +240,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		for (ServiceTypeCode e : WarrantyAction.ServiceTypeCode.values()) {
 			types.add(new GenericVO(e.name(),e.getValue()));
 		}
-		
+
 		return types;
 	}
 
@@ -268,7 +267,7 @@ public class SelectLookupAction extends SBActionAdapter {
 	 * @return
 	 */
 	public List<GenericVO> getProviders(ActionRequest req) {
-		String search = req.getParameter("search");
+		String search = req.getParameter(REQ_SEARCH);
 		boolean incUnknown = req.getBooleanParameter("incUnknown");
 		ProviderType pt = EnumUtil.safeValueOf(ProviderType.class, req.getParameter(PROVIDER_TYPE), ProviderType.OEM);
 		return new ProviderAction(getAttributes(), getDBConnection()).getProviderOptions(pt, search, incUnknown);
@@ -334,7 +333,7 @@ public class SelectLookupAction extends SBActionAdapter {
 	 */
 	public List<GenericVO> getRetailerACList(ActionRequest req) {
 		StringBuilder term = new StringBuilder(16);
-		term.append("%").append(StringUtil.checkVal(req.getParameter("search")).toLowerCase()).append("%");
+		term.append("%").append(StringUtil.checkVal(req.getParameter(REQ_SEARCH)).toLowerCase()).append("%");
 
 		StringBuilder sql = new StringBuilder(512);
 		sql.append("select location_id as key, coalesce(provider_nm, '') || ' - ' ");
@@ -364,7 +363,7 @@ public class SelectLookupAction extends SBActionAdapter {
 	 * @return
 	 */
 	public List<GenericVO> getClosestCas(ActionRequest req) {
-		
+
 		String ticketId = req.getParameter("ticketId");
 		UserVO user = (UserVO)getAdminUser(req).getUserExtendedInfo();
 
@@ -380,7 +379,7 @@ public class SelectLookupAction extends SBActionAdapter {
 	public List<GenericVO> getAcCas(ActionRequest req) {
 		String providerId = req.getParameter("providerId");
 		StringBuilder term = new StringBuilder(16);
-		term.append("%").append(StringUtil.checkVal(req.getParameter("search")).toLowerCase()).append("%");
+		term.append("%").append(StringUtil.checkVal(req.getParameter(REQ_SEARCH)).toLowerCase()).append("%");
 
 		StringBuilder sql = new StringBuilder(512);
 		sql.append("select location_id as key, coalesce(provider_nm, '') || ' - ' ");
@@ -398,17 +397,17 @@ public class SelectLookupAction extends SBActionAdapter {
 		vals.add(term);
 		vals.add(term);
 		vals.add(term);
-		
+
 		if (!StringUtil.isEmpty(req.getParameter("providerId"))) {
 			sql.append(" and a.provider_id = ? ");
 			vals.add(providerId);
 		}
-		
+
 		sql.append("order by provider_nm");
-		
+
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		List<GenericVO> data = db.executeSelect(sql.toString(), vals, new GenericVO());
-		log.debug("UUUU data size " + data.size());
+		log.debug("acCas size " + data.size());
 		return data;
 	}
 
@@ -648,14 +647,14 @@ public class SelectLookupAction extends SBActionAdapter {
 	 */
 	public List<GenericVO> getScheduleTransferTypes(ActionRequest req) {
 		ResourceBundle bundle = new BasePortalAction().getResourceBundle(req);
-		
+
 		List<GenericVO> data = new ArrayList<>();
 		for (TicketScheduleVO.TypeCode type : TicketScheduleVO.TypeCode.values()) {
 			data.add(new GenericVO(type.name(), bundle.getString("wsla.ticket.schedule." + type.name())));
 		}
 
 		return data;
-}
+	}
 
 	/**
 	 * Return a list of provider locations who have inventory (records).
@@ -675,25 +674,15 @@ public class SelectLookupAction extends SBActionAdapter {
 	 * @return
 	 */
 	public List<GenericVO> getLocationInventory(ActionRequest req) {
-		String schema = getCustomSchema();
 		String locationId = req.getParameter("locationId");
-		String providerId = req.getParameter("providerId");
 
-		//turn the locationId into a providerId if providerId is empty
-		if (StringUtil.isEmpty(providerId)) {
-			String sql = StringUtil.join("select provider_id as key from ", schema,"wsla_provider_location ",
-					"where location_id=?");
-			log.debug(sql);
-			DBProcessor db = new DBProcessor(getDBConnection(), schema);
-			List<GenericVO> data = db.executeSelect(sql, Arrays.asList(locationId), new GenericVO());
-			providerId = !data.isEmpty() ? (String)data.get(0).getKey() : null;
-		}
-		//stop here if we couldn't find the providerId
-		if (StringUtil.isEmpty(providerId)) 
-			return Collections.emptyList();
+		InventoryAction pa = new InventoryAction(getAttributes(), getDBConnection());
+		List<LocationItemMasterVO> data = pa.listInventory(locationId, null, null);
+		List<GenericVO> products = new ArrayList<>(data.size());
+		for (LocationItemMasterVO lim : data)
+			products.add(new GenericVO(lim.getProductId(), lim.getProductName()));
 
-		ProductMasterAction pa = new ProductMasterAction(getAttributes(), getDBConnection());
-		return pa.listProducts(providerId, Integer.valueOf(1), Integer.valueOf(0));
+		return products;
 	}
 
 	/**
@@ -712,38 +701,40 @@ public class SelectLookupAction extends SBActionAdapter {
 		DBProcessor db = new DBProcessor(getDBConnection());
 		return db.executeSelect(sql.toString(), Arrays.asList(site.getOrganizationId()), new GenericVO());
 	}
-	
+
+
 	/**
 	 * Gets a list of billable codes
 	 * @return
 	 */
 	public List<GenericVO> getBillableCodes(ActionRequest req) {
 		String btc = req.getParameter("billableTypeCode");
-		
+
 		// Get the codes
 		List<BillableActivityVO> codes = new BillableActivityAction(dbConn, attributes).getCodes(btc);
 		List<GenericVO> data = new ArrayList<>();
-		
+
 		// Loop the codes and convert to Generic
 		for (BillableActivityVO code : codes) {
 			if (code.getActiveFlag() == 0) continue;
 			data.add(new GenericVO(code.getBillableActivityCode(), code.getActivityName()));
 		}
-		
+
 		return data;
 	}
-	
+
+
 	/**
 	 * Gets a list of billable codes
 	 * @return
 	 */
 	public List<GenericVO> getBillableTypes() {
 		List<GenericVO> data = new ArrayList<>();
-		
+
 		for (BillableTypeCode code : BillableTypeCode.values()) {
 			data.add(new GenericVO(code.name(), code.getTypeName()));
 		}
-		
+
 		return data;
 	}
 }
