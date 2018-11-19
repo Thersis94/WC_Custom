@@ -4,6 +4,9 @@ package com.wsla.action.ticket.transaction;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.ResourceBundle;
 
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
@@ -11,10 +14,11 @@ import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
+import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.util.StringUtil;
-
+import com.wsla.action.BasePortalAction;
 // WC Libs
 import com.wsla.action.ticket.BaseTransactionAction;
 import com.wsla.data.provider.ProviderLocationVO;
@@ -58,18 +62,29 @@ public class TicketAssignmentTransaction extends BaseTransactionAction {
 		super(actionInit);
 	}
 	
+	/**
+	 * 
+	 * @param dbConn
+	 * @param attributes
+	 */
+	public TicketAssignmentTransaction(SMTDBConnection dbConn, Map<String, Object> attributes) {
+		this();
+		this.dbConn = dbConn;
+		this.attributes = attributes;
+	}
+	
 	/*
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.action.ActionRequest)
 	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
-		TicketLedgerVO ledger = new TicketLedgerVO(req);
 		TicketAssignmentVO tAss = new TicketAssignmentVO(req);
 		UserVO user = (UserVO)getAdminUser(req).getUserExtendedInfo();
+		ResourceBundle bundle = new BasePortalAction().getResourceBundle(req);
 		try {
 			
-			putModuleData(assign(tAss, ledger, user));
+			putModuleData(assign(tAss, user, bundle));
 		} catch (InvalidDataException | DatabaseException | SQLException e) {
 			log.error("Unable to save asset", e);
 			putModuleData("", 0, false, e.getLocalizedMessage(), true);
@@ -79,27 +94,30 @@ public class TicketAssignmentTransaction extends BaseTransactionAction {
 	/**
 	 * Saves a Ticket Assignment when changing
 	 * @param tAss
-	 * @param ledger
 	 * @param user
+	 * @param bundle
 	 * @throws InvalidDataException
 	 * @throws DatabaseException
 	 */
-	public Object assign(TicketAssignmentVO tAss, TicketLedgerVO ledger, UserVO user) 
+	public Object assign(TicketAssignmentVO tAss, UserVO user, ResourceBundle bundle) 
 	throws InvalidDataException, DatabaseException, SQLException {
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		
-		// Add the ledger entry
-		ledger.setDispositionBy(user.getUserId());
-		ledger.setSummary(LedgerSummary.CAS_ASSIGNED.summary);
-		
 		// Only add a status code change to the ledger if this is the first
 		// Assignment of a CAS
+		TicketLedgerVO ledger = new TicketLedgerVO();
 		if (StringUtil.isEmpty(tAss.getTicketAssignmentId()) && TypeCode.CAS.equals(tAss.getTypeCode())) {
-			ledger.setStatusCode(StatusCode.CAS_ASSIGNED);
+			ledger = changeStatus(tAss.getTicketId(), user.getUserId(), StatusCode.CAS_ASSIGNED, LedgerSummary.CAS_ASSIGNED.summary, null);
+		} else if (TypeCode.CAS.equals(tAss.getTypeCode())) {
+			addLedger(tAss.getTicketId(), user.getUserId(), StatusCode.CAS_ASSIGNED, LedgerSummary.CAS_ASSIGNED.summary, null);
+		}
+		
+		// Build the next step
+		if (ledger.getStatusCode() != null) {
+			buildNextStep(ledger.getStatusCode(), bundle, new HashMap<>(), true);
 		}
 		
 		// Save the ledger and the assignment
-		db.save(ledger);
 		db.save(tAss);
 		return getAssignmentData(tAss, db);
 	}

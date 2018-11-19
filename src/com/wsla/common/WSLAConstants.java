@@ -27,7 +27,7 @@ public class WSLAConstants {
 	/**
 	 * WSLA Resource Bundle
 	 */
-	public static final String RESOURCE_BUNDLE = "com.wsla.common.bundle.messages";
+	public static final String RESOURCE_BUNDLE = "com.smt.sitebuilder.resource.bundle.wsla.DatabaseList";
 
 	/**
 	 * Workflow slug's to lookup a workflow

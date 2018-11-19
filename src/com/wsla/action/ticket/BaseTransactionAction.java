@@ -44,7 +44,7 @@ import com.wsla.util.NotificationWorkflowModule;
  ****************************************************************************/
 public class BaseTransactionAction extends SBActionAdapter {
 	
-	protected NextStepVO nextStep;
+	private NextStepVO nextStep;
 
 	public BaseTransactionAction() {
 		super();
@@ -165,6 +165,15 @@ public class BaseTransactionAction extends SBActionAdapter {
 	 */
 	public NextStepVO getNextStep() {
 		return nextStep;
+	}
+	
+	/**
+	 * Sets the next step from a pre-built next step
+	 * 
+	 * @param nextStep
+	 */
+	public void setNextStep(NextStepVO nextStep) {
+		this.nextStep = nextStep;
 	}
 	
 	/**

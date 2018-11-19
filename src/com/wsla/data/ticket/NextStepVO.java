@@ -8,6 +8,7 @@ import java.util.ResourceBundle;
 // SMT Base Libs
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.parser.BeanDataVO;
+import com.siliconmtn.util.StringUtil;
 
 /****************************************************************************
  * <b>Title</b>: NextStepVO.java
@@ -61,14 +62,16 @@ public class NextStepVO extends BeanDataVO {
 	 * @param bundle
 	 */
 	public NextStepVO(StatusCode status, ResourceBundle bundle) {
+		String statusBundleKey = StringUtil.removeNonAlpha(status.name().toLowerCase());
+		
 		try {
-			setPromptText(bundle.getString("wsla.ticket.nextStep." + status.name()));
+			setPromptText(bundle.getString("wsla.ticket.nextstep." + statusBundleKey));
 		} catch (MissingResourceException e) {
 			setPromptText("");
 		}
 		
 		try {
-			setButtonName(bundle.getString("wsla.ticket.nextStep.button." + status.name()));
+			setButtonName(bundle.getString("wsla.ticket.nextstep.button." + statusBundleKey));
 		} catch (MissingResourceException e) {
 			setButtonName("");
 		}
