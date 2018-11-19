@@ -72,11 +72,46 @@ public class SRTMasterRecordAction extends SimpleActionAdapter {
 
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		if((req.hasParameter(SRT_MASTER_RECORD_ID) || req.hasParameter(SRT_MASTER_RECORD_PART_NO)) || req.hasParameter("json")) {
+		if(req.getBooleanParameter("isCheckPartNo")) {
+			putModuleData(checkPartNoExists(req.getParameter(SRT_MASTER_RECORD_PART_NO), req.getParameter(SRT_MASTER_RECORD_ID), SRTUtil.getOpCO(req)));
+		} else if((req.hasParameter(SRT_MASTER_RECORD_ID) || req.hasParameter(SRT_MASTER_RECORD_PART_NO)) || req.hasParameter("json")) {
 			GridDataVO<SRTMasterRecordVO> masterRecords = loadMasterRecordData(req);
 
 			putModuleData(masterRecords.getRowData(), masterRecords.getTotal(), false);
 		}
+	}
+
+	/**
+	 * Check if a given partNo exists in the system for the given OpCoId.  If
+	 * masterRecordId is passed, exclude that record from the results.  Only want
+	 * to see if there is an existing non-same record.
+	 * @param parameter
+	 * @param opCO
+	 * @return
+	 */
+	private boolean checkPartNoExists(String partNo, String masterRecordId, String opCOId) {
+		StringBuilder sql = new StringBuilder(200);
+		sql.append(DBUtil.SELECT_CLAUSE).append("PART_NO ").append(DBUtil.FROM_CLAUSE);
+		sql.append(getCustomSchema()).append("DPY_SYN_SRT_MASTER_RECORD ");
+		sql.append(DBUtil.WHERE_CLAUSE).append("PART_NO = ? and OP_CO_ID = ? ");
+		if(!StringUtil.isEmpty(masterRecordId)) {
+			sql.append("and MASTER_RECORD_ID != ?");
+		}
+		try(PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, partNo);
+			ps.setString(2, opCOId);
+			if(!StringUtil.isEmpty(masterRecordId)) {
+				ps.setString(3, masterRecordId);
+			}
+
+			ResultSet rs = ps.executeQuery();
+			if(rs.next()) {
+				return true;
+			}
+		} catch (SQLException e) {
+			log.error("Error Looking up Part No", e);
+		}
+		return false;
 	}
 
 	/**

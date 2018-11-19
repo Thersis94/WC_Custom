@@ -6,6 +6,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -91,18 +92,28 @@ public class SRTProjectAction extends SimpleActionAdapter {
 
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		SRTMilestoneAction sma = (SRTMilestoneAction) ActionControllerFactoryImpl.loadAction(SRTMilestoneAction.class.getName(), this);
+		SRTMilestoneAction sma = ActionControllerFactoryImpl.loadAction(SRTMilestoneAction.class, this);
 		MilestoneTypeId typeId = MilestoneTypeId.DATE;
 
 		if(req.hasParameter(SRT_PROJECT_ID) || req.hasParameter("json")) {
 
 			GridDataVO<SRTProjectVO> projects = loadProjects(req);
 
-			if(req.hasParameter(SRT_PROJECT_ID)) {
+			/*
+			 * If we're after a specific project, ensure we found one.  Otherwise
+			 * redirect user back to list.
+			 */
+			if(req.hasParameter(SRT_PROJECT_ID) && projects.getTotal() > 0) {
 				loadDataFromForms(req);
 				if(!req.getBooleanParameter("isCopyReq")) {
+					req.setParameter(SRT_PROJECT_ID, projects.getRowData().get(0).getProjectId());
 					req.setAttribute("ownsLock", StringUtil.checkVal(manageLock(req, false)));
 				}
+			} else if(req.hasParameter(SRT_PROJECT_ID)) {
+				StringBuilder redirect = new StringBuilder(150);
+				redirect.append(req.getServletPath()).append("?msg=The selected project was not found or is inaccessible.  If you believe this to be a mistake please contact an Administrator.");
+				sbUtil.manualRedirect(req, redirect.toString());
+				return;
 			}
 
 			putModuleData(projects.getRowData(), projects.getTotal(), false);
@@ -122,7 +133,7 @@ public class SRTProjectAction extends SimpleActionAdapter {
 		}
 
 		//Retrieve list of Milestones from DB for Request.
-		List<SRTProjectMilestoneVO> milestones = sma.loadMilestoneData(SRTUtil.getOpCO(req), typeId, null, false);
+		List<SRTProjectMilestoneVO> milestones = sma.loadMilestoneData(SRTUtil.getOpCO(req), typeId, null, false, true);
 		req.setAttribute("milestones", milestones);
 	}
 
@@ -145,6 +156,12 @@ public class SRTProjectAction extends SimpleActionAdapter {
 
 					//Release all Locks on save.
 					releaseLocks(req);
+
+					//Check if Status Changed.  If so, add a message to the response.
+					String statChange = (String)req.getAttribute(ProjectDataProcessor.STATUS_CHANGED);
+					if(!StringUtil.isEmpty(statChange)) {
+						this.putModuleData(StringUtil.join("Status has changed to ", statChange));
+					}
 				} else {
 					msg = "You do not own the lock on this record.  Save Rejected.";
 					throw new ActionException((String)msg);
@@ -167,7 +184,7 @@ public class SRTProjectAction extends SimpleActionAdapter {
 	private void copyProject(ActionRequest req) throws ActionException {
 
 		//Load Roster Data.
-		SRTRosterAction sra = (SRTRosterAction)ActionControllerFactoryImpl.loadAction(SRTRosterAction.class.getName(), this);
+		SRTRosterAction sra = ActionControllerFactoryImpl.loadAction(SRTRosterAction.class, this);
 		GridDataVO<SRTRosterVO> rosters = sra.loadRosterUsers(req);
 		SRTRosterVO roster = rosters.getRowData().get(0);
 
@@ -489,7 +506,7 @@ public class SRTProjectAction extends SimpleActionAdapter {
 	 * @param projects
 	 */
 	private void loadMilestoneDetails(List<SRTProjectVO> projects) {
-		SRTMilestoneAction sma = (SRTMilestoneAction) ActionControllerFactoryImpl.loadAction(SRTMilestoneAction.class.getName(), this);
+		SRTMilestoneAction sma = ActionControllerFactoryImpl.loadAction(SRTMilestoneAction.class, this);
 		sma.populateMilestones(projects);
 	}
 
@@ -504,7 +521,7 @@ public class SRTProjectAction extends SimpleActionAdapter {
 		if(req.hasParameter(SRT_PROJECT_ID)) {
 			SRTProjectVO p = projects.get(0);
 			req.setParameter(SRTRequestAction.SRT_REQUEST_ID, p.getRequestId());
-			SRTRequestAction sra = (SRTRequestAction) ActionControllerFactoryImpl.loadAction(SRTRequestAction.class.getName(), this);
+			SRTRequestAction sra = ActionControllerFactoryImpl.loadAction(SRTRequestAction.class, this);
 			GridDataVO<SRTRequestVO> reqData = sra.loadRequests(req);
 			if(reqData != null && !reqData.getRowData().isEmpty()) {
 				p.setRequest(reqData.getRowData().get(0));
@@ -512,7 +529,7 @@ public class SRTProjectAction extends SimpleActionAdapter {
 		}
 
 		//Load Master Record Data and assign on Project Record.
-		SRTMasterRecordAction smra = (SRTMasterRecordAction) ActionControllerFactoryImpl.loadAction(SRTMasterRecordAction.class.getName(), this);
+		SRTMasterRecordAction smra = ActionControllerFactoryImpl.loadAction(SRTMasterRecordAction.class, this);
 		smra.populateMasterRecordXR(projects);
 	}
 
@@ -610,10 +627,10 @@ public class SRTProjectAction extends SimpleActionAdapter {
 	 */
 	private void buildWhereClause(StringBuilder sql, ActionRequest req, List<Object> vals, String statusType) {
 		sql.append(DBUtil.WHERE_1_CLAUSE).append(" and p.OP_CO_ID = ? ");
-		vals.add(SRTUtil.getRoster(req).getOpCoId());
+		vals.add(SRTUtil.getOpCO(req));
 
 		if(req.hasParameter(SRT_PROJECT_ID)) {
-			sql.append("and p.PROJECT_ID = ? or p.CO_PROJECT_ID = ? ");
+			sql.append("and (p.PROJECT_ID = ? or p.CO_PROJECT_ID = ?) ");
 			vals.add(req.getParameter(SRT_PROJECT_ID));
 			vals.add(req.getParameter(SRT_PROJECT_ID));
 		} else if(!StringUtil.isEmpty(statusType)) {
@@ -692,20 +709,59 @@ public class SRTProjectAction extends SimpleActionAdapter {
 		LockUtil locker = new LockUtil(dbConn);
 		SRTRosterVO rosterVO = SRTUtil.getRoster(req);
 
-		Map<String, LockVO> locks = getMyLocks(req);
+		Map<String, LockVO> locks = null;
+		if(req.getBooleanParameter("myLocks") || req.hasParameter(SRT_PROJECT_ID))
+			locks = getMyLocks(req);
+		else if (req.getBooleanParameter("allLocks")) {
+			locks = getAllLocks(req);
+		}
+
+		//Return if we have no locks.
+		if(locks == null || locks.isEmpty())
+			return;
+
 		Iterator<Entry<String, LockVO>> iter = locks.entrySet().iterator();
+		int lockCnt = 0;
 		while(iter.hasNext()) {
 			Entry<String, LockVO> e = iter.next();
 			LockVO lock = e.getValue();
 			if(lock.getUnlockDt() == null) {
 				try {
 					locker.releaseLock(lock.getRecordId(), rosterVO);
+					lockCnt++;
 				} catch (InvalidDataException | DatabaseException err) {
 					log.error(StringUtil.join("Unable to release Lock: ", lock.getRecordId()), err);
 				}
 				iter.remove();
 			}
 		}
+
+		//Place a status of the number of locks released.
+		if(!req.hasParameter(SRT_PROJECT_ID))
+			this.putModuleData(StringUtil.join("Released ", Integer.toString(lockCnt), " locks."));
+	}
+
+	/**
+	 * Used by Admins to release all locks in the system.
+	 * @param req
+	 * @return
+	 */
+	private Map<String, LockVO> getAllLocks(ActionRequest req) {
+		String opCoId = SRTUtil.getOpCO(req);
+
+		StringBuilder sql = new StringBuilder(200);
+		sql.append(DBUtil.SELECT_CLAUSE).append("l.*").append(DBUtil.FROM_CLAUSE);
+		sql.append("RECORD_LOCK l ");
+		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("dpy_syn_srt_project p ");
+		sql.append("on l.record_id = p.project_id and p.op_co_id = ? ");
+		sql.append(DBUtil.WHERE_CLAUSE).append("l.unlock_dt is null");
+
+		//Load all locks that are unlocked for a given OpCo.
+		List<LockVO> locks = new DBProcessor(dbConn).executeSelect(sql.toString(), Arrays.asList(opCoId), new LockVO());
+
+		//Convert to map.
+		return locks.stream()
+					.collect(Collectors.toMap(LockVO::getRecordId, Function.identity()));
 	}
 
 	/**

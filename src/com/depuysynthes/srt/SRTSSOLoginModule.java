@@ -81,12 +81,13 @@ public class SRTSSOLoginModule extends SAMLLoginModule {
 
 	/**
 	 * Build the SRT Roster Lookup Query.
+	 * Ensure we only get matches on active roster records.
 	 * @return
 	 */
 	private String buildRosterSql() {
 		StringBuilder sql = new StringBuilder(150);
 		sql.append("select * from ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
-		sql.append("DPY_SYN_SRT_ROSTER where wwid = ? ");
+		sql.append("DPY_SYN_SRT_ROSTER where wwid = ? and is_active = 1");
 
 		return sql.toString();
 	}
