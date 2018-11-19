@@ -203,6 +203,12 @@ public class MonthlyPageViewReportAction extends SimpleActionAdapter {
 		}
 
 		log.debug("Sorting Page views");
+
+		/*
+		 * Need to sort data because we order by Dates to ensure we have
+		 * our headers coming back in proper order.  Once we have our headers then
+		 * re-sort to be in order by URI.
+		 */
 		List<MonthlyPageViewVO> pageViewData = new ArrayList<>(pageViews.values());
         Collections.sort(pageViewData, new MonthlyPageviewComparator()); 
 		Map<String, Object> reportData = new HashMap<>();
@@ -217,7 +223,7 @@ public class MonthlyPageViewReportAction extends SimpleActionAdapter {
 	 */
 	private String getPageViewSql() {
 		String schema = getCustomSchema();
-		StringBuilder sql = new StringBuilder(2000);
+		StringBuilder sql = new StringBuilder(1400);
 		sql.append(DBUtil.SELECT_CLAUSE).append("concat('https://', a.site_alias_url, pu.request_uri_txt) as request_uri, ");
 		sql.append("count(pu.request_uri_txt) as hit_cnt, concat(to_char(to_timestamp (pu.visit_month_no::text, 'MM'), 'Mon'), ' ', pu.visit_year_no) as visit_dt, ");
 		sql.append("p.page_display_nm as section_nm, case when p.page_display_nm = 'Companies' then c.company_nm ");
@@ -233,19 +239,19 @@ public class MonthlyPageViewReportAction extends SimpleActionAdapter {
 
 		//Join Company info
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("biomedgps_company c ");
-		sql.append("on pu.request_uri_txt like '%/qs/%' and c.company_id = split_part(pu.request_uri_txt, '/qs/', 2) ");
+		sql.append("on c.company_id = pu.query_str_txt ");
 
 		//Join Product Info
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("biomedgps_product pr ");
-		sql.append("on pu.request_uri_txt like '%/qs/%' and pr.product_id = split_part(pu.request_uri_txt, '/qs/', 2) ");
+		sql.append("on pr.product_id = pu.query_str_txt ");
 
 		//Join Market Info
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("biomedgps_market m ");
-		sql.append("on pu.request_uri_txt like '%/qs/%' and m.market_id = split_part(pu.request_uri_txt, '/qs/', 2) ");
+		sql.append("on m.market_id = pu.query_str_txt ");
 
 		//Join Insight Info
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("biomedgps_insight i ");
-		sql.append("on pu.request_uri_txt like '%/qs/%' and i.insight_id = split_part(pu.request_uri_txt, '/qs/', 2) ");
+		sql.append("on i.insight_id = pu.query_str_txt ");
 
 		//Build Where Clause
 		sql.append(DBUtil.WHERE_CLAUSE).append("pu.site_id = ? and visit_dt between ? and ? ");
@@ -256,7 +262,7 @@ public class MonthlyPageViewReportAction extends SimpleActionAdapter {
 		sql.append(") ");
 
 		sql.append(DBUtil.GROUP_BY).append("pu.request_uri_txt, pu.visit_year_no, pu.visit_month_no, p.page_display_nm, c.company_nm, m.market_nm, pr.product_nm, i.title_txt, a.site_alias_url ");
-		sql.append(DBUtil.ORDER_BY).append("pu.visit_year_no, pu.visit_month_no, pu.request_uri_txt");
+		sql.append(DBUtil.ORDER_BY).append("pu.visit_year_no, pu.visit_month_no");
 		log.debug(sql.toString());
 		return sql.toString();
 	}
