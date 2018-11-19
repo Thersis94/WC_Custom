@@ -12,6 +12,7 @@ import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.resource.ResourceBundleDataVO;
 // WC Lib
 import com.smt.sitebuilder.action.SBActionAdapter;
+import com.smt.sitebuilder.admin.action.ResourceBundleManagerAction;
 import com.wsla.common.LocaleWrapper;
 import com.wsla.common.WSLALocales;
 
@@ -125,9 +126,8 @@ public class LanguageBundleMapAction extends SBActionAdapter {
 	public void build(ActionRequest req) throws ActionException {
 		ResourceBundleDataVO dvo = new ResourceBundleDataVO(req);
 		try {
-			DBProcessor db = new DBProcessor(getDBConnection());
-			db.save(dvo);
-			putModuleData(dvo);
+			ResourceBundleManagerAction rbma = new ResourceBundleManagerAction(dbConn, attributes);
+			rbma.saveBundleKeyData(dvo);
 		} catch(Exception e) {
 			log.error("Unable to save bundle", e);
 			putModuleData("", 0, false, e.getLocalizedMessage(), true);
