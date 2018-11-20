@@ -1,7 +1,7 @@
 package com.wsla.action.ticket.transaction;
 
-import java.sql.SQLException;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.ResourceBundle;
 
 // SMT Base Libs
@@ -89,9 +89,13 @@ public class DiagnosticTransaction extends BaseTransactionAction {
 		UserVO user = (UserVO)getAdminUser(req).getUserExtendedInfo();
 		String ticketId = req.getParameter(TicketEditAction.TICKET_ID);
 		
-		// Add a ledger entry & build the next step
+		// Add a ledger entry, change the status
 		TicketLedgerVO ledger = changeStatus(ticketId, user.getUserId(), StatusCode.CAS_IN_DIAG, LedgerSummary.RAN_DIAGNOSTIC.summary, null);
-		buildNextStep(ledger.getStatusCode(), new BasePortalAction().getResourceBundle(req), new HashMap<>(), false);
+
+		// Build next step
+		Map<String, Object> params = new HashMap<>();
+		params.put("ticketId", ledger.getTicketId());
+		buildNextStep(ledger.getStatusCode(), new BasePortalAction().getResourceBundle(req), params, false);
 		
 		DiagnosticRunVO dr = new DiagnosticRunVO(req);
 		
@@ -105,9 +109,8 @@ public class DiagnosticTransaction extends BaseTransactionAction {
 	 * @param req
 	 * @throws DatabaseException 
 	 * @throws InvalidDataException 
-	 * @throws SQLException 
 	 */
-	private void setRepairable(ActionRequest req) throws InvalidDataException, DatabaseException, SQLException {
+	private void setRepairable(ActionRequest req) throws InvalidDataException, DatabaseException {
 		boolean isRepairable = Convert.formatBoolean(req.getParameter("isRepairable"));
 		ResourceBundle bundle = new BasePortalAction().getResourceBundle(req);
 		

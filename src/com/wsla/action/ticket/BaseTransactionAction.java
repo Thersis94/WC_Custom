@@ -197,7 +197,7 @@ public class BaseTransactionAction extends SBActionAdapter {
 			nextStep = new NextStepVO(status, bundle);
 			
 			if (!StringUtil.isEmpty(sc.getNextStepUrl())) {
-				nextStep.setButtonUrl(MessageParser.parse(sc.getNextStepUrl(), params, sc.getNextStepUrl(), MessageType.TEXT));
+				nextStep.setButtonUrl(MessageParser.parse(sc.getNextStepUrl(), params, StringUtil.removeNonAlphaNumeric(sc.getNextStepUrl()), MessageType.TEXT));
 				nextStep.setStatusName(sc.getStatusName());
 			}
 
