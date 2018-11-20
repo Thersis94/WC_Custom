@@ -263,11 +263,16 @@ public class BasePortalAction extends SBActionAdapter {
 	 * @return
 	 */
 	public ResourceBundle getResourceBundle(ActionRequest req) {
-		UserVO user = (UserVO) getAdminUser(req).getUserExtendedInfo();
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
-		Locale locale = StringUtil.isEmpty(user.getLocale()) ? site.getLocale() : new Locale(user.getLocale());
-		
-		return ResourceBundle.getBundle(WSLAConstants.RESOURCE_BUNDLE, locale); 
+		Locale locale = site.getLocale();
+		UserDataVO udvo = getAdminUser(req);
+
+		if (udvo != null && udvo.getUserExtendedInfo() != null) {
+		UserVO user = (UserVO) getAdminUser(req).getUserExtendedInfo();
+		locale = user.getUserLocale();
+		}
+
+		return ResourceBundle.getBundle(WSLAConstants.RESOURCE_BUNDLE, locale);  
 	}
 	
 	/**
