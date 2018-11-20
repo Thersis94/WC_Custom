@@ -198,9 +198,9 @@ public class BaseTransactionAction extends SBActionAdapter {
 			
 			if (!StringUtil.isEmpty(sc.getNextStepUrl())) {
 				nextStep.setButtonUrl(MessageParser.parse(sc.getNextStepUrl(), params, StringUtil.removeNonAlphaNumeric(sc.getNextStepUrl()), MessageType.TEXT));
-				nextStep.setStatusName(sc.getStatusName());
 			}
 
+			nextStep.setStatusName(sc.getStatusName());
 			nextStep.setNeedsReloadFlag(needsReload);
 		} catch (InvalidDataException | DatabaseException | ParseException e) {
 			throw new InvalidDataException(e);
