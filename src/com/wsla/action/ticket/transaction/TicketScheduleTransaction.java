@@ -135,7 +135,8 @@ public class TicketScheduleTransaction extends BaseTransactionAction {
 		db.save(ts);
 		
 		// Change the status & build next step
-		TicketLedgerVO ledger = changeStatus(ts.getTicketId(), user.getUserId(), StatusCode.PENDING_PICKUP, LedgerSummary.SCHEDULE_TRANSFER.summary, null);
+		boolean isPreRepair = PRE_REPAIR.equals(ts.getRecordTypeCode());
+		TicketLedgerVO ledger = changeStatus(ts.getTicketId(), user.getUserId(), isPreRepair ? StatusCode.PENDING_PICKUP : StatusCode.DELIVERY_SCHEDULED, LedgerSummary.SCHEDULE_TRANSFER.summary, null);
 		buildNextStep(ledger.getStatusCode(), new BasePortalAction().getResourceBundle(req), new HashMap<>(), false);
 		
 		return mergeTicketAssignments(ts);
@@ -165,10 +166,19 @@ public class TicketScheduleTransaction extends BaseTransactionAction {
 		// Make sure the unit location is current (requires the assignment data to set)
 		UnitLocation location = updateUnitLocation(ts);
 		
-		// Change the status & build next step
-		TicketLedgerVO ledger = changeStatus(ts.getTicketId(), user.getUserId(), StatusCode.PICKUP_COMPLETE, LedgerSummary.SCHEDULE_TRANSFER_COMPLETE.summary, location);
-		buildNextStep(ledger.getStatusCode(), new BasePortalAction().getResourceBundle(req), new HashMap<>(), false);
+		// Change the status
+		boolean isPreRepair = PRE_REPAIR.equals(ts.getRecordTypeCode());
+		TicketLedgerVO ledger = changeStatus(ts.getTicketId(), user.getUserId(), isPreRepair ? StatusCode.PICKUP_COMPLETE : StatusCode.DELIVERY_COMPLETE, LedgerSummary.SCHEDULE_TRANSFER_COMPLETE.summary, location);
 		ts.setLedgerEntryId(ledger.getLedgerEntryId());
+
+		// When the post repair transfer is complete, the ticket is finished (closed).
+		// Add an additional ledger entry & status change to denote this.  
+		if (ledger.getStatusCode() == StatusCode.DELIVERY_COMPLETE) {
+			ledger = changeStatus(ts.getTicketId(), user.getUserId(), StatusCode.CLOSED, LedgerSummary.TICKET_CLOSED.summary, null);
+		}
+		
+		// Build the next step
+		buildNextStep(ledger.getStatusCode(), new BasePortalAction().getResourceBundle(req), new HashMap<>(), false);
 		
 		return ts;
 	}

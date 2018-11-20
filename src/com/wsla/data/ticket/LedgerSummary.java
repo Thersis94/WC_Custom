@@ -29,6 +29,7 @@ public enum LedgerSummary {
 	ACTIVITY_ADDED ("An activity was added to the ticket"),
 	CAS_ASSIGNED ("A Service Center was assigned to the ticket"),
 	TICKET_CLONED ("A closed ticket was cloned"),
+	TICKET_CLOSED ("The ticket was closed after returning equipment to owner"),
 	ASSET_LOADED ("User loaded an asset to the service order"),
 	ASSET_APPROVED ("User assets were approved");
 	
