@@ -180,7 +180,7 @@ public class LogisticsAction extends SBActionAdapter {
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("wsla_provider_location srclcn on s.from_location_id=srclcn.location_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("wsla_provider_location destlcn on s.to_location_id=destlcn.location_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("wsla_product_master pm on p.product_id=pm.product_id ");
-		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("wsla_ticket t on p.ticket_id=t.ticket_id ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("wsla_ticket t on s.ticket_id=t.ticket_id ");
 		sql.append("where (s.status_cd != ? or (s.status_cd=? and coalesce(s.shipment_dt, s.update_dt, s.create_dt) > CURRENT_DATE-31)) "); //only show ingested items for 30 days past receipt
 		params.add(ShipmentStatus.RECEIVED.toString());
 		params.add(ShipmentStatus.RECEIVED.toString());
