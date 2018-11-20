@@ -14,6 +14,7 @@ import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.orm.GridDataVO;
 import com.siliconmtn.db.pool.SMTDBConnection;
+import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 // WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
@@ -68,15 +69,16 @@ public class LogisticsPartsAction extends SBActionAdapter {
 		setModuleData(listParts(req.getParameter("shipmentId"), new BSTableControlVO(req, PartVO.class)));
 	}
 
+
 	/*
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.action.ActionRequest)
-	 * TODO when a shipment is saved with status=RECEIVED (for the first time only), we need to decrement 
-	 * inventory from the source location and increment inventory as each part is acknowledged.
 	 */
 	@SuppressWarnings("unchecked")
 	@Override
 	public void build(ActionRequest req) throws ActionException {
+		PartsAction partsAction = new PartsAction(getAttributes(), getDBConnection());
+
 		if (req.hasParameter("completeIngest")) {
 			//load the shipment
 			ShipmentAction sa = new ShipmentAction(getAttributes(), getDBConnection());
@@ -87,6 +89,7 @@ public class LogisticsPartsAction extends SBActionAdapter {
 			//mark the shipment as complete
 			shipment.setStatus(ShipmentStatus.RECEIVED);
 			shipment.setArrivalDate(Calendar.getInstance().getTime());
+			shipment.setCommentsText(req.getParameter("comments"));
 			sa.saveShipment(shipment);
 
 			//if shipping src=dest, don't modify inventory
@@ -96,23 +99,62 @@ public class LogisticsPartsAction extends SBActionAdapter {
 			//load the list of parts
 			List<PartVO> parts = shipment.getParts();
 			if (parts == null || parts.isEmpty()) return; //odd to receive an empty box, but permissible in the UI
-			InventoryAction ia = new InventoryAction(getAttributes(), getDBConnection());
 
-			boolean receiverExists = !StringUtil.isEmpty(shipment.getToLocationId());
-			boolean senderExists = !StringUtil.isEmpty(shipment.getFromLocationId());
-			for (PartVO part : parts) {
-				//add what was recieved to the receiver's inventory
-				if (receiverExists)
-					ia.recordInventory(part.getProductId(), shipment.getToLocationId(), part.getQuantityReceived());
+			saveQntyReceived(req, parts, partsAction);
 
-				//remove what was sent from the sender's inventory
-				if (senderExists)
-					ia.recordInventory(part.getProductId(), shipment.getFromLocationId(), 0-part.getQuantity());
-			}
+			adjustInventories(shipment, parts);
 
 		} else {
-			//saving a single part
-			new PartsAction(getAttributes(), getDBConnection()).build(req);
+			//saving a single part - used when creating the shipment, not for ingest
+			partsAction.build(req);
+		}
+	}
+
+
+	/**
+	 * save the quantities received for each of the parts - comes in from the browser form.
+	 * @param req
+	 * @param parts
+	 * @param partsAction
+	 * @throws ActionException 
+	 */
+	private void saveQntyReceived(ActionRequest req, List<PartVO> parts,
+			PartsAction partsAction) throws ActionException {
+		for (Map.Entry<String, String[]> param : req.getParameterMap().entrySet()) {
+			String paramNm = StringUtil.checkVal(param.getKey());
+			if (! paramNm.startsWith("qnty_")) continue;
+			String partId = paramNm.substring(5);
+			for (PartVO part : parts) {
+				if (part.getPartId().equals(partId))
+					part.setQuantityReceived(Convert.formatInteger(req.getParameter(paramNm)));
+			}
+		}
+		partsAction.saveQntyRcvd(parts.toArray(new PartVO[parts.size()]));
+	}
+
+
+	/**
+	 * decrement the shipper's inventory and increment the receiver's
+	 * @param shipment
+	 * @param parts
+	 * @throws ActionException 
+	 */
+	private void adjustInventories(ShipmentVO shipment, List<PartVO> parts) 
+			throws ActionException {
+		InventoryAction ia = new InventoryAction(getAttributes(), getDBConnection());
+		boolean receiverExists = !StringUtil.isEmpty(shipment.getToLocationId());
+		boolean senderExists = !StringUtil.isEmpty(shipment.getFromLocationId());
+		for (PartVO part : parts) {
+			//no movement if no part
+			if (part.getQuantityReceived() == 0) continue;
+
+			//add what was recieved to the receiver's inventory
+			if (receiverExists)
+				ia.recordInventory(part.getProductId(), shipment.getToLocationId(), part.getQuantityReceived());
+
+			//remove what was sent from the sender's inventory
+			if (senderExists)
+				ia.recordInventory(part.getProductId(), shipment.getFromLocationId(), 0-part.getQuantity());
 		}
 	}
 

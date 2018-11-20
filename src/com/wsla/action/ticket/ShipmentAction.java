@@ -107,15 +107,16 @@ public class ShipmentAction extends SBActionAdapter {
 		sql.append("select s.*, p.*, pm.product_nm, frm.location_nm as from_location_nm, dst.location_nm as to_location_nm ");
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("wsla_shipment s ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("wsla_part p on s.shipment_id=p.shipment_id ");
-		if (StringUtil.isEmpty(shipmentId)) sql.append("and p.ticket_id=? ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("wsla_product_master pm on p.product_id=pm.product_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("wsla_provider_location frm on frm.location_id=s.from_location_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("wsla_provider_location dst on dst.location_id=s.to_location_id ");
-		sql.append("where 1=1 "); //ticketId is part of the join constraint
+		sql.append("where "); //ticketId is part of the join constraint
 
 		if (!StringUtil.isEmpty(shipmentId)) {
-			sql.append("and s.shipment_id=? ");
+			sql.append("s.shipment_id=? ");
 			lookupId = shipmentId;
+		} else {
+			sql.append("s.ticket_id=? ");
 		}
 
 		if (StringUtil.isEmpty(orderBy))
