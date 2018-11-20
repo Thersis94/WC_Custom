@@ -33,6 +33,7 @@ public class ShipmentVO extends BeanDataVO {
 	private String shippedById; //is-a userId, the person who created the shipment
 	private String fromLocationId; //is-a providerLocationId
 	private String toLocationId; //is-a providerLocationId
+	private String ticketId;
 	private ShipmentStatus status;
 	private CarrierType carrierType;
 	private String trackingNo;
@@ -198,6 +199,11 @@ public class ShipmentVO extends BeanDataVO {
 		this.parts = parts;
 	}
 
+	@Column(name="ticket_id")
+	public String getTicketId() {
+		return ticketId;
+	}
+
 	@BeanSubElement
 	public void addPart(PartVO part) {
 		if (parts == null) parts = new ArrayList<>();
@@ -239,5 +245,9 @@ public class ShipmentVO extends BeanDataVO {
 
 	public void setArrivalDate(Date arrivalDate) {
 		this.arrivalDate = arrivalDate;
+	}
+
+	public void setTicketId(String ticketId) {
+		this.ticketId = ticketId;
 	}
 }

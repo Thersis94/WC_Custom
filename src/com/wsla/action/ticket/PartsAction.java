@@ -1,5 +1,7 @@
 package com.wsla.action.ticket;
 
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.Map;
 
@@ -12,6 +14,8 @@ import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.orm.GridDataVO;
 import com.siliconmtn.db.pool.SMTDBConnection;
+import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.StringUtil;
 // WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.wsla.data.ticket.PartVO;
@@ -76,6 +80,32 @@ public class PartsAction extends SBActionAdapter {
 			}
 		} catch (Exception e) {
 			log.error("could not save part", e);
+		}
+	}
+
+
+	/**
+	 * Batch update the received quantities for the given parts.
+	 * @param parts
+	 * @throws ActionException
+	 */
+	public void saveQntyRcvd(PartVO... parts) throws ActionException {
+		if (parts == null || parts.length == 0) return;
+		String sql = StringUtil.join(DBUtil.UPDATE_CLAUSE, getCustomSchema(), 
+				"wsla_part set rcvd_qnty_no=?, update_dt=? where part_id=?");
+		log.debug(sql);
+		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
+			for (PartVO vo : parts) {
+				ps.setInt(1, vo.getQuantityReceived());
+				ps.setTimestamp(2, Convert.getCurrentTimestamp());
+				ps.setString(3, vo.getPartId());
+				ps.addBatch();
+			}
+			int[] rows = ps.executeBatch();
+			log.debug(String.format("updated %d part quantities", rows.length));
+
+		} catch (SQLException sqle) {
+			throw new ActionException(sqle);
 		}
 	}
 

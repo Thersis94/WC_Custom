@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.ResourceBundle;
 
@@ -42,8 +43,9 @@ import com.wsla.action.admin.StatusCodeAction;
 import com.wsla.action.admin.WarrantyAction;
 import com.wsla.action.admin.WarrantyAction.ServiceTypeCode;
 import com.wsla.action.ticket.CASSelectionAction;
-import com.wsla.action.ticket.TicketEditAction;
 import com.wsla.action.ticket.TicketListAction;
+import com.wsla.action.ticket.TicketEditAction;
+import com.wsla.common.LocaleWrapper;
 import com.wsla.common.WSLALocales;
 import com.wsla.data.product.LocationItemMasterVO;
 import com.wsla.data.product.ProductVO;
@@ -145,7 +147,6 @@ public class SelectLookupAction extends SBActionAdapter {
 	/*
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#list(com.siliconmtn.action.ActionRequest)
-	 * @TODO Add language conversion
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
@@ -411,14 +412,25 @@ public class SelectLookupAction extends SBActionAdapter {
 	}
 
 	/**
+	 * Returns the User Locale
+	 * @param req
+	 * @return
+	 */
+	private Locale getUserLocale(ActionRequest req) {
+		// Get the user Locale
+		String strLocale = StringUtil.checkVal(req.getSession().getAttribute("userLocale"), "en_US");
+		return new LocaleWrapper(strLocale).getLocale();
+		
+	}
+	/**
 	 * Returns a list of status codes and their descriptions
 	 * @return
 	 */
 	public List<GenericVO> getStatusCodes(ActionRequest req) {
 		List<GenericVO> data = new ArrayList<>(64);
 		StatusCodeAction sca = new StatusCodeAction(getDBConnection(), getAttributes());
-		List<StatusCodeVO> codes = sca.getStatusCodes(req.getParameter("roleId"));
-
+		List<StatusCodeVO> codes = sca.getStatusCodes(req.getParameter("roleId"), getUserLocale(req));
+		
 		for(StatusCodeVO sc : codes) {
 			data.add(new GenericVO(sc.getStatusCode(), sc.getStatusName()));
 		}
@@ -456,19 +468,30 @@ public class SelectLookupAction extends SBActionAdapter {
 	 * @return
 	 */
 	public List<GenericVO> getDefects(ActionRequest req) {
+		
+		// Get the Locale to pull correct language and add to the DB params
+		Locale locale = getUserLocale(req);
 		List<Object> params = new ArrayList<>();
-
+		params.add(locale.getLanguage());
+		params.add(locale.getCountry());
+		
 		StringBuilder sql = new StringBuilder(64);
-		sql.append("select defect_cd as key, defect_nm as value from ");
-		sql.append(getCustomSchema()).append("wsla_defect where active_flg = 1 ");
-		sql.append("and (provider_id is null ");
+		sql.append("select defect_cd as key, ");
+		sql.append("case when value_txt is null then defect_nm else value_txt end as value ");
+		sql.append(DBUtil.FROM_CLAUSE).append(getCustomSchema()).append("wsla_defect a ");
+		sql.append("left outer join resource_bundle_key c on a.defect_cd = c.key_id ");
+		sql.append("left outer join resource_bundle_data d on c.key_id = d.key_id ");
+		sql.append("and language_cd = ? and country_cd = ? ");
+		sql.append("where a.active_flg = 1 ");
+		sql.append("and (a.provider_id is null ");
 		if (req.hasParameter(REQ_PROVIDER_ID)) {
-			sql.append("or provider_id = ? ");
+			sql.append("or a.provider_id = ? ");
 			params.add(req.getParameter(REQ_PROVIDER_ID));
 		}
 
 		sql.append(") order by value");
-
+		log.debug("defects SQL " + sql);
+		
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		return db.executeSelect(sql.toString(), params, new GenericVO());
 	}
