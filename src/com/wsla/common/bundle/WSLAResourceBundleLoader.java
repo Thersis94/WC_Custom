@@ -33,8 +33,8 @@ import com.siliconmtn.util.UUIDGenerator;
 
 public class WSLAResourceBundleLoader extends CommandLineUtil {
 	
-	private static final String BUNDLE = "com.wsla.common.bundle.messages";
-	private static final String JS_BUNDLE = "com.wsla.common.bundle.js_bundle";
+	public static final String BUNDLE = "com.wsla.common.bundle.messages";
+	public static final String JS_BUNDLE = "com.wsla.common.bundle.js_bundle";
 	
 	private static final String BUNDLE_ID = "WSLA_BUNDLE";
 	
@@ -47,7 +47,7 @@ public class WSLAResourceBundleLoader extends CommandLineUtil {
 	 */
 	private static List<Locale> locales = new ArrayList<>();
 	static {
-		//locales.add(new Locale("en", "US"));
+		locales.add(new Locale("en", "US"));
 		locales.add(new Locale("es", "MX"));
 	}
 	

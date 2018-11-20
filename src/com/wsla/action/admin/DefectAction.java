@@ -15,11 +15,15 @@ import com.siliconmtn.db.orm.GridDataVO;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
+import com.siliconmtn.resource.ResourceBundleDataVO;
+import com.siliconmtn.resource.ResourceBundleKeyVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 
 // WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
+import com.smt.sitebuilder.admin.action.ResourceBundleManagerAction;
+import com.wsla.common.WSLAConstants;
 // WSLA Libs
 import com.wsla.data.ticket.DefectVO;
 import com.wsla.data.ticket.TicketAttributeVO;
@@ -93,6 +97,7 @@ public class DefectAction extends SBActionAdapter {
 		try {
 			if(StringUtil.isEmpty(req.getParameter("origDefectCode"))) {
 				db.insert(dvo);
+				addBundleKV(dvo);
 			}else {
 				db.save(dvo);
 			}
@@ -101,6 +106,35 @@ public class DefectAction extends SBActionAdapter {
 			log.error("Unable to save defect attribute", e);
 			putModuleData("", 0, false, e.getLocalizedMessage(), true);
 		}
+	}
+	
+	/**
+	 * On an insert the defect code is inserted into the resource bundle with a key id
+	 * that matches the defect code
+	 * @param dvo
+	 * @throws InvalidDataException
+	 * @throws DatabaseException
+	 */
+	public void addBundleKV(DefectVO dvo) 
+	throws InvalidDataException, DatabaseException {
+		ResourceBundleManagerAction rbma = new ResourceBundleManagerAction(dbConn, attributes);
+
+		// Save the bundle key
+		ResourceBundleKeyVO key = new ResourceBundleKeyVO();
+		key.setKeyId(dvo.getDefectCode());
+		key.setKeyCode("defect." + dvo.getDefectCode());
+		key.setKeyDesc(dvo.getDefectCode());
+		key.setResourceBundleId(WSLAConstants.RESOURCE_BUNDLE_ID);
+		rbma.saveBundleKey(key, true);
+		
+		// Save the bundle value
+		ResourceBundleDataVO rbdv = new ResourceBundleDataVO();
+		rbdv.setKeyId(key.getKeyId());
+		rbdv.setLanguage("en");
+		rbdv.setCountry("US");
+		rbdv.setResourceBundleId(WSLAConstants.RESOURCE_BUNDLE_ID);
+		rbdv.setValue(dvo.getDefectName());
+		rbma.saveBundleKeyData(rbdv);
 	}
 
 	/**

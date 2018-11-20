@@ -4,6 +4,7 @@ package com.wsla.action.admin;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 // SMT Base Libs
@@ -91,7 +92,7 @@ public class StatusCodeAction extends SBActionAdapter {
 		if (req.hasParameter("statusCode")) 
 			setModuleData(getNotifications(req.getParameter("statusCode")));
 		else 
-			setModuleData(getStatusCodes(null));
+			setModuleData(getStatusCodes(null, null));
 	}
 	
 	/**
@@ -117,19 +118,32 @@ public class StatusCodeAction extends SBActionAdapter {
 	 * Gets all of the status codes
 	 * @return
 	 */
-	public List<StatusCodeVO> getStatusCodes(String roleId) {
+	public List<StatusCodeVO> getStatusCodes(String roleId, Locale locale) {
 		StringBuilder sql = new StringBuilder(128);
 		List<Object> vals = new ArrayList<>();
 		
-		sql.append("select * from ").append(getCustomSchema()).append("wsla_ticket_status a ");
-		sql.append(DBUtil.LEFT_OUTER_JOIN).append("role b on a.role_id = b.role_id where 1=1 ");
+		sql.append("select status_cd, active_flg,a.role_id, group_status_cd, ");
+		sql.append("billable_activity_cd, next_step_url, ");
+		if (locale == null) sql.append("status_nm ");
+		else sql.append("case when value_txt is null then status_nm else value_txt end as status_nm ");
+		sql.append("from ").append(getCustomSchema()).append("wsla_ticket_status a ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append("role b on a.role_id = b.role_id ");
+		
+		if (locale != null) {
+			sql.append("left outer join resource_bundle_key c on a.status_cd = c.key_id ");
+			sql.append("left outer join resource_bundle_data d on c.key_id = d.key_id ");
+			sql.append("and language_cd = ? and country_cd = ? ");
+			vals.add(locale.getLanguage());
+			vals.add(locale.getCountry());
+		}
+		
 		if (! StringUtil.isEmpty(roleId)) {
-			sql.append("and a.role_id = ? ");
+			sql.append("where a.role_id = ? ");
 			vals.add(roleId);
 		}
 		
 		sql.append("order by status_nm");
-		
+		log.debug(sql);
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		return db.executeSelect(sql.toString(), vals, new StatusCodeVO());
 	}
