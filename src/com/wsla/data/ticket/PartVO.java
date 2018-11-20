@@ -7,6 +7,7 @@ import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
 import com.siliconmtn.util.StringUtil;
 import com.wsla.data.product.ProductVO;
+import com.wsla.data.ticket.ShipmentVO.ShipmentStatus;
 
 /****************************************************************************
  * <p><b>Title:</b> PartsVO.java</p>
@@ -35,6 +36,7 @@ public class PartVO extends ProductVO {
 	private Date availabilityDate;
 
 	private int quantityOnHand; //used for display, if negative we display "cas not assigned".  If >0 we display 'in stock'
+	private ShipmentStatus shipmentStatus;
 
 	public PartVO() {
 		super();
@@ -100,6 +102,11 @@ public class PartVO extends ProductVO {
 		return destEstQuantity;
 	}
 
+	@Column(name="status_cd", isReadOnly=true)
+	public ShipmentStatus getShipmentStatus() {
+		return shipmentStatus;
+	}
+
 
 
 	public void setPartId(String partId) {
@@ -140,5 +147,9 @@ public class PartVO extends ProductVO {
 
 	public void setDestEstQuantity(int destEstQuantity) {
 		this.destEstQuantity = destEstQuantity;
+	}
+
+	public void setShipmentStatus(ShipmentStatus status) {
+		this.shipmentStatus = status;
 	}
 }
