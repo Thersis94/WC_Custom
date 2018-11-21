@@ -29,8 +29,10 @@ import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.EnumUtil;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
+import com.smt.sitebuilder.admin.action.ResourceBundleManagerAction;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
+
 // WSLA Libs
 import com.wsla.action.admin.BillableActivityAction;
 import com.wsla.action.admin.HarvestPartsAction;
@@ -45,7 +47,6 @@ import com.wsla.action.admin.WarrantyAction.ServiceTypeCode;
 import com.wsla.action.ticket.CASSelectionAction;
 import com.wsla.action.ticket.TicketListAction;
 import com.wsla.action.ticket.TicketEditAction;
-import com.wsla.common.LocaleWrapper;
 import com.wsla.common.WSLALocales;
 import com.wsla.data.product.LocationItemMasterVO;
 import com.wsla.data.product.ProductVO;
@@ -412,24 +413,14 @@ public class SelectLookupAction extends SBActionAdapter {
 	}
 
 	/**
-	 * Returns the User Locale
-	 * @param req
-	 * @return
-	 */
-	private Locale getUserLocale(ActionRequest req) {
-		// Get the user Locale
-		String strLocale = StringUtil.checkVal(req.getSession().getAttribute("userLocale"), "en_US");
-		return new LocaleWrapper(strLocale).getLocale();
-		
-	}
-	/**
 	 * Returns a list of status codes and their descriptions
 	 * @return
 	 */
 	public List<GenericVO> getStatusCodes(ActionRequest req) {
+		Locale locale = new ResourceBundleManagerAction().getUserLocale(req);
 		List<GenericVO> data = new ArrayList<>(64);
 		StatusCodeAction sca = new StatusCodeAction(getDBConnection(), getAttributes());
-		List<StatusCodeVO> codes = sca.getStatusCodes(req.getParameter("roleId"), getUserLocale(req));
+		List<StatusCodeVO> codes = sca.getStatusCodes(req.getParameter("roleId"), locale);
 		
 		for(StatusCodeVO sc : codes) {
 			data.add(new GenericVO(sc.getStatusCode(), sc.getStatusName()));
@@ -470,7 +461,7 @@ public class SelectLookupAction extends SBActionAdapter {
 	public List<GenericVO> getDefects(ActionRequest req) {
 		
 		// Get the Locale to pull correct language and add to the DB params
-		Locale locale = getUserLocale(req);
+		Locale locale = new ResourceBundleManagerAction().getUserLocale(req);
 		List<Object> params = new ArrayList<>();
 		params.add(locale.getLanguage());
 		params.add(locale.getCountry());
