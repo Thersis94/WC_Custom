@@ -9,7 +9,6 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.util.DatabaseException;
-import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.util.Convert;
 // WC Libs
 import com.wsla.action.BasePortalAction;
@@ -72,9 +71,8 @@ public class TicketRepairTransaction extends BaseTransactionAction {
 	 * 
 	 * @param req
 	 * @throws DatabaseException 
-	 * @throws InvalidDataException 
 	 */
-	private void changeRepairStatus(ActionRequest req) throws InvalidDataException, DatabaseException {
+	private void changeRepairStatus(ActionRequest req) throws DatabaseException {
 		ResourceBundle bundle = new BasePortalAction().getResourceBundle(req);
 		boolean isStart = Convert.formatBoolean(req.getParameter("isStart"));
 		

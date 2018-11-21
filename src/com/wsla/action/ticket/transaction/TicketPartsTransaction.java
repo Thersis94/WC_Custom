@@ -9,7 +9,6 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.util.DatabaseException;
-import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.util.Convert;
 // WC Libs
 import com.wsla.action.BasePortalAction;
@@ -80,9 +79,8 @@ public class TicketPartsTransaction extends BaseTransactionAction {
 	 * 
 	 * @param req
 	 * @throws DatabaseException 
-	 * @throws InvalidDataException 
 	 */
-	private void submitForApproval(ActionRequest req) throws InvalidDataException, DatabaseException {
+	private void submitForApproval(ActionRequest req) throws DatabaseException {
 		ResourceBundle bundle = new BasePortalAction().getResourceBundle(req);
 		
 		TicketVO ticket = new TicketVO(req);
@@ -100,9 +98,8 @@ public class TicketPartsTransaction extends BaseTransactionAction {
 	 * 
 	 * @param req
 	 * @throws DatabaseException 
-	 * @throws InvalidDataException 
 	 */
-	private void setApproval(ActionRequest req) throws InvalidDataException, DatabaseException {
+	private void setApproval(ActionRequest req) throws DatabaseException {
 		boolean isApproved = Convert.formatBoolean(req.getParameter("isApproved"));
 		if (!isApproved)
 			return;
@@ -116,9 +113,8 @@ public class TicketPartsTransaction extends BaseTransactionAction {
 	 * 
 	 * @param req
 	 * @throws DatabaseException 
-	 * @throws InvalidDataException 
 	 */
-	private void setReceived(ActionRequest req) throws InvalidDataException, DatabaseException {
+	private void setReceived(ActionRequest req) throws DatabaseException {
 		boolean isReceived = Convert.formatBoolean(req.getParameter("isReceived"));
 		if (!isReceived)
 			return;
@@ -136,11 +132,9 @@ public class TicketPartsTransaction extends BaseTransactionAction {
 	 * @param sc
 	 * @param summary
 	 * @param params
-	 * @throws InvalidDataException
 	 * @throws DatabaseException
 	 */
-	private void setPartsStatus(ActionRequest req, StatusCode sc, String summary, Map<String, Object> params)
-			throws InvalidDataException, DatabaseException {
+	private void setPartsStatus(ActionRequest req, StatusCode sc, String summary, Map<String, Object> params) throws DatabaseException {
 		ResourceBundle bundle = new BasePortalAction().getResourceBundle(req);
 		
 		// Set the given status

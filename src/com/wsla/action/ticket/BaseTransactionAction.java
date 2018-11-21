@@ -76,17 +76,20 @@ public class BaseTransactionAction extends SBActionAdapter {
 	 * @param ticketId
 	 * @param status
 	 * @throws DatabaseException 
-	 * @throws InvalidDataException 
 	 */
-	public TicketLedgerVO changeStatus(String ticketId, String userId, StatusCode newStatus, String summary, UnitLocation location) throws InvalidDataException, DatabaseException {
+	public TicketLedgerVO changeStatus(String ticketId, String userId, StatusCode newStatus, String summary, UnitLocation location) throws DatabaseException {
 		TicketVO ticket = new TicketVO();
 		ticket.setTicketId(ticketId);
 		
 		// Save the new status
-		DBProcessor dbp = new DBProcessor(getDBConnection(), getCustomSchema());
-		dbp.getByPrimaryKey(ticket);
-		ticket.setStatusCode(newStatus);
-		dbp.save(ticket);
+		try {
+			DBProcessor dbp = new DBProcessor(getDBConnection(), getCustomSchema());
+			dbp.getByPrimaryKey(ticket);
+			ticket.setStatusCode(newStatus);
+			dbp.save(ticket);
+		} catch (InvalidDataException e) {
+			throw new DatabaseException(e);
+		}
 		
 		// Send the notification and add the ledger entry
 		processNotification(ticket.getTicketIdText(), userId, newStatus);
@@ -135,9 +138,8 @@ public class BaseTransactionAction extends SBActionAdapter {
 	 * @param summary
 	 * @return ledgerId
 	 * @throws DatabaseException 
-	 * @throws InvalidDataException 
 	 */
-	public TicketLedgerVO addLedger(String ticketId, String userId, StatusCode status, String summary, UnitLocation location) throws InvalidDataException, DatabaseException {
+	public TicketLedgerVO addLedger(String ticketId, String userId, StatusCode status, String summary, UnitLocation location) throws DatabaseException {
 		// Create a new ledger record
 		TicketLedgerVO ledger = new TicketLedgerVO();
 		ledger.setDispositionBy(userId);
@@ -150,12 +152,20 @@ public class BaseTransactionAction extends SBActionAdapter {
 		DBProcessor dbp = new DBProcessor(getDBConnection(), getCustomSchema());
 		StatusCodeVO sc = new StatusCodeVO();
 		sc.setStatusCode(status.name());
-		dbp.getByPrimaryKey(sc);
-		//ledger.setBillableActivityCode(sc.getBillableActivityCode())
+		try {
+			dbp.getByPrimaryKey(sc);
+			//ledger.setBillableActivityCode(sc.getBillableActivityCode())
+		} catch (InvalidDataException e) {
+			throw new DatabaseException(e);
+		}
 		
 		// Add the ledger entry
-		BasePortalAction bpa = new BasePortalAction(getDBConnection(), getAttributes());
-		bpa.addLedger(ledger);
+		try {
+			BasePortalAction bpa = new BasePortalAction(getDBConnection(), getAttributes());
+			bpa.addLedger(ledger);
+		} catch (InvalidDataException e) {
+			throw new DatabaseException(e);
+		}
 		
 		return ledger;
 	}
@@ -183,9 +193,9 @@ public class BaseTransactionAction extends SBActionAdapter {
 	 * @param bundle
 	 * @param params
 	 * @param needsReload
-	 * @throws InvalidDataException
+	 * @throws DatabaseException
 	 */
-	public void buildNextStep(StatusCode status, ResourceBundle bundle, Map<String, Object> params, boolean needsReload) throws InvalidDataException {
+	public void buildNextStep(StatusCode status, ResourceBundle bundle, Map<String, Object> params, boolean needsReload) throws DatabaseException {
 		StatusCodeVO sc = new StatusCodeVO();
 		sc.setStatusCode(status.name());
 		
@@ -203,7 +213,7 @@ public class BaseTransactionAction extends SBActionAdapter {
 			nextStep.setStatusName(sc.getStatusName());
 			nextStep.setNeedsReloadFlag(needsReload);
 		} catch (InvalidDataException | DatabaseException | ParseException e) {
-			throw new InvalidDataException(e);
+			throw new DatabaseException(e);
 		}
 	}
 }

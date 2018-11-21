@@ -74,7 +74,7 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 			} else {
 				saveAsset(req);
 			}
-		} catch (InvalidDataException | DatabaseException | SQLException e) {
+		} catch (InvalidDataException | DatabaseException e) {
 			log.error("Unable to save asset", e);
 			putModuleData("", 0, false, e.getLocalizedMessage(), true);
 		}
@@ -115,10 +115,8 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 	 * 
 	 * @param req
 	 * @throws DatabaseException 
-	 * @throws InvalidDataException 
-	 * @throws SQLException 
 	 */
-	public void approveAssets(ActionRequest req) throws InvalidDataException, DatabaseException, SQLException {
+	public void approveAssets(ActionRequest req) throws DatabaseException {
 		boolean isApproved = Convert.formatBoolean(req.getParameter("isApproved"));
 		if (!isApproved)
 			return;
@@ -141,9 +139,13 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 			tAss.setLocationId(casLocation.getKey().toString());
 			tAss.setTypeCode(TypeCode.CAS);
 
-			TicketAssignmentTransaction tat = new TicketAssignmentTransaction(getDBConnection(), getAttributes());
-			tat.assign(tAss, user, bundle);
-			setNextStep(tat.getNextStep());
+			try {
+				TicketAssignmentTransaction tat = new TicketAssignmentTransaction(getDBConnection(), getAttributes());
+				tat.assign(tAss, user, bundle);
+				setNextStep(tat.getNextStep());
+			} catch (InvalidDataException | SQLException e) {
+				throw new DatabaseException(e);
+			}
 		}
 	}
 }

@@ -93,7 +93,7 @@ public class TicketScheduleTransaction extends BaseTransactionAction {
 
 			putModuleData(ts);
 			
-		} catch (InvalidDataException | DatabaseException | com.siliconmtn.exception.DatabaseException e) {
+		} catch (DatabaseException e) {
 			log.error("Unable to save ticket schedule", e);
 			putModuleData("", 0, false, e.getLocalizedMessage(), true);
 		}
@@ -104,13 +104,18 @@ public class TicketScheduleTransaction extends BaseTransactionAction {
 	 * 
 	 * @param ts
 	 * @return
-	 * @throws com.siliconmtn.exception.DatabaseException
+	 * @throws DatabaseException 
 	 */
-	private TicketScheduleVO mergeTicketAssignments(TicketScheduleVO ts) throws com.siliconmtn.exception.DatabaseException {
+	private TicketScheduleVO mergeTicketAssignments(TicketScheduleVO ts) throws DatabaseException {
 		TicketEditAction tea = new TicketEditAction(getAttributes(), getDBConnection());
 		List<TicketScheduleVO> tsList = tea.getSchedule(null, ts.getTicketScheduleId());
-		List<TicketAssignmentVO> taList = tea.getAssignments(ts.getTicketId());
-		tea.populateScheduleAssignments(tsList, taList);
+		
+		try {
+			List<TicketAssignmentVO> taList = tea.getAssignments(ts.getTicketId());
+			tea.populateScheduleAssignments(tsList, taList);
+		} catch (com.siliconmtn.exception.DatabaseException e) {
+			throw new DatabaseException(e);
+		}
 		
 		return tsList.get(0);
 	}
@@ -121,10 +126,8 @@ public class TicketScheduleTransaction extends BaseTransactionAction {
 	 * 
 	 * @param req
 	 * @throws DatabaseException 
-	 * @throws InvalidDataException 
-	 * @throws com.siliconmtn.exception.DatabaseException 
 	 */
-	public TicketScheduleVO saveSchedule(ActionRequest req) throws InvalidDataException, DatabaseException, com.siliconmtn.exception.DatabaseException {
+	public TicketScheduleVO saveSchedule(ActionRequest req) throws DatabaseException {
 		// Get the DB Processor & user
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		UserVO user = (UserVO) getAdminUser(req).getUserExtendedInfo();
@@ -132,7 +135,11 @@ public class TicketScheduleTransaction extends BaseTransactionAction {
 		// Build the Ticket Schedule data and save
 		TicketScheduleVO ts = new TicketScheduleVO(req);
 		modifyNotes(ts);
-		db.save(ts);
+		try {
+			db.save(ts);
+		} catch (InvalidDataException e) {
+			throw new DatabaseException(e);
+		}
 		
 		// Change the status & build next step
 		boolean isPreRepair = PRE_REPAIR.equals(ts.getRecordTypeCode());
@@ -148,10 +155,8 @@ public class TicketScheduleTransaction extends BaseTransactionAction {
 	 * 
 	 * @param req
 	 * @throws DatabaseException 
-	 * @throws InvalidDataException 
-	 * @throws com.siliconmtn.exception.DatabaseException 
 	 */
-	public TicketScheduleVO completeSchedule(ActionRequest req) throws InvalidDataException, DatabaseException, com.siliconmtn.exception.DatabaseException {
+	public TicketScheduleVO completeSchedule(ActionRequest req) throws DatabaseException {
 		TicketScheduleVO ts = new TicketScheduleVO(req);
 		ts.setUpdateDate(new Date());
 		modifyNotes(ts);
@@ -218,15 +223,18 @@ public class TicketScheduleTransaction extends BaseTransactionAction {
 	 * 
 	 * @param ts
 	 * @throws DatabaseException 
-	 * @throws InvalidDataException 
 	 */
-	protected void modifyNotes(TicketScheduleVO ts) throws InvalidDataException, DatabaseException {
+	protected void modifyNotes(TicketScheduleVO ts) throws DatabaseException {
 		// Get previous notes (if any)
 		TicketScheduleVO prevTs = new TicketScheduleVO();
 		prevTs.setTicketScheduleId(ts.getTicketScheduleId());
 		if (!StringUtil.isEmpty(ts.getTicketScheduleId())) {
-			DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
-			db.getByPrimaryKey(prevTs);
+			try {
+				DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+				db.getByPrimaryKey(prevTs);
+			} catch (InvalidDataException e) {
+				throw new DatabaseException(e);
+			}
 		}
 		
 		String newNotes = StringUtil.checkVal(ts.getNotesText());

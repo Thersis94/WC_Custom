@@ -78,12 +78,9 @@ public class DiagnosticTransaction extends BaseTransactionAction {
 	 * Stores the user information
 	 * @param req
 	 * @return
-	 * @throws InvalidDataException
 	 * @throws DatabaseException
-	 * @throws com.siliconmtn.exception.DatabaseException
 	 */
-	public void saveDiagnosticRun(ActionRequest req) 
-	throws InvalidDataException, DatabaseException {
+	public void saveDiagnosticRun(ActionRequest req) throws DatabaseException {
 		
 		// Get the WSLA User & ticket id
 		UserVO user = (UserVO)getAdminUser(req).getUserExtendedInfo();
@@ -99,8 +96,12 @@ public class DiagnosticTransaction extends BaseTransactionAction {
 		
 		DiagnosticRunVO dr = new DiagnosticRunVO(req);
 		
-		TicketOverviewAction toa = new TicketOverviewAction(attributes, dbConn);
-		toa.saveDiagnosticRun(dr);
+		try {
+			TicketOverviewAction toa = new TicketOverviewAction(attributes, dbConn);
+			toa.saveDiagnosticRun(dr);
+		} catch (InvalidDataException e) {
+			throw new DatabaseException(e);
+		}
 	}
 	
 	/**
@@ -108,9 +109,8 @@ public class DiagnosticTransaction extends BaseTransactionAction {
 	 * 
 	 * @param req
 	 * @throws DatabaseException 
-	 * @throws InvalidDataException 
 	 */
-	private void setRepairable(ActionRequest req) throws InvalidDataException, DatabaseException {
+	private void setRepairable(ActionRequest req) throws DatabaseException {
 		boolean isRepairable = Convert.formatBoolean(req.getParameter("isRepairable"));
 		ResourceBundle bundle = new BasePortalAction().getResourceBundle(req);
 		
