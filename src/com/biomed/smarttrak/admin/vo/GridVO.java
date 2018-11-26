@@ -104,6 +104,7 @@ public class GridVO extends BeanDataVO {
 	
 	// Member Variables
 	private String gridId;
+	private String gridGroupId;
 	private String gridType;
 	private String title;
 	private String subtitle;
@@ -185,6 +186,14 @@ public class GridVO extends BeanDataVO {
 	@Column(name="grid_id", isPrimaryKey=true)
 	public String getGridId() {
 		return gridId;
+	}
+
+	/**
+	 * @return the gridGroupId
+	 */
+	@Column(name="grid_group_id")
+	public String getGridGroupId() {
+		return gridGroupId;
 	}
 
 	/**
@@ -490,6 +499,13 @@ public class GridVO extends BeanDataVO {
 	 */
 	public void setGridId(String gridId) {
 		this.gridId = gridId;
+	}
+
+	/**
+	 * @param gridGroupId - the gridGroupId to set
+	 */
+	public void setGridGroupId(String gridGroupId) {
+		this.gridGroupId = gridGroupId;
 	}
 
 	/**

@@ -1,5 +1,8 @@
 package com.biomed.smarttrak.admin;
 
+// App Libs
+import static com.biomed.smarttrak.action.GridDisplayAction.GRID_ID;
+
 // JDK 1.8
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -9,15 +12,13 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-// App Libs
-import static com.biomed.smarttrak.action.GridDisplayAction.GRID_ID;
 import com.biomed.smarttrak.admin.vo.GridDetailVO;
 import com.biomed.smarttrak.admin.vo.GridVO;
-
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -28,7 +29,6 @@ import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
-
 // WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.constants.AdminConstants;
@@ -45,7 +45,7 @@ import com.smt.sitebuilder.util.RecordDuplicatorUtility;
  * @version 3.x
  * @since Feb 24, 2017
  * Last Updated:
- * 	
+ *
  *******************************************************************/
 public class GridChartAction extends SBActionAdapter {
 	// Maps the table field name to the db field name for sorting purposes
@@ -70,7 +70,7 @@ public class GridChartAction extends SBActionAdapter {
 		super(actionInit);
 	}
 
-	@SuppressWarnings("unchecked")
+	@SuppressWarnings({ "unchecked", "rawtypes" })
 	@Override
 	public void copy(ActionRequest req) throws ActionException {
 		Boolean isWizard = Convert.formatBoolean(req.getParameter(AdminConstants.IS_WIZARD));
@@ -84,6 +84,7 @@ public class GridChartAction extends SBActionAdapter {
 			//Check for ReplaceVals Map.
 			if(replaceVals == null) {
 				replaceVals = new HashMap<>();
+				attributes.put(RecordDuplicatorUtility.REPLACE_VALS, replaceVals);
 			}
 			String gridId = req.getParameter("gridId");
 			//Copy Grid
@@ -95,10 +96,11 @@ public class GridChartAction extends SBActionAdapter {
 			//Copy Grid Details
 			rdu = new RecordDuplicatorUtility(attributes, dbConn, "BIOMEDGPS_GRID_DETAIL", "GRID_DETAIL_ID", true);
 			rdu.setSchemaNm(getCustomSchema());
-			rdu.addWhereListClause("FORM_ID");
+			rdu.addWhereListClause("GRID_ID");
 
 			replaceVals.put("GRID_DETAIL_ID", rdu.copy());
 
+			updateNewName((String)((Map)replaceVals.get("GRID_ID")).get(gridId));
 			if (!isWizard) {
 				dbConn.commit();
 				dbConn.setAutoCommit(true);
@@ -111,6 +113,40 @@ public class GridChartAction extends SBActionAdapter {
 				log.error("A Problem occured with the rollback.", sqle);
 			}
 			throw new ActionException(e);
+		}
+	}
+
+	@Override
+	public void delete(ActionRequest req) throws ActionException {
+		String gridId = req.getParameter("gridId");
+
+		StringBuilder sql = new StringBuilder(150);
+		sql.append("delete from ").append(getCustomSchema()).append("BIOMEDGPS_GRID ");
+		sql.append(DBUtil.WHERE_CLAUSE).append("grid_id = ?");
+		if(!StringUtil.isEmpty(gridId)) {
+			try(PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+				ps.setString(1, gridId);
+				ps.executeUpdate();
+			} catch (SQLException e) {
+				log.error("Error Processing Code", e);
+			}
+		}
+	}
+
+	/**
+	 * @param object
+	 */
+	private void updateNewName(String newGridId) {
+		StringBuilder sql = new StringBuilder(150);
+		sql.append(DBUtil.UPDATE_CLAUSE).append(getCustomSchema()).append("biomedgps_grid ");
+		sql.append("set  title_nm = concat(title_nm, ' (copy)') ");
+		sql.append(DBUtil.WHERE_CLAUSE).append("grid_id = ?");
+
+		try(PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, newGridId);
+			ps.executeUpdate();
+		} catch (SQLException e) {
+			log.error("Error Updating new Grid Title", e);
 		}
 	}
 
@@ -516,15 +552,27 @@ public class GridChartAction extends SBActionAdapter {
 		}
 
 		// Build the SQL
-		List<GridVO> data = new ArrayList<>();
-		StringBuilder sql = new StringBuilder(200);
-		sql.append("select a.*, (select count(*) from ").append(schema).append("biomedgps_grid_detail b ");
-		sql.append("where a.grid_id = b.grid_id) as total_rows ");
-		sql.append("from ").append(schema).append("biomedgps_grid a ");
-		if (search.length() > 0) sql.append("where upper(title_nm) like ? or upper(subtitle_nm) like ? ");
+		Map<String, GridVO> data = new LinkedHashMap<>();
+		StringBuilder sql = new StringBuilder(600);
+		
+		sql.append("select *, 1 as original from (");
+		sql.append("select a.*, (");
+		sql.append("select count(*) from ").append(schema).append("biomedgps_grid_detail b where a.grid_id = b.grid_id ");
+		sql.append(") as total_rows from ").append(schema).append("biomedgps_grid a ");
+		sql.append("where a.grid_id = a.grid_group_id ");
+		if (search.length() > 0) sql.append("and upper(title_nm) like ? or upper(subtitle_nm) like ? ");
 		sql.append("order by ").append(sort).append(" ").append(order);
-		sql.append(" limit ? offset ? ");		
-		log.debug(sql.toString());
+		sql.append(" limit ? offset ? ) as a ");
+		sql.append("union ");
+		sql.append("select *, 0 as original from (");
+		sql.append("select a.*, (");
+		sql.append("select count(*) from ").append(schema).append("biomedgps_grid_detail b where a.grid_id = b.grid_id ");
+		sql.append(") as total_rows from ").append(schema).append("biomedgps_grid a ");
+		sql.append("where a.grid_id != a.grid_group_id ");
+		if (search.length() > 0) sql.append("and upper(title_nm) like ? or upper(subtitle_nm) like ? ");
+		sql.append("order by ").append(sort).append(" ").append(order);
+		sql.append(" limit ? offset ? ) as b ");
+		sql.append("order by original desc, ").append(sort).append(" ").append(order);;
 
 		// Loop the data and store
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
@@ -537,15 +585,24 @@ public class GridChartAction extends SBActionAdapter {
 			ps.setInt(ctr++, rpp);
 			ps.setInt(ctr++, start);
 
+			if (search.length() > 0) {
+				ps.setString(ctr++, "%" + search + "%");
+				ps.setString(ctr++, "%" + search + "%");
+			}
+
+			ps.setInt(ctr++, rpp);
+			ps.setInt(ctr++, start);
+
+			log.debug(ps);
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
 				GridVO vo = new GridVO(rs);
 				vo.setNumberRows(rs.getInt("total_rows"));
-				data.add(vo);
+				data.put(vo.getGridGroupId(), vo);
 			}
 		}
 
-		return data;
+		return new ArrayList<>(data.values());
 	}
 }
 
