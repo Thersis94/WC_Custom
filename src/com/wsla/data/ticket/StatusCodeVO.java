@@ -43,6 +43,7 @@ public class StatusCodeVO extends BeanDataVO {
 	private String billableActivityCode;
 	private int activeFlag;
 	private String nextStepUrl;
+	private String nextStepBtnKeyCode;
 	private Date createDate;
 	private Date updateDate;
 	
@@ -116,6 +117,14 @@ public class StatusCodeVO extends BeanDataVO {
 	@Column(name="next_step_url")
 	public String getNextStepUrl() {
 		return nextStepUrl;
+	}
+
+	/**
+	 * @return the nextStepBtnKeyCode
+	 */
+	@Column(name="next_step_btn_key_cd")
+	public String getNextStepBtnKeyCode() {
+		return nextStepBtnKeyCode;
 	}
 
 	/**
@@ -204,6 +213,13 @@ public class StatusCodeVO extends BeanDataVO {
 	 */
 	public void setNextStepUrl(String nextStepUrl) {
 		this.nextStepUrl = nextStepUrl;
+	}
+
+	/**
+	 * @param nextStepBtnKeyCode the nextStepBtnKeyCode to set
+	 */
+	public void setNextStepBtnKeyCode(String nextStepBtnKeyCode) {
+		this.nextStepBtnKeyCode = nextStepBtnKeyCode;
 	}
 
 	/**

@@ -2,7 +2,6 @@ package com.wsla.action.ticket.transaction;
 
 import java.util.Arrays;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 
 // SMT Base Libs
@@ -14,7 +13,6 @@ import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
-import com.wsla.action.BasePortalAction;
 // WC Libs
 import com.wsla.action.ticket.BaseTransactionAction;
 import com.wsla.action.ticket.TicketEditAction;
@@ -144,7 +142,7 @@ public class TicketScheduleTransaction extends BaseTransactionAction {
 		// Change the status & build next step
 		boolean isPreRepair = PRE_REPAIR.equals(ts.getRecordTypeCode());
 		TicketLedgerVO ledger = changeStatus(ts.getTicketId(), user.getUserId(), isPreRepair ? StatusCode.PENDING_PICKUP : StatusCode.DELIVERY_SCHEDULED, LedgerSummary.SCHEDULE_TRANSFER.summary, null);
-		buildNextStep(ledger.getStatusCode(), new BasePortalAction().getResourceBundle(req), new HashMap<>(), false);
+		buildNextStep(ledger.getStatusCode(), null, false);
 		
 		return mergeTicketAssignments(ts);
 	}
@@ -183,7 +181,7 @@ public class TicketScheduleTransaction extends BaseTransactionAction {
 		}
 		
 		// Build the next step
-		buildNextStep(ledger.getStatusCode(), new BasePortalAction().getResourceBundle(req), new HashMap<>(), false);
+		buildNextStep(ledger.getStatusCode(), null, false);
 		
 		return ts;
 	}

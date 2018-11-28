@@ -2,7 +2,6 @@ package com.wsla.action.ticket.transaction;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.ResourceBundle;
 
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
@@ -12,7 +11,6 @@ import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.util.Convert;
 // WC Libs
-import com.wsla.action.BasePortalAction;
 import com.wsla.action.ticket.BaseTransactionAction;
 import com.wsla.action.ticket.TicketEditAction;
 import com.wsla.action.ticket.TicketOverviewAction;
@@ -92,7 +90,7 @@ public class DiagnosticTransaction extends BaseTransactionAction {
 		// Build next step
 		Map<String, Object> params = new HashMap<>();
 		params.put("ticketId", ledger.getTicketId());
-		buildNextStep(ledger.getStatusCode(), new BasePortalAction().getResourceBundle(req), params, false);
+		buildNextStep(ledger.getStatusCode(), params, false);
 		
 		DiagnosticRunVO dr = new DiagnosticRunVO(req);
 		
@@ -112,13 +110,12 @@ public class DiagnosticTransaction extends BaseTransactionAction {
 	 */
 	private void setRepairable(ActionRequest req) throws DatabaseException {
 		boolean isRepairable = Convert.formatBoolean(req.getParameter("isRepairable"));
-		ResourceBundle bundle = new BasePortalAction().getResourceBundle(req);
 		
 		// Set the repairable status
 		TicketVO ticket = new TicketVO(req);
 		UserVO user = (UserVO) getAdminUser(req).getUserExtendedInfo();
 		TicketLedgerVO ledger = changeStatus(ticket.getTicketId(), user.getUserId(), isRepairable ? StatusCode.REPAIRABLE : StatusCode.UNREPAIRABLE, LedgerSummary.DIAGNOSTIC_COMPLETED.summary, null);
-		buildNextStep(ledger.getStatusCode(), bundle, new HashMap<>(), false);
+		buildNextStep(ledger.getStatusCode(), null, false);
 	}
 }
 

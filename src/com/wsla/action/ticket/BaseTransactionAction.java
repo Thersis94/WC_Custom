@@ -2,7 +2,6 @@ package com.wsla.action.ticket;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.ResourceBundle;
 
 // SMT Base Libs
 import com.siliconmtn.action.ActionInitVO;
@@ -190,12 +189,11 @@ public class BaseTransactionAction extends SBActionAdapter {
 	 * Builds the next step that will need to take place by the user after this transaction
 	 * 
 	 * @param status
-	 * @param bundle
 	 * @param params
 	 * @param needsReload
 	 * @throws DatabaseException
 	 */
-	public void buildNextStep(StatusCode status, ResourceBundle bundle, Map<String, Object> params, boolean needsReload) throws DatabaseException {
+	public void buildNextStep(StatusCode status, Map<String, Object> params, boolean needsReload) throws DatabaseException {
 		StatusCodeVO sc = new StatusCodeVO();
 		sc.setStatusCode(status.name());
 		
@@ -204,12 +202,15 @@ public class BaseTransactionAction extends SBActionAdapter {
 			dbp.getByPrimaryKey(sc);
 
 			// Create the next step data
-			nextStep = new NextStepVO(status, bundle);
+			nextStep = new NextStepVO(status);
 			
-			if (!StringUtil.isEmpty(sc.getNextStepUrl())) {
+			if (!StringUtil.isEmpty(sc.getNextStepUrl()) && params != null && !params.isEmpty()) {
 				nextStep.setButtonUrl(MessageParser.parse(sc.getNextStepUrl(), params, StringUtil.removeNonAlphaNumeric(sc.getNextStepUrl()), MessageType.TEXT));
+			} else {
+				nextStep.setButtonUrl(sc.getNextStepUrl());
 			}
 
+			nextStep.setButtonKeyCode(sc.getNextStepBtnKeyCode());
 			nextStep.setStatusName(sc.getStatusName());
 			nextStep.setNeedsReloadFlag(needsReload);
 		} catch (InvalidDataException | DatabaseException | ParseException e) {

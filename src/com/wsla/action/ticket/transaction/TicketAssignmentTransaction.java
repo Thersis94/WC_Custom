@@ -4,9 +4,7 @@ package com.wsla.action.ticket.transaction;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.HashMap;
 import java.util.Map;
-import java.util.ResourceBundle;
 
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
@@ -18,7 +16,6 @@ import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.util.StringUtil;
-import com.wsla.action.BasePortalAction;
 // WC Libs
 import com.wsla.action.ticket.BaseTransactionAction;
 import com.wsla.data.provider.ProviderLocationVO;
@@ -81,10 +78,10 @@ public class TicketAssignmentTransaction extends BaseTransactionAction {
 	public void build(ActionRequest req) throws ActionException {
 		TicketAssignmentVO tAss = new TicketAssignmentVO(req);
 		UserVO user = (UserVO)getAdminUser(req).getUserExtendedInfo();
-		ResourceBundle bundle = new BasePortalAction().getResourceBundle(req);
+
 		try {
 			
-			putModuleData(assign(tAss, user, bundle));
+			putModuleData(assign(tAss, user));
 		} catch (InvalidDataException | DatabaseException | SQLException e) {
 			log.error("Unable to save asset", e);
 			putModuleData("", 0, false, e.getLocalizedMessage(), true);
@@ -95,11 +92,10 @@ public class TicketAssignmentTransaction extends BaseTransactionAction {
 	 * Saves a Ticket Assignment when changing
 	 * @param tAss
 	 * @param user
-	 * @param bundle
 	 * @throws InvalidDataException
 	 * @throws DatabaseException
 	 */
-	public Object assign(TicketAssignmentVO tAss, UserVO user, ResourceBundle bundle) 
+	public Object assign(TicketAssignmentVO tAss, UserVO user) 
 	throws InvalidDataException, DatabaseException, SQLException {
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		
@@ -114,7 +110,7 @@ public class TicketAssignmentTransaction extends BaseTransactionAction {
 		
 		// Build the next step
 		if (ledger.getStatusCode() != null) {
-			buildNextStep(ledger.getStatusCode(), bundle, new HashMap<>(), true);
+			buildNextStep(ledger.getStatusCode(), null, true);
 		}
 		
 		// Save the ledger and the assignment

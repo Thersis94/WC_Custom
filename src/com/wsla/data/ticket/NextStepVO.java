@@ -2,13 +2,10 @@ package com.wsla.data.ticket;
 
 // JDK 1.8.x
 import java.sql.ResultSet;
-import java.util.MissingResourceException;
-import java.util.ResourceBundle;
 
 // SMT Base Libs
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.parser.BeanDataVO;
-import com.siliconmtn.util.StringUtil;
 
 /****************************************************************************
  * <b>Title</b>: NextStepVO.java
@@ -30,9 +27,9 @@ public class NextStepVO extends BeanDataVO {
 	private static final long serialVersionUID = 7595095552093529941L;
 	
 	// Member Variables
-	private String promptText;
+	private String promptKeyCode;
 	private String buttonUrl;
-	private String buttonName;
+	private String buttonKeyCode;
 	private String statusName;
 	private boolean needsReloadFlag;
 	
@@ -61,38 +58,26 @@ public class NextStepVO extends BeanDataVO {
 	 * @param status
 	 * @param bundle
 	 */
-	public NextStepVO(StatusCode status, ResourceBundle bundle) {
-		String statusBundleKey = StringUtil.removeNonAlpha(status.name().toLowerCase());
-		
-		try {
-			setPromptText(bundle.getString("wsla.ticket.nextstep." + statusBundleKey));
-		} catch (MissingResourceException e) {
-			setPromptText("");
-		}
-		
-		try {
-			setButtonName(bundle.getString("wsla.ticket.nextstep.button." + statusBundleKey));
-		} catch (MissingResourceException e) {
-			setButtonName("");
-		}
-		
+	public NextStepVO(StatusCode status) {
+		setPromptKeyCode("status_code.next." + status.name());
+		setButtonKeyCode("");
 		setButtonUrl("");
 		setStatusName("");
 		setNeedsReloadFlag(false);
 	}
 
 	/**
-	 * @return the promptText
+	 * @return the promptKeyCode
 	 */
-	public String getPromptText() {
-		return promptText;
+	public String getPromptKeyCode() {
+		return promptKeyCode;
 	}
 
 	/**
-	 * @param promptText the promptText to set
+	 * @param promptKeyCode the promptKeyCode to set
 	 */
-	public void setPromptText(String promptText) {
-		this.promptText = promptText;
+	public void setPromptKeyCode(String promptKeyCode) {
+		this.promptKeyCode = promptKeyCode;
 	}
 
 	/**
@@ -110,17 +95,17 @@ public class NextStepVO extends BeanDataVO {
 	}
 
 	/**
-	 * @return the buttonName
+	 * @return the buttonKeyCode
 	 */
-	public String getButtonName() {
-		return buttonName;
+	public String getButtonKeyCode() {
+		return buttonKeyCode;
 	}
 
 	/**
-	 * @param buttonName the buttonName to set
+	 * @param buttonName the buttonKeyCode to set
 	 */
-	public void setButtonName(String buttonName) {
-		this.buttonName = buttonName;
+	public void setButtonKeyCode(String buttonKeyCode) {
+		this.buttonKeyCode = buttonKeyCode;
 	}
 
 	/**

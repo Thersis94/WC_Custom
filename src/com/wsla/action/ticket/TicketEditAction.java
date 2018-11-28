@@ -31,7 +31,6 @@ import com.smt.sitebuilder.action.user.ProfileManager;
 import com.smt.sitebuilder.action.user.ProfileManagerFactory;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.AdminConstants;
-import com.wsla.action.BasePortalAction;
 import com.wsla.data.product.ProductSerialNumberVO;
 import com.wsla.data.product.ProductWarrantyVO;
 import com.wsla.data.ticket.DefectVO;
@@ -139,7 +138,7 @@ public class TicketEditAction extends SBActionAdapter {
 				TicketVO ticket = getCompleteTicket(ticketNumber);
 				req.setAttribute("providerData", ticket.getOem());
 				req.setAttribute("wsla.ticket.locale", ticket.getOriginator().getLocale());
-				req.setAttribute("nextStep", new NextStepVO(ticket.getStatusCode(), new BasePortalAction().getResourceBundle(req)));
+				req.setAttribute("nextStep", new NextStepVO(ticket.getStatusCode()));
 				putModuleData(ticket);
 			}
 		} catch (SQLException | DatabaseException e) {

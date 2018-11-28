@@ -2,7 +2,6 @@ package com.wsla.action.ticket.transaction;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.ResourceBundle;
 
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
@@ -11,7 +10,6 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.util.Convert;
 // WC Libs
-import com.wsla.action.BasePortalAction;
 import com.wsla.action.ticket.BaseTransactionAction;
 import com.wsla.action.ticket.TicketEditAction;
 import com.wsla.data.ticket.LedgerSummary;
@@ -81,8 +79,6 @@ public class TicketPartsTransaction extends BaseTransactionAction {
 	 * @throws DatabaseException 
 	 */
 	private void submitForApproval(ActionRequest req) throws DatabaseException {
-		ResourceBundle bundle = new BasePortalAction().getResourceBundle(req);
-		
 		TicketVO ticket = new TicketVO(req);
 		UserVO user = (UserVO) getAdminUser(req).getUserExtendedInfo();
 		TicketLedgerVO ledger = changeStatus(ticket.getTicketId(), user.getUserId(), StatusCode.CAS_PARTS_REQUESTED, LedgerSummary.CAS_REQUESTED_PARTS.summary, null);
@@ -90,7 +86,7 @@ public class TicketPartsTransaction extends BaseTransactionAction {
 		// Build next step
 		Map<String, Object> params = new HashMap<>();
 		params.put("ticketId", ledger.getTicketId());
-		buildNextStep(ledger.getStatusCode(), bundle, params, false);
+		buildNextStep(ledger.getStatusCode(), params, false);
 	}
 
 	/**
@@ -105,7 +101,7 @@ public class TicketPartsTransaction extends BaseTransactionAction {
 			return;
 		
 		// Set the approval status for the parts request
-		setPartsStatus(req, StatusCode.CAS_PARTS_ORDERED, LedgerSummary.PARTS_REQUEST_REVIEWED.summary, new HashMap<>());
+		setPartsStatus(req, StatusCode.CAS_PARTS_ORDERED, LedgerSummary.PARTS_REQUEST_REVIEWED.summary, null);
 	}
 
 	/**
@@ -135,13 +131,11 @@ public class TicketPartsTransaction extends BaseTransactionAction {
 	 * @throws DatabaseException
 	 */
 	private void setPartsStatus(ActionRequest req, StatusCode sc, String summary, Map<String, Object> params) throws DatabaseException {
-		ResourceBundle bundle = new BasePortalAction().getResourceBundle(req);
-		
 		// Set the given status
 		TicketVO ticket = new TicketVO(req);
 		UserVO user = (UserVO) getAdminUser(req).getUserExtendedInfo();
 		TicketLedgerVO ledger = changeStatus(ticket.getTicketId(), user.getUserId(), sc, summary, null);
-		buildNextStep(ledger.getStatusCode(), bundle, params, false);
+		buildNextStep(ledger.getStatusCode(), params, false);
 	}
 }
 

@@ -2,7 +2,6 @@ package com.wsla.action.ticket.transaction;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.ResourceBundle;
 
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
@@ -11,7 +10,6 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.util.Convert;
 // WC Libs
-import com.wsla.action.BasePortalAction;
 import com.wsla.action.ticket.BaseTransactionAction;
 import com.wsla.data.ticket.LedgerSummary;
 import com.wsla.data.ticket.StatusCode;
@@ -73,7 +71,6 @@ public class TicketRepairTransaction extends BaseTransactionAction {
 	 * @throws DatabaseException 
 	 */
 	private void changeRepairStatus(ActionRequest req) throws DatabaseException {
-		ResourceBundle bundle = new BasePortalAction().getResourceBundle(req);
 		boolean isStart = Convert.formatBoolean(req.getParameter("isStart"));
 		
 		TicketVO ticket = new TicketVO(req);
@@ -85,7 +82,7 @@ public class TicketRepairTransaction extends BaseTransactionAction {
 		if (isStart) {
 			params.put("ticketId", ledger.getTicketId());
 		}
-		buildNextStep(ledger.getStatusCode(), bundle, params, false);
+		buildNextStep(ledger.getStatusCode(), params, false);
 	}
 }
 

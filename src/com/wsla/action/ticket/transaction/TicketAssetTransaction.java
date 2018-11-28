@@ -4,7 +4,6 @@ import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.ResourceBundle;
 
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
@@ -16,7 +15,6 @@ import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.util.Convert;
 // WC Libs
-import com.wsla.action.BasePortalAction;
 import com.wsla.action.ticket.BaseTransactionAction;
 import com.wsla.action.ticket.CASSelectionAction;
 // WSLA Libs
@@ -95,13 +93,15 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 		// Get the WSLA User
 		UserVO user = (UserVO)getAdminUser(req).getUserExtendedInfo();
 		
+		// TODO: Check approval status - if 1 POP and 1 SN unapproved, change status, otherwise add ledger entry with no status
+		
 		// Add a ledger entry
 		TicketLedgerVO ledger = changeStatus(td.getTicketId(), user.getUserId(), StatusCode.USER_DATA_APPROVAL_PENDING, LedgerSummary.ASSET_LOADED.summary, null);
 		
 		// Build the next step
 		Map<String, Object> params = new HashMap<>();
 		params.put("ticketId", ledger.getTicketId());
-		buildNextStep(ledger.getStatusCode(), new BasePortalAction().getResourceBundle(req), params, false);
+		buildNextStep(ledger.getStatusCode(), params, false);
 		
 		// Build the additional Ticket Data
 		td.setLedgerEntryId(ledger.getLedgerEntryId());
@@ -121,13 +121,11 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 		if (!isApproved)
 			return;
 		
-		ResourceBundle bundle = new BasePortalAction().getResourceBundle(req);
-		
 		// Change status to user data complete indicating it was approved.
 		TicketVO ticket = new TicketVO(req);
 		UserVO user = (UserVO) getAdminUser(req).getUserExtendedInfo();
 		TicketLedgerVO ledger = changeStatus(ticket.getTicketId(), user.getUserId(), StatusCode.USER_DATA_COMPLETE, LedgerSummary.ASSET_APPROVED.summary, null);
-		buildNextStep(ledger.getStatusCode(), bundle, new HashMap<>(), false);
+		buildNextStep(ledger.getStatusCode(), null, false);
 		
 		// Assign the nearest CAS
 		CASSelectionAction csa = new CASSelectionAction(getDBConnection(), getAttributes());
@@ -141,7 +139,7 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 
 			try {
 				TicketAssignmentTransaction tat = new TicketAssignmentTransaction(getDBConnection(), getAttributes());
-				tat.assign(tAss, user, bundle);
+				tat.assign(tAss, user);
 				setNextStep(tat.getNextStep());
 			} catch (InvalidDataException | SQLException e) {
 				throw new DatabaseException(e);
