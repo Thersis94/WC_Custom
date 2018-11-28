@@ -134,7 +134,11 @@ public class TicketEditAction extends SBActionAdapter {
 			} else if (json && req.hasParameter("schedule")) {
 				putModuleData(getSchedule(req.getParameter(TICKET_ID), req.getParameter(REQ_TICKET_SCHEDULE_ID)));
 			} else if (json && req.hasParameter("assets")) {
-				putModuleData(getExtendedData(req.getParameter(TICKET_ID), req.getParameter("groupCode")));
+				boolean hasPublicAmid = false;
+				if("wsla_user_portal".equalsIgnoreCase(req.getParameter("amid"))) {
+					hasPublicAmid =true;
+				}
+				putModuleData(getExtendedData(req.getParameter(TICKET_ID), req.getParameter("groupCode"), hasPublicAmid));
 			} else {
 				TicketVO ticket = getCompleteTicket(ticketNumber);
 				req.setAttribute("providerData", ticket.getOem());
@@ -326,11 +330,22 @@ public class TicketEditAction extends SBActionAdapter {
 	}
 	
 	/**
-	 * Retrieves a list of extended data elements for the given ticket
+	 *  Retrieves a list of extended data elements for the given ticket
 	 * @param ticketId
+	 * @param groupCode
 	 * @return
 	 */
 	public List<TicketDataVO> getExtendedData(String ticketId, String groupCode) {
+		return getExtendedData(ticketId, groupCode, false);
+	}
+	
+	/**
+	 * Retrieves a list of extended data elements for the given ticket
+	 * @param ticketId
+	 * @param b 
+	 * @return
+	 */
+	public List<TicketDataVO> getExtendedData(String ticketId, String groupCode, boolean hasPublicAmid) {
 
 		StringBuilder sql = new StringBuilder(256);
 		sql.append("select a.*, b.attribute_nm, c.group_nm, e.first_nm, e.last_nm, disposition_by_id from ");
@@ -345,6 +360,11 @@ public class TicketEditAction extends SBActionAdapter {
 		sql.append("wsla_user e on d.disposition_by_id = e.user_id ");
 		sql.append("where a.ticket_id = ? ");
 		if (! StringUtil.isEmpty(groupCode)) sql.append("and b.attribute_group_cd = ? ");
+		
+		if (hasPublicAmid) {
+			sql.append(" and ( b.attribute_cd = 'attr_proofPurchase' or b.attribute_cd = 'attr_serialNumberImage' ) ");
+		}
+		
 		sql.append("order by b.attribute_group_cd ");
 		
 		List<TicketDataVO> data = new ArrayList<>();
