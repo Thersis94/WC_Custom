@@ -319,7 +319,11 @@ public class BiomedSupportEmailUtil {
 				r.getValue().add(recip);
 
 			//Get Emails
-			ecbu.sendMessage(config, r.getValue(), (String)attributes.get(ADMIN_NEW_TICKET_CAMP_INST_ID));
+			if (r.getKey().equals(EmailType.ADMIN)) {
+				ecbu.sendMessage(config, r.getValue(), (String)attributes.get(ADMIN_NEW_TICKET_CAMP_INST_ID));
+			} else {
+				ecbu.sendMessage(config, r.getValue(), (String)attributes.get(NEW_TICKET_CAMP_INST_ID));
+			}
 
 			if(r.getKey().equals(EmailType.ADMIN)) {
 				//New Tickets get sent to admins withing the adminEmails List.
@@ -499,6 +503,11 @@ public class BiomedSupportEmailUtil {
 			Map<String, Object> config = getBaseConfig(t);
 			config.put("ticketDesc", StringUtil.checkVal(t.getActivities().get(0).getDescText()));
 			config.put("activityDesc", StringUtil.checkVal(t.getActivities().get(t.getActivities().size()-1).getDescText()));
+			Map<String, String> campaignOverride = null;
+			if (r.getKey() == EmailType.PUBLIC && !StringUtil.isEmpty(t.getAssignedEmail())) {
+				campaignOverride = new HashMap<>();
+				campaignOverride.put("replyTo", t.getAssignedEmail());
+			}
 			
 			AttachmentManager am = new AttachmentManager(dbConn, attributes);
 			for (TicketAttachmentVO a : t.getAttachments()) {
@@ -506,7 +515,7 @@ public class BiomedSupportEmailUtil {
 			}
 
 			//Get Emails
-			ecbu.sendMessage(config, r.getValue(), (String)attributes.get(ACT_TICKET_CAMP_INST_ID));
+			ecbu.sendMessage(config, r.getValue(), (String)attributes.get(ACT_TICKET_CAMP_INST_ID), campaignOverride);
 		}
 	}
 
