@@ -168,8 +168,8 @@ public class TicketOverviewAction extends BasePortalAction {
 	
 	/**
 	 * When a serial number can't be located, this method adds a new serial
-	 * number as unvalidated and updates the product serial id on the ticket and 
-	 * changes the status to un
+	 * number as invalidated and updates the product serial id on the ticket and 
+	 * changes the status to unlisted
 	 * @param req
 	 * @param ticket
 	 * @return
@@ -183,6 +183,9 @@ public class TicketOverviewAction extends BasePortalAction {
 		psn.setProductId(req.getParameter("productId"));
 		psn.setSerialNumber(req.getParameter("serialNumber"));
 		psn.setValidatedFlag(0);
+		
+		if (WSLAConstants.NO_SERIAL_NUMBER.equalsIgnoreCase(psn.getSerialNumber())) 
+			psn.setSerialNumber(null);
 		
 		// add the serial
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());

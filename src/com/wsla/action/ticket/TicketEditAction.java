@@ -158,7 +158,7 @@ public class TicketEditAction extends SBActionAdapter {
 		
 		StringBuilder sql = new StringBuilder(416);
 		sql.append(DBUtil.SELECT_CLAUSE);
-		sql.append(" (coalesce(num_roles, 0) = 0) as end_user, * from ");
+		sql.append(" (coalesce(num_roles, 0) = 1) as end_user, * from ");
 		sql.append(getCustomSchema()).append("wsla_ticket_comment a ");
 		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("wsla_user b ");
 		sql.append("on a.user_id = b.user_id ");
@@ -175,6 +175,7 @@ public class TicketEditAction extends SBActionAdapter {
 		else sql.append("and activity_type_cd = 'COMMENT' ");
 		sql.append("order by priority_ticket_flg desc, a.create_dt desc ");
 		log.debug(sql);
+		
 		List<Node> comments = new ArrayList<>();
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, ticketId);
@@ -505,6 +506,7 @@ public class TicketEditAction extends SBActionAdapter {
 		try {
 			DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 			db.save(comment);
+			log.info("Comment Saved: " + comment);
 		} catch(Exception e) {
 			throw new SQLException("unable to save comment", e);
 		}
