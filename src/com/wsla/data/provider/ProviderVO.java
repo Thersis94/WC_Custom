@@ -42,6 +42,7 @@ public class ProviderVO extends BeanDataVO {
 	private String iconPath;
 	private String cssPath;
 	private String domainUrl;
+	private String phoneNumber;
 	private int reviewFlag;
 	private Date createDate;
 	private Date updateDate;
@@ -229,6 +230,21 @@ public class ProviderVO extends BeanDataVO {
 	 */
 	public void setDomainUrl(String domainUrl) {
 		this.domainUrl = domainUrl;
+	}
+
+	/**
+	 * @return the phoneNumber
+	 */
+	@Column(name="phone_number_txt")
+	public String getPhoneNumber() {
+		return phoneNumber;
+	}
+
+	/**
+	 * @param phoneNumber the phoneNumber to set
+	 */
+	public void setPhoneNumber(String phoneNumber) {
+		this.phoneNumber = phoneNumber;
 	}
 
 }

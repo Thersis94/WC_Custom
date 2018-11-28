@@ -3,6 +3,7 @@ package com.wsla.action.ticket;
 // JDK 1.8.x
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -77,7 +78,11 @@ public class TicketOverviewAction extends BasePortalAction {
 		super();
 	}
 	
-	
+	/**
+	 * 
+	 * @param attributes
+	 * @param dbConn
+	 */
 	public TicketOverviewAction(Map<String, Object> attributes, SMTDBConnection dbConn ) {
 		super();
 		
@@ -214,7 +219,6 @@ public class TicketOverviewAction extends BasePortalAction {
 		
 		// Add User and assignment to the ticket
 		UserVO user = new UserVO(req);
-		if (user.getProfile() == null) user.setProfile(new UserDataVO(req));
 		this.saveUser(site, user, false, true);
 		ticket.addAssignment(manageTicketAssignment(user, null, ticket.getTicketId(), null, 0, TypeCode.CALLER));
 
@@ -402,10 +406,14 @@ public class TicketOverviewAction extends BasePortalAction {
 		db.save(ticket);
 	}
 	
-	
+	/**
+	 * 
+	 * @param req
+	 * @return
+	 */
 	public List<TicketVO> getTicketList(ActionRequest req) {
-		
-		return null;
+		log.info("Doing nothing: " + req.getParameter("statusCode"));
+		return new ArrayList<>();
 	}
 
 }

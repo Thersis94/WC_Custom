@@ -19,6 +19,7 @@ import java.util.ResourceBundle;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.common.constants.GlobalConfig;
 import com.siliconmtn.common.html.BSTableControlVO;
 import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.db.DBUtil;
@@ -27,6 +28,7 @@ import com.siliconmtn.db.orm.GridDataVO;
 import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.EnumUtil;
+import com.siliconmtn.util.PhoneNumberFormat;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.admin.action.ResourceBundleManagerAction;
@@ -47,6 +49,7 @@ import com.wsla.action.admin.WarrantyAction.ServiceTypeCode;
 import com.wsla.action.ticket.CASSelectionAction;
 import com.wsla.action.ticket.TicketListAction;
 import com.wsla.action.ticket.TicketEditAction;
+import com.wsla.common.LocaleWrapper;
 import com.wsla.common.WSLALocales;
 import com.wsla.data.product.LocationItemMasterVO;
 import com.wsla.data.product.ProductVO;
@@ -129,6 +132,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		keyMap.put("emailCampaigns", new GenericVO("getEmailCampaigns", Boolean.TRUE));
 		keyMap.put("billable", new GenericVO("getBillableCodes", Boolean.TRUE));
 		keyMap.put("billableType", new GenericVO("getBillableTypes", Boolean.FALSE));
+		keyMap.put("supportNumbers", new GenericVO("getSupportNumbers", Boolean.TRUE));
 	}
 
 	/**
@@ -726,6 +730,32 @@ public class SelectLookupAction extends SBActionAdapter {
 			data.add(new GenericVO(code.name(), code.getTypeName()));
 		}
 
+		return data;
+	}
+	
+	/**
+	 * Returns any OEMs that have an 800 / support number assigned  Key is the 
+	 * name and the value is the phone number
+	 * @return
+	 */
+	public List<GenericVO> getSupportNumbers(ActionRequest req) {
+		StringBuilder sql = new StringBuilder(156);
+		sql.append("select provider_nm as key, phone_number_txt as value ");
+		sql.append(DBUtil.FROM_CLAUSE).append(getCustomSchema()).append("wsla_provider a ");
+		sql.append("where provider_type_id = 'OEM' and length(phone_number_txt) > 0 ");
+		sql.append("order by provider_nm ");
+
+		DBProcessor db = new DBProcessor(getDBConnection());
+		List<GenericVO> data = db.executeSelect(sql.toString(), null, new GenericVO());
+		
+		// Format the phone number for display
+		Locale loc = new LocaleWrapper(StringUtil.checkVal(req.getSession().getAttribute(GlobalConfig.KEY_USER_LOCALE), "en_US")).getLocale();
+		for (GenericVO entry : data) {
+			String pn = (String)entry.getValue();
+			PhoneNumberFormat pnf = new PhoneNumberFormat(pn, loc.getCountry(), PhoneNumberFormat.INTERNATIONAL_FORMAT);
+			entry.setValue(pnf.getFormattedNumber());
+		}
+		
 		return data;
 	}
 }

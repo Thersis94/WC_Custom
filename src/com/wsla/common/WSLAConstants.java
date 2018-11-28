@@ -55,7 +55,20 @@ public class WSLAConstants {
 	 */
 	public static final String DEFAULT_SHIPPING_SRC = "b89e4d5a3e2c439f879a25aee66bedde";
 
-
+	/**
+	 * Constant to define the value that will be entered by a support rep if the user does
+	 * not have an email address.  This is to ensure reps are entering a value for the
+	 * email address field
+	 */
+	public static final String NO_EMAIL_ADDRESS = "none@wsla.com";
+	
+	/**
+	 * Constant to define the value that will be entered by a support rep if the user does
+	 * not have the product serial number handy.  This is to ensure reps are entering a 
+	 * value for the serial number field
+	 */
+	public static final String NO_SERIAL_NUMBER = "NOSN";
+	
 	private WSLAConstants() {
 		//don't need a constructor - static class
 	}
