@@ -1,22 +1,30 @@
 package com.wsla.action.ticket.transaction;
 
+import java.sql.SQLException;
+import java.util.Arrays;
+import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
-import com.siliconmtn.util.Convert;
 // WC Libs
-import com.wsla.action.BasePortalAction;
 import com.wsla.action.ticket.BaseTransactionAction;
+import com.wsla.action.ticket.CASSelectionAction;
+import com.wsla.action.ticket.TicketEditAction;
+import com.wsla.data.ticket.ApprovalCode;
 // WSLA Libs
 import com.wsla.data.ticket.LedgerSummary;
 import com.wsla.data.ticket.StatusCode;
+import com.wsla.data.ticket.TicketAssignmentVO;
+import com.wsla.data.ticket.TicketAssignmentVO.TypeCode;
 import com.wsla.data.ticket.TicketDataVO;
 import com.wsla.data.ticket.TicketLedgerVO;
 import com.wsla.data.ticket.TicketVO;
@@ -42,6 +50,12 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 	public static final String AJAX_KEY = "asset";
 	
 	/**
+	 * Approvable asset attribute keys
+	 */
+	public static final String PROOF_PURCHASE = "attr_proofPurchase";
+	public static final String SERIAL_NO = "attr_serialNumberImage";
+	
+	/**
 	 * 
 	 */
 	public TicketAssetTransaction() {
@@ -62,8 +76,8 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 	@Override
 	public void build(ActionRequest req) throws ActionException {
 		try {
-			if (req.hasParameter("isApproved")) {
-				approveAssets(req);
+			if (req.hasParameter("isApproval")) {
+				approveAsset(req);
 			} else {
 				saveAsset(req);
 			}
@@ -81,6 +95,7 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 	 */
 	public void saveAsset(ActionRequest req) throws InvalidDataException, DatabaseException {
 		TicketDataVO td = new TicketDataVO(req);
+		td.setApprovalCode(ApprovalCode.UNKNOWN);
 		
 		// Get the DB Processor
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
@@ -88,13 +103,23 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 		// Get the WSLA User
 		UserVO user = (UserVO)getAdminUser(req).getUserExtendedInfo();
 		
-		// Add a ledger entry
-		TicketLedgerVO ledger = changeStatus(td.getTicketId(), user.getUserId(), StatusCode.USER_DATA_APPROVAL_PENDING, LedgerSummary.ASSET_LOADED.summary, null);
+		// Add a ledger entry, but only change status if the uploaded asset
+		// triggers a need for approval.
+		TicketLedgerVO ledger;
+		StatusCode status;
+		if (isReadyForApproval(td)) {
+			ledger = changeStatus(td.getTicketId(), user.getUserId(), StatusCode.USER_DATA_APPROVAL_PENDING, LedgerSummary.ASSET_LOADED.summary, null);
+			status = ledger.getStatusCode();
+		} else {
+			ledger = addLedger(td.getTicketId(), user.getUserId(), null, LedgerSummary.ASSET_LOADED.summary, null);
+			TicketVO ticket = new TicketEditAction(getDBConnection(), getAttributes()).getBaseTicket(td.getTicketId());
+			status = ticket.getStatusCode();
+		}
 		
 		// Build the next step
 		Map<String, Object> params = new HashMap<>();
 		params.put("ticketId", ledger.getTicketId());
-		buildNextStep(ledger.getStatusCode(), new BasePortalAction().getResourceBundle(req), params, false);
+		buildNextStep(status, params, false);
 		
 		// Build the additional Ticket Data
 		td.setLedgerEntryId(ledger.getLedgerEntryId());
@@ -104,22 +129,169 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 	}
 	
 	/**
+	 * Checks if a status change is warranted on the ticket based on the assets submitted by the user.
+	 * The TicketDataVO passed in is assumed to not exist in the db yet.
+	 * 
+	 * @param td
+	 * @return
+	 */
+	private boolean isReadyForApproval(TicketDataVO td) {
+		TicketEditAction tea = new TicketEditAction(getDBConnection(), getAttributes());
+		List<TicketDataVO> assets = tea.getExtendedData(td.getTicketId(), "ASSET_GROUP");
+		assets.add(td);
+		
+		// Assume neither type has been submitted yet
+		int popApproval = 2;
+		int snApproval = 2;
+		
+		// Determine the approval levels for each asset type requiring approval
+		for (TicketDataVO asset : assets) {
+			String attributeCode = asset.getAttributeCode();
+			int approvalLevel = asset.getApprovalCode() == null ? ApprovalCode.REJECTED.getLevel() : asset.getApprovalCode().getLevel();
+			
+			if (PROOF_PURCHASE.equals(attributeCode))
+				popApproval = getApprovalLevel(popApproval, approvalLevel);
+			else if (SERIAL_NO.equals(attributeCode))
+				snApproval = getApprovalLevel(snApproval, approvalLevel);
+		}
+		
+		// Approval is not needed if both are approved or at least one hasn't been submitted
+		int approvedLevel = ApprovalCode.APPROVED.getLevel();
+		if ((popApproval == approvedLevel && snApproval == approvedLevel) || popApproval == 2 || snApproval == 2)
+			return false;
+		
+		// Approval is needed when one or both are in the UNKNOWN state
+		int unknownApprovalLevel = ApprovalCode.UNKNOWN.getLevel();
+		return popApproval == unknownApprovalLevel || snApproval == unknownApprovalLevel;
+	}
+	
+	/**
+	 * Sets the approval level to the most critical level, in the event more than
+	 * one asset exists for a given attribute code. (We care most about unknown and
+	 * least about rejected.)
+	 * 
+	 * @param curApprovalLevel
+	 * @param newApprovalLevel
+	 * @return
+	 */
+	private int getApprovalLevel (int curApprovalLevel, int newApprovalLevel) {
+		if (newApprovalLevel < curApprovalLevel)
+			return newApprovalLevel;
+		
+		return curApprovalLevel;
+	}
+	
+	/**
+	 * Manages the flow surrounding approval of an asset
+	 * 
+	 * @param req
+	 * @throws DatabaseException 
+	 */
+	public void approveAsset(ActionRequest req) throws DatabaseException {
+		TicketDataVO td = new TicketDataVO(req);
+		td.setUpdateDate(new Date());
+		saveApproval(td);
+
+		// Ticket status is only managed when approving/rejecting a POP or SN
+		if (PROOF_PURCHASE.equals(td.getAttributeCode()) || SERIAL_NO.equals(td.getAttributeCode())) 
+			manageTicketApproval(td.getTicketId(), req);
+	}
+	
+	/**
+	 * Determines the approval status of each asset, changing the ticket status if
+	 * both types have been reviewed.
+	 * 
+	 * @param ticketId
+	 * @param req
+	 * @throws DatabaseException
+	 */
+	protected void manageTicketApproval(String ticketId, ActionRequest req) throws DatabaseException {
+		TicketEditAction tea = new TicketEditAction(getDBConnection(), getAttributes());
+		List<TicketDataVO> assets = tea.getExtendedData(ticketId, "ASSET_GROUP");
+		Map<String, ApprovalCode> approvals = new HashMap<>();
+		
+		// Determine if we have approval for each required asset
+		for (TicketDataVO asset : assets) {
+			String attributeCode = asset.getAttributeCode();
+			ApprovalCode thisApproval = asset.getApprovalCode() == null ? ApprovalCode.UNKNOWN : asset.getApprovalCode();
+			if (thisApproval == ApprovalCode.UNKNOWN) continue;
+			
+			// Approved always overrides any previous that were rejected
+			ApprovalCode prevApproval = approvals.get(attributeCode);
+			if (prevApproval == null || prevApproval == ApprovalCode.REJECTED) 
+				approvals.put(attributeCode, thisApproval);
+		}
+		
+		// Manage the status based on approval
+		if (approvals.get(PROOF_PURCHASE) != null && approvals.get(SERIAL_NO) != null) {
+			boolean popHasApproval = !approvals.get(PROOF_PURCHASE).isRejected();
+			boolean snHasApproval = !approvals.get(SERIAL_NO).isRejected();
+			finalizeApproval(req, popHasApproval && snHasApproval);
+		}
+	}
+	
+	/**
+	 * Updates approval/rejection status for an individual asset
+	 * 
+	 * @param td
+	 * @throws DatabaseException
+	 */
+	protected void saveApproval(TicketDataVO td) throws DatabaseException {
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		
+		// Create the SQL for updating the record
+		StringBuilder sql = new StringBuilder(150);
+		sql.append("update ").append(getCustomSchema()).append("wsla_ticket_data " );
+		sql.append("set approval_cd = ?, update_dt = ? ");
+		sql.append("where data_entry_id = ? ");
+		log.debug(sql);
+		
+		// Set the fields we are updating from
+		List<String> fields = Arrays.asList("approval_cd", "update_dt", "data_entry_id");
+
+		// Save the approval to the record
+		try {
+			db.executeSqlUpdate(sql.toString(), td, fields);
+		} catch (DatabaseException e1) {
+			log.error("Could not update the asset approval status",e1);
+		}
+	}
+	
+	/**
 	 * Approves the assets, and moves the ticket to the next status
 	 * 
 	 * @param req
 	 * @throws DatabaseException 
-	 * @throws InvalidDataException 
 	 */
-	public void approveAssets(ActionRequest req) throws InvalidDataException, DatabaseException {
-		boolean isApproved = Convert.formatBoolean(req.getParameter("isApproved"));
-		if (!isApproved)
-			return;
+	public void finalizeApproval(ActionRequest req, boolean isApproved) throws DatabaseException {
+		StatusCode status = isApproved ? StatusCode.USER_DATA_COMPLETE : StatusCode.USER_CALL_DATA_INCOMPLETE;
+		String summary = isApproved ? LedgerSummary.ASSET_APPROVED.summary : LedgerSummary.ASSET_REJECTED.summary;
 		
-		// Change status to user data complete indicating it was approved.
+		// Update the status based on approval or rejection.
 		TicketVO ticket = new TicketVO(req);
 		UserVO user = (UserVO) getAdminUser(req).getUserExtendedInfo();
-		TicketLedgerVO ledger = changeStatus(ticket.getTicketId(), user.getUserId(), StatusCode.USER_DATA_COMPLETE, LedgerSummary.ASSET_APPROVED.summary, null);
-		buildNextStep(ledger.getStatusCode(), new BasePortalAction().getResourceBundle(req), new HashMap<>(), false);
+		TicketLedgerVO ledger = changeStatus(ticket.getTicketId(), user.getUserId(), status, summary, null);
+		buildNextStep(ledger.getStatusCode(), null, false);
+		if (!isApproved) return;
+
+		// Assign the nearest CAS
+		CASSelectionAction csa = new CASSelectionAction(getDBConnection(), getAttributes());
+		List<GenericVO> locations = csa.getUserSelectionList(ticket.getTicketId(), user.getLocale());
+		if (!locations.isEmpty()) {
+			GenericVO casLocation = locations.get(0);
+			
+			TicketAssignmentVO tAss = new TicketAssignmentVO(req);
+			tAss.setLocationId(casLocation.getKey().toString());
+			tAss.setTypeCode(TypeCode.CAS);
+
+			try {
+				TicketAssignmentTransaction tat = new TicketAssignmentTransaction(getDBConnection(), getAttributes());
+				tat.assign(tAss, user);
+				setNextStep(tat.getNextStep());
+			} catch (InvalidDataException | SQLException e) {
+				throw new DatabaseException(e);
+			}
+		}
 	}
 }
 
