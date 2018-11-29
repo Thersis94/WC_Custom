@@ -147,15 +147,17 @@ public class BaseTransactionAction extends SBActionAdapter {
 		ledger.setSummary(summary);
 		//ledger.setUnitLocation(location)
 		
-		// Get status data to be added to the ledger
-		DBProcessor dbp = new DBProcessor(getDBConnection(), getCustomSchema());
-		StatusCodeVO sc = new StatusCodeVO();
-		sc.setStatusCode(status.name());
-		try {
-			dbp.getByPrimaryKey(sc);
-			//ledger.setBillableActivityCode(sc.getBillableActivityCode())
-		} catch (InvalidDataException e) {
-			throw new DatabaseException(e);
+		// Get status billable data to be added to the ledger
+		if (status != null) {
+			DBProcessor dbp = new DBProcessor(getDBConnection(), getCustomSchema());
+			StatusCodeVO sc = new StatusCodeVO();
+			sc.setStatusCode(status.name());
+			try {
+				dbp.getByPrimaryKey(sc);
+				//ledger.setBillableActivityCode(sc.getBillableActivityCode())
+			} catch (InvalidDataException e) {
+				throw new DatabaseException(e);
+			}
 		}
 		
 		// Add the ledger entry
