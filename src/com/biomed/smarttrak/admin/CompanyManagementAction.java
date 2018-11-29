@@ -19,6 +19,7 @@ import com.biomed.smarttrak.vo.CompanyAttributeTypeVO;
 import com.biomed.smarttrak.vo.CompanyAttributeVO;
 import com.biomed.smarttrak.vo.CompanyVO;
 import com.biomed.smarttrak.vo.LocationVO;
+import com.biomed.smarttrak.vo.ProductAllianceVO;
 import com.biomed.smarttrak.vo.SectionVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionRequest;
@@ -727,6 +728,8 @@ public class CompanyManagementAction extends ManagementAction {
 			case ALLIANCE:
 				AllianceVO a = new AllianceVO(req);
 				saveAlliance(a, db);
+				if (Convert.formatBoolean(req.getParameter("addProductsFlg")))
+					addAllianceProducts(a, db);
 				break;
 			case COMPANYATTRIBUTE:
 			case COMPANYLINK:
@@ -740,6 +743,51 @@ public class CompanyManagementAction extends ManagementAction {
 				break;
 			default:break;
 		}
+	}
+
+
+	/**
+	 * Add new alliance to all of a company's product 
+	 * that do not already have an alliance with that company
+	 * @param a
+	 * @param db
+	 * @throws ActionException
+	 */
+	private void addAllianceProducts(AllianceVO a, DBProcessor db) throws ActionException {
+		StringBuilder sql = new StringBuilder(200);
+		sql.append("select p.product_id from ").append(customDbSchema).append("biomedgps_product p ");
+		sql.append(LEFT_OUTER_JOIN).append(customDbSchema).append("biomedgps_product_alliance_xr pa ");
+		sql.append("on p.product_id = pa.product_id and pa.company_id = ? ");
+		sql.append("where p.company_id = ? and pa.company_id is null ");
+		log.debug(sql+"|"+a.getAllyId()+"|"+a.getCompanyId());
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, a.getAllyId());
+			ps.setString(2, a.getCompanyId());
+			
+			ResultSet rs = ps.executeQuery();
+			while (rs.next())
+				db.save(buildProductAlliance(a, rs.getString("product_id")));
+			
+		} catch (Exception e) {
+			throw new ActionException(e);
+		}
+		
+	}
+
+
+	/**
+	 * Create a full product alliance vo from the supplied id and vo.
+	 * @param a
+	 * @param productId
+	 * @return
+	 */
+	private ProductAllianceVO buildProductAlliance(AllianceVO a, String productId) {
+		ProductAllianceVO pa = new ProductAllianceVO();
+		pa.setProductId(productId);
+		pa.setAllianceTypeId(a.getAllianceTypeId());
+		pa.setAllyId(a.getAllyId());
+		pa.setReferenceText("");
+		return pa;
 	}
 
 
