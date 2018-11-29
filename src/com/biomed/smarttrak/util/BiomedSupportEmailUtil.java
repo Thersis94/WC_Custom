@@ -18,6 +18,8 @@ import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
+import com.siliconmtn.sb.email.CampaignManager;
+import com.siliconmtn.sb.email.CampaignSendVO;
 import com.siliconmtn.sb.email.util.EmailCampaignBuilderUtil;
 import com.siliconmtn.sb.email.vo.EmailRecipientVO;
 import com.siliconmtn.security.EncryptionException;
@@ -503,19 +505,24 @@ public class BiomedSupportEmailUtil {
 			Map<String, Object> config = getBaseConfig(t);
 			config.put("ticketDesc", StringUtil.checkVal(t.getActivities().get(0).getDescText()));
 			config.put("activityDesc", StringUtil.checkVal(t.getActivities().get(t.getActivities().size()-1).getDescText()));
-			Map<String, String> campaignOverride = null;
-			if (r.getKey() == EmailType.PUBLIC && !StringUtil.isEmpty(t.getAssignedEmail())) {
-				campaignOverride = new HashMap<>();
-				campaignOverride.put("replyTo", t.getAssignedEmail());
-			}
 			
 			AttachmentManager am = new AttachmentManager(dbConn, attributes);
 			for (TicketAttachmentVO a : t.getAttachments()) {
 				am.addFileFromId(config, AttachmentLoader.PROFILE_DOCUMENT, a.getActionId());
 			}
 
-			//Get Emails
-			ecbu.sendMessage(config, r.getValue(), (String)attributes.get(ACT_TICKET_CAMP_INST_ID), campaignOverride);
+			if (r.getValue() == null || r.getValue().isEmpty()) continue;
+			
+			try {
+				CampaignManager cm = new CampaignManager(dbConn, attributes);
+				CampaignSendVO vo = cm.getEmailCampaigns(dbConn, null, ecbu.validateId((String)attributes.get(ACT_TICKET_CAMP_INST_ID)), true, null).get(0);
+				if (r.getKey() == EmailType.PUBLIC && !StringUtil.isEmpty(t.getAssignedEmail())) {
+					vo.setEmailReply(t.getAssignedEmail());
+				}
+				ecbu.sendMessagesFromCampaign(vo, r.getValue(), config);
+			} catch (DatabaseException e) {
+				log.error("Failed to send email", e);
+			}
 		}
 	}
 
