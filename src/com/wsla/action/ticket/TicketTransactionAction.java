@@ -29,6 +29,7 @@ import com.wsla.action.ticket.transaction.TicketPDFCreator;
 import com.wsla.action.ticket.transaction.TicketUtilityTransaction;
 import com.wsla.action.ticket.transaction.UserTransaction;
 import com.wsla.action.ticket.transaction.TicketScheduleTransaction;
+import com.wsla.action.ticket.transaction.TicketTransaction;
 
 /****************************************************************************
  * <b>Title</b>: TicketTransactionAction.java
@@ -85,6 +86,7 @@ public class TicketTransactionAction extends FacadeActionAdapter {
 		actionMap.put(TicketDataTransaction.AJAX_KEY, TicketDataTransaction.class);
 		actionMap.put(TicketUtilityTransaction.AJAX_KEY, TicketUtilityTransaction.class);
 		actionMap.put(TicketPDFCreator.AJAX_KEY, TicketPDFCreator.class);
+		actionMap.put(TicketTransaction.AJAX_KEY, TicketTransaction.class);
 	}
 
 	/*

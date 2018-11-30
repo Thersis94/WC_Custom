@@ -1,5 +1,6 @@
 package com.wsla.action.ticket.transaction;
 
+// JDK 1.8.x
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
@@ -34,6 +35,12 @@ import com.wsla.data.ticket.TicketVO;
  ****************************************************************************/
 
 public class TicketTransaction extends SBActionAdapter {
+	
+	/**
+	 * Key for the Ajax Controller to utilize when calling this class
+	 */
+	public static final String AJAX_KEY = "ticketTrans";
+	
 	/**
 	 * Indicates that the unit location code is being updated
 	 */
@@ -71,17 +78,36 @@ public class TicketTransaction extends SBActionAdapter {
 	@Override
 	public void build(ActionRequest req) throws ActionException {
 		try {
-			TicketVO ticket = new TicketVO(req);
 			
-			if (req.hasParameter(REQ_UNIT_LOCATION))
-				updateUnitLocation(ticket);
-
-			putModuleData(ticket);
+			if (req.hasParameter("existing")) {
+				closeForExistingTicket(req.getParameter("ticketId"));
+				putModuleData("SUCCESS");
+			} else {
+				TicketVO ticket = new TicketVO(req);
+				
+				if (req.hasParameter(REQ_UNIT_LOCATION))
+					updateUnitLocation(ticket);
+	
+				putModuleData(ticket);
+			}
 			
 		} catch (DatabaseException e) {
 			log.error("Unable to save ticket micro transaction", e);
 			putModuleData("", 0, false, e.getLocalizedMessage(), true);
 		}
+	}
+	
+	
+	public void closeForExistingTicket(String ticketId) {
+		log.info("Closing ticket id: " + ticketId);
+		
+		// Add ledger for move to status EXISTING_TICKET
+		
+		
+		// Add Ledger for move to status CLOSED
+		
+		
+		// Update ticket status to CLOSED
 	}
 	
 	/**
