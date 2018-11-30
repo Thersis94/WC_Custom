@@ -519,7 +519,7 @@ public class BiomedSupportEmailUtil {
 				if (r.getKey() == EmailType.PUBLIC && !StringUtil.isEmpty(t.getAssignedEmail())) {
 					vo.setEmailReply(t.getAssignedEmail());
 				}
-				ecbu.sendMessage(vo, r.getValue(), config);
+				ecbu.sendMessage(config, r.getValue(), vo);
 			} catch (DatabaseException e) {
 				log.error("Failed to send email", e);
 			}
