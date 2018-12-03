@@ -1,8 +1,5 @@
 package com.biomed.smarttrak.admin;
 
-// App Libs
-import static com.biomed.smarttrak.action.GridDisplayAction.GRID_ID;
-
 // JDK 1.8
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -17,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.biomed.smarttrak.action.GridDisplayAction;
 import com.biomed.smarttrak.admin.vo.GridDetailVO;
 import com.biomed.smarttrak.admin.vo.GridVO;
 // SMT Base Libs
@@ -52,7 +50,8 @@ import com.smt.sitebuilder.util.RecordDuplicatorUtility;
 public class GridChartAction extends SBActionAdapter {
 	// Maps the table field name to the db field name for sorting purposes
 	private Map<String, String> sortMapper;
-
+	public static final String DB_GRID_ID = "GRID_ID";
+	public static final String GRID_ID = GridDisplayAction.GRID_ID;
 	/**
 	 * 
 	 */
@@ -88,21 +87,21 @@ public class GridChartAction extends SBActionAdapter {
 				replaceVals = new HashMap<>();
 				attributes.put(RecordDuplicatorUtility.REPLACE_VALS, replaceVals);
 			}
-			String gridId = req.getParameter("gridId");
+			String gridId = req.getParameter(GRID_ID);
 			//Copy Grid
-			RecordDuplicatorUtility rdu = new RecordDuplicatorUtility(attributes, dbConn, "BIOMEDGPS_GRID", "GRID_ID", true);
+			RecordDuplicatorUtility rdu = new RecordDuplicatorUtility(attributes, dbConn, "BIOMEDGPS_GRID", DB_GRID_ID, true);
 			rdu.setSchemaNm(getCustomSchema());
-			rdu.addWhereClause("GRID_ID", gridId);
-			replaceVals.put("GRID_ID", rdu.copy());
+			rdu.addWhereClause(DB_GRID_ID, gridId);
+			replaceVals.put(DB_GRID_ID, rdu.copy());
 
 			//Copy Grid Details
 			rdu = new RecordDuplicatorUtility(attributes, dbConn, "BIOMEDGPS_GRID_DETAIL", "GRID_DETAIL_ID", true);
 			rdu.setSchemaNm(getCustomSchema());
-			rdu.addWhereListClause("GRID_ID");
+			rdu.addWhereListClause(DB_GRID_ID);
 
 			replaceVals.put("GRID_DETAIL_ID", rdu.copy());
 
-			updateNewName((String)((Map)replaceVals.get("GRID_ID")).get(gridId));
+			updateNewName((String)((Map)replaceVals.get(DB_GRID_ID)).get(gridId));
 			if (!isWizard) {
 				dbConn.commit();
 				dbConn.setAutoCommit(true);
@@ -120,10 +119,10 @@ public class GridChartAction extends SBActionAdapter {
 
 	@Override
 	public void delete(ActionRequest req) throws ActionException {
-		String gridId = req.getParameter("gridId");
+		String gridId = req.getParameter(GRID_ID);
 
 		StringBuilder sql = new StringBuilder(150);
-		sql.append("delete from ").append(getCustomSchema()).append("BIOMEDGPS_GRID ");
+		sql.append(DBUtil.DELETE_CLAUSE).append(DBUtil.FROM_CLAUSE).append(getCustomSchema()).append("BIOMEDGPS_GRID ");
 		sql.append(DBUtil.WHERE_CLAUSE).append("grid_id = ?");
 		if(!StringUtil.isEmpty(gridId)) {
 			try(PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
@@ -278,7 +277,7 @@ public class GridChartAction extends SBActionAdapter {
 	 */
 	private void promoteGridCharts(ActionRequest req) throws ActionException {
 
-		String gridId = req.getParameter("gridId");
+		String gridId = req.getParameter(GRID_ID);
 		String gridGroupId = req.getParameter("gridGroupId");
 
 		try {
