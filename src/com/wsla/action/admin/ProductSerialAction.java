@@ -1,12 +1,11 @@
 package com.wsla.action.admin;
 
+// JDK 1.8.x
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-// JDK 1.8.x
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
-import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
@@ -27,11 +26,13 @@ import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.util.StringUtil;
+import com.wsla.common.WSLAConstants;
 
 // WC Libs
 import com.wsla.data.product.ProductSerialNumberVO;
 import com.wsla.data.product.ProductWarrantyVO;
 import com.wsla.data.product.WarrantyVO;
+import com.wsla.data.ticket.TicketVO;
 
 import static com.wsla.action.admin.ProductMasterAction.REQ_PRODUCT_ID;
 
@@ -79,8 +80,15 @@ public class ProductSerialAction extends BatchImport {
 		String productId = req.getParameter(REQ_PRODUCT_ID);
 
 		if (!StringUtil.isEmpty(productId) && req.hasParameter("serialNo")) {
-			//do serial# lookup for the ticket UI
-			setModuleData(getProductSerial(productId, req.getParameter("serialNo")));
+			// Do serial# lookup for the ticket UI
+			ProductWarrantyVO pwvo = getProductSerial(productId, req.getParameter("serialNo"));
+			
+			// Check for another record
+			TicketVO ticket = lookupServiceOrder(productId, req.getParameter("serialNo"));
+			
+			// Add the elements in a GVO to the response
+			putModuleData(new GenericVO(pwvo, ticket));
+			
 		} else if (req.getBooleanParameter("bulkSerial")) {
 			BSTableControlVO bst = new BSTableControlVO(req, ProductSerialNumberVO.class);
 			String pId = req.getParameter("providerId");
@@ -232,9 +240,9 @@ public class ProductSerialAction extends BatchImport {
 	 * @param serialNo
 	 * @return a list of VOs (rows in the table)
 	 */
-	public List<ProductWarrantyVO> getProductSerial(String productId, String serialNo) {
-		if (StringUtil.isEmpty(productId) || StringUtil.isEmpty(serialNo))
-			return Collections.emptyList();
+	public ProductWarrantyVO getProductSerial(String productId, String serialNo) {
+		if (StringUtil.isEmpty(productId) || StringUtil.isEmpty(serialNo) || WSLAConstants.NO_SERIAL_NUMBER.equalsIgnoreCase(serialNo))
+			return new ProductWarrantyVO();
 
 		StringBuilder sql = new StringBuilder(256);
 		sql.append(DBUtil.SELECT_FROM_STAR).append(getCustomSchema());
@@ -252,7 +260,42 @@ public class ProductSerialAction extends BatchImport {
 		vals.add(productId);
 
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
-		return db.executeSelect(sql.toString(), vals, new ProductWarrantyVO());
+		List<ProductWarrantyVO> lpwvo = db.executeSelect(sql.toString(), vals, new ProductWarrantyVO());
+		
+		if (lpwvo.isEmpty()) return new ProductWarrantyVO();
+		else return lpwvo.get(0);
+	}
+	
+	/**
+	 * Searches for a work order for the same serial number and product.
+	 * @param productId
+	 * @param serialNumber
+	 * @return
+	 */
+	public TicketVO lookupServiceOrder(String productId, String serialNumber) {
+		StringBuilder sql = new StringBuilder(384);
+		List<Object> vals = new ArrayList<>();
+		vals.add(serialNumber);
+		vals.add(productId);
+		vals.add(serialNumber);
+		vals.add(productId);
+		
+		sql.append("select b.* ");
+		sql.append("from ").append(getCustomSchema()).append("wsla_product_serial a ");
+		sql.append("inner join ").append(getCustomSchema()).append("wsla_ticket b ");
+		sql.append("on a.product_serial_id = b.product_serial_id ");
+		sql.append("where serial_no_txt = ? and product_id = ? ");
+		sql.append("and b.create_dt = ( ");
+		sql.append("select max(b.create_dt) ");
+		sql.append("from ").append(getCustomSchema()).append(" wsla_product_serial a ");
+		sql.append("inner join ").append(getCustomSchema()).append("wsla_ticket b ");
+		sql.append("on a.product_serial_id = b.product_serial_id ");
+		sql.append("where serial_no_txt = ? and product_id = ?) ");
+		log.info(sql);
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		List<TicketVO> data = db.executeSelect(sql.toString(), vals, new TicketVO());
+		if (data.isEmpty()) return new TicketVO();
+		else return data.get(0);
 	}
 
 

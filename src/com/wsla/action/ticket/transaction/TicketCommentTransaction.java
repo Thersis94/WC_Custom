@@ -1,5 +1,6 @@
 package com.wsla.action.ticket.transaction;
 
+import java.sql.PreparedStatement;
 // JDK 1.8.x
 import java.sql.SQLException;
 
@@ -64,10 +65,31 @@ public class TicketCommentTransaction extends SBActionAdapter {
 		ledger.setDispositionBy(user.getUserId());
 		
 		try {
-			addTicketComment(new TicketCommentVO(req), ledger);
+			TicketCommentVO tcvo = new TicketCommentVO(req);
+			addTicketComment(tcvo, ledger);
+			
+			if (req.getBooleanParameter("endUserReply") && ! StringUtil.isEmpty(tcvo.getParentId())) {
+				updateEndUserReplyFlag(tcvo.getParentId());
+			}
 		} catch(Exception e) {
 			log.error("Unable to perform action", e);
 			putModuleData("", 0, false, e.getLocalizedMessage(), true);
+		}
+	}
+	
+	/**
+	 * update the parent record when it is from a user comment
+	 * @param ticketCommentId
+	 * @throws SQLException
+	 */
+	public void updateEndUserReplyFlag(String ticketCommentId) throws SQLException {
+		StringBuilder sql = new StringBuilder(64);
+		sql.append("update ").append(getCustomSchema()).append("wsla_ticket_comment ");
+		sql.append("set wsla_reply_flg = 1 where ticket_comment_id = ?");
+		
+		try(PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, ticketCommentId);
+			ps.executeUpdate();
 		}
 	}
 	

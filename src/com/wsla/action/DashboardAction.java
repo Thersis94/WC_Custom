@@ -80,10 +80,11 @@ public class DashboardAction extends SimpleActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
+		String roleId = ((SBUserRole)req.getSession().getAttribute(Constants.ROLE_DATA)).getRoleId();
 		
 		if (req.hasParameter("json")) {
 			if ("attention".equalsIgnoreCase(req.getParameter(REQ_KEY))) {
-				putModuleData(getAttentionOrders());
+				putModuleData(getAttentionOrders(roleId));
 				
 			} else if ("trends".equalsIgnoreCase(req.getParameter(REQ_KEY))) {
 				putModuleData(getOrderTrends(req.getIntegerParameter("numMonths", 12)));
@@ -95,7 +96,6 @@ public class DashboardAction extends SimpleActionAdapter {
 			
 		} else {
 			// Get the summary data
-			String roleId = ((SBUserRole)req.getSession().getAttribute(Constants.ROLE_DATA)).getRoleId();
 			putModuleData(getSummaryData(roleId));
 		}
 	}
@@ -144,7 +144,7 @@ public class DashboardAction extends SimpleActionAdapter {
 	 * Gets the list of orders that need attention
 	 * @return
 	 */
-	public List<TicketVO> getAttentionOrders() {
+	public List<TicketVO> getAttentionOrders(String roleId) {
 		StringBuilder sql = new StringBuilder(884);
 		sql.append("select a.create_dt, product_nm, role_nm, d.status_nm, ticket_no, ");
 		sql.append("c.provider_nm, b.first_nm, b.last_nm, a.ticket_id, days_in_status ");
@@ -165,10 +165,11 @@ public class DashboardAction extends SimpleActionAdapter {
 		sql.append("ticket_id, status_cd ").append(DBUtil.FROM_CLAUSE);
 		sql.append(getCustomSchema()).append("wsla_ticket_ledger where status_cd != 'CLOSED') ");
 		sql.append("as h on a.ticket_id = h.ticket_id and a.status_cd = h.status_cd ");
-		sql.append("where standing_cd = 'CRITICAL' ");
+		sql.append("where standing_cd = 'CRITICAL'   and d.role_id = ? ");
+		sql.append("order by create_dt asc");
 		
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
-		return db.executeSelect(sql.toString(), null, new TicketVO());
+		return db.executeSelect(sql.toString(), Arrays.asList(roleId), new TicketVO());
 	}
 	
 	/**
@@ -179,22 +180,24 @@ public class DashboardAction extends SimpleActionAdapter {
 		StringBuilder sql = new StringBuilder(576);
 		sql.append("select replace(newid(), '-', '') as chart_detail_id, ");
 		sql.append("to_char(create_dt, 'Mon') as label_nm, to_char(create_dt, 'Mon') as order_nm, "); 
-		sql.append("cast(count(*) as varchar(10)) as value, 'Closed' as serie_nm ");
+		sql.append("cast(count(*) as varchar(10)) as value, 'Closed' as serie_nm, ");
+		sql.append("Extract(month from create_dt) as month_num ");
 		sql.append(DBUtil.FROM_CLAUSE).append(getCustomSchema()).append("wsla_ticket ");
 		sql.append("where status_cd = 'CLOSED' ");
 		sql.append("and create_dt > to_char(create_dt - interval '");
 		sql.append(numMonths).append(" month', 'YYYY-MM-01')::date ");
-		sql.append("group by label_nm ");
+		sql.append("group by label_nm, month_num ");
 		sql.append("union ");
 		sql.append("select replace(newid(), '-', '') as chart_detail_id, ");
 		sql.append("to_char(create_dt, 'Mon') as label_nm, to_char(create_dt, 'Mon') as order_nm, "); 
-		sql.append("cast(count(*) as varchar(10)) as value, 'Open' as serie_nm ");
+		sql.append("cast(count(*) as varchar(10)) as value, 'Open' as serie_nm, ");
+		sql.append("Extract(month from create_dt) as month_num ");
 		sql.append(DBUtil.FROM_CLAUSE).append(getCustomSchema()).append("wsla_ticket ");
 		sql.append("where status_cd != 'CLOSED' ");
 		sql.append("and create_dt > to_char(create_dt - interval '");
 		sql.append(numMonths).append(" month', 'YYYY-MM-01')::date ");
-		sql.append("group by label_nm ");
-		sql.append("order by order_nm, serie_nm ");
+		sql.append("group by label_nm, month_num ");
+		sql.append("order by month_num, serie_nm ");
 				
 		// Get the data and process into a chart vo
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
@@ -232,6 +235,7 @@ public class DashboardAction extends SimpleActionAdapter {
 		sql.append("wsla_ticket where status_cd != 'CLOSED' and ");
 		sql.append("standing_cd = 'DELAYED' and create_dt > now() - interval '");
 		sql.append(numDays).append(" day' ");
+		log.debug(sql);
 		
 		// Get the data and process into a chart vo
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());

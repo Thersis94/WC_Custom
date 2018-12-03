@@ -58,7 +58,7 @@ public class CommentEmailHandler implements EmailHandlerInterface {
 			parseReferenceData(comment, email.getHeaders().get("References"));
 			comment.setComment(EmailReplyParser.parseReply(email.getTextBody()));
 			comment.setPriorityTicketFlag(0);
-			comment.setEndUser(true);
+			comment.setEndUserFlag(1);
 			
 			tct.addTicketComment(comment, null);
 		}

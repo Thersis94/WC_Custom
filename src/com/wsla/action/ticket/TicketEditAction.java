@@ -156,24 +156,17 @@ public class TicketEditAction extends SBActionAdapter {
 	public List<Node> getComments(String ticketId, boolean endUserFilter, boolean activity) throws SQLException {
 		
 		StringBuilder sql = new StringBuilder(416);
-		sql.append(DBUtil.SELECT_CLAUSE);
-		sql.append(" (coalesce(num_roles, 0) = 0) as end_user, * from ");
+		sql.append(DBUtil.SELECT_CLAUSE).append(" coalesce(end_user_flg, 0) as end_user_flg, * from ");
 		sql.append(getCustomSchema()).append("wsla_ticket_comment a ");
 		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("wsla_user b ");
 		sql.append("on a.user_id = b.user_id ");
-		sql.append("left outer join ( ");
-		sql.append("select user_id, count(*) as num_roles from ");
-		sql.append(getCustomSchema()).append("wsla_user a ");
-		sql.append(DBUtil.INNER_JOIN).append("profile_role b ");
-		sql.append("on a.profile_id = b.profile_id ");
-		sql.append("group by user_id ");
-		sql.append(") as rc on b.user_id = rc.user_id ");
 		sql.append("where ticket_id = ? ");
 		
 		if (activity) sql.append("and activity_type_cd != 'COMMENT' ");
 		else sql.append("and activity_type_cd = 'COMMENT' ");
 		sql.append("order by priority_ticket_flg desc, a.create_dt desc ");
 		log.debug(sql);
+		
 		List<Node> comments = new ArrayList<>();
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, ticketId);
@@ -196,7 +189,7 @@ public class TicketEditAction extends SBActionAdapter {
 		// an end user
 		if (endUserFilter) {
 			for (Node n : rootNode.getChildren()) {
-				if (! ((TicketCommentVO)n.getUserObject()).isEndUser()) remNodes.add(n);
+				if (((TicketCommentVO)n.getUserObject()).getEndUserFlag() != 1) remNodes.add(n);
 			}
 			
 			for (Node n : remNodes) rootNode.getChildren().remove(n);
@@ -504,6 +497,7 @@ public class TicketEditAction extends SBActionAdapter {
 		try {
 			DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 			db.save(comment);
+			log.info("Comment Saved: " + comment);
 		} catch(Exception e) {
 			throw new SQLException("unable to save comment", e);
 		}

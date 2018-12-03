@@ -48,7 +48,8 @@ public class TicketCommentVO extends BeanDataVO {
 	private String recipientName;
 	private ActivityType activityType;
 	private int priorityTicketFlag;
-	private boolean endUser;
+	private int endUserFlag;
+	private int wslaReplyFlag;
 	private Date createDate;
 	
 	// Bean Sub-elements
@@ -140,14 +141,6 @@ public class TicketCommentVO extends BeanDataVO {
 	}
 
 	/**
-	 * @return the endUser
-	 */
-	@Column(name="end_user", isReadOnly=true)
-	public boolean isEndUser() {
-		return endUser;
-	}
-
-	/**
 	 * @return the createDate
 	 */
 	@Column(name="create_dt", isInsertOnly=true, isAutoGen=true)
@@ -220,13 +213,6 @@ public class TicketCommentVO extends BeanDataVO {
 	}
 
 	/**
-	 * @param endUser the endUser to set
-	 */
-	public void setEndUser(boolean endUser) {
-		this.endUser = endUser;
-	}
-
-	/**
 	 * @param recipientName the recipientName to set
 	 */
 	public void setRecipientName(String recipientName) {
@@ -238,6 +224,36 @@ public class TicketCommentVO extends BeanDataVO {
 	 */
 	public void setActivityType(ActivityType activityType) {
 		this.activityType = activityType;
+	}
+
+	/**
+	 * @return the endUserFlag
+	 */
+	@Column(name="end_user_flg")
+	public int getEndUserFlag() {
+		return endUserFlag;
+	}
+
+	/**
+	 * @return the wslaReplyFlag
+	 */
+	@Column(name="wsla_reply_flg")
+	public int getWslaReplyFlag() {
+		return wslaReplyFlag;
+	}
+
+	/**
+	 * @param endUserFlag the endUserFlag to set
+	 */
+	public void setEndUserFlag(int endUserFlag) {
+		this.endUserFlag = endUserFlag;
+	}
+
+	/**
+	 * @param wslaReplyFlag the wslaReplyFlag to set
+	 */
+	public void setWslaReplyFlag(int wslaReplyFlag) {
+		this.wslaReplyFlag = wslaReplyFlag;
 	}
 
 }

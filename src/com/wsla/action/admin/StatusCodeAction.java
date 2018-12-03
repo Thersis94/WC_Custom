@@ -123,7 +123,7 @@ public class StatusCodeAction extends SBActionAdapter {
 		List<Object> vals = new ArrayList<>();
 		
 		sql.append("select status_cd, active_flg,a.role_id, group_status_cd, ");
-		sql.append("billable_activity_cd, next_step_url, ");
+		sql.append("billable_activity_cd, next_step_url, b.role_nm, ");
 		if (locale == null) sql.append("status_nm ");
 		else sql.append("case when value_txt is null then status_nm else value_txt end as status_nm ");
 		sql.append("from ").append(getCustomSchema()).append("wsla_ticket_status a ");
