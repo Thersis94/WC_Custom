@@ -39,6 +39,7 @@ public class TicketDataVO extends BeanDataVO {
 	private String value;
 	private String metaValue;
 	private String metaValue1;
+	private ApprovalCode approvalCode;
 	private Date createDate;
 	private Date updateDate;
 	
@@ -121,6 +122,14 @@ public class TicketDataVO extends BeanDataVO {
 	@Column(name="meta_value1_txt")
 	public String getMetaValue1() {
 		return metaValue1;
+	}
+
+	/**
+	 * @return the approvalCode
+	 */
+	@Column(name="approval_cd")
+	public ApprovalCode getApprovalCode() {
+		return approvalCode;
 	}
 
 	/**
@@ -230,6 +239,13 @@ public class TicketDataVO extends BeanDataVO {
 	 */
 	public void setMetaValue1(String metaValue1) {
 		this.metaValue1 = metaValue1;
+	}
+
+	/**
+	 * @param approvalCode the approvalCode to set
+	 */
+	public void setApprovalCode(ApprovalCode approvalCode) {
+		this.approvalCode = approvalCode;
 	}
 
 }
