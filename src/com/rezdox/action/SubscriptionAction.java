@@ -67,8 +67,8 @@ public class SubscriptionAction extends SimpleActionAdapter {
 		String memberId = member.getMemberId();
 
 		// Check if this is a new member. New members get a free residence or a free business.
-		int residenceCount = getResidenceUsage(memberId);
-		int businessCount = getBusinessUsage(memberId);
+		int residenceCount = getUsageQty(memberId, Group.HO);
+		int businessCount = getUsageQty(memberId, Group.BU);
 		req.setAttribute("newMember", residenceCount + businessCount == 0);
 		if ((boolean) req.getAttribute("newMember")) return;
 
@@ -151,12 +151,12 @@ public class SubscriptionAction extends SimpleActionAdapter {
 	 * @return
 	 * @throws ActionException 
 	 */
-	private int getUsageQty(String memberId, Group membershipGroup) throws ActionException {
+	protected int getUsageQty(String memberId, Group membershipGroup) throws ActionException {
 		switch (membershipGroup) {
 			case HO:
-				return getResidenceUsage(memberId);
+				return getResidenceUsage(memberId, ResidenceAction.STATUS_ACTIVE);
 			case BU: 
-				return getBusinessUsage(memberId);
+				return getBusinessUsage(memberId, BusinessStatus.ACTIVE.getStatus(), BusinessStatus.PENDING.getStatus());
 			case CO: 
 				return getConnectionUsage(memberId);
 			default:
@@ -170,21 +170,26 @@ public class SubscriptionAction extends SimpleActionAdapter {
 	 * @param memberId
 	 * @return
 	 */
-	protected int getResidenceUsage(String memberId) {
+	protected int getResidenceUsage(String memberId, Integer... statuses) {
 		String schema = getCustomSchema();
 
 		StringBuilder sql = new StringBuilder(150);
 		sql.append("select count(residence_id) as usage_qty from ").append(schema);
-		sql.append("rezdox_residence_member_xr where member_id = ? and status_flg = 1 ");
+		sql.append("rezdox_residence_member_xr where member_id=? and status_flg in ("); 
+		DBUtil.preparedStatmentQuestion(statuses.length, sql); 
+		sql.append(")");
 
 		int usageQty = 0;
+		int x=0;
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			ps.setString(1, memberId);
+			ps.setString(++x, memberId);
+			for (Integer sts : statuses)
+				ps.setInt(++x, sts);
 
 			ResultSet rs = ps.executeQuery();
-			if (rs.next()) {
+			if (rs.next())
 				usageQty = rs.getInt(1);
-			}
+
 		} catch (SQLException e) {
 			log.error("Unable to validate member residence usage. ", e);
 		}
@@ -198,21 +203,26 @@ public class SubscriptionAction extends SimpleActionAdapter {
 	 * @param memberId
 	 * @return
 	 */
-	protected int getBusinessUsage(String memberId) {
+	protected int getBusinessUsage(String memberId, Integer... statuses) {
 		String schema = getCustomSchema();
 		StringBuilder sql = new StringBuilder(150);
 		sql.append("select count(business_id) as usage_qty from ").append(schema);
-		sql.append("rezdox_business_member_xr where member_id = ? and status_flg > ? ");
+		sql.append("rezdox_business_member_xr where member_id = ? and status_flg in (");
+		DBUtil.preparedStatmentQuestion(statuses.length, sql);
+		sql.append(")");
+		log.debug(sql);
 
 		int usageQty = 0;
+		int x=0;
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			ps.setString(1, memberId);
-			ps.setInt(2, BusinessStatus.INACTIVE.getStatus());
+			ps.setString(++x, memberId);
+			for (Integer sts : statuses)
+				ps.setInt(++x, sts);
 
 			ResultSet rs = ps.executeQuery();
-			if (rs.next()) {
+			if (rs.next())
 				usageQty = rs.getInt(1);
-			}
+
 		} catch (SQLException e) {
 			log.error("Unable to validate member business usage. ", e);
 		}

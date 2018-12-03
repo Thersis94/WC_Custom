@@ -89,7 +89,12 @@ public class SRTRequestAction extends SimpleActionAdapter {
 			attributes.put(Constants.ACTION_DATA, actionInit);
 
 			//Call DataManagerUtil to save the form.
-			new DataManagerUtil(attributes, dbConn).saveForm(formId, req, RequestDataProcessor.class);
+			DataContainer dc = new DataManagerUtil(attributes, dbConn).saveForm(formId, req, RequestDataProcessor.class);
+			//Check for Errors and if present, send them up the chain for processing.
+			if(dc.getErrors() != null && !dc.getErrors().isEmpty()) {
+				Throwable t = new ArrayList<>(dc.getErrors().values()).get(0);
+				throw new ActionException("Unable to Save Request.", t);
+			}
 		}
 	}
 

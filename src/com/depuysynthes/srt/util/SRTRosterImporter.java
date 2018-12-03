@@ -9,7 +9,6 @@ import java.util.Map;
 import com.depuysynthes.srt.vo.SRTRosterVO;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.util.StringUtil;
-import com.smt.sitebuilder.security.SBUserRoleContainer;
 
 /****************************************************************************
  * <b>Title:</b> SRTRosterImporter.java
@@ -78,7 +77,7 @@ public class SRTRosterImporter extends SRTUserImport {
 		for(SRTRosterVO roster : rosters) {
 
 			//Ensure we don't add existing users.
-			if(StringUtil.isEmpty(roster.getProfileId())) {
+			if(StringUtil.isEmpty(roster.getProfileId()) && !StringUtil.isEmpty(roster.getEmailAddress())) {
 				rData = new HashMap<>();
 				rData.put(ImportField.ACCOUNT_NO.name(), roster.getAccountNo());
 				rData.put(ImportField.IS_ACTIVE.name(), Integer.toString(roster.getIsActive()));
@@ -92,7 +91,7 @@ public class SRTRosterImporter extends SRTUserImport {
 				rData.put(ImportField.STATE_CD.name(), roster.getState());
 				rData.put(ImportField.ZIP_CD.name(), roster.getZipCode());
 				rData.put(ImportField.PASSWORD_TXT.name(), roster.getPassword());
-				rData.put(ImportField.ROLE_TXT.name(), SBUserRoleContainer.REGISTERED_USER_ROLE_LEVEL);
+				rData.put(ImportField.ROLE_TXT.name(), roster.getWorkgroupId());
 				rData.put(ImportField.WORKGROUP_ID.name(), roster.getWorkgroupId());
 				rData.put(ImportField.ALLOW_COMM_FLG.name(), 1);
 				rData.put(ImportField.TERRITORY_ID.name(), roster.getTerritoryId());
