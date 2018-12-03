@@ -223,7 +223,7 @@ public class CompanyAttributeVO implements NoteInterface  {
 	public void calulateOrderNo() {
 		int tOrderNo = 100;
 		String title = StringUtil.checkVal(titleText).toLowerCase();
-		if(title.contains("company overview") || title.contains("business overview") || title.contains("module overview")) {
+		if(title.contains("overview")) {
 			tOrderNo = 1;
 		} else if(title.contains("funding")) {
 			tOrderNo = 5;
