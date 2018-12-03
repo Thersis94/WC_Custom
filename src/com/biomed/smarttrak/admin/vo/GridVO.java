@@ -115,6 +115,7 @@ public class GridVO extends BeanDataVO {
 	private String slug;
 	private String seriesLabel;
 	private boolean approved;
+	private boolean archived;
 	private int decimalDisplay;
 	private Date updateDate;
 	private Date createDate;
@@ -273,6 +274,11 @@ public class GridVO extends BeanDataVO {
 	@Column(name="approve_flg")
 	public boolean isApproved() {
 		return approved;
+	}
+
+	@Column(name="archive_flg")
+	public boolean isArchived() {
+		return archived;
 	}
 
 	/**
@@ -562,6 +568,13 @@ public class GridVO extends BeanDataVO {
 	 */
 	public void setApproved(boolean approved) {
 		this.approved = approved;
+	}
+
+	/**
+	 * @param archived the archived to set
+	 */
+	public void setArchived(boolean archived) {
+		this.archived = archived;
 	}
 
 	/**
@@ -1084,6 +1097,4 @@ public class GridVO extends BeanDataVO {
 	public void setLegacyName(String legacyName) {
 		this.legacyName = legacyName;
 	}
-
 }
-
