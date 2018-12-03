@@ -1149,10 +1149,9 @@ public class CompanyManagementAction extends ManagementAction {
 	 * @throws SQLException
 	 */
 	protected void populateReorderBatch(PreparedStatement ps, ActionRequest req, String idField) throws SQLException {
-		String[] order = req.getParameterValues("orderNo");
 		String[] ids = req.getParameterValues(idField);
-		for (int i=0; i < order.length || i < ids.length; i++) {
-			ps.setInt(1, Convert.formatInteger(order[i]));
+		for (int i=0; i < ids.length; i++) {
+			ps.setInt(1, i+1);
 			ps.setString(2, ids[i]);
 			ps.addBatch();
 		}

@@ -43,6 +43,7 @@ public class SRTProjectVO extends BeanDataVO implements MilestoneIntfc<SRTProjec
 	private String opCoId;
 	private String coProjectId;
 	private String projectName;
+	private String projectDesc;
 	private String projectType;
 	private String projectTypeTxt;
 	private String priority;
@@ -61,13 +62,14 @@ public class SRTProjectVO extends BeanDataVO implements MilestoneIntfc<SRTProjec
 	private String secondaryQualityEngineerId;
 	private String buyerId;
 	private String secondaryBuyerId;
-	private boolean makeFromScratch;
+	private Boolean makeFromScratch = Boolean.FALSE;
 	private String funcCheckOrderNo;
 	private String makeFromOrderNo;
 	private String mfgPOToVendor;
+	private String mfgOrderTypeId;
 	private String supplierId;
-	private boolean projectHold;
-	private boolean projectCancelled;
+	private Boolean projectHold = Boolean.FALSE;
+	private Boolean projectCancelled = Boolean.FALSE;
 	private String warehouseTrackingNo;
 	private String mfgDtChangeReason;
 	private String warehouseSalesOrderNo;
@@ -87,12 +89,12 @@ public class SRTProjectVO extends BeanDataVO implements MilestoneIntfc<SRTProjec
 	private String secondaryBuyerNm;
 	private String requestorNm;
 	private String surgeonNm;
-	private int total;
+	private Integer total = Integer.valueOf(0);
 	private String distributorship;
 	private String supplierNm;
 
 	//Stores if there is a lock.
-	private boolean lockStatus;
+	private Boolean lockStatus = Boolean.FALSE;
 	private String lockedById;
 
 	private List<SRTMasterRecordVO> masterRecords;
@@ -177,6 +179,14 @@ public class SRTProjectVO extends BeanDataVO implements MilestoneIntfc<SRTProjec
 	@Column(name="PROJECT_NAME")
 	public String getProjectName() {
 		return projectName;
+	}
+
+	/**
+	 * @return the projectDesc
+	 */
+	@Column(name="PROJECT_DESC")
+	public String getProjectDesc() {
+		return projectDesc;
 	}
 
 	/**
@@ -437,6 +447,13 @@ public class SRTProjectVO extends BeanDataVO implements MilestoneIntfc<SRTProjec
 	}
 
 	/**
+	 * @return the mfgOrderTypeId;
+	 */
+	@Column(name="MFG_ORDER_TYPE_ID")
+	public String getMfgOrderTypeId() {
+		return mfgOrderTypeId;
+	}
+	/**
 	 * @return the supplierId
 	 */
 	@Column(name="SUPPLIER_ID")
@@ -640,8 +657,10 @@ public class SRTProjectVO extends BeanDataVO implements MilestoneIntfc<SRTProjec
 				.filter(m -> MilestoneTypeId.STATUS.equals(m.getMilestoneTypeId()))
 				.max(Comparator.comparing(SRTProjectMilestoneVO::getOrderBy));
 
-			if(opt.isPresent())
+			if(opt.isPresent()) {
 				statusId =  opt.get().getMilestoneId();
+				this.setProjectStatusTxt(opt.get().getMilestoneNm());
+			}
 		}
 
 		return statusId;
@@ -681,6 +700,13 @@ public class SRTProjectVO extends BeanDataVO implements MilestoneIntfc<SRTProjec
 	 */
 	public void setProjectName(String projectName) {
 		this.projectName = projectName;
+	}
+
+	/**
+	 * @param projectDesc the projectDesc to set.
+	 */
+	public void setProjectDesc(String projectDesc) {
+		this.projectDesc = projectDesc;
 	}
 
 	/**
@@ -925,6 +951,13 @@ public class SRTProjectVO extends BeanDataVO implements MilestoneIntfc<SRTProjec
 	}
 
 	/**
+	 * @param mfgOrderTypeId the mfgOrderTypeId to set.
+	 */
+	public void setMfgOrderTypeId(String mfgOrderTypeId) {
+		this.mfgOrderTypeId = mfgOrderTypeId;
+	}
+
+	/**
 	 * @param supplierId the supplierId to set.
 	 */
 	public void setSupplierId(String supplierId) {
@@ -1083,10 +1116,20 @@ public class SRTProjectVO extends BeanDataVO implements MilestoneIntfc<SRTProjec
 	}
 
 	/**
+	 * Add a non-inherited/generic method to define non-ambiguously the type
+	 * of Milestone we should be using.  Pass through to the Genericly derived
+	 * method.
+	 * @param milestone - The Milestone to add.
+	 */
+	@BeanSubElement
+	public void addDBMilestone(SRTProjectMilestoneVO milestone) {
+	    addMilestone(milestone);
+	}
+
+	/**
 	 * Add a Milestone Record to the Milestones Map.
 	 * @param milestone - the milestone to be added
 	 */
-	@BeanSubElement
 	@Override
 	public void addMilestone(SRTProjectMilestoneVO milestone) {
 		if(milestone != null && !StringUtil.isEmpty(milestone.getMilestoneId())) {

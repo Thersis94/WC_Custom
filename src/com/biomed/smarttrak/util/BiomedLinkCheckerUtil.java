@@ -45,6 +45,17 @@ public class BiomedLinkCheckerUtil {
 	private List<String> siteAliases;
 	
 	/**
+	 * Basic constructor used when there is no site vo available.
+	 * This limits the functionality of the util, preventing 
+	 * the following functions producing legitimate results:
+	 * modifyAbsoluteLinks
+	 * modifyPlainURL
+	 */
+	public BiomedLinkCheckerUtil() {
+		siteAliases = new ArrayList<>();
+	}
+	
+	/**
 	 * Overloaded constructor that takes a Connection object
 	 * @param conn
 	 * @param site
