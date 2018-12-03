@@ -99,9 +99,18 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 		
 		// Get the DB Processor
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
-		
+		UserVO user = null;
+	
 		// Get the WSLA User
-		UserVO user = (UserVO)getAdminUser(req).getUserExtendedInfo();
+		if(req.hasParameter("userId") && req.hasParameter("publicUserForm")) {
+			//coming in from the public user portal the id is on the form.
+			user = new UserVO();
+			user.setUserId(req.getParameter("userId"));
+		}else {
+			//coming in from he secure wsla portal the user object is available
+			user = (UserVO)getAdminUser(req).getUserExtendedInfo();
+		}
+		
 		
 		// Add a ledger entry, but only change status if the uploaded asset
 		// triggers a need for approval.
@@ -127,6 +136,8 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 		
 		db.save(td);
 	}
+	
+	
 	
 	/**
 	 * Checks if a status change is warranted on the ticket based on the assets submitted by the user.

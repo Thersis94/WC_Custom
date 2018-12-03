@@ -38,13 +38,7 @@ public class PublicTicketAssetTransaction extends TicketAssetTransaction {
 	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
-		//make the user somehow
-		//add it to req
-		
-		//req.getSession().setAttribute(Constants.USER_DATA, "value");
-		log.debug("########### hit build public ticket micro action");
 		super.build(req);
-	
 	}
 
 }
