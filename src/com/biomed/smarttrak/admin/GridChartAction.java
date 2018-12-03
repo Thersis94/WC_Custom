@@ -29,6 +29,7 @@ import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
+import com.siliconmtn.util.UUIDGenerator;
 // WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.constants.AdminConstants;
@@ -403,6 +404,7 @@ public class GridChartAction extends SBActionAdapter {
 		// Return the data
 		Map<String, Object> response = new HashMap<>(8);
 		response.put(GRID_ID, grid.getGridId());
+		response.put("gridGroupId", grid.getGridGroupId());
 		response.put(GlobalConfig.SUCCESS_KEY, !error);
 		response.put(ErrorCodes.ERR_JSON_ACTION, msg);
 		response.put(ErrorCodes.ERR_JSON_ACTION, msg);
@@ -420,9 +422,16 @@ public class GridChartAction extends SBActionAdapter {
 	private void persistGridChanges(GridVO grid, Map<String, String> columnMatch) throws Exception {
 		DBProcessor db = new DBProcessor(dbConn, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		try {
-			// Make sure the new grid id is assigned when creating a new grid
-			// otherwise use the existing
-			db.save(grid);
+
+			//On new Record, ensure gridId and gridGroupId are same before inserting, else save as normal.
+			if(StringUtil.isEmpty(grid.getGridId())) {
+				grid.setGridId(new UUIDGenerator().getUUID());
+				grid.setGridGroupId(grid.getGridId());
+				db.insert(grid);
+			} else {
+				db.save(grid);
+			}
+
 			log.debug("Grid ID: " + grid.getGridId());
 
 			// Delete any rows that aren't being updated
