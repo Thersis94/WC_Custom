@@ -50,6 +50,7 @@ public class PublicAjaxControllerFacadeAction extends AjaxControllerFacadeAction
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
+		log.info("Type: " + req.getParameter("type") + "|" + req.getParameter("comment"));
 		List<String> publicActions = new ArrayList<>(); 
 		publicActions.add(TicketEditAction.AJAX_KEY);
 		publicActions.add(TicketLedgerAction.AJAX_KEY);
@@ -63,10 +64,11 @@ public class PublicAjaxControllerFacadeAction extends AjaxControllerFacadeAction
 	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
+		log.info("Building: " + req.getParameter("type"));
 		List<String> publicActions = new ArrayList<>(); 
 		publicActions.add(TicketEditAction.AJAX_KEY);
 		publicActions.add(TicketLedgerAction.AJAX_KEY);
 		
-		if (publicActions.contains(StringUtil.checkVal(req.getParameter("type")))) super.retrieve(req);
+		if (publicActions.contains(StringUtil.checkVal(req.getParameter("type")))) super.build(req);
 	}
 }

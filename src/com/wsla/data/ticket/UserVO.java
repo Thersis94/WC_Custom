@@ -15,6 +15,9 @@ import com.siliconmtn.security.PhoneVO;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.StringUtil;
 
+// WSLA Libs
+import com.wsla.common.WSLAConstants;
+
 /****************************************************************************
  * <b>Title</b>: UserVO.java
  * <b>Project</b>: WC_Custom
@@ -38,6 +41,8 @@ public class UserVO extends BeanDataVO {
 	private String profileId;
 	private String firstName;
 	private String lastName;
+	private String lastNamePre;
+	private String lastNamePost;
 	private String email;
 	private String locale;
 	private String roleId;
@@ -66,7 +71,16 @@ public class UserVO extends BeanDataVO {
 	 */
 	public UserVO(ActionRequest req) {
 		super(req);
+		
+		// Consolidate the last name fields
+		if (StringUtil.isEmpty(lastName)) {
+			lastName = (StringUtil.checkVal(lastNamePre) + " " + StringUtil.checkVal(lastNamePost)).trim();
+			req.setParameter("lastName", lastName);
+		}
+		
+		// Adds the UserDataVO to the bean
 		setProfile(new UserDataVO(req));
+
 		//make a special case for workPhone, which isn't supported by UserDataVO natively
 		if (req.hasParameter("workPhone"))
 			profile.addPhone(new PhoneVO(PhoneVO.WORK_PHONE, req.getParameter("workPhone"), profile.getCountryCode()));
@@ -226,7 +240,8 @@ public class UserVO extends BeanDataVO {
 	 * @param email the email to set
 	 */
 	public void setEmail(String email) {
-		this.email = email;
+		if (! WSLAConstants.NO_EMAIL_ADDRESS.equalsIgnoreCase(email))
+			this.email = email;
 	}
 
 	/**
@@ -286,21 +301,77 @@ public class UserVO extends BeanDataVO {
 		this.profileRoleId = profileRoleId;
 	}
 
+	/**
+	 * 
+	 * @return
+	 */
 	@Column(name="location_id", isReadOnly=true)
 	public String getLocationId() {
 		return locationId;
 	}
 
+	/**
+	 * 
+	 * @param locationId
+	 */
 	public void setLocationId(String locationId) {
 		this.locationId = locationId;
 	}
 
+	/**
+	 * 
+	 * @return
+	 */
 	@Column(name="provider_id", isReadOnly=true)
 	public String getProviderId() {
 		return providerId;
 	}
 
+	/**
+	 * 
+	 * @param providerId
+	 */
 	public void setProviderId(String providerId) {
 		this.providerId = providerId;
+	}
+
+	/**
+	 * @return the lastNamePost
+	 */
+	public String getLastNamePost() {
+		if (StringUtil.isEmpty(lastNamePost)  && ! StringUtil.isEmpty(lastName)) {
+			int idx = lastName.indexOf(' ');
+			return idx > -1 ? lastName.substring(idx + 1) : null;
+		} else {
+			return lastNamePost;
+		}
+	}
+
+	/**
+	 * @param lastNamePost the lastNamePost to set
+	 */
+	public void setLastNamePost(String lastNamePost) {
+		this.lastNamePost = lastNamePost;
+	}
+
+	/**
+	 * If the pre last name is empty and there is a lastName, parse the last
+	 * name at the space.  If no space, return the last name
+	 * @return the lastNamePre
+	 */
+	public String getLastNamePre() {
+		if (StringUtil.isEmpty(lastNamePre)  && ! StringUtil.isEmpty(lastName)) {
+			int idx = lastName.indexOf(' ');
+			return idx > -1 ? lastName.substring(0, idx) : lastName;
+		} else {
+			return lastNamePre;
+		}
+	}
+
+	/**
+	 * @param lastNamePre the lastNamePre to set
+	 */
+	public void setLastNamePre(String lastNamePre) {
+		this.lastNamePre = lastNamePre;
 	}
 }

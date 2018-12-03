@@ -253,12 +253,12 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 		// Create the SQL for updating the record
 		StringBuilder sql = new StringBuilder(150);
 		sql.append("update ").append(getCustomSchema()).append("wsla_ticket_data " );
-		sql.append("set approval_cd = ?, update_dt = ? ");
+		sql.append("set approval_cd = ?, meta_value1_txt = ?, update_dt = ? ");
 		sql.append("where data_entry_id = ? ");
 		log.debug(sql);
 		
 		// Set the fields we are updating from
-		List<String> fields = Arrays.asList("approval_cd", "update_dt", "data_entry_id");
+		List<String> fields = Arrays.asList("approval_cd", "meta_value1_txt", "update_dt", "data_entry_id");
 
 		// Save the approval to the record
 		try {

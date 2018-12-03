@@ -42,7 +42,8 @@ public class WarrantyAction extends SBActionAdapter {
 	//holds codes identifying if the warranty will pick up or drop off finished products
 	public enum ServiceTypeCode {
 		DROP_OFF("Drop Off"),
-		PICK_UP("Pick Up");
+		PICK_UP("Pick Up"),
+		ALL("Drop Off or Pick Up");
 		
 		private String value;
 		ServiceTypeCode(String value) {
