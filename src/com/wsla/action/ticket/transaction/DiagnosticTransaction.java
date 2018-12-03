@@ -7,6 +7,7 @@ import java.util.Map;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.util.Convert;
@@ -15,8 +16,10 @@ import com.wsla.action.ticket.BaseTransactionAction;
 import com.wsla.action.ticket.TicketEditAction;
 import com.wsla.action.ticket.TicketOverviewAction;
 import com.wsla.data.ticket.DiagnosticRunVO;
+import com.wsla.data.ticket.DispositionCode;
 import com.wsla.data.ticket.LedgerSummary;
 import com.wsla.data.ticket.StatusCode;
+import com.wsla.data.ticket.TicketDataVO;
 import com.wsla.data.ticket.TicketLedgerVO;
 import com.wsla.data.ticket.TicketVO;
 import com.wsla.data.ticket.UserVO;
@@ -61,8 +64,8 @@ public class DiagnosticTransaction extends BaseTransactionAction {
 	@Override
 	public void build(ActionRequest req) throws ActionException {
 		try {
-			if (req.hasParameter("isRepairable")) {
-				setRepairable(req);
+			if (req.hasParameter("isDisposition")) {
+				saveDisposition(req);
 			} else {
 				saveDiagnosticRun(req);
 			}
@@ -103,19 +106,29 @@ public class DiagnosticTransaction extends BaseTransactionAction {
 	}
 	
 	/**
-	 * Sets the repairable status of the equipment, and moves the ticket to the next status
+	 * Sets the repair status of the equipment, and moves the ticket to the next status
 	 * 
 	 * @param req
 	 * @throws DatabaseException 
+	 * @throws InvalidDataException 
 	 */
-	private void setRepairable(ActionRequest req) throws DatabaseException {
-		boolean isRepairable = Convert.formatBoolean(req.getParameter("isRepairable"));
+	private void saveDisposition(ActionRequest req) throws DatabaseException, InvalidDataException {
+		TicketDataVO td = new TicketDataVO(req);
 		
-		// Set the repairable status
-		TicketVO ticket = new TicketVO(req);
+		// Update the status
 		UserVO user = (UserVO) getAdminUser(req).getUserExtendedInfo();
-		TicketLedgerVO ledger = changeStatus(ticket.getTicketId(), user.getUserId(), isRepairable ? StatusCode.REPAIRABLE : StatusCode.UNREPAIRABLE, LedgerSummary.DIAGNOSTIC_COMPLETED.summary, null);
-		buildNextStep(ledger.getStatusCode(), null, false);
+		DispositionCode disposition = DispositionCode.valueOf(td.getValue());
+		TicketLedgerVO ledger = changeStatus(td.getTicketId(), user.getUserId(), disposition.getStatus(), disposition.getLedgerSummary(), null);
+		
+		// Build the next step
+		Map<String, Object> params = new HashMap<>();
+		params.put("ticketId", ledger.getTicketId());
+		buildNextStep(ledger.getStatusCode(), params, false);
+		
+		// Save the ticket data record
+		DBProcessor dbp = new DBProcessor(getDBConnection(), getCustomSchema());
+		td.setLedgerEntryId(ledger.getLedgerEntryId());
+		dbp.save(td);
 	}
 }
 
