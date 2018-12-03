@@ -24,14 +24,13 @@ import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.StringUtil;
-
+import com.siliconmtn.util.UUIDGenerator;
 // WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.user.ProfileManager;
 import com.smt.sitebuilder.action.user.ProfileManagerFactory;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.AdminConstants;
-import com.wsla.action.BasePortalAction;
 import com.wsla.data.product.ProductSerialNumberVO;
 import com.wsla.data.product.ProductWarrantyVO;
 import com.wsla.data.ticket.DefectVO;
@@ -139,7 +138,7 @@ public class TicketEditAction extends SBActionAdapter {
 				TicketVO ticket = getCompleteTicket(ticketNumber);
 				req.setAttribute("providerData", ticket.getOem());
 				req.setAttribute("wsla.ticket.locale", ticket.getOriginator().getLocale());
-				req.setAttribute("nextStep", new NextStepVO(ticket.getStatusCode(), new BasePortalAction().getResourceBundle(req)));
+				req.setAttribute("nextStep", new NextStepVO(ticket.getStatusCode()));
 				putModuleData(ticket);
 			}
 		} catch (SQLException | DatabaseException e) {
@@ -251,7 +250,7 @@ public class TicketEditAction extends SBActionAdapter {
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append("role r on s.role_id = r.role_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(getCustomSchema());
 		sql.append("wsla_provider_location d on a.retailer_id = d.location_id ");
-		sql.append("where ticket_no = ? ");
+		sql.append(StringUtil.join("where ", UUIDGenerator.isUUID(ticketIdText) ? "a.ticket_id" : "ticket_no", " = ? "));
 		
 		// Gets the base ticket info
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());

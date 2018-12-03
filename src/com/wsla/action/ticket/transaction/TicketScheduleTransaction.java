@@ -19,6 +19,7 @@ import com.wsla.action.ticket.TicketEditAction;
 
 // WSLA Libs
 import com.wsla.data.ticket.LedgerSummary;
+import com.wsla.data.ticket.StatusCode;
 import com.wsla.data.ticket.TicketAssignmentVO;
 import com.wsla.data.ticket.TicketLedgerVO;
 import com.wsla.data.ticket.TicketScheduleVO;
@@ -88,23 +89,33 @@ public class TicketScheduleTransaction extends BaseTransactionAction {
 			else
 				ts = saveSchedule(req);
 
-			// Add in the details of the ticket assignments that this schedule is using
-			TicketEditAction tea = new TicketEditAction(getAttributes(), getDBConnection());
-			List<TicketScheduleVO> tsList = tea.getSchedule(null, ts.getTicketScheduleId());
-			List<TicketAssignmentVO> taList = tea.getAssignments(ts.getTicketId());
-			tea.populateScheduleAssignments(tsList, taList);
-			ts = tsList.get(0);
-			
-			// Make sure the unit location is current (requires the assignment data to set)
-			if (req.hasParameter(REQ_COMPLETE))
-				updateUnitLocation(ts);
-			
 			putModuleData(ts);
 			
-		} catch (InvalidDataException | DatabaseException | com.siliconmtn.exception.DatabaseException e) {
+		} catch (DatabaseException e) {
 			log.error("Unable to save ticket schedule", e);
 			putModuleData("", 0, false, e.getLocalizedMessage(), true);
 		}
+	}
+	
+	/**
+	 * Merges the details of the ticket assignments that the given schedule is using
+	 * 
+	 * @param ts
+	 * @return
+	 * @throws DatabaseException 
+	 */
+	private TicketScheduleVO mergeTicketAssignments(TicketScheduleVO ts) throws DatabaseException {
+		TicketEditAction tea = new TicketEditAction(getAttributes(), getDBConnection());
+		List<TicketScheduleVO> tsList = tea.getSchedule(null, ts.getTicketScheduleId());
+		
+		try {
+			List<TicketAssignmentVO> taList = tea.getAssignments(ts.getTicketId());
+			tea.populateScheduleAssignments(tsList, taList);
+		} catch (com.siliconmtn.exception.DatabaseException e) {
+			throw new DatabaseException(e);
+		}
+		
+		return tsList.get(0);
 	}
 	
 	/**
@@ -113,18 +124,27 @@ public class TicketScheduleTransaction extends BaseTransactionAction {
 	 * 
 	 * @param req
 	 * @throws DatabaseException 
-	 * @throws InvalidDataException 
 	 */
-	public TicketScheduleVO saveSchedule(ActionRequest req) throws InvalidDataException, DatabaseException {
-		// Get the DB Processor
+	public TicketScheduleVO saveSchedule(ActionRequest req) throws DatabaseException {
+		// Get the DB Processor & user
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		UserVO user = (UserVO) getAdminUser(req).getUserExtendedInfo();
 		
 		// Build the Ticket Schedule data and save
 		TicketScheduleVO ts = new TicketScheduleVO(req);
 		modifyNotes(ts);
-		db.save(ts);
+		try {
+			db.save(ts);
+		} catch (InvalidDataException e) {
+			throw new DatabaseException(e);
+		}
 		
-		return ts;
+		// Change the status & build next step
+		boolean isPreRepair = PRE_REPAIR.equals(ts.getRecordTypeCode());
+		TicketLedgerVO ledger = changeStatus(ts.getTicketId(), user.getUserId(), isPreRepair ? StatusCode.PENDING_PICKUP : StatusCode.DELIVERY_SCHEDULED, LedgerSummary.SCHEDULE_TRANSFER.summary, null);
+		buildNextStep(ledger.getStatusCode(), null, false);
+		
+		return mergeTicketAssignments(ts);
 	}
 	
 	/**
@@ -133,22 +153,47 @@ public class TicketScheduleTransaction extends BaseTransactionAction {
 	 * 
 	 * @param req
 	 * @throws DatabaseException 
-	 * @throws InvalidDataException 
 	 */
-	public TicketScheduleVO completeSchedule(ActionRequest req) throws InvalidDataException, DatabaseException {
-		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+	public TicketScheduleVO completeSchedule(ActionRequest req) throws DatabaseException {
 		TicketScheduleVO ts = new TicketScheduleVO(req);
 		ts.setUpdateDate(new Date());
 		modifyNotes(ts);
 		UserVO user = (UserVO) getAdminUser(req).getUserExtendedInfo();
 		
-		// Add a ledger entry
-		TicketLedgerVO ledger = new TicketLedgerVO(req);
-		ledger.setDispositionBy(user.getUserId());
-		ledger.setSummary(LedgerSummary.SCHEDULE_TRANSFER_COMPLETE.summary);
-		db.save(ledger);
+		// Save the transfer completion data
+		saveCompletion(ts);
+		
+		// Add in the details of the ticket assignments that this schedule is using
+		ts = mergeTicketAssignments(ts);
+		
+		// Make sure the unit location is current (requires the assignment data to set)
+		UnitLocation location = updateUnitLocation(ts);
+		
+		// Change the status
+		boolean isPreRepair = PRE_REPAIR.equals(ts.getRecordTypeCode());
+		TicketLedgerVO ledger = changeStatus(ts.getTicketId(), user.getUserId(), isPreRepair ? StatusCode.PICKUP_COMPLETE : StatusCode.DELIVERY_COMPLETE, LedgerSummary.SCHEDULE_TRANSFER_COMPLETE.summary, location);
 		ts.setLedgerEntryId(ledger.getLedgerEntryId());
 
+		// When the post repair transfer is complete, the ticket is finished (closed).
+		// Add an additional ledger entry & status change to denote this.  
+		if (ledger.getStatusCode() == StatusCode.DELIVERY_COMPLETE) {
+			ledger = changeStatus(ts.getTicketId(), user.getUserId(), StatusCode.CLOSED, LedgerSummary.TICKET_CLOSED.summary, null);
+		}
+		
+		// Build the next step
+		buildNextStep(ledger.getStatusCode(), null, false);
+		
+		return ts;
+	}
+	
+	/**
+	 * Saves the completion data to the schedule record
+	 * 
+	 * @param ts
+	 */
+	private void saveCompletion(TicketScheduleVO ts) {
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		
 		// Create the SQL for updating the record
 		StringBuilder sql = new StringBuilder(110);
 		sql.append("update ").append(getCustomSchema()).append("wsla_ticket_schedule " );
@@ -164,10 +209,8 @@ public class TicketScheduleTransaction extends BaseTransactionAction {
 		try {
 			db.executeSqlUpdate(sql.toString(), ts, fields);
 		} catch (DatabaseException e1) {
-			log.error("could not delete old records",e1);
+			log.error("Could not update the ticket schedule completion",e1);
 		}
-		
-		return ts;
 	}
 	
 	/**
@@ -178,15 +221,18 @@ public class TicketScheduleTransaction extends BaseTransactionAction {
 	 * 
 	 * @param ts
 	 * @throws DatabaseException 
-	 * @throws InvalidDataException 
 	 */
-	protected void modifyNotes(TicketScheduleVO ts) throws InvalidDataException, DatabaseException {
+	protected void modifyNotes(TicketScheduleVO ts) throws DatabaseException {
 		// Get previous notes (if any)
 		TicketScheduleVO prevTs = new TicketScheduleVO();
 		prevTs.setTicketScheduleId(ts.getTicketScheduleId());
 		if (!StringUtil.isEmpty(ts.getTicketScheduleId())) {
-			DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
-			db.getByPrimaryKey(prevTs);
+			try {
+				DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+				db.getByPrimaryKey(prevTs);
+			} catch (InvalidDataException e) {
+				throw new DatabaseException(e);
+			}
 		}
 		
 		String newNotes = StringUtil.checkVal(ts.getNotesText());
@@ -213,7 +259,7 @@ public class TicketScheduleTransaction extends BaseTransactionAction {
 	 * @throws DatabaseException 
 	 * @throws InvalidDataException 
 	 */
-	private void updateUnitLocation(TicketScheduleVO ts) throws DatabaseException {
+	private UnitLocation updateUnitLocation(TicketScheduleVO ts) throws DatabaseException {
 		String unitLoc = ts.getRecordTypeCode().equals(PRE_REPAIR) ? ts.getCasLocation().getTypeCode().toString() : ts.getOwnerLocation().getTypeCode().toString();
 		UnitLocation location = UnitLocation.valueOf(unitLoc);
 		
@@ -223,6 +269,8 @@ public class TicketScheduleTransaction extends BaseTransactionAction {
 
 		TicketTransaction tt = new TicketTransaction(getAttributes(), getDBConnection());
 		tt.updateUnitLocation(ticket);
+		
+		return location;
 	}
 }
 
