@@ -115,7 +115,7 @@ public class TicketListAction extends SimpleActionAdapter {
 		cSql.append(DBUtil.SELECT_CLAUSE).append("cast(count(*) as int) ");
 
 		// Get the base query and append to the count and display select
-		StringBuilder base = getBaseSql();
+		StringBuilder base = getBaseSql(req.getParameter("status", ""));
 		cSql.append(base);
 		sql.append(base);
 
@@ -145,6 +145,7 @@ public class TicketListAction extends SimpleActionAdapter {
 		// Add the limit and offset for the display query
 		sql.append(bst.getSQLOrderBy("create_dt", "desc"));
 		sql.append(" limit ").append(bst.getLimit()).append(" offset ").append(bst.getOffset());
+		log.debug(sql);
 
 		// Build the grid object and assign the number of rows total
 		GridDataVO<TicketVO> grid = new GridDataVO<>();
@@ -264,7 +265,7 @@ public class TicketListAction extends SimpleActionAdapter {
 	 * Builds the base query and joins
 	 * @return
 	 */
-	public StringBuilder getBaseSql() {
+	public StringBuilder getBaseSql(String status) {
 		StringBuilder base = new StringBuilder(768);
 		base.append(DBUtil.FROM_CLAUSE).append(getCustomSchema()).append("wsla_ticket a ");
 		base.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("wsla_user e ");
@@ -279,6 +280,15 @@ public class TicketListAction extends SimpleActionAdapter {
 		base.append("on a.oem_id = f.provider_id ");
 		base.append(DBUtil.LEFT_OUTER_JOIN).append(getCustomSchema()).append("wsla_provider_location g ");
 		base.append("on a.retailer_id = g.location_id ");
+		
+		// Join if searching only for tickets that need a comment reply
+		if ("NEEDS_REPLY".equals(status)) {
+			base.append(DBUtil.INNER_JOIN).append("(select ticket_id ");
+			base.append(DBUtil.FROM_CLAUSE).append(getCustomSchema()).append("wsla_ticket_comment ");
+			base.append("where end_user_flg = 1 and (wsla_reply_flg = 0 or wsla_reply_flg is null) ");
+			base.append("group by ticket_id) tc on a.ticket_id = tc.ticket_id ");
+		}
+		
 		base.append("where 1 = 1 ");
 
 		return base;
