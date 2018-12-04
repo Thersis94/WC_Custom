@@ -181,7 +181,7 @@ public class TicketScheduleTransaction extends BaseTransactionAction {
 		}
 		
 		// Build the next step
-		buildNextStep(ledger.getStatusCode(), null, false);
+		buildNextStep(ledger.getStatusCode(), null, ledger.getStatusCode() == StatusCode.CLOSED);
 		
 		return ts;
 	}
