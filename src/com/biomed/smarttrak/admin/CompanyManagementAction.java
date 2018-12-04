@@ -14,6 +14,7 @@ import com.biomed.smarttrak.action.AdminControllerAction.Status;
 import com.biomed.smarttrak.action.AdminControllerAction;
 import com.biomed.smarttrak.action.CompanyAction;
 import com.biomed.smarttrak.util.BiomedCompanyIndexer;
+import com.biomed.smarttrak.util.BiomedProductIndexer;
 import com.biomed.smarttrak.vo.AllianceVO;
 import com.biomed.smarttrak.vo.CompanyAttributeTypeVO;
 import com.biomed.smarttrak.vo.CompanyAttributeVO;
@@ -754,6 +755,10 @@ public class CompanyManagementAction extends ManagementAction {
 	 * @throws ActionException
 	 */
 	private void addAllianceProducts(AllianceVO a, DBProcessor db) throws ActionException {
+		Properties props = new Properties();
+		props.putAll(getAttributes());
+		BiomedProductIndexer indexer = new BiomedProductIndexer(props);
+		indexer.setDBConnection(dbConn);
 		StringBuilder sql = new StringBuilder(200);
 		sql.append("select p.product_id from ").append(customDbSchema).append("biomedgps_product p ");
 		sql.append(LEFT_OUTER_JOIN).append(customDbSchema).append("biomedgps_product_alliance_xr pa ");
@@ -765,8 +770,11 @@ public class CompanyManagementAction extends ManagementAction {
 			ps.setString(2, a.getCompanyId());
 			
 			ResultSet rs = ps.executeQuery();
-			while (rs.next())
-				db.save(buildProductAlliance(a, rs.getString("product_id")));
+			while (rs.next()) {
+				String productId = rs.getString("product_id");
+				db.save(buildProductAlliance(a, productId));
+				indexer.indexItems(productId);
+			}
 			
 		} catch (Exception e) {
 			throw new ActionException(e);
