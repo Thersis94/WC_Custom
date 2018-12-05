@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 // SMT Base Libs 3.x
@@ -222,6 +223,8 @@ public class TicketOverviewAction extends BasePortalAction {
 		
 		// Add User and assignment to the ticket
 		UserVO user = new UserVO(req);
+		Locale locale = user.getUserLocale();
+		req.setParameter("countryCode", locale.getCountry());
 		this.saveUser(site, user, false, true);
 		ticket.addAssignment(manageTicketAssignment(user, null, ticket.getTicketId(), null, 0, TypeCode.CALLER));
 
