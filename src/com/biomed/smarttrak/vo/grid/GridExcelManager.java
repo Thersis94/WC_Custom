@@ -195,64 +195,7 @@ public class GridExcelManager {
  	   
  	   return isPercent;
 	}
-
-
-	/**
-	 * Truncate numbers if neccesary
-	 * @param numberVal
-	 * @return
-	private String abbreviateNumber(String numberVal) {
-		String origVal = numberVal;
-		
-		// Convert from scientific exponent to simple number if applicable.
-		if (numberVal.indexOf('E') > -1) {
-			int exp = Convert.formatInteger(numberVal.substring(numberVal.indexOf('E')+1));
-			numberVal = StringUtil.padRight(numberVal.replace(".", "").substring(0, numberVal.indexOf('E')-1), '0', exp+1);
-		}
-		
-		if (numberVal.indexOf('.') > -1)
-			numberVal = numberVal.substring(0, numberVal.indexOf('.'));
-    	
-    	if (numberVal.length() <= 3) return origVal;
-		
-		Matcher matcher = Pattern.compile("\\d").matcher(numberVal);
-    	matcher.find();
-    	int prefixIndex = 0;
-    	if (matcher.find())
-    		prefixIndex = matcher.start() - 1;
-    	
-    	String prefix = "";
-    	if (prefixIndex > 0)
-        	prefix = numberVal.substring(0, prefixIndex);
-		
-		String suffix = "";
-		int pos = numberVal.length()%3;
-		if (pos == 0) pos = 3;
-		switch ((int)Math.ceil((double)numberVal.length()/3)) {
-			case 2:
-				suffix = " K";
-				break;
-			case 3:
-				suffix = " M";
-				break;
-			case 4:
-				suffix = " B";
-				break;
-			case 5:
-				suffix = " T";
-				break;
-			default:
-				suffix = "";
-		}
-
-		StringBuilder formatted = new StringBuilder(pos + 4);
-
-		formatted.append(prefix).append(numberVal.substring(0, pos)).append(".");
-		formatted.append(numberVal.substring(pos, pos+1)).append(suffix);
-
-		return formatted.toString();
-	}
-	 */
+	
 
 	public void addHeadingLabel(HSSFWorkbook workbook, HSSFSheet sheet, int numColumns, String name) {
 		Row row = sheet.createRow(0);
