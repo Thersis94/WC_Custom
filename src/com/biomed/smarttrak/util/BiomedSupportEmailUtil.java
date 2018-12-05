@@ -316,14 +316,14 @@ public class BiomedSupportEmailUtil {
 
 			//Build Config
 			Map<String, Object> config = getBaseConfig(t);
-			EmailRecipientVO recip = (EmailRecipientVO) attributes.get(SOURCE);
-			if (recip != null && !StringUtil.isEmpty(recip.getProfileId()))
-				r.getValue().add(recip);
 
 			//Get Emails
 			if (r.getKey().equals(EmailType.ADMIN)) {
 				ecbu.sendMessage(config, r.getValue(), (String)attributes.get(ADMIN_NEW_TICKET_CAMP_INST_ID));
 			} else {
+				EmailRecipientVO recip = (EmailRecipientVO) attributes.get(SOURCE);
+				if (recip != null && !StringUtil.isEmpty(recip.getProfileId()))
+					r.getValue().add(recip);
 				ecbu.sendMessage(config, r.getValue(), (String)attributes.get(NEW_TICKET_CAMP_INST_ID));
 			}
 
