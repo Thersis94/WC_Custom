@@ -13,6 +13,7 @@ import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
 import com.siliconmtn.util.StringUtil;
+import com.wsla.data.ticket.TicketVO.UnitLocation;
 
 /****************************************************************************
  * <b>Title</b>: TicketLedgerVO.java
@@ -40,6 +41,8 @@ public class TicketLedgerVO extends BeanDataVO {
 	private String ticketId;
 	private String summary;
 	private StatusCode statusCode;
+	private UnitLocation unitLocation;
+	private String billableActivityCode;
 	private Date createDate;
 	
 	// Bean Sub-Elements
@@ -119,6 +122,22 @@ public class TicketLedgerVO extends BeanDataVO {
 	@Column(name="status_cd")
 	public StatusCode getStatusCode() {
 		return statusCode;
+	}
+
+	/**
+	 * @return the unitLocation
+	 */
+	@Column(name="unit_location_cd")
+	public UnitLocation getUnitLocation() {
+		return unitLocation;
+	}
+
+	/**
+	 * @return the billableActivityCode
+	 */
+	@Column(name="billable_activity_cd")
+	public String getBillableActivityCode() {
+		return billableActivityCode;
 	}
 
 	/**
@@ -230,6 +249,20 @@ public class TicketLedgerVO extends BeanDataVO {
 	 */
 	public void setStatusCode(StatusCode statusCode) {
 		this.statusCode = statusCode;
+	}
+
+	/**
+	 * @param unitLocation the unitLocation to set
+	 */
+	public void setUnitLocation(UnitLocation unitLocation) {
+		this.unitLocation = unitLocation;
+	}
+
+	/**
+	 * @param billableActivityCode the billableActivityCode to set
+	 */
+	public void setBillableActivityCode(String billableActivityCode) {
+		this.billableActivityCode = billableActivityCode;
 	}
 
 	/**

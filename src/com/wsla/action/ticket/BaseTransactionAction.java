@@ -145,7 +145,7 @@ public class BaseTransactionAction extends SBActionAdapter {
 		ledger.setTicketId(ticketId);
 		ledger.setStatusCode(status);
 		ledger.setSummary(summary);
-		//ledger.setUnitLocation(location)
+		ledger.setUnitLocation(location);
 		
 		// Get status billable data to be added to the ledger
 		if (status != null) {
@@ -154,7 +154,7 @@ public class BaseTransactionAction extends SBActionAdapter {
 			sc.setStatusCode(status.name());
 			try {
 				dbp.getByPrimaryKey(sc);
-				//ledger.setBillableActivityCode(sc.getBillableActivityCode())
+				ledger.setBillableActivityCode(sc.getBillableActivityCode());
 			} catch (InvalidDataException e) {
 				throw new DatabaseException(e);
 			}
