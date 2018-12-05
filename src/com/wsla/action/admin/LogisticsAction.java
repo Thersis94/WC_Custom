@@ -132,7 +132,10 @@ public class LogisticsAction extends SBActionAdapter {
 				//the admin can remove or add on the next screen, but this is a significant convenience for them.
 				if (isInsert && req.hasParameter(REQ_TICKET_ID)) {
 					addTicketPartsToShipment(vo.getShipmentId(), req.getParameter(REQ_TICKET_ID));
-					
+				}
+				
+				// Change the service order status when shipping the service order parts
+				if (req.hasParameter(REQ_TICKET_ID) && ShipmentStatus.SHIPPED.equals(vo.getStatus())) {
 					UserVO user = (UserVO) getAdminUser(req).getUserExtendedInfo();
 					BaseTransactionAction bta = new BaseTransactionAction(getDBConnection(), getAttributes());
 					bta.changeStatus(req.getParameter(REQ_TICKET_ID), user.getUserId(), StatusCode.PARTS_SHIPPED_CAS, LedgerSummary.SHIPMENT_CREATED.summary, null);
