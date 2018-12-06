@@ -1,8 +1,5 @@
 package com.wsla.action.ticket.transaction;
 
-import java.util.HashMap;
-import java.util.Map;
-
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -72,17 +69,14 @@ public class TicketRepairTransaction extends BaseTransactionAction {
 	 */
 	private void changeRepairStatus(ActionRequest req) throws DatabaseException {
 		boolean isStart = Convert.formatBoolean(req.getParameter("isStart"));
+		if (!isStart) return;
 		
 		TicketVO ticket = new TicketVO(req);
 		UserVO user = (UserVO) getAdminUser(req).getUserExtendedInfo();
-		TicketLedgerVO ledger = changeStatus(ticket.getTicketId(), user.getUserId(), isStart ? StatusCode.CAS_IN_REPAIR : StatusCode.CAS_REPAIR_COMPLETE, LedgerSummary.REPAIR_STATUS_CHANGED.summary, null);
+		TicketLedgerVO ledger = changeStatus(ticket.getTicketId(), user.getUserId(), StatusCode.CAS_IN_REPAIR, LedgerSummary.REPAIR_STATUS_CHANGED.summary, null);
 
 		// Build next step
-		Map<String, Object> params = new HashMap<>();
-		if (isStart) {
-			params.put("ticketId", ledger.getTicketId());
-		}
-		buildNextStep(ledger.getStatusCode(), params, false);
+		buildNextStep(ledger.getStatusCode(), null, false);
 	}
 }
 

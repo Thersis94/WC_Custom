@@ -11,7 +11,6 @@ import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.util.Convert;
 // WC Libs
 import com.wsla.action.ticket.BaseTransactionAction;
-import com.wsla.action.ticket.TicketEditAction;
 import com.wsla.data.ticket.LedgerSummary;
 import com.wsla.data.ticket.StatusCode;
 import com.wsla.data.ticket.TicketLedgerVO;
@@ -60,8 +59,6 @@ public class TicketPartsTransaction extends BaseTransactionAction {
 		try {
 			if (req.hasParameter("isApproved")) {
 				setApproval(req);
-			} else if (req.hasParameter("isReceived")) {
-				setReceived(req);
 			} else {
 				submitForApproval(req);
 			}
@@ -104,23 +101,6 @@ public class TicketPartsTransaction extends BaseTransactionAction {
 		setPartsStatus(req, StatusCode.CAS_PARTS_ORDERED, LedgerSummary.PARTS_REQUEST_REVIEWED.summary, null);
 	}
 
-	/**
-	 * Sets the received status of the ordered parts
-	 * 
-	 * @param req
-	 * @throws DatabaseException 
-	 */
-	private void setReceived(ActionRequest req) throws DatabaseException {
-		boolean isReceived = Convert.formatBoolean(req.getParameter("isReceived"));
-		if (!isReceived)
-			return;
-		
-		// Set the received status
-		Map<String, Object> params = new HashMap<>();
-		params.put("ticketId", req.getParameter(TicketEditAction.TICKET_ID));
-		setPartsStatus(req, StatusCode.PARTS_RCVD_CAS, LedgerSummary.SHIPMENT_RECEIVED.summary, params);
-	}
-	
 	/**
 	 * Sets the given status data for the ticket's parts order
 	 * 
