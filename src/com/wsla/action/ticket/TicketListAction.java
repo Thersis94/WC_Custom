@@ -106,10 +106,10 @@ public class TicketListAction extends SimpleActionAdapter {
 		// Build the sql for the main query
 		StringBuilder sql = new StringBuilder(768);
 		sql.append(DBUtil.SELECT_CLAUSE).append("a.ticket_id, ticket_no, provider_nm, ");
-		sql.append("product_nm, status_nm, first_nm, last_nm, location_nm, ");
-		sql.append("a.create_dt, email_address_txt, locked_by_id, a.product_serial_id, ");
-		sql.append("serial_no_txt, oem_id, locked_dt ");
-
+		sql.append("product_nm, status_nm, e.first_nm, e.last_nm, location_nm, ");
+		sql.append("a.create_dt, e.email_address_txt, locked_by_id, a.product_serial_id, ");
+		sql.append("serial_no_txt, oem_id, locked_dt, ");
+		sql.append("h.first_nm || ' ' || h.last_nm as locked_nm ");
 		// Build the select for the count query
 		StringBuilder cSql = new StringBuilder(768);
 		cSql.append(DBUtil.SELECT_CLAUSE).append("cast(count(*) as int) ");
@@ -145,7 +145,7 @@ public class TicketListAction extends SimpleActionAdapter {
 		// Add the limit and offset for the display query
 		sql.append(bst.getSQLOrderBy("create_dt", "desc"));
 		sql.append(" limit ").append(bst.getLimit()).append(" offset ").append(bst.getOffset());
-		log.debug(sql);
+		log.debug(sql.length() + "|" + sql);
 
 		// Build the grid object and assign the number of rows total
 		GridDataVO<TicketVO> grid = new GridDataVO<>();
@@ -280,6 +280,8 @@ public class TicketListAction extends SimpleActionAdapter {
 		base.append("on a.oem_id = f.provider_id ");
 		base.append(DBUtil.LEFT_OUTER_JOIN).append(getCustomSchema()).append("wsla_provider_location g ");
 		base.append("on a.retailer_id = g.location_id ");
+		base.append(DBUtil.LEFT_OUTER_JOIN).append(getCustomSchema()).append("wsla_user h ");
+		base.append("on a.locked_by_id = h.user_id ");
 		
 		// Join if searching only for tickets that need a comment reply
 		if ("NEEDS_REPLY".equals(status)) {

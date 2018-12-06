@@ -80,6 +80,7 @@ public class UserVO extends BeanDataVO {
 		
 		// Adds the UserDataVO to the bean
 		setProfile(new UserDataVO(req));
+		getProfile().getLocation().setCassValidated(false);
 
 		//make a special case for workPhone, which isn't supported by UserDataVO natively
 		if (req.hasParameter("workPhone"))
