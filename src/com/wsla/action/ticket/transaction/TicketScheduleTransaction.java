@@ -101,21 +101,17 @@ public class TicketScheduleTransaction extends BaseTransactionAction {
 	 * Merges the details of the ticket assignments that the given schedule is using
 	 * 
 	 * @param ts
-	 * @return
 	 * @throws DatabaseException 
 	 */
-	private TicketScheduleVO mergeTicketAssignments(TicketScheduleVO ts) throws DatabaseException {
+	private void mergeTicketAssignments(TicketScheduleVO ts) throws DatabaseException {
 		TicketEditAction tea = new TicketEditAction(getAttributes(), getDBConnection());
-		List<TicketScheduleVO> tsList = tea.getSchedule(null, ts.getTicketScheduleId());
 		
 		try {
 			List<TicketAssignmentVO> taList = tea.getAssignments(ts.getTicketId());
-			tea.populateScheduleAssignments(tsList, taList);
+			tea.populateScheduleAssignments(Arrays.asList(ts), taList);
 		} catch (com.siliconmtn.exception.DatabaseException e) {
 			throw new DatabaseException(e);
 		}
-		
-		return tsList.get(0);
 	}
 	
 	/**
@@ -144,7 +140,10 @@ public class TicketScheduleTransaction extends BaseTransactionAction {
 		TicketLedgerVO ledger = changeStatus(ts.getTicketId(), user.getUserId(), isPreRepair ? StatusCode.PENDING_PICKUP : StatusCode.DELIVERY_SCHEDULED, LedgerSummary.SCHEDULE_TRANSFER.summary, null);
 		buildNextStep(ledger.getStatusCode(), null, false);
 		
-		return mergeTicketAssignments(ts);
+		// Merge assignment data into the VO
+		mergeTicketAssignments(ts);
+		
+		return ts;
 	}
 	
 	/**
@@ -160,11 +159,8 @@ public class TicketScheduleTransaction extends BaseTransactionAction {
 		modifyNotes(ts);
 		UserVO user = (UserVO) getAdminUser(req).getUserExtendedInfo();
 		
-		// Save the transfer completion data
-		saveCompletion(ts);
-		
 		// Add in the details of the ticket assignments that this schedule is using
-		ts = mergeTicketAssignments(ts);
+		mergeTicketAssignments(ts);
 		
 		// Make sure the unit location is current (requires the assignment data to set)
 		UnitLocation location = updateUnitLocation(ts);
@@ -174,6 +170,9 @@ public class TicketScheduleTransaction extends BaseTransactionAction {
 		TicketLedgerVO ledger = changeStatus(ts.getTicketId(), user.getUserId(), isPreRepair ? StatusCode.PICKUP_COMPLETE : StatusCode.DELIVERY_COMPLETE, LedgerSummary.SCHEDULE_TRANSFER_COMPLETE.summary, location);
 		ts.setLedgerEntryId(ledger.getLedgerEntryId());
 
+		// Save the transfer completion data
+		saveCompletion(ts);
+		
 		// When the post repair transfer is complete, the ticket is finished (closed).
 		// Add an additional ledger entry & status change to denote this.  
 		if (ledger.getStatusCode() == StatusCode.DELIVERY_COMPLETE) {
@@ -181,7 +180,7 @@ public class TicketScheduleTransaction extends BaseTransactionAction {
 		}
 		
 		// Build the next step
-		buildNextStep(ledger.getStatusCode(), null, false);
+		buildNextStep(ledger.getStatusCode(), null, ledger.getStatusCode() == StatusCode.CLOSED);
 		
 		return ts;
 	}
