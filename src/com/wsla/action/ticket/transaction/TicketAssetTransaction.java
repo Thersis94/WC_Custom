@@ -95,7 +95,7 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 	 */
 	public void saveAsset(ActionRequest req) throws InvalidDataException, DatabaseException {
 		TicketDataVO td = new TicketDataVO(req);
-		td.setApprovalCode(ApprovalCode.UNKNOWN);
+		td.setApprovalCode(ApprovalCode.PENDING);
 		
 		// Get the DB Processor
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
@@ -172,7 +172,7 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 			return false;
 		
 		// Approval is needed when one or both are in the UNKNOWN state
-		int unknownApprovalLevel = ApprovalCode.UNKNOWN.getLevel();
+		int unknownApprovalLevel = ApprovalCode.PENDING.getLevel();
 		return popApproval == unknownApprovalLevel || snApproval == unknownApprovalLevel;
 	}
 	
@@ -224,8 +224,8 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 		// Determine if we have approval for each required asset
 		for (TicketDataVO asset : assets) {
 			String attributeCode = asset.getAttributeCode();
-			ApprovalCode thisApproval = asset.getApprovalCode() == null ? ApprovalCode.UNKNOWN : asset.getApprovalCode();
-			if (thisApproval == ApprovalCode.UNKNOWN) continue;
+			ApprovalCode thisApproval = asset.getApprovalCode() == null ? ApprovalCode.PENDING : asset.getApprovalCode();
+			if (thisApproval == ApprovalCode.PENDING) continue;
 			
 			// Approved always overrides any previous that were rejected
 			ApprovalCode prevApproval = approvals.get(attributeCode);

@@ -1,61 +1,54 @@
-package com.wsla.action;
+package com.wsla.action.ticket.transaction;
 
 import java.util.ArrayList;
 import java.util.List;
 
-// SMT Base Libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.StringUtil;
-// WSLA Libs
-import com.wsla.action.ticket.TicketEditAction;
-import com.wsla.action.ticket.TicketLedgerAction;
-
+import com.wsla.action.ticket.TicketTransactionAction;
 
 /****************************************************************************
- * <b>Title</b>: AjaxControllerFacadeAction.java
+ * <b>Title</b>: PublicTicketTransaction.java
  * <b>Project</b>: WC_Custom
- * <b>Description: </b> Manager for ajax actions.  This class will act as a 
- * single interface / facade to multiple ajax actions.  These actions will typically
- * be simple ajax request / response and will replace having to register each one as
- * a widget.  More complex ajax actions should be registered with its own amid
+ * <b>Description: </b> Use to open up access to areas of the code that should be 
+ * 	presentable to the public.  
  * <b>Copyright:</b> Copyright (c) 2018
  * <b>Company:</b> Silicon Mountain Technologies
  * 
- * @author Ryan Riker
+ * @author ryan
  * @version 3.0
- * @since Nov 17, 2018
+ * @since Nov 26, 2018
  * @updates:
  ****************************************************************************/
-public class PublicAjaxControllerFacadeAction extends AjaxControllerFacadeAction {
+public class PublicTicketTransaction extends TicketTransactionAction {
 
 	private List<String> publicActions = new ArrayList<>();
 	
 	/**
 	 * 
 	 */
-	public PublicAjaxControllerFacadeAction() {
+	public PublicTicketTransaction() {
 		super();
-		loadPublicTypes();
+		assignPublicActionMap();
 	}
 
 	/**
 	 * @param actionInit
 	 */
-	public PublicAjaxControllerFacadeAction(ActionInitVO actionInit) {
+	public PublicTicketTransaction(ActionInitVO actionInit) {
 		super(actionInit);
-		loadPublicTypes();
+		assignPublicActionMap();
 	}
-
 	/**
-	 * Loads the mapping to the various ajax calls
+	 * Assigns the keys and classes for the facade
 	 */
-	private void loadPublicTypes() {
-		publicActions.add(TicketEditAction.AJAX_KEY);
-		publicActions.add(TicketLedgerAction.AJAX_KEY);
-		publicActions.add("productSerial");
+	private void assignPublicActionMap() {
+		publicActions.add(TicketAssetTransaction.AJAX_KEY);
+		publicActions.add(TicketTransaction.AJAX_KEY);
 	}
+	
 	
 	/*
 	 * (non-Javadoc)
@@ -76,4 +69,5 @@ public class PublicAjaxControllerFacadeAction extends AjaxControllerFacadeAction
 		log.debug("Building: " + req.getParameter("type"));
 		if (publicActions.contains(StringUtil.checkVal(req.getParameter("type")))) super.build(req);
 	}
+
 }

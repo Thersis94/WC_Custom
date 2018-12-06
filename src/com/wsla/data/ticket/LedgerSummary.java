@@ -25,6 +25,8 @@ public enum LedgerSummary {
 	PARTS_REQUEST_REVIEWED ("WSLA has reviewed the parts request"),
 	SHIPMENT_CREATED ("A parts shipment has been created"),
 	SHIPMENT_RECEIVED ("The CAS has marked the shipment received"),
+	VALID_SERIAL_SAVED("The user submitted a valid serial and it was saved to the ticket"),
+	INVALID_SERIAL_SAVED("Invalid Serial number saved to the ticket"),
 	REPAIR_STATUS_CHANGED ("The repair status was changed"),
 	ACTIVITY_ADDED ("An activity was added to the ticket"),
 	CAS_ASSIGNED ("A Service Center was assigned to the ticket"),
