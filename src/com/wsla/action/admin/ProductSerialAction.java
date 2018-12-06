@@ -290,8 +290,9 @@ public class ProductSerialAction extends BatchImport {
 		sql.append("from ").append(getCustomSchema()).append(" wsla_product_serial a ");
 		sql.append("inner join ").append(getCustomSchema()).append("wsla_ticket b ");
 		sql.append("on a.product_serial_id = b.product_serial_id ");
-		sql.append("where serial_no_txt = ? and product_id = ?) ");
-		log.info(sql);
+		sql.append("where  b.status_cd != 'CLOSED' and serial_no_txt = ? and product_id = ?) ");
+		log.debug(sql + "|" + vals);
+		
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		List<TicketVO> data = db.executeSelect(sql.toString(), vals, new TicketVO());
 		if (data.isEmpty()) return new TicketVO();

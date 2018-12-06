@@ -70,6 +70,7 @@ public class TicketVO extends BeanDataVO {
 	private String productCategoryId;
 	private String productSerialId;
 	private String lockedBy;
+	private String lockedByName;
 	private StatusCode statusCode;
 	private Standing standingCode = Standing.GOOD;
 	private UnitLocation unitLocation;
@@ -386,6 +387,14 @@ public class TicketVO extends BeanDataVO {
 	@Column(name="parent_id")
 	public String getParentId() {
 		return parentId;
+	}
+
+	/**
+	 * @return the lockedByName
+	 */
+	@Column(name="locked_nm", isReadOnly=true)
+	public String getLockedByName() {
+		return lockedByName;
 	}
 
 	/**
@@ -745,4 +754,10 @@ public class TicketVO extends BeanDataVO {
 		this.parentId = parentId;
 	}
 
+	/**
+	 * @param lockedByName the lockedByName to set
+	 */
+	public void setLockedByName(String lockedByName) {
+		this.lockedByName = lockedByName;
+	}
 }

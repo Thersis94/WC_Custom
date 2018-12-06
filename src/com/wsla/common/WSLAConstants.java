@@ -69,6 +69,9 @@ public class WSLAConstants {
 	 */
 	public static final String NO_SERIAL_NUMBER = "NOSN";
 	
+	/**
+	 * 
+	 */
 	private WSLAConstants() {
 		//don't need a constructor - static class
 	}

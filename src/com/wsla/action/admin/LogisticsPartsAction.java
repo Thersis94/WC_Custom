@@ -14,14 +14,19 @@ import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.orm.GridDataVO;
 import com.siliconmtn.db.pool.SMTDBConnection;
+import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 // WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
+import com.wsla.action.ticket.BaseTransactionAction;
 import com.wsla.action.ticket.PartsAction;
 import com.wsla.action.ticket.ShipmentAction;
+import com.wsla.data.ticket.LedgerSummary;
 import com.wsla.data.ticket.PartVO;
 import com.wsla.data.ticket.ShipmentVO;
+import com.wsla.data.ticket.StatusCode;
+import com.wsla.data.ticket.UserVO;
 import com.wsla.data.ticket.ShipmentVO.ShipmentStatus;
 
 /****************************************************************************
@@ -91,6 +96,17 @@ public class LogisticsPartsAction extends SBActionAdapter {
 			shipment.setArrivalDate(Calendar.getInstance().getTime());
 			shipment.setCommentsText(req.getParameter("comments"));
 			sa.saveShipment(shipment);
+			
+			// If this is for a service order, change the ticket's status
+			if (!StringUtil.isEmpty(shipment.getTicketId())) {
+				try {
+					UserVO user = (UserVO) getAdminUser(req).getUserExtendedInfo();
+					BaseTransactionAction bta = new BaseTransactionAction(getDBConnection(), getAttributes());
+					bta.changeStatus(shipment.getTicketId(), user.getUserId(), StatusCode.PARTS_RCVD_CAS, LedgerSummary.SHIPMENT_RECEIVED.summary, null);
+				} catch (DatabaseException e) {
+					throw new ActionException(e);
+				}
+			}
 
 			//if shipping src=dest, don't modify inventory
 			if (StringUtil.checkVal(shipment.getFromLocationId()).equals(shipment.getToLocationId()))
