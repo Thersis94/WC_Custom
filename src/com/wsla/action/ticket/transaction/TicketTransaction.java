@@ -16,10 +16,12 @@ import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 
 // WC Libs
-import com.smt.sitebuilder.action.SBActionAdapter;
-
+import com.wsla.action.ticket.BaseTransactionAction;
+import com.wsla.data.ticket.LedgerSummary;
+import com.wsla.data.ticket.StatusCode;
 // WSLA Libs
 import com.wsla.data.ticket.TicketVO;
+import com.wsla.data.ticket.UserVO;
 
 /****************************************************************************
  * <b>Title</b>: TicketTransaction.java
@@ -34,7 +36,7 @@ import com.wsla.data.ticket.TicketVO;
  * @updates:
  ****************************************************************************/
 
-public class TicketTransaction extends SBActionAdapter {
+public class TicketTransaction extends BaseTransactionAction {
 	
 	/**
 	 * Key for the Ajax Controller to utilize when calling this class
@@ -78,16 +80,14 @@ public class TicketTransaction extends SBActionAdapter {
 	@Override
 	public void build(ActionRequest req) throws ActionException {
 		try {
+			UserVO user = (UserVO) getAdminUser(req).getUserExtendedInfo();
+			TicketVO ticket = new TicketVO(req);
 			
 			if (req.hasParameter("existing")) {
-				closeForExistingTicket(req.getParameter("ticketId"));
+				closeForExistingTicket(ticket.getTicketId(), user.getUserId());
 				putModuleData("SUCCESS");
-			} else {
-				TicketVO ticket = new TicketVO(req);
-				
-				if (req.hasParameter(REQ_UNIT_LOCATION))
-					updateUnitLocation(ticket);
-	
+			} else if (req.hasParameter(REQ_UNIT_LOCATION)) {
+				updateUnitLocation(ticket);
 				putModuleData(ticket);
 			}
 			
@@ -97,17 +97,21 @@ public class TicketTransaction extends SBActionAdapter {
 		}
 	}
 	
-	
-	public void closeForExistingTicket(String ticketId) {
+	/**
+	 * Closes a ticket when another exists for the same unit
+	 * 
+	 * @param ticketId
+	 * @param userId
+	 * @throws DatabaseException 
+	 */
+	public void closeForExistingTicket(String ticketId, String userId) throws DatabaseException {
 		log.info("Closing ticket id: " + ticketId);
 		
 		// Add ledger for move to status EXISTING_TICKET
+		changeStatus(ticketId, userId, StatusCode.EXISTING_TICKET, null, null);
 		
-		
-		// Add Ledger for move to status CLOSED
-		
-		
-		// Update ticket status to CLOSED
+		// Add ledger & update ticket status for move to status CLOSED
+		changeStatus(ticketId, userId, StatusCode.CLOSED, LedgerSummary.TICKET_CLOSED.summary, null);
 	}
 	
 	/**

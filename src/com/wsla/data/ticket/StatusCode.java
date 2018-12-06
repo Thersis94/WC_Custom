@@ -15,6 +15,7 @@ package com.wsla.data.ticket;
 
 public enum StatusCode {
 	OPENED ("Ticket Opened"),
+	EXISTING_TICKET ("Existing Ticket"),
 	USER_CALL_DATA_INCOMPLETE ("User Call Data Incomplete"),
 	USER_DATA_COMPLETE ("User Data Complete"),
 	PROBLEM_RESOLVED ("Problem Resolved"),
