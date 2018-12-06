@@ -83,10 +83,7 @@ public class TicketTransaction extends BaseTransactionAction {
 	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
-		log.debug("^^^^ ticket transaction build");
-		
 		if(req.hasParameter("publicUserForm")) {
-			log.debug("^^^^ his ticket transaction build");
 			TicketVO ticket = new TicketVO(req);
 			if(req.getBooleanParameter("warrantyValidFlag")) {
 				saveValidSerialToTicket(ticket);
@@ -133,7 +130,6 @@ public class TicketTransaction extends BaseTransactionAction {
 	 * @param ticket
 	 */
 	private void saveInvalidSerialToTicket(ActionRequest req, TicketVO ticket) {
-		// TODO Auto-generated method stub
 		TicketOverviewAction tov = new TicketOverviewAction();
 		tov.setDBConnection(getDBConnection());
 		tov.setActionInit(getActionInit());
@@ -144,8 +140,6 @@ public class TicketTransaction extends BaseTransactionAction {
 		} catch (Exception e) {
 			log.error("could not ",e);
 		}
-		
-		
 	}
 
 	/**
