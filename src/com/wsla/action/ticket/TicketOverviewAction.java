@@ -200,7 +200,7 @@ public class TicketOverviewAction extends BasePortalAction {
 		// Update the ticket
 		ticket.setProductSerialId(psn.getProductSerialId());
 		ticket.setProductSerial(psn);
-		ticket.setStatusCode(StatusCode.UNLISTED_SERIAL_NO);
+		ticket.setStatusCode(StringUtil.isEmpty(psn.getSerialNumber()) ? StatusCode.MISSING_SERIAL_NO : StatusCode.UNLISTED_SERIAL_NO);
 	}
 
 	/**

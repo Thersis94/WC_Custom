@@ -26,6 +26,7 @@ public enum StatusCode {
 	USER_DATA_APPROVAL_PENDING ("Approval Pending"),
 	UNSUPPORTED_PRODUCT ("Unsupported Product"),
 	UNLISTED_SERIAL_NO ("Unlisted Serial Number"),
+	MISSING_SERIAL_NO ("Serial Number Not Provided"),
 	DECLINED_SERIAL_NO ("Declined Serial Number"),
 	PENDING_PICKUP ("Pickup Pending"),
 	PICKUP_COMPLETE ("Pickup Complete"),
