@@ -139,8 +139,14 @@ public class TicketOverviewAction extends BasePortalAction {
 			this.addProductSerialNumber(req, ticket);
 		
 		// If the user resolved the ticket during diagnostics, close the ticket
-		if (req.getIntegerParameter("attr_issueResolved", 0) == 1) 
+		BaseTransactionAction bta = new BaseTransactionAction(getDBConnection(), getAttributes());
+		if (req.getIntegerParameter("attr_issueResolved", 0) == 1) {
+			bta.changeStatus(ticket.getTicketId(), user.getUserId(), StatusCode.PROBLEM_RESOLVED, null, null);
 			ticket.setStatusCode(StatusCode.CLOSED);
+		} else if (req.getBooleanParameter("warrantyExpiredFlag") && !req.getBooleanParameter("attr_userFunded")) {
+			bta.changeStatus(ticket.getTicketId(), user.getUserId(), StatusCode.EXPIRED_WARRANTY, null, null);
+			ticket.setStatusCode(StatusCode.CLOSED);
+		}
 
 		// Save the ticket core data
 		this.saveCoreTicket(ticket);
@@ -149,7 +155,6 @@ public class TicketOverviewAction extends BasePortalAction {
 		this.saveDiagnosticRun(ticket.getDiagnosticRun().get(0));
 		
 		// Add an item to the ledger
-		BaseTransactionAction bta = new BaseTransactionAction(getDBConnection(), getAttributes());
 		TicketLedgerVO ledger = bta.addLedger(ticket.getTicketId(), user.getUserId(), ticket.getStatusCode(), LedgerSummary.CALL_FINISHED.summary, null);
 		
 		// Save the extended data elements
