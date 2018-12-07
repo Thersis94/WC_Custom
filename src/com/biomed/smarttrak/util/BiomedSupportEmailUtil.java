@@ -18,6 +18,8 @@ import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
+import com.siliconmtn.sb.email.CampaignManager;
+import com.siliconmtn.sb.email.CampaignSendVO;
 import com.siliconmtn.sb.email.util.EmailCampaignBuilderUtil;
 import com.siliconmtn.sb.email.vo.EmailRecipientVO;
 import com.siliconmtn.security.EncryptionException;
@@ -314,12 +316,16 @@ public class BiomedSupportEmailUtil {
 
 			//Build Config
 			Map<String, Object> config = getBaseConfig(t);
-			EmailRecipientVO recip = (EmailRecipientVO) attributes.get(SOURCE);
-			if (recip != null && !StringUtil.isEmpty(recip.getProfileId()))
-				r.getValue().add(recip);
 
 			//Get Emails
-			ecbu.sendMessage(config, r.getValue(), (String)attributes.get(ADMIN_NEW_TICKET_CAMP_INST_ID));
+			if (r.getKey().equals(EmailType.ADMIN)) {
+				ecbu.sendMessage(config, r.getValue(), (String)attributes.get(ADMIN_NEW_TICKET_CAMP_INST_ID));
+			} else {
+				EmailRecipientVO recip = (EmailRecipientVO) attributes.get(SOURCE);
+				if (recip != null && !StringUtil.isEmpty(recip.getProfileId()))
+					r.getValue().add(recip);
+				ecbu.sendMessage(config, r.getValue(), (String)attributes.get(NEW_TICKET_CAMP_INST_ID));
+			}
 
 			if(r.getKey().equals(EmailType.ADMIN)) {
 				//New Tickets get sent to admins withing the adminEmails List.
@@ -505,8 +511,18 @@ public class BiomedSupportEmailUtil {
 				am.addFileFromId(config, AttachmentLoader.PROFILE_DOCUMENT, a.getActionId());
 			}
 
-			//Get Emails
-			ecbu.sendMessage(config, r.getValue(), (String)attributes.get(ACT_TICKET_CAMP_INST_ID));
+			if (r.getValue() == null || r.getValue().isEmpty()) continue;
+			
+			try {
+				CampaignManager cm = new CampaignManager(dbConn, attributes);
+				CampaignSendVO vo = cm.getEmailCampaigns(dbConn, null, ecbu.validateId((String)attributes.get(ACT_TICKET_CAMP_INST_ID)), true, null).get(0);
+				if (r.getKey() == EmailType.PUBLIC && !StringUtil.isEmpty(t.getAssignedEmail())) {
+					vo.setEmailReply(t.getAssignedEmail());
+				}
+				ecbu.sendMessage(config, r.getValue(), vo);
+			} catch (DatabaseException e) {
+				log.error("Failed to send email", e);
+			}
 		}
 	}
 
