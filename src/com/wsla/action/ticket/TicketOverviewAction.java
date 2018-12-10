@@ -190,7 +190,7 @@ public class TicketOverviewAction extends BasePortalAction {
 		psn.setSerialNumber(req.getParameter("serialNumber"));
 		psn.setValidatedFlag(0);
 		
-		if (WSLAConstants.NO_SERIAL_NUMBER.equalsIgnoreCase(psn.getSerialNumber())) 
+		if (WSLAConstants.NO_SERIAL_NUMBER.equalsIgnoreCase(psn.getSerialNumber()))
 			psn.setSerialNumber(null);
 		
 		// add the serial
