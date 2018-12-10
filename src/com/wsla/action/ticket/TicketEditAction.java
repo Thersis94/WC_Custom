@@ -121,6 +121,8 @@ public class TicketEditAction extends SBActionAdapter {
 		//if its the admintool do nothing at the moment
 		if(req.hasParameter("manMod")) {return;}
 		
+		boolean isUserPortal = "wsla_user_portal".equalsIgnoreCase(req.getParameter("amid"));
+		
 		String ticketNumber = req.getParameter("ticketIdText");
 		boolean json = req.getBooleanParameter("json");
 		try {
@@ -133,11 +135,8 @@ public class TicketEditAction extends SBActionAdapter {
 			} else if (json && req.hasParameter("schedule")) {
 				putModuleData(getSchedule(req.getParameter(TICKET_ID), req.getParameter(REQ_TICKET_SCHEDULE_ID)));
 			} else if (json && req.hasParameter("assets")) {
-				boolean hasPublicAmid = false;
-				if("wsla_user_portal".equalsIgnoreCase(req.getParameter("amid"))) {
-					hasPublicAmid =true;
-				}
-				putModuleData(getExtendedData(req.getParameter(TICKET_ID), req.getParameter("groupCode"), hasPublicAmid));
+
+				putModuleData(getExtendedData(req.getParameter(TICKET_ID), req.getParameter("groupCode"), isUserPortal));
 			} else {
 				TicketVO ticket = getCompleteTicket(ticketNumber);
 				req.setAttribute("providerData", ticket.getOem());
@@ -337,7 +336,7 @@ public class TicketEditAction extends SBActionAdapter {
 	 * @param b 
 	 * @return
 	 */
-	public List<TicketDataVO> getExtendedData(String ticketId, String groupCode, boolean hasPublicAmid) {
+	public List<TicketDataVO> getExtendedData(String ticketId, String groupCode, boolean isUserPortal) {
 
 		StringBuilder sql = new StringBuilder(256);
 		sql.append("select a.*, b.attribute_nm, c.group_nm, e.first_nm, e.last_nm, disposition_by_id from ");
@@ -353,7 +352,7 @@ public class TicketEditAction extends SBActionAdapter {
 		sql.append("where a.ticket_id = ? ");
 		if (! StringUtil.isEmpty(groupCode)) sql.append("and b.attribute_group_cd = ? ");
 		
-		if (hasPublicAmid) {
+		if (isUserPortal) {
 			sql.append(" and ( b.attribute_cd = 'attr_proofPurchase' or b.attribute_cd = 'attr_serialNumberImage' ) ");
 		}
 		

@@ -24,14 +24,20 @@ import com.wsla.action.ticket.TicketTransactionAction;
  ****************************************************************************/
 public class PublicTicketTransaction extends TicketTransactionAction {
 
-	private List<String> publicActions = new ArrayList<>();
+	private static List<String> publicActions = new ArrayList<>();
+	/**
+	 * A List of the keys for the transactions allowed from the public user portal
+	 */
+	static {
+		publicActions.add(TicketAssetTransaction.AJAX_KEY);
+		publicActions.add(TicketTransaction.AJAX_KEY);
+	}
 	
 	/**
 	 * 
 	 */
 	public PublicTicketTransaction() {
 		super();
-		assignPublicActionMap();
 	}
 
 	/**
@@ -39,16 +45,7 @@ public class PublicTicketTransaction extends TicketTransactionAction {
 	 */
 	public PublicTicketTransaction(ActionInitVO actionInit) {
 		super(actionInit);
-		assignPublicActionMap();
 	}
-	/**
-	 * Assigns the keys and classes for the facade
-	 */
-	private void assignPublicActionMap() {
-		publicActions.add(TicketAssetTransaction.AJAX_KEY);
-		publicActions.add(TicketTransaction.AJAX_KEY);
-	}
-	
 	
 	/*
 	 * (non-Javadoc)

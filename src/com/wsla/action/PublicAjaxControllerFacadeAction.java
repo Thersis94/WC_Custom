@@ -30,14 +30,22 @@ import com.wsla.action.ticket.TicketLedgerAction;
  ****************************************************************************/
 public class PublicAjaxControllerFacadeAction extends AjaxControllerFacadeAction {
 
-	private List<String> publicActions = new ArrayList<>();
+	private static List<String> publicActions = new ArrayList<>();
+	
+	/**
+	 * A List of the keys allowed to make calls from the public user portal
+	 */
+	static {
+		publicActions.add(TicketEditAction.AJAX_KEY);
+		publicActions.add(TicketLedgerAction.AJAX_KEY);
+		publicActions.add("productSerial");
+	}
 	
 	/**
 	 * 
 	 */
 	public PublicAjaxControllerFacadeAction() {
 		super();
-		loadPublicTypes();
 	}
 
 	/**
@@ -45,18 +53,9 @@ public class PublicAjaxControllerFacadeAction extends AjaxControllerFacadeAction
 	 */
 	public PublicAjaxControllerFacadeAction(ActionInitVO actionInit) {
 		super(actionInit);
-		loadPublicTypes();
 	}
 
-	/**
-	 * Loads the mapping to the various ajax calls
-	 */
-	private void loadPublicTypes() {
-		publicActions.add(TicketEditAction.AJAX_KEY);
-		publicActions.add(TicketLedgerAction.AJAX_KEY);
-		publicActions.add("productSerial");
-	}
-	
+
 	/*
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.action.ActionRequest)

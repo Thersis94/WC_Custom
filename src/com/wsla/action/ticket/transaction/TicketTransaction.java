@@ -18,12 +18,10 @@ import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 
 // WC Libs
-import com.smt.sitebuilder.action.SBActionAdapter;
 import com.wsla.action.ticket.BaseTransactionAction;
 import com.wsla.action.ticket.TicketOverviewAction;
 import com.wsla.data.ticket.LedgerSummary;
 import com.wsla.data.ticket.StatusCode;
-import com.wsla.data.ticket.TicketLedgerVO;
 // WSLA Libs
 import com.wsla.data.ticket.TicketVO;
 
@@ -165,7 +163,7 @@ public class TicketTransaction extends BaseTransactionAction {
 	}
 
 	public void closeForExistingTicket(String ticketId) {
-		log.info("Closing ticket id: " + ticketId);
+		log.debug("Closing ticket id: " + ticketId);
 		
 		// Add ledger for move to status EXISTING_TICKET
 		
