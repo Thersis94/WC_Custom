@@ -384,7 +384,7 @@ public class UpdatesEditionAction extends SimpleActionAdapter {
 
 			dateRange = DateUtil.getDateRangeText(cl.getTime(), cl2.getTime(), DateFormat.MEDIUM);
 		} else {
-			dateRange = DateUtil.getDate(-1 * dailyRange, DateFormat.MEDIUM);
+			dateRange = DateUtil.getDate(-1, DateFormat.MEDIUM);
 		}
 
 		req.setAttribute("dateRange", dateRange);
