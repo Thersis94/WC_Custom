@@ -24,6 +24,7 @@ import com.wsla.data.ticket.LedgerSummary;
 import com.wsla.data.ticket.StatusCode;
 // WSLA Libs
 import com.wsla.data.ticket.TicketVO;
+import com.wsla.data.ticket.UserVO;
 
 /****************************************************************************
  * <b>Title</b>: TicketTransaction.java
@@ -103,16 +104,14 @@ public class TicketTransaction extends BaseTransactionAction {
 			return;
 		}
 		try {
+			UserVO user = (UserVO) getAdminUser(req).getUserExtendedInfo();
+			TicketVO ticket = new TicketVO(req);
 			
 			if (req.hasParameter("existing")) {
-				closeForExistingTicket(req.getParameter("ticketId"));
+				closeForExistingTicket(ticket.getTicketId(), user.getUserId());
 				putModuleData("SUCCESS");
-			} else {
-				TicketVO ticket = new TicketVO(req);
-				
-				if (req.hasParameter(REQ_UNIT_LOCATION))
-					updateUnitLocation(ticket);
-	
+			} else if (req.hasParameter(REQ_UNIT_LOCATION)) {
+				updateUnitLocation(ticket);
 				putModuleData(ticket);
 			}
 			
@@ -121,7 +120,6 @@ public class TicketTransaction extends BaseTransactionAction {
 			putModuleData("", 0, false, e.getLocalizedMessage(), true);
 		}
 	}
-	
 	
 	/**
 	 * @param req 
@@ -162,16 +160,21 @@ public class TicketTransaction extends BaseTransactionAction {
 		
 	}
 
-	public void closeForExistingTicket(String ticketId) {
+	/**
+	 * Closes a ticket when another exists for the same unit
+	 * 
+	 * @param ticketId
+	 * @param userId
+	 * @throws DatabaseException 
+	 */
+	public void closeForExistingTicket(String ticketId, String userId) throws DatabaseException {
 		log.debug("Closing ticket id: " + ticketId);
 		
 		// Add ledger for move to status EXISTING_TICKET
+		changeStatus(ticketId, userId, StatusCode.EXISTING_TICKET, null, null);
 		
-		
-		// Add Ledger for move to status CLOSED
-		
-		
-		// Update ticket status to CLOSED
+		// Add ledger & update ticket status for move to status CLOSED
+		changeStatus(ticketId, userId, StatusCode.CLOSED, LedgerSummary.TICKET_CLOSED.summary, null);
 	}
 	
 	/**

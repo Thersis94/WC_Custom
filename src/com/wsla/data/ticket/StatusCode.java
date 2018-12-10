@@ -15,6 +15,8 @@ package com.wsla.data.ticket;
 
 public enum StatusCode {
 	OPENED ("Ticket Opened"),
+	EXISTING_TICKET ("Existing Ticket"),
+	EXPIRED_WARRANTY ("Expired Warranty"),
 	USER_CALL_DATA_INCOMPLETE ("User Call Data Incomplete"),
 	USER_DATA_COMPLETE ("User Data Complete"),
 	PROBLEM_RESOLVED ("Problem Resolved"),
@@ -24,8 +26,8 @@ public enum StatusCode {
 	USER_DATA_APPROVAL_PENDING ("Approval Pending"),
 	UNSUPPORTED_PRODUCT ("Unsupported Product"),
 	UNLISTED_SERIAL_NO ("Unlisted Serial Number"),
-	DECLINED_SERIAL_NO ("Declined Serial Number"),
 	MISSING_SERIAL_NO ("Serial Number Not Provided"),
+	DECLINED_SERIAL_NO ("Declined Serial Number"),
 	PENDING_PICKUP ("Pickup Pending"),
 	PICKUP_COMPLETE ("Pickup Complete"),
 	CAS_IN_DIAG ("CAS Diagnotics"),

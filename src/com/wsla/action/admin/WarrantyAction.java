@@ -81,6 +81,12 @@ public class WarrantyAction extends SBActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
+		if (req.hasParameter("getWarrantyById")) {
+			String warrantyId = req.getParameter(REQ_WARRANTY_ID);
+			setModuleData(getWarranty(warrantyId));
+			return;
+		}
+		
 		String providerId = req.getParameter("providerId");
 		String typeId = req.getParameter("typeId");
 		setModuleData(getData(providerId, typeId, new BSTableControlVO(req, WarrantyVO.class)));
