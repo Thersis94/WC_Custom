@@ -13,7 +13,7 @@ package com.wsla.data.ticket;
  * @updates:
  ****************************************************************************/
 public enum ApprovalCode {
-	UNKNOWN(false,-1), APPROVED(false, 0), REJECTED(true, 1);
+	PENDING(false,-1), APPROVED(false, 0), REJECTED(true, 1);
 	boolean rejected;
 	int level;
 	

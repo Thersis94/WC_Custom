@@ -185,8 +185,13 @@ public class TicketOverviewAction extends BasePortalAction {
 		psn.setSerialNumber(req.getParameter("serialNumber"));
 		psn.setValidatedFlag(0);
 		
-		if (WSLAConstants.NO_SERIAL_NUMBER.equalsIgnoreCase(psn.getSerialNumber())) 
+		if (WSLAConstants.NO_SERIAL_NUMBER.equalsIgnoreCase(psn.getSerialNumber())) {
 			psn.setSerialNumber(null);
+			ticket.setStatusCode(StatusCode.MISSING_SERIAL_NO);
+		}else {
+			ticket.setStatusCode(StatusCode.UNLISTED_SERIAL_NO);
+		}
+			
 		
 		// add the serial
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
@@ -195,7 +200,7 @@ public class TicketOverviewAction extends BasePortalAction {
 		// Update the ticket
 		ticket.setProductSerialId(psn.getProductSerialId());
 		ticket.setProductSerial(psn);
-		ticket.setStatusCode(StatusCode.UNLISTED_SERIAL_NO);
+		
 	}
 
 	/**

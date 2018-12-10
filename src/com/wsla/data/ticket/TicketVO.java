@@ -206,6 +206,24 @@ public class TicketVO extends BeanDataVO {
 	}
 
 	/**
+	 * Helper method for the view.  In some cases we only want back the most recent values for each data attribute
+	 * @return
+	 */
+	public Map<String, TicketDataVO> getLatestDataMap() {
+		Map<String, TicketDataVO> data = new HashMap<>();
+		for (TicketDataVO td : getTicketData()) {
+			if (data.containsKey(td.getAttributeCode())) {
+				if(data.get(td.getAttributeCode()).getCreateDate().before(td.getCreateDate())) {
+					data.put(td.getAttributeCode(), td);
+				}
+			}else {
+				data.put(td.getAttributeCode(), td);
+			}
+		}
+		return data;
+	}
+	
+	/**
 	 * @return the ticketId
 	 */
 	@Column(name="ticket_id", isPrimaryKey=true)
