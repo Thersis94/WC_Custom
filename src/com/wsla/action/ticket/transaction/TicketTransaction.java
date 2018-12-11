@@ -1,5 +1,6 @@
 package com.wsla.action.ticket.transaction;
 
+import java.util.ArrayList;
 // JDK 1.8.x
 import java.util.Arrays;
 import java.util.Date;
@@ -10,16 +11,20 @@ import java.util.Map;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 
 // WC Libs
-import com.smt.sitebuilder.action.SBActionAdapter;
-
+import com.wsla.action.ticket.BaseTransactionAction;
+import com.wsla.action.ticket.TicketOverviewAction;
+import com.wsla.data.ticket.LedgerSummary;
+import com.wsla.data.ticket.StatusCode;
 // WSLA Libs
 import com.wsla.data.ticket.TicketVO;
+import com.wsla.data.ticket.UserVO;
 
 /****************************************************************************
  * <b>Title</b>: TicketTransaction.java
@@ -34,7 +39,7 @@ import com.wsla.data.ticket.TicketVO;
  * @updates:
  ****************************************************************************/
 
-public class TicketTransaction extends SBActionAdapter {
+public class TicketTransaction extends BaseTransactionAction {
 	
 	/**
 	 * Key for the Ajax Controller to utilize when calling this class
@@ -77,17 +82,36 @@ public class TicketTransaction extends SBActionAdapter {
 	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
+		if(req.hasParameter("publicUserForm")) {
+			TicketVO ticket = new TicketVO(req);
+			if(req.getBooleanParameter("warrantyValidFlag")) {
+				saveValidSerialToTicket(ticket);
+				try {
+					changeStatus(ticket.getTicketId(), ticket.getUserId(), StatusCode.USER_CALL_DATA_INCOMPLETE, LedgerSummary.VALID_SERIAL_SAVED.summary, null);
+				} catch (DatabaseException e) {
+					log.error("could not save ledger entry or save status ",e);
+				}
+			}else {
+				saveInvalidSerialToTicket(req, ticket);
+				try {
+					changeStatus(ticket.getTicketId(), ticket.getUserId(), StatusCode.UNLISTED_SERIAL_NO, LedgerSummary.INVALID_SERIAL_SAVED.summary, null);
+				} catch (DatabaseException e) {
+					log.error("could not save ledger entry or save status ",e);
+				}
+			}
+			
+			
+			return;
+		}
 		try {
+			UserVO user = (UserVO) getAdminUser(req).getUserExtendedInfo();
+			TicketVO ticket = new TicketVO(req);
 			
 			if (req.hasParameter("existing")) {
-				closeForExistingTicket(req.getParameter("ticketId"));
+				closeForExistingTicket(ticket.getTicketId(), user.getUserId());
 				putModuleData("SUCCESS");
-			} else {
-				TicketVO ticket = new TicketVO(req);
-				
-				if (req.hasParameter(REQ_UNIT_LOCATION))
-					updateUnitLocation(ticket);
-	
+			} else if (req.hasParameter(REQ_UNIT_LOCATION)) {
+				updateUnitLocation(ticket);
 				putModuleData(ticket);
 			}
 			
@@ -97,17 +121,60 @@ public class TicketTransaction extends SBActionAdapter {
 		}
 	}
 	
-	
-	public void closeForExistingTicket(String ticketId) {
-		log.info("Closing ticket id: " + ticketId);
+	/**
+	 * @param req 
+	 * @param ticket
+	 */
+	private void saveInvalidSerialToTicket(ActionRequest req, TicketVO ticket) {
+		TicketOverviewAction tov = new TicketOverviewAction();
+		tov.setDBConnection(getDBConnection());
+		tov.setActionInit(getActionInit());
+		tov.setAttributes(getAttributes());
+		
+		try {
+			tov.addProductSerialNumber(req, ticket);
+		} catch (Exception e) {
+			log.error("could not ",e);
+		}
+	}
+
+	/**
+	 * saves the data for a valid serial and warrenty to the ticket 
+	 * @param ticket
+	 */
+	private void saveValidSerialToTicket(TicketVO ticket) {
+		StringBuilder sql = new StringBuilder(100);
+		sql.append(DBUtil.UPDATE_CLAUSE).append(getCustomSchema()).append("wsla_ticket ");
+		sql.append("set product_serial_id = ?, product_warranty_id = ? where ticket_id = ? ");
+		List<String> fields = new ArrayList<>();
+		fields.add("product_serial_id");
+		fields.add("product_warranty_id");
+		fields.add("ticket_id");
+		
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		try {
+			db.executeSqlUpdate(sql.toString(), ticket, fields);
+		} catch (DatabaseException e) {
+			log.error("could not save serial ticket changes",e);
+		}
+		
+	}
+
+	/**
+	 * Closes a ticket when another exists for the same unit
+	 * 
+	 * @param ticketId
+	 * @param userId
+	 * @throws DatabaseException 
+	 */
+	public void closeForExistingTicket(String ticketId, String userId) throws DatabaseException {
+		log.debug("Closing ticket id: " + ticketId);
 		
 		// Add ledger for move to status EXISTING_TICKET
+		changeStatus(ticketId, userId, StatusCode.EXISTING_TICKET, null, null);
 		
-		
-		// Add Ledger for move to status CLOSED
-		
-		
-		// Update ticket status to CLOSED
+		// Add ledger & update ticket status for move to status CLOSED
+		changeStatus(ticketId, userId, StatusCode.CLOSED, LedgerSummary.TICKET_CLOSED.summary, null);
 	}
 	
 	/**
