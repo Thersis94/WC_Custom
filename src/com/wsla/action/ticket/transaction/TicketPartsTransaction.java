@@ -1,5 +1,6 @@
 package com.wsla.action.ticket.transaction;
 
+// JDK 1.8.x
 import java.util.HashMap;
 import java.util.Map;
 
@@ -9,6 +10,7 @@ import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.util.Convert;
+
 // WC Libs
 import com.wsla.action.ticket.BaseTransactionAction;
 import com.wsla.data.ticket.LedgerSummary;
@@ -95,7 +97,7 @@ public class TicketPartsTransaction extends BaseTransactionAction {
 	private void setApproval(ActionRequest req) throws DatabaseException {
 		boolean isApproved = Convert.formatBoolean(req.getParameter("isApproved"));
 		if (!isApproved)
-			return;
+			return; // Check with WSLA
 		
 		// Set the approval status for the parts request
 		setPartsStatus(req, StatusCode.CAS_PARTS_ORDERED, LedgerSummary.PARTS_REQUEST_REVIEWED.summary, null);
