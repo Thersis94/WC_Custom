@@ -32,6 +32,7 @@ public class PartVO extends ProductVO {
 	private int quantityReceived;
 	private int destEstQuantity;
 	private int harvestedFlag;
+	private int submitApprovalFlag;
 	private String availabilityCode;
 	private Date availabilityDate;
 
@@ -107,7 +108,13 @@ public class PartVO extends ProductVO {
 		return shipmentStatus;
 	}
 
-
+	/**
+	 * @return the submitApprovalFlag
+	 */
+	@Column(name="submit_approval_flg")
+	public int getSubmitApprovalFlag() {
+		return submitApprovalFlag;
+	}
 
 	public void setPartId(String partId) {
 		this.partId = partId;
@@ -151,5 +158,12 @@ public class PartVO extends ProductVO {
 
 	public void setShipmentStatus(ShipmentStatus status) {
 		this.shipmentStatus = status;
+	}
+
+	/**
+	 * @param submitApprovalFlag the submitApprovalFlag to set
+	 */
+	public void setSubmitApprovalFlag(int submitApprovalFlag) {
+		this.submitApprovalFlag = submitApprovalFlag;
 	}
 }

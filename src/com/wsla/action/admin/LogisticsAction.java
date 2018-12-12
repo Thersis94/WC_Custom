@@ -278,7 +278,7 @@ public class LogisticsAction extends SBActionAdapter {
 	 * @param partIds
 	 * @param schema
 	 */
-	private void addTicketPartsToShipment(String shipmentId, String ticketId) {
+	public void addTicketPartsToShipment(String shipmentId, String ticketId) {
 		StringBuilder sql = new StringBuilder(200);
 		sql.append(DBUtil.UPDATE_CLAUSE).append(getCustomSchema()).append("wsla_part ");
 		sql.append("set shipment_id=?, update_dt=? where ticket_id=? and shipment_id is null");
