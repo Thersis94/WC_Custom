@@ -1,9 +1,12 @@
 #!/bin/bash
+# A Cron needs registered for these changes.  Details about cron run are below.
+#
 # Install by 8am 12/21/2018.
 # Script to be run from 12/21/2018 - 1/3/2019, running at 8am each day.
 # Uninstall date of 1/2/2019 after 8am.
 # register in cron using 
 # 0 8 * * * sudo -u postgres /path/to/emailHolidayScript.sh >/dev/null 2>&1
+#
 # Runs Campaign Update Queries then sends status email to targetEmails.
 
 # EmailAddresses to send to
