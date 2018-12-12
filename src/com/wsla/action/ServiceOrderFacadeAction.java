@@ -33,7 +33,7 @@ public class ServiceOrderFacadeAction extends FacadeActionAdapter {
 	/**
 	 * Default type if not passed
 	 */
-	public static final String DEFAULT_TYPE = "overview";
+	public static final String DEFAULT_TYPE = "serviceOrder";
 
 	/**
 	 * Request key utilized top determine widget to call
