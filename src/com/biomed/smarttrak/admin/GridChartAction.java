@@ -375,7 +375,7 @@ public class GridChartAction extends SBActionAdapter {
 		DBUtil.preparedStatmentQuestion(gridIds.size(), sql);			
 		sql.append(") or slug_txt in ( ");
 		DBUtil.preparedStatmentQuestion(gridIds.size(), sql);	
-		sql.append(") order by a.grid_id ");
+		sql.append(") order by a.grid_id, b.order_no ");
 		log.debug(sql);
 
 		DBProcessor db = new DBProcessor(dbConn);
