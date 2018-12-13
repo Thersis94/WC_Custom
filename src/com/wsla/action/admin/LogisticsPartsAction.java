@@ -2,6 +2,7 @@ package com.wsla.action.admin;
 
 import java.util.Arrays;
 import java.util.Calendar;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -101,9 +102,13 @@ public class LogisticsPartsAction extends SBActionAdapter {
 			if (!StringUtil.isEmpty(shipment.getTicketId())) {
 				try {
 					UserVO user = (UserVO) getAdminUser(req).getUserExtendedInfo();
+					
 					BaseTransactionAction bta = new BaseTransactionAction(getDBConnection(), getAttributes());
 					TicketLedgerVO ledger = bta.changeStatus(shipment.getTicketId(), user.getUserId(), StatusCode.PARTS_RCVD_CAS, LedgerSummary.SHIPMENT_RECEIVED.summary, null);
-					bta.buildNextStep(ledger.getStatusCode(), null, false);
+					
+					Map<String, Object> params = new HashMap<>();
+					params.put("ticketId", ledger.getTicketId());
+					bta.buildNextStep(ledger.getStatusCode(), params, false);
 					putModuleData(bta.getNextStep());
 				} catch (DatabaseException e) {
 					throw new ActionException(e);
