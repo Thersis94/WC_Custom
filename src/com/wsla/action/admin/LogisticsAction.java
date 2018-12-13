@@ -1,5 +1,7 @@
 package com.wsla.action.admin;
 
+// JDK 1.8.x
+import java.io.IOException;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -7,6 +9,10 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Map;
+import java.util.ResourceBundle;
+
+// iText PDF imports
+import com.lowagie.text.DocumentException;
 
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
@@ -14,25 +20,37 @@ import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.common.html.BSTableControlVO;
 import com.siliconmtn.data.GenericVO;
+import com.siliconmtn.data.report.PDFGenerator;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.orm.GridDataVO;
-import com.siliconmtn.db.orm.SQLTotalVO;
 import com.siliconmtn.db.pool.SMTDBConnection;
-import com.siliconmtn.security.UserDataVO;
+import com.siliconmtn.exception.DatabaseException;
+import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.EnumUtil;
 import com.siliconmtn.util.StringUtil;
+
 // WC Libs
+import com.smt.sitebuilder.action.AbstractSBReportVO;
 import com.smt.sitebuilder.action.SBActionAdapter;
+import com.smt.sitebuilder.action.report.vo.DownloadReportVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.wsla.action.ticket.BaseTransactionAction;
+import com.wsla.action.ticket.TicketEditAction;
+import com.wsla.common.WSLAConstants;
+import com.wsla.data.provider.ProviderLocationVO;
 import com.wsla.data.ticket.LedgerSummary;
+import com.wsla.data.ticket.PartVO;
 import com.wsla.data.ticket.ShipmentVO;
 import com.wsla.data.ticket.ShipmentVO.ShipmentStatus;
 import com.wsla.data.ticket.StatusCode;
+import com.wsla.data.ticket.TicketVO;
 import com.wsla.data.ticket.TicketAssignmentVO.TypeCode;
 import com.wsla.data.ticket.UserVO;
+
+// Freemarker Imports
+import freemarker.template.TemplateException;
 
 /****************************************************************************
  * <b>Title</b>: LogisticsAction.java
@@ -77,20 +95,127 @@ public class LogisticsAction extends SBActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
+		String toLocnId = req.getParameter("toLocationId");
+		ShipmentStatus sts = EnumUtil.safeValueOf(ShipmentStatus.class, req.getParameter("status"));
+		
 		//lookup the destination locationId for this shipment, based on ticketId
 		if (req.hasParameter("isDestLookup")) {
 			putModuleData(findDestLocnId(req.getParameter(REQ_TICKET_ID)));
-			return;
+		} else if (req.getBooleanParameter("parts")) {
+			LogisticsPartsAction lpa = new LogisticsPartsAction(attributes, dbConn);
+			setModuleData(lpa.listParts(req.getParameter("shipmentId"), new BSTableControlVO(req, PartVO.class)));
+
+		} else if (req.getBooleanParameter("packingList")) {
+			BSTableControlVO bst = new BSTableControlVO(req);
+			UserVO user = (UserVO) this.getAdminUser(req).getUserExtendedInfo();
+			try {
+				String sId = req.getParameter("shipmentId");
+				byte[] pdf = buildPackingList(user, sId, bst, req.getRealPath());
+				getReportObj(pdf, req);
+			} catch (Exception e) {
+				log.error("unable to build packing list pdf", e);
+			}
+
+		} else {
+			setModuleData(getData(toLocnId, sts, new BSTableControlVO(req, ShipmentVO.class)));
 		}
 
-		UserDataVO userData = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
-		UserVO user = userData != null ? (UserVO) userData.getUserExtendedInfo() : null;
-		String toLocnId = req.getParameter("toLocationId");
-		ShipmentStatus sts = EnumUtil.safeValueOf(ShipmentStatus.class, req.getParameter("status"));
 
-		setModuleData(getData(user, toLocnId, sts, new BSTableControlVO(req, ShipmentVO.class)));
 	}
 
+	/**
+	 * Creates and streams a packing list
+	 * @param user
+	 * @param shipId
+	 * @param bst
+	 * @param rp
+	 * @return
+	 * @throws InvalidDataException
+	 * @throws IOException
+	 * @throws TemplateException
+	 * @throws DocumentException
+	 * @throws SQLException 
+	 * @throws DatabaseException 
+	 */
+	public byte[] buildPackingList(UserVO user, String shipId, BSTableControlVO bst, String rp) 
+	throws Exception {
+		// Get the parts
+		bst.setSourceBean(PartVO.class);
+		LogisticsPartsAction lpa = new LogisticsPartsAction(attributes, dbConn);
+
+		// Get the shipment
+		bst.setSourceBean(ShipmentVO.class);
+		ShipmentVO shmpt = getShipmentDetail(shipId);
+		shmpt.setParts(lpa.listParts(shipId, bst).getRowData());
+		
+		// Get the ticket
+		TicketEditAction tea = new TicketEditAction(getDBConnection(), getAttributes());
+		TicketVO ticket = tea.getCompleteTicket(shmpt.getTicketId());
+		
+		String templateDir = rp + attributes.get(Constants.INCLUDE_DIRECTORY) + "templates/";
+		String path = templateDir + "packing_list.ftl";
+		ResourceBundle rb = ResourceBundle.getBundle(WSLAConstants.RESOURCE_BUNDLE, user.getUserLocale());
+		
+		// Generate the pdf
+		PDFGenerator pdf = new PDFGenerator(path, shmpt, rb);
+		pdf.addDataObject("ticket", ticket);
+		
+		return pdf.generate();
+	}
+	
+	/**
+	 * Gets the shipment detail
+	 * @param shipmentId
+	 * @return
+	 * @throws InvalidDataException
+	 * @throws com.siliconmtn.db.util.DatabaseException
+	 */
+	public ShipmentVO getShipmentDetail(String shipmentId) 
+	throws InvalidDataException, com.siliconmtn.db.util.DatabaseException {
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		
+		// Get the shipment
+		ShipmentVO shipment = new ShipmentVO();
+		shipment.setShipmentId(shipmentId);
+		db.getByPrimaryKey(shipment);
+		
+		// Get the source info
+		ProviderLocationVO fromLoc = new ProviderLocationVO();
+		fromLoc.setLocationId(shipment.getFromLocationId());
+		db.getByPrimaryKey(fromLoc);
+		
+		// Get the destination info
+		ProviderLocationVO toLoc = new ProviderLocationVO();
+		toLoc.setLocationId(shipment.getToLocationId());
+		db.getByPrimaryKey(toLoc);
+		
+		// Add the source and dest to the shipment
+		shipment.setFromLocation(fromLoc);
+		shipment.setToLocation(toLoc);
+		
+		// Get user who performed shipping
+		UserVO shippedBy = new UserVO();
+		shippedBy.setUserId(shipment.getShippedById());
+		db.getByPrimaryKey(shippedBy);
+		shipment.setShippedByUser(shippedBy);
+		
+		return shipment;
+	}
+	/**
+	 * Builds the Packing List Object to be streamed
+	 * @param ticket
+	 * @param pdf
+	 * @param req
+	 * @return
+	 */
+	public void getReportObj(byte[] pdf, ActionRequest req) {
+		
+		AbstractSBReportVO report = new DownloadReportVO();
+		report.setFileName("packing_list.pdf");
+		report.setData(pdf);
+		req.setAttribute(Constants.BINARY_DOCUMENT_REDIR, Boolean.TRUE);
+		req.setAttribute(Constants.BINARY_DOCUMENT, report);
+	}
 
 	/**
 	 * Load the locationId of the CAS for the given ticket
@@ -153,7 +278,7 @@ public class LogisticsAction extends SBActionAdapter {
 	 * @param partIds
 	 * @param schema
 	 */
-	private void addTicketPartsToShipment(String shipmentId, String ticketId) {
+	public void addTicketPartsToShipment(String shipmentId, String ticketId) {
 		StringBuilder sql = new StringBuilder(200);
 		sql.append(DBUtil.UPDATE_CLAUSE).append(getCustomSchema()).append("wsla_part ");
 		sql.append("set shipment_id=?, update_dt=? where ticket_id=? and shipment_id is null");
@@ -179,17 +304,15 @@ public class LogisticsAction extends SBActionAdapter {
 	 * @param bst vo to populate data into
 	 * @return
 	 */
-	public GridDataVO<ShipmentVO> getData(UserVO user, String toLocationId, ShipmentStatus status, BSTableControlVO bst) {
+	public GridDataVO<ShipmentVO> getData(String toLocationId, ShipmentStatus status, BSTableControlVO bst) {
 		String schema = getCustomSchema();
 		List<Object> params = new ArrayList<>();
 		StringBuilder sql = new StringBuilder(200);
-		sql.append("select s.*, p.*, pm.product_nm, t.ticket_no, ");
+		sql.append("select s.*, t.ticket_no, srclcn.*, destlcn.*, ");
 		sql.append("srclcn.location_nm as from_location_nm, destlcn.location_nm as to_location_nm ");
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("wsla_shipment s ");
-		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("wsla_part p on s.shipment_id=p.shipment_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("wsla_provider_location srclcn on s.from_location_id=srclcn.location_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("wsla_provider_location destlcn on s.to_location_id=destlcn.location_id ");
-		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("wsla_product_master pm on p.product_id=pm.product_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("wsla_ticket t on s.ticket_id=t.ticket_id ");
 		sql.append("where (s.status_cd != ? or (s.status_cd=? and coalesce(s.shipment_dt, s.update_dt, s.create_dt) > CURRENT_DATE-31)) "); //only show ingested items for 30 days past receipt
 		params.add(ShipmentStatus.RECEIVED.toString());
@@ -218,21 +341,12 @@ public class LogisticsAction extends SBActionAdapter {
 			sql.append("and s.status_cd=? ");
 			params.add(status);
 		}
-
-		//TODO limit scope based on user's role
-		//sql.append("and (s.from_location_id=? or s.to_location_id=?) ");
-		//params.add(user.getLocationId());
-		//params.add(user.getLocationId());
-
-		sql.append(bst.getSQLOrderBy("s.create_dt desc, pm.product_nm",  "asc"));
+		
+		sql.append(bst.getSQLOrderBy("s.create_dt", "desc"));
 		log.debug(sql);
-		log.debug(String.format("userLocationId=%s", user.getLocationId()));
 
 		//after query, adjust the count to be # of unique shipments, not total SQL rows
-		bst.setLimit(10000);
 		DBProcessor db = new DBProcessor(getDBConnection(), schema);
-		GridDataVO<ShipmentVO> grid = db.executeSQLWithCount(sql.toString(), params, new ShipmentVO(), "shipment_id", bst);
-		grid.setSqlTotal(new SQLTotalVO(grid.getRowData().size()));
-		return grid;
+		return db.executeSQLWithCount(sql.toString(), params, new ShipmentVO(), "shipment_id", bst);
 	}
 }

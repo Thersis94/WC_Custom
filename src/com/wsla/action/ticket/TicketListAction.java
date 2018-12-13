@@ -206,7 +206,7 @@ public class TicketListAction extends SimpleActionAdapter {
 	public String getBSTSearch(BSTableControlVO bst, List<String> params) {
 		StringBuilder where = new StringBuilder(64);
 		where.append("and (lower(ticket_no) like ? or lower(product_nm) like ? ");
-		where.append("or lower(email_address_txt) like ? )"); 
+		where.append("or lower(e.email_address_txt) like ? )"); 
 		params.add(bst.getLikeSearch().toLowerCase());
 		params.add(bst.getLikeSearch().toLowerCase());
 		params.add(bst.getLikeSearch().toLowerCase());

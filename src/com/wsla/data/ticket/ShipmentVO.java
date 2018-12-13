@@ -1,9 +1,11 @@
 package com.wsla.data.ticket;
 
+// JDK 1.8.x
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+// SMT Base Libs
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.parser.BeanDataVO;
 import com.siliconmtn.db.orm.BeanSubElement;
@@ -11,7 +13,12 @@ import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.StringUtil;
+
+// WC Imports
 import com.smt.sitebuilder.common.constants.Constants;
+
+// WSLA Imports
+import com.wsla.data.provider.ProviderLocationVO;
 
 /****************************************************************************
  * <p><b>Title:</b> ShipmentVO.java</p>
@@ -44,7 +51,11 @@ public class ShipmentVO extends BeanDataVO {
 	private Date arrivalDate;
 	private Date createDate;
 	private Date updateDate;
-
+	
+	// Bean sub-elements
+	private ProviderLocationVO fromLocation;
+	private ProviderLocationVO toLocation;
+	private UserVO shippedByUser;
 	private List<PartVO> parts;
 
 	//JSTL
@@ -249,5 +260,50 @@ public class ShipmentVO extends BeanDataVO {
 
 	public void setTicketId(String ticketId) {
 		this.ticketId = ticketId;
+	}
+
+	/**
+	 * @return the fromLocation
+	 */
+	public ProviderLocationVO getFromLocation() {
+		return fromLocation;
+	}
+
+	/**
+	 * @return the toLocation
+	 */
+	public ProviderLocationVO getToLocation() {
+		return toLocation;
+	}
+
+	/**
+	 * @param fromLocation the fromLocation to set
+	 */
+	@BeanSubElement
+	public void setFromLocation(ProviderLocationVO fromLocation) {
+		this.fromLocation = fromLocation;
+	}
+
+	/**
+	 * @param toLocation the toLocation to set
+	 */
+	@BeanSubElement
+	public void setToLocation(ProviderLocationVO toLocation) {
+		this.toLocation = toLocation;
+	}
+
+	/**
+	 * @return the shippedByUser
+	 */
+	public UserVO getShippedByUser() {
+		return shippedByUser;
+	}
+
+	/**
+	 * @param shippedByUser the shippedByUser to set
+	 */
+	@BeanSubElement
+	public void setShippedByUser(UserVO shippedByUser) {
+		this.shippedByUser = shippedByUser;
 	}
 }
