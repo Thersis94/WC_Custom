@@ -26,6 +26,7 @@ import com.wsla.data.ticket.LedgerSummary;
 import com.wsla.data.ticket.PartVO;
 import com.wsla.data.ticket.ShipmentVO;
 import com.wsla.data.ticket.StatusCode;
+import com.wsla.data.ticket.TicketLedgerVO;
 import com.wsla.data.ticket.UserVO;
 import com.wsla.data.ticket.ShipmentVO.ShipmentStatus;
 
@@ -101,7 +102,9 @@ public class LogisticsPartsAction extends SBActionAdapter {
 				try {
 					UserVO user = (UserVO) getAdminUser(req).getUserExtendedInfo();
 					BaseTransactionAction bta = new BaseTransactionAction(getDBConnection(), getAttributes());
-					bta.changeStatus(shipment.getTicketId(), user.getUserId(), StatusCode.PARTS_RCVD_CAS, LedgerSummary.SHIPMENT_RECEIVED.summary, null);
+					TicketLedgerVO ledger = bta.changeStatus(shipment.getTicketId(), user.getUserId(), StatusCode.PARTS_RCVD_CAS, LedgerSummary.SHIPMENT_RECEIVED.summary, null);
+					bta.buildNextStep(ledger.getStatusCode(), null, false);
+					putModuleData(bta.getNextStep());
 				} catch (DatabaseException e) {
 					throw new ActionException(e);
 				}
