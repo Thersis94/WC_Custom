@@ -9,13 +9,16 @@ import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import com.biomed.smarttrak.admin.AccountAction;
 import com.biomed.smarttrak.admin.AccountPermissionAction;
 import com.biomed.smarttrak.admin.AccountUserAction;
 import com.biomed.smarttrak.util.SmarttrakTree;
+import com.biomed.smarttrak.vo.AccountVO;
 import com.biomed.smarttrak.vo.UserVO;
 import com.siliconmtn.action.ActionControllerFactoryImpl;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.exception.NotAuthorizedException;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.registration.RegistrationFacadeAction;
@@ -51,6 +54,39 @@ public class SmarttrakRegistrationAction extends RegistrationFacadeAction {
 
 		UserVO user = (UserVO) req.getSession().getAttribute(Constants.USER_DATA);
 		req.setAttribute(SKIPPED_MARKETS, loadSkippedMarkets(user));
+
+		//Check if we need to load any extra Account data.
+		AccountVO acct = (AccountVO)req.getSession().getAttribute(AccountAction.SESS_ACCOUNT);
+		if(StringUtil.isEmpty(acct.getLeadEmail())) {
+			loadAccountRepOwnerInfo(acct, req);
+		}
+	}
+
+	/**
+	 * Load Account Lead information.  Select first available if there are
+	 * multiple possibilities.
+	 * @param acct 
+	 * @param req
+	 */
+	private void loadAccountRepOwnerInfo(AccountVO acct, ActionRequest req) {
+		StringBuilder sql = new StringBuilder(200);
+		sql.append("select first_nm, last_nm, email_address_txt ");
+		sql.append(DBUtil.FROM_CLAUSE).append(getCustomSchema());
+		sql.append("biomedgps_user ").append(DBUtil.WHERE_CLAUSE).append("account_id = ? and acct_owner_flg = 1 ");
+		sql.append(DBUtil.ORDER_BY).append("last_nm limit 1 ");
+
+		try(PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, acct.getAccountId());
+			ResultSet rs = ps.executeQuery();
+
+			while(rs.next()) {
+				acct.setLeadEmail(rs.getString("email_address_txt"));
+				acct.setLeadFirstName(rs.getString("first_nm"));
+				acct.setLeadLastName(rs.getString("last_nm"));
+			}
+		} catch (SQLException e) {
+			log.error("Error Processing Code", e);
+		}
 	}
 
 	/**
