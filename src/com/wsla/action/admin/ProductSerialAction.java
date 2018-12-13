@@ -26,13 +26,18 @@ import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.util.StringUtil;
+import com.wsla.action.ticket.BaseTransactionAction;
 import com.wsla.common.WSLAConstants;
 
 // WC Libs
 import com.wsla.data.product.ProductSerialNumberVO;
 import com.wsla.data.product.ProductWarrantyVO;
 import com.wsla.data.product.WarrantyVO;
+import com.wsla.data.ticket.LedgerSummary;
+import com.wsla.data.ticket.StatusCode;
+import com.wsla.data.ticket.TicketLedgerVO;
 import com.wsla.data.ticket.TicketVO;
+import com.wsla.data.ticket.UserVO;
 
 import static com.wsla.action.admin.ProductMasterAction.REQ_PRODUCT_ID;
 
@@ -146,7 +151,8 @@ public class ProductSerialAction extends BatchImport {
 				String psId = req.getParameter("productSerialId");
 				String wId = req.getParameter("warrantyId");
 				int val = req.getIntegerParameter("validationFlag");
-				updateValidationFlag(psId, val, wId);
+				UserVO user = (UserVO) getAdminUser(req).getUserExtendedInfo();
+				updateValidationFlag(psId, val, wId, user.getUserId());
 			} else {
 				db.save(vo);
 			}
@@ -164,7 +170,7 @@ public class ProductSerialAction extends BatchImport {
 	 * @throws DatabaseException 
 	 * @throws InvalidDataException 
 	 */
-	public void updateValidationFlag(String psId, int valFlag, String warrantyId) 
+	public void updateValidationFlag(String psId, int valFlag, String warrantyId, String userId) 
 	throws SQLException, InvalidDataException, DatabaseException {
 		
 		// Update the serial value
@@ -190,8 +196,40 @@ public class ProductSerialAction extends BatchImport {
 			db.save(vo);
 		}
 		
-		//TODO Check the ticket and update.  Need workflow in place for this
+		// Update status & add ledger entry.
+		BaseTransactionAction bta = new BaseTransactionAction(getDBConnection(), getAttributes());
+		TicketVO ticket = getTicketForSerial(psId);
+		String summary = valFlag == 1 ? LedgerSummary.SERIAL_APPROVED.summary : null;
+		TicketLedgerVO ledger = bta.changeStatus(ticket.getTicketId(), userId, valFlag == 1 ? StatusCode.USER_CALL_DATA_INCOMPLETE : StatusCode.DECLINED_SERIAL_NO, summary, null);
 		
+		// When serial is declined, close the ticket
+		if (ledger.getStatusCode() == StatusCode.DECLINED_SERIAL_NO) {
+			bta.changeStatus(ticket.getTicketId(), userId, StatusCode.CLOSED, LedgerSummary.TICKET_CLOSED.summary, null);
+		}
+	}
+	
+	
+	/**
+	 * Finds the ticket associated to this serial validation
+	 * 
+	 * @param psId
+	 * @return
+	 */
+	private TicketVO getTicketForSerial(String psId) {
+		StringBuilder sql = new StringBuilder(135);
+		sql.append(DBUtil.SELECT_FROM_STAR).append(getCustomSchema()).append("wsla_ticket ");
+		sql.append("where product_serial_id = ? and status_cd = ? ");
+		log.debug(sql);
+		
+		List<Object> params = new ArrayList<>();
+		params.add(psId);
+		params.add(StatusCode.UNLISTED_SERIAL_NO.name());
+		
+		DBProcessor dbp = new DBProcessor(dbConn);
+		List<TicketVO> ticketList = dbp.executeSelect(sql.toString(), params, new TicketVO());
+		
+		if (ticketList.isEmpty()) return new TicketVO();
+		else return ticketList.get(0);
 	}
 
 
