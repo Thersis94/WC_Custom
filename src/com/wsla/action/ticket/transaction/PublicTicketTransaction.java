@@ -31,6 +31,7 @@ public class PublicTicketTransaction extends TicketTransactionAction {
 	static {
 		publicActions.add(TicketAssetTransaction.AJAX_KEY);
 		publicActions.add(TicketTransaction.AJAX_KEY);
+		publicActions.add(TicketScheduleTransaction.AJAX_KEY);
 	}
 	
 	/**
@@ -53,7 +54,7 @@ public class PublicTicketTransaction extends TicketTransactionAction {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		log.debug("Type: " + req.getParameter("type") + "|" + req.getParameter("comment"));
+		log.debug("^^^^^ Type: " + req.getParameter("type") + "|" + req.getParameter("comment"));
 		if (publicActions.contains(StringUtil.checkVal(req.getParameter("type")))) super.retrieve(req);
 	}
 
@@ -63,7 +64,7 @@ public class PublicTicketTransaction extends TicketTransactionAction {
 	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
-		log.debug("Building: " + req.getParameter("type"));
+		log.debug("^^^^ Building: " + req.getParameter("type"));
 		if (publicActions.contains(StringUtil.checkVal(req.getParameter("type")))) super.build(req);
 	}
 

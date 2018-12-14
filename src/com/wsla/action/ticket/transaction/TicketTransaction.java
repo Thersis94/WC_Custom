@@ -83,22 +83,26 @@ public class TicketTransaction extends BaseTransactionAction {
 	public void build(ActionRequest req) throws ActionException {
 		if(req.hasParameter("publicUserForm")) {
 			TicketVO ticket = new TicketVO(req);
-			if(req.getBooleanParameter("warrantyValidFlag")) {
-				saveValidSerialToTicket(ticket);
-				try {
-					changeStatus(ticket.getTicketId(), ticket.getUserId(), StatusCode.USER_CALL_DATA_INCOMPLETE, LedgerSummary.VALID_SERIAL_SAVED.summary, null);
-				} catch (DatabaseException e) {
-					log.error("could not save ledger entry or save status ",e);
+			try {
+				StatusCode sc;
+				LedgerSummary ls;
+				
+				if(req.getBooleanParameter("warrantyValidFlag")) {
+					saveValidSerialToTicket(ticket);
+					sc = StatusCode.UNLISTED_SERIAL_NO;
+					ls = LedgerSummary.INVALID_SERIAL_SAVED;
+				}else {
+					saveInvalidSerialToTicket(req, ticket);
+					sc = StatusCode.USER_CALL_DATA_INCOMPLETE;
+					ls = LedgerSummary.VALID_SERIAL_SAVED;
 				}
-			}else {
-				saveInvalidSerialToTicket(req, ticket);
-				try {
-					changeStatus(ticket.getTicketId(), ticket.getUserId(), StatusCode.UNLISTED_SERIAL_NO, LedgerSummary.INVALID_SERIAL_SAVED.summary, null);
-				} catch (DatabaseException e) {
-					log.error("could not save ledger entry or save status ",e);
-				}
-			}
+		
+				changeStatus(ticket.getTicketId(), ticket.getUserId(), sc, ls.summary, null);
 			
+			} catch (DatabaseException e) {
+				log.error("could not save product serial status ",e);
+				putModuleData(null,0,false, e.getLocalizedMessage(), true);
+			}
 			
 			return;
 		}
@@ -124,6 +128,7 @@ public class TicketTransaction extends BaseTransactionAction {
 	
 	
 	/**
+	 * 
 	 * @param req 
 	 * @param ticket
 	 */
@@ -143,8 +148,9 @@ public class TicketTransaction extends BaseTransactionAction {
 	/**
 	 * saves the data for a valid serial and warrenty to the ticket 
 	 * @param ticket
+	 * @throws DatabaseException 
 	 */
-	private void saveValidSerialToTicket(TicketVO ticket) {
+	public void saveValidSerialToTicket(TicketVO ticket) throws DatabaseException {
 		StringBuilder sql = new StringBuilder(100);
 		sql.append(DBUtil.UPDATE_CLAUSE).append(getCustomSchema()).append("wsla_ticket ");
 		sql.append("set product_serial_id = ?, product_warranty_id = ? where ticket_id = ? ");
@@ -154,11 +160,8 @@ public class TicketTransaction extends BaseTransactionAction {
 		fields.add("ticket_id");
 		
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
-		try {
-			db.executeSqlUpdate(sql.toString(), ticket, fields);
-		} catch (DatabaseException e) {
-			log.error("could not save serial ticket changes",e);
-		}
+		db.executeSqlUpdate(sql.toString(), ticket, fields);
+
 		
 	}
 

@@ -81,6 +81,7 @@ public class TicketScheduleTransaction extends BaseTransactionAction {
 	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
+		log.debug("################ build called");
 		try {
 			TicketScheduleVO ts;
 			
@@ -124,7 +125,16 @@ public class TicketScheduleTransaction extends BaseTransactionAction {
 	public TicketScheduleVO saveSchedule(ActionRequest req) throws DatabaseException {
 		// Get the DB Processor & user
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
-		UserVO user = (UserVO) getAdminUser(req).getUserExtendedInfo();
+		UserVO user = null;
+		// Get the WSLA User
+		if(req.hasParameter("userId") && req.hasParameter("publicUserForm")) {
+			//coming in from the public user portal the id is on the form.
+			user = new UserVO();
+			user.setUserId(req.getParameter("userId"));
+		}else {
+			//coming in from he secure wsla portal the user object is available
+			user = (UserVO)getAdminUser(req).getUserExtendedInfo();
+		}
 		
 		// Build the Ticket Schedule data and save
 		TicketScheduleVO ts = new TicketScheduleVO(req);
