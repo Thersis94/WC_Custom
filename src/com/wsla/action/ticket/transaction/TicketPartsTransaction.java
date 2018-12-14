@@ -143,18 +143,16 @@ public class TicketPartsTransaction extends BaseTransactionAction {
 		if (! StringUtil.isEmpty(note)) {
 			summary.append(" : ").append(req.getParameter(PART_NOTE_APPROVAL_KEY));
 		}		
-		log.info("Assigned Note");
+		
 		// Set the approval status for the parts request
 		TicketLedgerVO ldgr = setPartsStatus(req, StatusCode.CAS_PARTS_ORDERED, summary.toString(), null);
-		log.info("Set Parts Status");
+		
 		// Add the notes to the ticket data
 		if (! StringUtil.isEmpty(note))
 			addTicketData(ticketId, ldgr.getLedgerEntryId(), req.getParameter(PART_NOTE_APPROVAL_KEY));
-		log.info("Added Ticket Data");
 		
 		// Add the shipment , com.wsla.ction.admin.LogisticsAction.build()
 		addShipmentFromParts(ticketId);
-		log.info("Added Shipment");
 	}
 	
 	/**
