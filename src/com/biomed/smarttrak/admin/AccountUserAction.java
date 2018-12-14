@@ -42,7 +42,6 @@ import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
 import com.siliconmtn.util.user.HumanNameIntfc;
 import com.siliconmtn.util.user.LastNameComparator;
-
 // WebCrescendo
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.registration.RegistrationAction;
@@ -727,7 +726,7 @@ public class AccountUserAction extends SBActionAdapter {
 	 * @param user
 	 * @throws ActionException
 	 */
-	private void addSkippedMarkets(UserVO user) throws ActionException {
+	public void addSkippedMarkets(UserVO user) throws ActionException {
 		deleteOldSkips(user.getUserId());
 		
 		StringBuilder sql = new StringBuilder(120);
