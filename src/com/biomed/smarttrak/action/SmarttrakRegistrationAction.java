@@ -21,6 +21,7 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.exception.NotAuthorizedException;
 import com.siliconmtn.util.StringUtil;
+import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.action.registration.RegistrationFacadeAction;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.security.UserLogin;
@@ -35,18 +36,18 @@ import com.smt.sitebuilder.security.UserLogin;
  * @version 3.3.1
  * @since Dec 5, 2018
  ****************************************************************************/
-public class SmarttrakRegistrationAction extends RegistrationFacadeAction {
+public class SmarttrakRegistrationAction extends SimpleActionAdapter {
 
 	private static final String ORIGINAL_PASS_CONFIRM = "originalPassConfirm";
 	private static final String EMAIL_FIELD_ID = "EMAIL_ADDRESS_TXT";
+	private static final String PASSWORD_FIELD_ID = "PASSWORD_TXT";
 	public static final String SKIPPED_MARKETS = "skippedMarkets";
 
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		RegistrationFacadeAction rfa = ActionControllerFactoryImpl.loadAction(RegistrationFacadeAction.class, this);
-		actionInit.setActionId(AdminControllerAction.REGISTRATION_GRP_ID);
-		rfa.setActionInit(actionInit);
-		rfa.retrieve(req);
+
+		//Load the Registration data.
+		loadRegistration().retrieve(req);
 
 		AccountPermissionAction apa = ActionControllerFactoryImpl.loadAction(AccountPermissionAction.class, this);
 		SmarttrakTree t = apa.getAccountPermissionTree(req);
@@ -58,17 +59,27 @@ public class SmarttrakRegistrationAction extends RegistrationFacadeAction {
 		//Check if we need to load any extra Account data.
 		AccountVO acct = (AccountVO)req.getSession().getAttribute(AccountAction.SESS_ACCOUNT);
 		if(StringUtil.isEmpty(acct.getLeadEmail())) {
-			loadAccountRepOwnerInfo(acct, req);
+			loadAccountRepOwnerInfo(acct);
 		}
+	}
+
+	/**
+	 * Loads the Registration action used for managing user data.
+	 * @return
+	 */
+	public RegistrationFacadeAction loadRegistration() {
+		RegistrationFacadeAction rfa = ActionControllerFactoryImpl.loadAction(RegistrationFacadeAction.class, this);
+		actionInit.setActionId(AdminControllerAction.REGISTRATION_GRP_ID);
+		rfa.setActionInit(actionInit);
+		return rfa;
 	}
 
 	/**
 	 * Load Account Lead information.  Select first available if there are
 	 * multiple possibilities.
 	 * @param acct 
-	 * @param req
 	 */
-	private void loadAccountRepOwnerInfo(AccountVO acct, ActionRequest req) {
+	private void loadAccountRepOwnerInfo(AccountVO acct) {
 		StringBuilder sql = new StringBuilder(200);
 		sql.append("select first_nm, last_nm, email_address_txt ");
 		sql.append(DBUtil.FROM_CLAUSE).append(getCustomSchema());
@@ -115,13 +126,19 @@ public class SmarttrakRegistrationAction extends RegistrationFacadeAction {
 
 	@Override
 	public void build(ActionRequest req) throws ActionException {
+
+		//Verify they've provided the correct current password.
 		if(!validateRequest(req)) {
 			req.setAttribute(Constants.REDIRECT_REQUEST, Boolean.TRUE);
-			req.setAttribute(Constants.REDIRECT_URL, req.getRequestURI() + "?msg=Current+Password+is+incorrect.++Please+try+again.");
+			req.setAttribute(Constants.REDIRECT_URL, req.getRequestURI() + "?msg=Current Password is incorrect.  Please try again.");
 			return;
 		}
-		super.build(req);
-		if(req.hasParameter("skippedMarkets")) {
+
+		//Process users Registration.
+		loadRegistration().build(req);
+
+		//Process their Markets Selections.
+		if(req.hasParameter(SKIPPED_MARKETS)) {
 			List<String> skippedMarkets = Arrays.asList(req.getParameterValues(SKIPPED_MARKETS));
 			UserVO user = (UserVO) req.getSession().getAttribute(Constants.USER_DATA);
 	
@@ -130,6 +147,7 @@ public class SmarttrakRegistrationAction extends RegistrationFacadeAction {
 	}
 
 	/**
+	 * Call to AccountUserAction to process the skipped Markets.
 	 * @param user
 	 * @param skippedMarkets
 	 * @throws ActionException 
@@ -141,24 +159,31 @@ public class SmarttrakRegistrationAction extends RegistrationFacadeAction {
 	}
 
 	/**
+	 * Check that if the user is attempting to modify their password, they've 
+	 * provided the correct current password.  If they haven't return false.
 	 * @param req
 	 * @return
 	 * @throws ActionException 
 	 */
-	private boolean validateRequest(ActionRequest req) throws ActionException {
+	private boolean validateRequest(ActionRequest req) {
 		boolean isValid = true;
 		String username = "";
+		boolean hasNewPassword = false;
+
+		//Find the UserName field on the request.
 		for(Entry<String, String[]> e : req.getParameterMap().entrySet()) {
 			if(StringUtil.checkVal(e.getKey()).contains(EMAIL_FIELD_ID) && EMAIL_FIELD_ID.equals(e.getKey().split("\\|")[1])) {
 				username = e.getValue()[0];
-				break;
+			} else if(StringUtil.checkVal(e.getKey()).contains(PASSWORD_FIELD_ID) && PASSWORD_FIELD_ID.equals(e.getKey().split("\\|")[1])) {
+				hasNewPassword = !UserLogin.DUMMY_PSWD.equals(e.getValue()[0]);
 			}
 		}
 
+		//Get the Current Password
 		String password = StringUtil.checkVal(req.getParameter(ORIGINAL_PASS_CONFIRM));
 
-		//Check if we have enoug information to verify a password change?
-		if(!StringUtil.isEmpty(username) && !StringUtil.isEmpty(password)) {
+		//Check if we have enough information to verify a password change?
+		if(hasNewPassword && !StringUtil.isEmpty(username) && !StringUtil.isEmpty(password)) {
 			UserLogin ul = new UserLogin(dbConn, attributes);
 			try {
 				String authId = ul.checkCredentials(username, password);
@@ -168,6 +193,9 @@ public class SmarttrakRegistrationAction extends RegistrationFacadeAction {
 				log.error("User did not provide valid Current Password", e);
 				isValid = false;
 			}
+		} else if(hasNewPassword) {
+			isValid = false;
+			log.debug("User attempted to change password without providing original!");
 		}
 		return isValid;
 	}
