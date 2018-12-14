@@ -170,7 +170,11 @@ public class SmarttrakRegistrationAction extends SimpleActionAdapter {
 		String username = "";
 		boolean hasNewPassword = false;
 
-		//Find the UserName field on the request.
+		/*
+		 * Look for Email on address and capture if they're trying to change
+		 * their password.  We should only block if they are and need to properly
+		 * handle if they are and don't provide current.
+		 */
 		for(Entry<String, String[]> e : req.getParameterMap().entrySet()) {
 			if(StringUtil.checkVal(e.getKey()).contains(EMAIL_FIELD_ID) && EMAIL_FIELD_ID.equals(e.getKey().split("\\|")[1])) {
 				username = e.getValue()[0];
