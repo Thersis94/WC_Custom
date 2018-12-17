@@ -321,7 +321,7 @@ public class LogisticsAction extends SBActionAdapter {
 		//fuzzy keyword search
 		String term = bst.getLikeSearch().toLowerCase();
 		if (!StringUtil.isEmpty(term)) {
-			sql.append("and (lower(pm.product_nm) like ? or lower(pm.cust_product_id) like ? ");
+			sql.append("and (lower(t.ticket_no) like ? or lower(s.status_cd) like ? ");
 			sql.append("or lower(t.ticket_no) like ? or lower(s.carrier_tracking_no) like ? ");
 			sql.append("or lower(destlcn.location_nm) like ? or lower(srclcn.location_nm) like ?) ");
 			params.add(term);
