@@ -118,6 +118,11 @@ public class DiagnosticTransaction extends BaseTransactionAction {
 		DispositionCode disposition = DispositionCode.valueOf(td.getValue());
 		TicketLedgerVO ledger = changeStatus(td.getTicketId(), user.getUserId(), disposition.getStatus(), disposition.getLedgerSummary(), null);
 		
+		// Once repaired, create an additional ledger entry for pending return
+		if (disposition == DispositionCode.REPAIRED) {
+			ledger = changeStatus(td.getTicketId(), user.getUserId(), StatusCode.PENDING_UNIT_RETURN, null, null);
+		}
+		
 		// Build the next step
 		Map<String, Object> params = new HashMap<>();
 		params.put("ticketId", ledger.getTicketId());

@@ -39,6 +39,7 @@ public enum StatusCode {
 	PARTS_RCVD_CAS ("Parts Received by CAS"),
 	CAS_IN_REPAIR ("In Repair by CAS"),
 	CAS_REPAIR_COMPLETE ("CAS Repair Complete"),
+	PENDING_UNIT_RETURN ("Pending Equipment Return"),
 	DELIVERY_SCHEDULED ("Delivery Scheduled"),
 	DELIVERY_COMPLETE ("Delivery Complete"),
 	PARTS_OUT_STOCK ("Parts Out of Stock"),
