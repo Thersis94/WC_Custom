@@ -135,26 +135,51 @@ public class TicketPartsTransaction extends BaseTransactionAction {
 		String note = req.getParameter(PART_NOTE_APPROVAL_KEY);
 		boolean isApproved = Convert.formatBoolean(req.getParameter("isApproved"));
 		if (!isApproved) {
-			return; // Check with WSLA
+			this.rejectApproval(req);
+			return;
 		}
 		
 		// Add the notes if passed to the ledger
 		StringBuilder summary = new StringBuilder(LedgerSummary.PARTS_REQUEST_REVIEWED.summary);
 		if (! StringUtil.isEmpty(note)) {
-			summary.append(" : ").append(req.getParameter(PART_NOTE_APPROVAL_KEY));
+			summary.append(" : ").append(note);
 		}		
-		log.info("Assigned Note");
+		
 		// Set the approval status for the parts request
 		TicketLedgerVO ldgr = setPartsStatus(req, StatusCode.CAS_PARTS_ORDERED, summary.toString(), null);
-		log.info("Set Parts Status");
+		
 		// Add the notes to the ticket data
 		if (! StringUtil.isEmpty(note))
-			addTicketData(ticketId, ldgr.getLedgerEntryId(), req.getParameter(PART_NOTE_APPROVAL_KEY));
-		log.info("Added Ticket Data");
+			addTicketData(ticketId, ldgr.getLedgerEntryId(), note);
 		
 		// Add the shipment , com.wsla.ction.admin.LogisticsAction.build()
 		addShipmentFromParts(ticketId);
-		log.info("Added Shipment");
+	}
+	
+	/**
+	 * Processes the rejection of the parts request
+	 * @param req
+	 * @throws DatabaseException
+	 * @throws InvalidDataException
+	 */
+	public void rejectApproval(ActionRequest req) throws DatabaseException, InvalidDataException {
+		String note = req.getParameter(PART_NOTE_APPROVAL_KEY);
+		
+		// Add ledger and change status for UNREPARIABLE with notes
+		StringBuilder summary = new StringBuilder(LedgerSummary.PARTS_REQUEST_REJECTED.summary);
+		summary.append(" : ").append(note);
+		
+		// Set the approval status for the parts request
+		TicketLedgerVO ldgr = setPartsStatus(req, StatusCode.UNREPAIRABLE, summary.toString(), null);
+		
+		// Add ticket data for Rejection / Approval Note
+		addTicketData(req.getParameter("ticketId"), ldgr.getLedgerEntryId(), note);
+		
+		// Depending on reject type add ledger/status 
+		// for PENDING_UNIT_RETURN or REPLACMENT_REQUEST
+		summary = new StringBuilder(LedgerSummary.REPAIR_STATUS_CHANGED.summary);
+		StatusCode sc = StatusCode.valueOf(req.getParameter("rejectType"));
+		setPartsStatus(req, sc, summary.toString(), null);
 	}
 	
 	/**

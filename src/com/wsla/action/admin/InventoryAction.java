@@ -1,5 +1,6 @@
 package com.wsla.action.admin;
 
+// JDK 1.8.x
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -21,6 +22,7 @@ import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
+
 // WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.wsla.data.product.LocationItemMasterVO;
@@ -66,7 +68,8 @@ public class InventoryAction extends SBActionAdapter {
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		String locationId = req.getParameter("locationId");
-		setModuleData(getData(locationId, new BSTableControlVO(req, LocationItemMasterVO.class)));
+		BSTableControlVO bst = new BSTableControlVO(req, LocationItemMasterVO.class);
+		setModuleData(listInventory(locationId, bst.getSQLOrderBy("p.provider_nm, lcn.location_nm, pm.product_nm",  "asc"), bst));
 	}
 
 	/*
@@ -87,22 +90,7 @@ public class InventoryAction extends SBActionAdapter {
 			log.error("Unable to save location inventory", e);
 		}
 	}
-
-
-	/**
-	 * Return a list of product inventory (counts) at the given provider_location
-	 * @param locationId location who's products to load
-	 * @param bst vo to populate data into
-	 * @return
-	 */
-	public GridDataVO<LocationItemMasterVO> getData(String locationId, BSTableControlVO bst) {
-		GridDataVO<LocationItemMasterVO> vo = new GridDataVO<>();
-		String term = bst.getLikeSearch().toLowerCase();
-		vo.setRowData(listInventory(locationId, bst.getSQLOrderBy("p.provider_nm, lcn.location_nm, pm.product_nm",  "asc"), term));
-		return vo;
-	}
-
-
+	
 	/**
 	 * Return a list of product inventory (counts) at the given provider_location
 	 * @param locationId
@@ -110,7 +98,7 @@ public class InventoryAction extends SBActionAdapter {
 	 * @param term (search keyword)
 	 * @return
 	 */
-	public List<LocationItemMasterVO> listInventory(String locationId, String orderBy, String term) {
+	public GridDataVO<LocationItemMasterVO> listInventory(String locationId, String orderBy, BSTableControlVO bst) {
 		String schema = getCustomSchema();
 		List<Object> params = new ArrayList<>();
 		StringBuilder sql = new StringBuilder(200);
@@ -123,6 +111,7 @@ public class InventoryAction extends SBActionAdapter {
 		sql.append("where 1=1 ");
 
 		//fuzzy keyword search
+		String term = bst.getLikeSearch().toLowerCase();
 		if (!StringUtil.isEmpty(term)) {
 			sql.append("and (lower(p.provider_nm) like ? or lower(lcn.location_nm) like ? or lower(pm.product_nm) like ?) ");
 			params.add(term);
@@ -142,7 +131,7 @@ public class InventoryAction extends SBActionAdapter {
 		log.debug(sql);
 
 		DBProcessor db = new DBProcessor(getDBConnection(), schema);
-		return db.executeSelect(sql.toString(), params, new LocationItemMasterVO());
+		return db.executeSQLWithCount(sql.toString(), params, new LocationItemMasterVO(), bst);
 	}
 
 
