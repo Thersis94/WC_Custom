@@ -515,7 +515,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		bst.setLimit(1000);
 		bst.setOffset(0);
 		String providerId = req.getParameter(REQ_PROVIDER_ID);
-		int setFlag = req.getIntegerParameter("setFlag");
+		Integer setFlag = req.getIntegerParameter("setFlag");
 		GridDataVO<ProductVO> products = ai.getProducts(null, providerId, setFlag, null, bst);
 
 		List<GenericVO> data = new ArrayList<>(products.getTotal());
@@ -672,9 +672,9 @@ public class SelectLookupAction extends SBActionAdapter {
 		String locationId = req.getParameter("locationId");
 
 		InventoryAction pa = new InventoryAction(getAttributes(), getDBConnection());
-		List<LocationItemMasterVO> data = pa.listInventory(locationId, null, null);
-		List<GenericVO> products = new ArrayList<>(data.size());
-		for (LocationItemMasterVO lim : data)
+		GridDataVO<LocationItemMasterVO> data = pa.listInventory(locationId, null, null);
+		List<GenericVO> products = new ArrayList<>(data.getRowData().size());
+		for (LocationItemMasterVO lim : data.getRowData())
 			products.add(new GenericVO(lim.getProductId(), lim.getProductName()));
 
 		return products;

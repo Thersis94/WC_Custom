@@ -218,7 +218,9 @@ public class DiagnosticAction extends SBActionAdapter {
 		
 		// Filter by search criteria
 		if (bst.hasSearch()) {
-			sql.append("and lower(diagnostic_cd) like ? or lower(desc_txt) like ? ");
+			sql.append("and (lower(diagnostic_cd) like ? or lower(desc_txt) like ? ");
+			sql.append("or lower(category_cd) like ?) ");
+			params.add(bst.getLikeSearch().toLowerCase());
 			params.add(bst.getLikeSearch().toLowerCase());
 			params.add(bst.getLikeSearch().toLowerCase());
 		}

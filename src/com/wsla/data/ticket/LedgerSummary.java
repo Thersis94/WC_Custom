@@ -23,6 +23,7 @@ public enum LedgerSummary {
 	DIAGNOSTIC_COMPLETED ("CAS completed the diagnostics"),
 	CAS_REQUESTED_PARTS ("The CAS has requested parts for the equipment"),
 	PARTS_REQUEST_REVIEWED ("WSLA has reviewed the parts request"),
+	PARTS_REQUEST_REJECTED ("WSLA has rejected the parts request"),
 	SHIPMENT_CREATED ("A parts shipment has been created"),
 	SHIPMENT_RECEIVED ("The CAS has marked the shipment received"),
 	VALID_SERIAL_SAVED("The user submitted a valid serial and it was saved to the ticket"),
