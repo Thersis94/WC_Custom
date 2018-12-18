@@ -86,7 +86,7 @@ public class TicketListAction extends SimpleActionAdapter {
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		if(! req.hasParameter("json")) return;
-
+		
 		try {
 			setModuleData(retrieveTickets(req));
 		} catch (SQLException e) {
@@ -106,7 +106,7 @@ public class TicketListAction extends SimpleActionAdapter {
 		// Build the sql for the main query
 		StringBuilder sql = new StringBuilder(768);
 		sql.append(DBUtil.SELECT_CLAUSE).append("a.ticket_id, ticket_no, provider_nm, ");
-		sql.append("product_nm, status_nm, e.first_nm, e.last_nm, location_nm, ");
+		sql.append("product_nm, status_nm, a.status_cd, e.first_nm, e.last_nm, location_nm, ");
 		sql.append("a.create_dt, e.email_address_txt, locked_by_id, a.product_serial_id, ");
 		sql.append("serial_no_txt, oem_id, locked_dt, ");
 		sql.append("h.first_nm || ' ' || h.last_nm as locked_nm ");
