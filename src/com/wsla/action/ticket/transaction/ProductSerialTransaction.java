@@ -103,6 +103,7 @@ public class ProductSerialTransaction extends BaseTransactionAction {
 		}
 		
 		// Update the ticket
+		ticket.setPurchaseDate(req.getDateParameter("purchaseDate"));
 		ticket.setProductSerialId(psn.getProductSerialId());
 		ticket.setProductSerial(psn);
 		ticket.setStatusCode(Convert.formatBoolean(psn.getValidatedFlag()) ? StatusCode.USER_CALL_DATA_INCOMPLETE : StatusCode.UNLISTED_SERIAL_NO);
