@@ -186,13 +186,12 @@ public class ProductSerialAction extends BatchImport {
 		}
 		
 		// Add the warranty assoc if the serial is valid
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		ProductWarrantyAction pwa = new ProductWarrantyAction(attributes, getDBConnection());
+		ProductWarrantyVO vo = new ProductWarrantyVO();
 		if (valFlag == 1 && ! pwa.hasProductWarranty(psId, warrantyId)) {
-			ProductWarrantyVO vo = new ProductWarrantyVO();
 			vo.setWarrantyId(warrantyId);
 			vo.setProductSerialId(psId);
-			
-			DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 			db.save(vo);
 		}
 		
@@ -201,6 +200,13 @@ public class ProductSerialAction extends BatchImport {
 		TicketVO ticket = getTicketForSerial(psId);
 		String summary = valFlag == 1 ? LedgerSummary.SERIAL_APPROVED.summary : null;
 		TicketLedgerVO ledger = bta.changeStatus(ticket.getTicketId(), userId, valFlag == 1 ? StatusCode.USER_CALL_DATA_INCOMPLETE : StatusCode.DECLINED_SERIAL_NO, summary, null);
+		
+		// Update the warranty on the ticket if this is a valid serial
+		if (valFlag == 1) {
+			ticket.setProductWarrantyId(vo.getProductWarrantyId());
+			ticket.setUpdateDate(new Date());
+			db.save(ticket);
+		}
 		
 		// When serial is declined, close the ticket
 		if (ledger.getStatusCode() == StatusCode.DECLINED_SERIAL_NO) {
