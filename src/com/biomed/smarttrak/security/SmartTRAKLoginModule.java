@@ -122,22 +122,24 @@ public class SmartTRAKLoginModule extends DBLoginModule {
 
 		// use profile ID as that is all we have at the moment.
 		StringBuilder sql = new StringBuilder(200);
-		sql.append("select u.user_id, u.account_id, u.register_submittal_id, u.fd_auth_flg, u.ga_auth_flg, ");
+		sql.append("select u.user_id, u.account_id, u.register_submittal_id, u.fd_auth_flg, u.ga_auth_flg, rd2.value_txt as user_title, ");
 		sql.append("u.acct_owner_flg, coalesce(u.expiration_dt, a.expiration_dt) as expiration_dt, u.status_cd, u.active_flg, a.type_id, ");
 		sql.append("t.team_id, t.account_id, t.team_nm, t.default_flg, t.private_flg, a.account_nm, p.profile_id as source_id, p.email_address_txt as source_email ");
 		sql.append("from ").append(schema).append("biomedgps_user u ");
 		sql.append("left outer join ").append(schema).append("biomedgps_user_team_xr xr on u.user_id=xr.user_id ");
 		sql.append("left outer join ").append(schema).append("biomedgps_team t on xr.team_id=t.team_id ");
 		sql.append("inner join ").append(schema).append("biomedgps_account a on a.status_no='A' and u.account_id=a.account_id ");
-		sql.append("left outer join register_data rd on rd.register_submittal_id = u.register_submittal_id and register_field_id = ? ");
+		sql.append("left outer join register_data rd on rd.register_submittal_id = u.register_submittal_id and rd.register_field_id = ? ");
 		sql.append("left outer join profile p on p.profile_id = rd.value_txt ");
+		sql.append("left outer join register_data rd2 on rd2.register_submittal_id = u.register_submittal_id and rd2.register_field_id = ? ");
 		sql.append("where u.profile_id=? and u.active_flg > 0 order by t.team_nm"); //active > 0 includes Active and Demo.
 		log.debug(sql + user.getProfileId());
 
 		int iter = 0;
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, UserVO.RegistrationMap.SOURCE.getFieldId());
-			ps.setString(2, user.getProfileId());
+			ps.setString(2, UserVO.RegistrationMap.TITLE.getFieldId());
+			ps.setString(3, user.getProfileId());
 			ResultSet rs = ps.executeQuery();
 			StringEncrypter se = new StringEncrypter((String)getAttribute(Constants.ENCRYPT_KEY));
 			while (rs.next()) {
@@ -154,6 +156,7 @@ public class SmartTRAKLoginModule extends DBLoginModule {
 					user.setAccountName(rs.getString("account_nm"));
 					user.setSourceId(rs.getString("source_id"));
 					user.setSourceEmail(decrypt(se, rs.getString("source_email")));
+					user.setTitle(rs.getString("user_title"));
 
 					// Account Type - used by the role module to restrict users to Updates Only (role) - just pass the "4" along to it.
 					String type = rs.getString("type_id");
