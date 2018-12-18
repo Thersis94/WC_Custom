@@ -2,6 +2,7 @@ package com.universal.util;
 
 // JDK 1.6.x
 import java.util.Map;
+import java.util.Collections;
 import java.util.Date;
 
 // Dom4j
@@ -139,5 +140,13 @@ public class USALoginModule extends AbstractLoginModule {
 	@Override
 	public void recordLogin(UserDataVO user, String siteId, String userAgent, String ipAddr, Date d) {
 		// not implemented
+	}
+
+	/* (non-Javadoc)
+	 * @see com.siliconmtn.security.AbstractLoginModule#getConfigRequirements()
+	 */
+	@Override
+	public Map<String, Object> getConfigRequirements() {
+		return Collections.emptyMap();
 	}
 }
