@@ -195,11 +195,9 @@ public class ProductSerialAction extends BatchImport {
 			db.save(vo);
 		}
 		
-		// Update status & add ledger entry.
 		BaseTransactionAction bta = new BaseTransactionAction(getDBConnection(), getAttributes());
 		TicketVO ticket = getTicketForSerial(psId);
 		String summary = valFlag == 1 ? LedgerSummary.SERIAL_APPROVED.summary : null;
-		TicketLedgerVO ledger = bta.changeStatus(ticket.getTicketId(), userId, valFlag == 1 ? StatusCode.USER_CALL_DATA_INCOMPLETE : StatusCode.DECLINED_SERIAL_NO, summary, null);
 		
 		// Update the warranty on the ticket if this is a valid serial
 		if (valFlag == 1) {
@@ -207,6 +205,9 @@ public class ProductSerialAction extends BatchImport {
 			ticket.setUpdateDate(new Date());
 			db.save(ticket);
 		}
+
+		// Update status & add ledger entry.
+		TicketLedgerVO ledger = bta.changeStatus(ticket.getTicketId(), userId, valFlag == 1 ? StatusCode.USER_CALL_DATA_INCOMPLETE : StatusCode.DECLINED_SERIAL_NO, summary, null);
 		
 		// When serial is declined, close the ticket
 		if (ledger.getStatusCode() == StatusCode.DECLINED_SERIAL_NO) {
