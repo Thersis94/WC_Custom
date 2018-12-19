@@ -152,6 +152,7 @@ public class ProductSerialAction extends BatchImport {
 			} else if (req.getBooleanParameter("bulkSerial")) {
 				String psId = req.getParameter("productSerialId");
 				String wId = req.getParameter("warrantyId");
+				val = req.getIntegerParameter("validationFlag", 0);
 				updateValidationFlag(psId, val, wId, user.getUserId());
 			} else {
 				ProductWarrantyVO pwvo = new ProductWarrantyVO(req);
