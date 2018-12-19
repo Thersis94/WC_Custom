@@ -612,9 +612,11 @@ public class SelectLookupAction extends SBActionAdapter {
 	public List<GenericVO> getTicketAssignments(ActionRequest req) throws DatabaseException {
 		String ticketId = req.getParameter("ticketId");
 		List<TicketAssignmentVO> assignments = new TicketEditAction(getAttributes(), getDBConnection()).getAssignments(ticketId);
+		String[] excludeId = req.getParameterValues("excludeId") == null ? new String[] {} : req.getParameterValues("excludeId");
 
 		List<GenericVO> data = new ArrayList<>();
 		for (TicketAssignmentVO assignment : assignments) {
+			if (Arrays.stream(excludeId).anyMatch(assignment.getTicketAssignmentId()::equals)) continue;
 			String assignmentName = assignment.getTypeCode() == TypeCode.CALLER ? assignment.getUser().getFirstName() + ' ' + assignment.getUser().getLastName() : assignment.getLocation().getLocationName();
 			data.add(new GenericVO(assignment.getTicketAssignmentId(), assignmentName));
 		}
