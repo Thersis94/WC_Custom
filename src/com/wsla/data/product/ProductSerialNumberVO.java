@@ -37,8 +37,11 @@ public class ProductSerialNumberVO extends ProductVO {
 	// Bean Sub-Elements
 	private ProductVO product;
 	private String warrantyName;
+	
+	// Helper members
 	private String warrantyId;
-
+	private String productWarrantyId;
+	
 	public ProductSerialNumberVO() {
 		super();
 	}
@@ -160,5 +163,20 @@ public class ProductSerialNumberVO extends ProductVO {
 
 	public void setWarrantyId(String warrantyId) {
 		this.warrantyId = warrantyId;
+	}
+
+	/**
+	 * @return the productWarrantyId
+	 */
+	@Column(name="product_warranty_id", isReadOnly=true)
+	public String getProductWarrantyId() {
+		return productWarrantyId;
+	}
+
+	/**
+	 * @param productWarrantyId the productWarrantyId to set
+	 */
+	public void setProductWarrantyId(String productWarrantyId) {
+		this.productWarrantyId = productWarrantyId;
 	}
 }
