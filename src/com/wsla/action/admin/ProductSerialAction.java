@@ -152,6 +152,7 @@ public class ProductSerialAction extends BatchImport {
 			} else if (req.getBooleanParameter("bulkSerial")) {
 				String psId = req.getParameter("productSerialId");
 				String wId = req.getParameter("warrantyId");
+				val = req.getIntegerParameter("validationFlag", 0);
 				updateValidationFlag(psId, val, wId, user.getUserId());
 			} else {
 				ProductWarrantyVO pwvo = new ProductWarrantyVO(req);
@@ -187,7 +188,7 @@ public class ProductSerialAction extends BatchImport {
 		// if updating a serial number and its validated, look for pending tickets
 		TicketVO ticket = getTicketForSerial(pwvo.getProductSerialId());
 		if (! StringUtil.isEmpty(ticket.getTicketId()) && vo.getValidatedFlag() ==  1) {
-			updateStatusAndLedger(vo.getProductSerialId(), val, userId);
+			updateTicketAndStatus(vo.getProductSerialId(), val, userId, pwvo);
 		}
 	}
 	
@@ -215,17 +216,16 @@ public class ProductSerialAction extends BatchImport {
 		}
 		
 		// Add the warranty assoc if the serial is valid
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		ProductWarrantyAction pwa = new ProductWarrantyAction(attributes, getDBConnection());
+		ProductWarrantyVO vo = new ProductWarrantyVO();
 		if (valFlag == 1 && ! pwa.hasProductWarranty(psId, warrantyId)) {
-			ProductWarrantyVO vo = new ProductWarrantyVO();
 			vo.setWarrantyId(warrantyId);
 			vo.setProductSerialId(psId);
-			
-			DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 			db.save(vo);
 		}
 		
-		updateStatusAndLedger(psId, valFlag, userId);
+		updateTicketAndStatus(psId, valFlag, userId, vo);
 	}
 	
 	/**
@@ -233,14 +233,24 @@ public class ProductSerialAction extends BatchImport {
 	 * @param psId
 	 * @param valFlag
 	 * @param userId
+	 * @param vo - the ProductWarrantyVO
 	 * @throws DatabaseException
+	 * @throws InvalidDataException 
 	 */
-	public void updateStatusAndLedger(String psId, int valFlag, String userId) throws DatabaseException {
-		// Update status & add ledger entry.
+	public void updateTicketAndStatus(String psId, int valFlag, String userId, ProductWarrantyVO pwvo) throws DatabaseException, InvalidDataException {
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		BaseTransactionAction bta = new BaseTransactionAction(getDBConnection(), getAttributes());
 		TicketVO ticket = getTicketForSerial(psId);
 		if (StringUtil.isEmpty(ticket.getTicketId())) return;
 		
+		// Update the warranty on the ticket if this is a valid serial
+		if (valFlag == 1 && !StringUtil.isEmpty(pwvo.getProductWarrantyId())) {
+			ticket.setProductWarrantyId(pwvo.getProductWarrantyId());
+			ticket.setUpdateDate(new Date());
+			db.save(ticket);
+		}
+
+		// Update status & add ledger entry.
 		String summary = valFlag == 1 ? LedgerSummary.SERIAL_APPROVED.summary : null;
 		TicketLedgerVO ledger = bta.changeStatus(ticket.getTicketId(), userId, valFlag == 1 ? StatusCode.USER_CALL_DATA_INCOMPLETE : StatusCode.DECLINED_SERIAL_NO, summary, null);
 		
