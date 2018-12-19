@@ -129,7 +129,7 @@ public class SmartTRAKLoginModule extends DBLoginModule {
 		sql.append("left outer join ").append(schema).append("biomedgps_user_team_xr xr on u.user_id=xr.user_id ");
 		sql.append("left outer join ").append(schema).append("biomedgps_team t on xr.team_id=t.team_id ");
 		sql.append("inner join ").append(schema).append("biomedgps_account a on a.status_no='A' and u.account_id=a.account_id ");
-		sql.append("left outer join register_data rd on register_submittal_id = u.register_submittal_id and rd.register_field_id = ? ");
+		sql.append("left outer join register_data rd on rd.register_submittal_id = u.register_submittal_id and register_field_id = ? ");
 		sql.append("left outer join profile p on p.profile_id = rd.value_txt ");
 		sql.append("where u.profile_id=? and u.active_flg > 0 order by t.team_nm"); //active > 0 includes Active and Demo.
 		log.debug(sql + user.getProfileId());
