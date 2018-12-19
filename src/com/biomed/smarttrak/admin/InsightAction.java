@@ -335,7 +335,6 @@ public class InsightAction extends ManagementAction {
 	 * @param dateRange
 	 * @return
 	 */
-	@SuppressWarnings("unchecked")
 	public List<InsightVO> getInsights(Map<Fields, String> insightParamsMap) {
 		
 		boolean isTitleBypass = insightParamsMap.containsKey(Fields.TITLE_BYPASS) && Convert.formatBoolean(insightParamsMap.get(Fields.TITLE_BYPASS));
@@ -344,7 +343,7 @@ public class InsightAction extends ManagementAction {
 		List<Object> params = loadSqlParams(insightParamsMap);
 		List<InsightVO> insights = getFromDatabase(params, sql, isTitleBypass);
 
-		new NameComparator().decryptNames((List<? extends HumanNameIntfc>)(List<?>)insights, (String)getAttribute(Constants.ENCRYPT_KEY));
+		new NameComparator().decryptNames(insights, (String)getAttribute(Constants.ENCRYPT_KEY));
 		return insights;
 	}
 
