@@ -143,6 +143,8 @@ public class ProductSerialAction extends BatchImport {
 	@Override
 	public void build(ActionRequest req) throws ActionException {
 		ProductSerialNumberVO vo = new ProductSerialNumberVO(req);
+		int val = req.getIntegerParameter("validatedFlag", 0);
+		UserVO user = (UserVO) getAdminUser(req).getUserExtendedInfo();
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		try {
 			if (req.hasParameter("isDelete")) {
@@ -150,15 +152,42 @@ public class ProductSerialAction extends BatchImport {
 			} else if (req.getBooleanParameter("bulkSerial")) {
 				String psId = req.getParameter("productSerialId");
 				String wId = req.getParameter("warrantyId");
-				int val = req.getIntegerParameter("validationFlag");
-				UserVO user = (UserVO) getAdminUser(req).getUserExtendedInfo();
 				updateValidationFlag(psId, val, wId, user.getUserId());
 			} else {
-				db.save(vo);
+				ProductWarrantyVO pwvo = new ProductWarrantyVO(req);
+				save(vo, pwvo, val, user.getUserId());
 			}
 		} catch (InvalidDataException | DatabaseException | SQLException e) {
 			log.error("Unable to save product serial", e);
 			putModuleData("", 0, false, e.getLocalizedMessage(), true);
+		}
+	}
+	
+	/**
+	 * Saves the serial info and warranty if passed.  Checks for open tickets waiting on 
+	 * approval of the serial number
+	 * @param vo
+	 * @param pwvo
+	 * @param val
+	 * @param userId
+	 * @throws InvalidDataException
+	 * @throws DatabaseException
+	 */
+	public void save(ProductSerialNumberVO vo, ProductWarrantyVO pwvo, int val, String userId) 
+	throws InvalidDataException, DatabaseException {
+		// Save the serial info
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		db.save(vo);
+		
+		// If the warranty info exists, update it
+		if (! StringUtil.isEmpty(pwvo.getProductWarrantyId())) {
+			db.save(pwvo);
+		}
+		
+		// if updating a serial number and its validated, look for pending tickets
+		TicketVO ticket = getTicketForSerial(pwvo.getProductSerialId());
+		if (! StringUtil.isEmpty(ticket.getTicketId()) && vo.getValidatedFlag() ==  1) {
+			updateStatusAndLedger(vo.getProductSerialId(), val, userId);
 		}
 	}
 	
@@ -196,9 +225,22 @@ public class ProductSerialAction extends BatchImport {
 			db.save(vo);
 		}
 		
+		updateStatusAndLedger(psId, valFlag, userId);
+	}
+	
+	/**
+	 * 
+	 * @param psId
+	 * @param valFlag
+	 * @param userId
+	 * @throws DatabaseException
+	 */
+	public void updateStatusAndLedger(String psId, int valFlag, String userId) throws DatabaseException {
 		// Update status & add ledger entry.
 		BaseTransactionAction bta = new BaseTransactionAction(getDBConnection(), getAttributes());
 		TicketVO ticket = getTicketForSerial(psId);
+		if (StringUtil.isEmpty(ticket.getTicketId())) return;
+		
 		String summary = valFlag == 1 ? LedgerSummary.SERIAL_APPROVED.summary : null;
 		TicketLedgerVO ledger = bta.changeStatus(ticket.getTicketId(), userId, valFlag == 1 ? StatusCode.USER_CALL_DATA_INCOMPLETE : StatusCode.DECLINED_SERIAL_NO, summary, null);
 		
@@ -245,7 +287,7 @@ public class ProductSerialAction extends BatchImport {
 		String schema = getCustomSchema();
 		List<Object> params = new ArrayList<>();
 		StringBuilder sql = new StringBuilder(200);
-		sql.append("select s.*, w.desc_txt as warranty_nm from ").append(schema).append("wsla_product_serial s ");
+		sql.append("select s.*, pw.warranty_id, product_warranty_id, w.desc_txt as warranty_nm from ").append(schema).append("wsla_product_serial s ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("wsla_product_master p on s.product_id=p.product_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("wsla_product_warranty pw on s.product_serial_id=pw.product_serial_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("wsla_warranty w on pw.warranty_id=w.warranty_id ");
@@ -296,7 +338,7 @@ public class ProductSerialAction extends BatchImport {
 		List<Object> vals = new ArrayList<>();
 		vals.add(serialNo.toLowerCase());
 		vals.add(productId);
-
+		
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		List<ProductWarrantyVO> lpwvo = db.executeSelect(sql.toString(), vals, new ProductWarrantyVO());
 		

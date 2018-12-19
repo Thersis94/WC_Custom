@@ -120,7 +120,6 @@ public class TicketEditAction extends SBActionAdapter {
 	public void retrieve(ActionRequest req) throws ActionException {
 		//if its the admintool do nothing at the moment
 		if(req.hasParameter("manMod")) {return;}
-		
 		boolean isUserPortal = "wsla_user_portal".equalsIgnoreCase(req.getParameter("amid"));
 		
 		String ticketNumber = req.getParameter("ticketIdText");
