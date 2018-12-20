@@ -92,11 +92,11 @@ public class ManagementAction extends SBActionAdapter {
 	/**
 	 * @return
 	 */
-	protected Map<String, String> loadAuthorTitles() {
+	protected Map<String, String> loadAuthorTitles(String profileId) {
 		//defer loading the action until we need it
 		if (authorAction == null) initAuthors();
 		
-		return authorAction.loadAuthorTitles();
+		return authorAction.loadAuthorTitles(profileId);
 	}
 
 	@Override
