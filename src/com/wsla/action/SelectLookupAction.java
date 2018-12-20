@@ -37,10 +37,10 @@ import com.smt.sitebuilder.common.constants.Constants;
 
 // WSLA Libs
 import com.wsla.action.admin.BillableActivityAction;
-import com.wsla.action.admin.HarvestPartsAction;
 import com.wsla.action.admin.InventoryAction;
 import com.wsla.action.admin.ProductCategoryAction;
 import com.wsla.action.admin.ProductMasterAction;
+import com.wsla.action.admin.ProductSetAction;
 import com.wsla.action.admin.ProviderAction;
 import com.wsla.action.admin.ProviderLocationAction;
 import com.wsla.action.admin.StatusCodeAction;
@@ -52,13 +52,13 @@ import com.wsla.action.ticket.TicketEditAction;
 import com.wsla.common.LocaleWrapper;
 import com.wsla.common.WSLALocales;
 import com.wsla.data.product.LocationItemMasterVO;
+import com.wsla.data.product.ProductSetVO;
 import com.wsla.data.product.ProductVO;
 import com.wsla.data.product.WarrantyType;
 import com.wsla.data.provider.ProviderLocationVO;
 import com.wsla.data.provider.ProviderType;
 import com.wsla.data.ticket.BillableActivityVO;
 import com.wsla.data.ticket.BillableActivityVO.BillableTypeCode;
-import com.wsla.data.ticket.ProductHarvestVO;
 import com.wsla.data.ticket.StatusCode;
 import com.wsla.data.ticket.StatusCodeVO;
 import com.wsla.data.ticket.TicketAssignmentVO;
@@ -527,15 +527,15 @@ public class SelectLookupAction extends SBActionAdapter {
 	}
 
 	/**
-	 * Returns a list of products that are part of the set matching the passed serial#
+	 * Returns a list of products that are part of the set matching the passed productId
 	 * @return
 	 */
 	public List<GenericVO> getProductSetParts(ActionRequest req) {
-		HarvestPartsAction hpa =  new HarvestPartsAction(getAttributes(), getDBConnection());
-		BSTableControlVO bst = new BSTableControlVO(req, ProductHarvestVO.class);
+		ProductSetAction psa =  new ProductSetAction(getAttributes(), getDBConnection());
+		BSTableControlVO bst = new BSTableControlVO(req, ProductSetVO.class);
 		bst.setLimit(1000);
 		bst.setOffset(0);
-		GridDataVO<ProductHarvestVO> products = hpa.loadBOM(req.getParameter("productSerialId"), bst);
+		GridDataVO<ProductSetVO> products = psa.getSet(req.getParameter("productId"), bst);
 
 		List<GenericVO> data = new ArrayList<>(products.getTotal());
 		for (ProductVO product : products.getRowData()) {
