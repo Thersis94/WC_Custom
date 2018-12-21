@@ -187,14 +187,14 @@ public class TicketListAction extends SimpleActionAdapter {
 	 * @return
 	 */
 	public String getStatusFilter(String statusCode, String status, List<String> params) {
-		if (StringUtil.isEmpty(statusCode) && StringUtil.isEmpty(status)) return "";
-
-		if(StringUtil.isEmpty(status) || "CLOSED".equals(status)) {
+		if(!StringUtil.isEmpty(statusCode) || "CLOSED".equals(status)) {
 			params.add("CLOSED".equals(status) ? status : statusCode);
 			return "and a.status_cd = ? ";
-		} else {
+		} else if (!StringUtil.isEmpty(status) && !"ALL".equals(status)) {
 			return "and a.status_cd != 'CLOSED' ";
-		}
+		} 
+
+		return "";
 	}
 
 	/**
