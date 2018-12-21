@@ -17,6 +17,7 @@ import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.common.constants.ErrorCodes;
 import com.wsla.action.ticket.transaction.DiagnosticTransaction;
+import com.wsla.action.ticket.transaction.ProductSerialTransaction;
 import com.wsla.action.ticket.transaction.ProviderLocationTransaction;
 
 // WSLA libs
@@ -91,6 +92,7 @@ public class TicketTransactionAction extends FacadeActionAdapter {
 		actionMap.put(TicketTransaction.AJAX_KEY, TicketTransaction.class);
 		actionMap.put(TicketPartsTransaction.AJAX_KEY, TicketPartsTransaction.class);
 		actionMap.put(TicketRepairTransaction.AJAX_KEY, TicketRepairTransaction.class);
+		actionMap.put(ProductSerialTransaction.AJAX_KEY, ProductSerialTransaction.class);
 	}
 
 	/*

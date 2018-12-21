@@ -37,10 +37,10 @@ import com.smt.sitebuilder.common.constants.Constants;
 
 // WSLA Libs
 import com.wsla.action.admin.BillableActivityAction;
-import com.wsla.action.admin.HarvestPartsAction;
 import com.wsla.action.admin.InventoryAction;
 import com.wsla.action.admin.ProductCategoryAction;
 import com.wsla.action.admin.ProductMasterAction;
+import com.wsla.action.admin.ProductSetAction;
 import com.wsla.action.admin.ProviderAction;
 import com.wsla.action.admin.ProviderLocationAction;
 import com.wsla.action.admin.StatusCodeAction;
@@ -52,13 +52,13 @@ import com.wsla.action.ticket.TicketEditAction;
 import com.wsla.common.LocaleWrapper;
 import com.wsla.common.WSLALocales;
 import com.wsla.data.product.LocationItemMasterVO;
+import com.wsla.data.product.ProductSetVO;
 import com.wsla.data.product.ProductVO;
 import com.wsla.data.product.WarrantyType;
 import com.wsla.data.provider.ProviderLocationVO;
 import com.wsla.data.provider.ProviderType;
 import com.wsla.data.ticket.BillableActivityVO;
 import com.wsla.data.ticket.BillableActivityVO.BillableTypeCode;
-import com.wsla.data.ticket.ProductHarvestVO;
 import com.wsla.data.ticket.StatusCode;
 import com.wsla.data.ticket.StatusCodeVO;
 import com.wsla.data.ticket.TicketAssignmentVO;
@@ -515,7 +515,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		bst.setLimit(1000);
 		bst.setOffset(0);
 		String providerId = req.getParameter(REQ_PROVIDER_ID);
-		int setFlag = req.getIntegerParameter("setFlag");
+		Integer setFlag = req.getIntegerParameter("setFlag");
 		GridDataVO<ProductVO> products = ai.getProducts(null, providerId, setFlag, null, bst);
 
 		List<GenericVO> data = new ArrayList<>(products.getTotal());
@@ -527,15 +527,15 @@ public class SelectLookupAction extends SBActionAdapter {
 	}
 
 	/**
-	 * Returns a list of products that are part of the set matching the passed serial#
+	 * Returns a list of products that are part of the set matching the passed productId
 	 * @return
 	 */
 	public List<GenericVO> getProductSetParts(ActionRequest req) {
-		HarvestPartsAction hpa =  new HarvestPartsAction(getAttributes(), getDBConnection());
-		BSTableControlVO bst = new BSTableControlVO(req, ProductHarvestVO.class);
+		ProductSetAction psa =  new ProductSetAction(getAttributes(), getDBConnection());
+		BSTableControlVO bst = new BSTableControlVO(req, ProductSetVO.class);
 		bst.setLimit(1000);
 		bst.setOffset(0);
-		GridDataVO<ProductHarvestVO> products = hpa.loadBOM(req.getParameter("productSerialId"), bst);
+		GridDataVO<ProductSetVO> products = psa.getSet(req.getParameter("productId"), bst);
 
 		List<GenericVO> data = new ArrayList<>(products.getTotal());
 		for (ProductVO product : products.getRowData()) {
@@ -612,9 +612,11 @@ public class SelectLookupAction extends SBActionAdapter {
 	public List<GenericVO> getTicketAssignments(ActionRequest req) throws DatabaseException {
 		String ticketId = req.getParameter("ticketId");
 		List<TicketAssignmentVO> assignments = new TicketEditAction(getAttributes(), getDBConnection()).getAssignments(ticketId);
+		String[] excludeId = req.getParameterValues("excludeId") == null ? new String[] {} : req.getParameterValues("excludeId");
 
 		List<GenericVO> data = new ArrayList<>();
 		for (TicketAssignmentVO assignment : assignments) {
+			if (Arrays.stream(excludeId).anyMatch(assignment.getTicketAssignmentId()::equals)) continue;
 			String assignmentName = assignment.getTypeCode() == TypeCode.CALLER ? assignment.getUser().getFirstName() + ' ' + assignment.getUser().getLastName() : assignment.getLocation().getLocationName();
 			data.add(new GenericVO(assignment.getTicketAssignmentId(), assignmentName));
 		}
@@ -672,9 +674,9 @@ public class SelectLookupAction extends SBActionAdapter {
 		String locationId = req.getParameter("locationId");
 
 		InventoryAction pa = new InventoryAction(getAttributes(), getDBConnection());
-		List<LocationItemMasterVO> data = pa.listInventory(locationId, null, null);
-		List<GenericVO> products = new ArrayList<>(data.size());
-		for (LocationItemMasterVO lim : data)
+		GridDataVO<LocationItemMasterVO> data = pa.listInventory(locationId, null, null);
+		List<GenericVO> products = new ArrayList<>(data.getRowData().size());
+		for (LocationItemMasterVO lim : data.getRowData())
 			products.add(new GenericVO(lim.getProductId(), lim.getProductName()));
 
 		return products;

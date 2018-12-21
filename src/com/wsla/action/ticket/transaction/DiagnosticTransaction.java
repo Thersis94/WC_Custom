@@ -10,6 +10,7 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
+import com.siliconmtn.util.StringUtil;
 // WC Libs
 import com.wsla.action.ticket.BaseTransactionAction;
 import com.wsla.action.ticket.TicketEditAction;
@@ -111,6 +112,7 @@ public class DiagnosticTransaction extends BaseTransactionAction {
 	 * @throws InvalidDataException 
 	 */
 	private void saveDisposition(ActionRequest req) throws DatabaseException, InvalidDataException {
+		DBProcessor dbp = new DBProcessor(getDBConnection(), getCustomSchema());
 		TicketDataVO td = new TicketDataVO(req);
 		
 		// Update the status
@@ -118,13 +120,29 @@ public class DiagnosticTransaction extends BaseTransactionAction {
 		DispositionCode disposition = DispositionCode.valueOf(td.getValue());
 		TicketLedgerVO ledger = changeStatus(td.getTicketId(), user.getUserId(), disposition.getStatus(), disposition.getLedgerSummary(), null);
 		
+		// Once repaired, create an additional ledger entry for pending return.
+		// If not repairable, change status and save the user's notes.
+		if (disposition == DispositionCode.REPAIRED) {
+			ledger = changeStatus(td.getTicketId(), user.getUserId(), StatusCode.PENDING_UNIT_RETURN, null, null);
+		
+		} else if (disposition == DispositionCode.NONREPAIRABLE) {
+			StatusCode nextStatus = StatusCode.valueOf(req.getParameter("nonRepairType"));
+			String notes = req.getParameter("attr_partsNotes", "");
+			String summary = StringUtil.join(LedgerSummary.REPAIR_STATUS_CHANGED.summary, ": ", notes);
+			ledger = changeStatus(td.getTicketId(), user.getUserId(), nextStatus, summary, null);
+			
+			TicketDataVO notesData = new TicketDataVO(req);
+			notesData.setAttributeCode("attr_partsNotes");
+			notesData.setValue(notes);
+			dbp.save(notesData);
+		}
+		
 		// Build the next step
 		Map<String, Object> params = new HashMap<>();
 		params.put("ticketId", ledger.getTicketId());
 		buildNextStep(ledger.getStatusCode(), params, false);
 		
 		// Save the ticket data record
-		DBProcessor dbp = new DBProcessor(getDBConnection(), getCustomSchema());
 		td.setLedgerEntryId(ledger.getLedgerEntryId());
 		dbp.save(td);
 	}

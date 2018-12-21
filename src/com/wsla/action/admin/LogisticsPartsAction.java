@@ -2,6 +2,7 @@ package com.wsla.action.admin;
 
 import java.util.Arrays;
 import java.util.Calendar;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -26,6 +27,7 @@ import com.wsla.data.ticket.LedgerSummary;
 import com.wsla.data.ticket.PartVO;
 import com.wsla.data.ticket.ShipmentVO;
 import com.wsla.data.ticket.StatusCode;
+import com.wsla.data.ticket.TicketLedgerVO;
 import com.wsla.data.ticket.UserVO;
 import com.wsla.data.ticket.ShipmentVO.ShipmentStatus;
 
@@ -79,7 +81,6 @@ public class LogisticsPartsAction extends SBActionAdapter {
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.action.ActionRequest)
 	 */
-	@SuppressWarnings("unchecked")
 	@Override
 	public void build(ActionRequest req) throws ActionException {
 		PartsAction partsAction = new PartsAction(getAttributes(), getDBConnection());
@@ -101,8 +102,14 @@ public class LogisticsPartsAction extends SBActionAdapter {
 			if (!StringUtil.isEmpty(shipment.getTicketId())) {
 				try {
 					UserVO user = (UserVO) getAdminUser(req).getUserExtendedInfo();
+					
 					BaseTransactionAction bta = new BaseTransactionAction(getDBConnection(), getAttributes());
-					bta.changeStatus(shipment.getTicketId(), user.getUserId(), StatusCode.PARTS_RCVD_CAS, LedgerSummary.SHIPMENT_RECEIVED.summary, null);
+					TicketLedgerVO ledger = bta.changeStatus(shipment.getTicketId(), user.getUserId(), StatusCode.PARTS_RCVD_CAS, LedgerSummary.SHIPMENT_RECEIVED.summary, null);
+					
+					Map<String, Object> params = new HashMap<>();
+					params.put("ticketId", ledger.getTicketId());
+					bta.buildNextStep(ledger.getStatusCode(), params, false);
+					putModuleData(bta.getNextStep());
 				} catch (DatabaseException e) {
 					throw new ActionException(e);
 				}
@@ -186,7 +193,7 @@ public class LogisticsPartsAction extends SBActionAdapter {
 		bst.setLimit(10000);
 		String schema = getCustomSchema();
 		StringBuilder sql = new StringBuilder(200);
-		sql.append("select p.*, pm.product_nm, lim.actual_qnty_no, limd.actual_qnty_no as dest_actual_qnty_no ");
+		sql.append("select p.*, pm.*, lim.actual_qnty_no, limd.actual_qnty_no as dest_actual_qnty_no ");
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("wsla_shipment s ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("wsla_part p on s.shipment_id=p.shipment_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("wsla_product_master pm on p.product_id=pm.product_id ");
@@ -195,7 +202,7 @@ public class LogisticsPartsAction extends SBActionAdapter {
 		sql.append("where s.shipment_id=? ");
 
 		sql.append(bst.getSQLOrderBy("pm.product_nm",  "asc"));
-		log.debug(sql);
+		log.debug(sql + "|" + shipmentId);
 
 		DBProcessor db = new DBProcessor(getDBConnection(), schema);
 		return db.executeSQLWithCount(sql.toString(), Arrays.asList(shipmentId), new PartVO(), bst);
