@@ -35,10 +35,9 @@ public class SmartTRAKUserValidator implements UserValidatorInterface {
 		
 		if (user.isValidProfile()) {
 			req.getSession().setAttribute(WCUtilityFilter.VALID_USER, true);
-			String initDest = (String)req.getSession().getAttribute(INIT_DEST);
-			UserVO smarttrakUser = (UserVO) req.getSession().getAttribute(Constants.USER_DATA);
+			String initDest = StringUtil.checkVal(req.getSession().getAttribute(INIT_DEST));
 			
-			destUrl = !StringUtil.isEmpty(initDest) && smarttrakUser.isValidProfile()? initDest : "";
+			destUrl = initDest;
 		} else {
 			if (StringUtil.isEmpty((String) req.getSession().getAttribute(INIT_DEST))) {
 				req.getSession().setAttribute(INIT_DEST, StringUtil.checkVal(req.getRequestURI()).replace(req.getContextPath(), "") + req.getCompleteQueryString());
