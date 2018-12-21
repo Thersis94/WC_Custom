@@ -23,23 +23,12 @@ import com.smt.sitebuilder.security.UserValidatorInterface;
 public class SmartTRAKUserValidator implements UserValidatorInterface {
 	private static final String ACCOUNT_PAGE = "/my-account";
 	private static final String PAGE_QS = "?msg=User%20Profile%20Incomplete.%20Please%20Complete%20User%20Profile.";
-	private static final String INIT_DEST = "initialDestination";
 	
 
 	@Override
-	public String prepareRedirect(SMTServletRequest req, boolean isValid) {
-		String destUrl = "";
-		
-		if (isValid) {
-			return StringUtil.checkVal(req.getSession().getAttribute(INIT_DEST));
-		} else {
-			if (StringUtil.isEmpty((String) req.getSession().getAttribute(INIT_DEST))) {
-				req.getSession().setAttribute(INIT_DEST, StringUtil.checkVal(req.getRequestURI()).replace(req.getContextPath(), "") + req.getCompleteQueryString());
-			}
-			destUrl = isValidRequest(req)? "" : ACCOUNT_PAGE + PAGE_QS;
-		}
-		
-		return destUrl;
+	public String getRedirectUrl(SMTServletRequest req) {
+		return ACCOUNT_PAGE.equals(StringUtil.checkVal(req.getRequestURI()).replace(req.getContextPath(), ""))?
+				"" : ACCOUNT_PAGE + PAGE_QS;
 	}
 	
 	
@@ -51,12 +40,6 @@ public class SmartTRAKUserValidator implements UserValidatorInterface {
 		if (StringUtil.isEmpty(smarttrakUser.getMainPhone())) return false;
 		if (StringUtil.isEmpty(smarttrakUser.getTitle())) return false;
 		return smarttrakUser.getDivisions() != null;
-	}
-	
-
-	@Override
-	public boolean isValidRequest(SMTServletRequest req) {
-		return ACCOUNT_PAGE.equals(StringUtil.checkVal(req.getRequestURI()).replace(req.getContextPath(), ""));
 	}
 
 }
