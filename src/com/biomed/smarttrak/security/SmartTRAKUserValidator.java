@@ -1,6 +1,5 @@
 package com.biomed.smarttrak.security;
 
-import com.biomed.smarttrak.vo.UserVO;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.StringUtil;
@@ -35,9 +34,8 @@ public class SmartTRAKUserValidator implements UserValidatorInterface {
 		
 		if (user.isValidProfile()) {
 			req.getSession().setAttribute(WCUtilityFilter.VALID_USER, true);
-			String initDest = StringUtil.checkVal(req.getSession().getAttribute(INIT_DEST));
 			
-			destUrl = initDest;
+			destUrl = StringUtil.checkVal(req.getSession().getAttribute(INIT_DEST));
 		} else {
 			if (StringUtil.isEmpty((String) req.getSession().getAttribute(INIT_DEST))) {
 				req.getSession().setAttribute(INIT_DEST, StringUtil.checkVal(req.getRequestURI()).replace(req.getContextPath(), "") + req.getCompleteQueryString());
