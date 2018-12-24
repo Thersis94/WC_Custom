@@ -239,20 +239,24 @@ public class WebServiceMonitor extends CommandLineUtil {
         try {
             Document doc = new SAXReader().read((InputStream)bais);
             Element root = doc.getRootElement();
-            
+
             if (root.getName().equalsIgnoreCase("error")) {
             	StringBuilder errMsg = new StringBuilder(100);
             	errMsg.append(XMLUtil.checkVal(root.element("ErrorCode")));
             	errMsg.append("|");
             	errMsg.append(XMLUtil.checkVal(root.element("ErrorMessage")));
-                throw new Exception(errMsg.toString());
-                
+            	log.info("Webservice is available but returned an Error element: " + errMsg);
+                return root;
+
             } else if (root.getName().equalsIgnoreCase("root")) {
-            	return doc.getRootElement();
+            	return root;
+
             }
-            return doc.getRootElement().element(elemName);
+
+            return root.element(elemName);
 
         }
+
         catch (Exception e) {
             log.error(("Error reading XML data or error returned in webservice response: " + elemName), (Throwable)e);
             throw new DocumentException(e.getMessage());
