@@ -139,6 +139,7 @@ public class AjaxControllerFacadeAction extends FacadeActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
+		log.debug("$$ retriveded super");
 		if (! req.hasParameter("json")) return;
 		loadActionByType(req.getParameter(SELECTOR_KEY, DEFAULT_TYPE)).retrieve(req);
 	}

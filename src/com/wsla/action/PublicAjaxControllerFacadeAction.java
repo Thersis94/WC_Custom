@@ -37,8 +37,10 @@ public class PublicAjaxControllerFacadeAction extends AjaxControllerFacadeAction
 	 */
 	static {
 		publicActions.add(TicketEditAction.AJAX_KEY);
+		publicActions.add(DEFAULT_TYPE);
 		publicActions.add(TicketLedgerAction.AJAX_KEY);
 		publicActions.add("productSerial");
+		publicActions.add(TicketEditAction.AJAX_KEY);
 	}
 	
 	/**
@@ -62,7 +64,7 @@ public class PublicAjaxControllerFacadeAction extends AjaxControllerFacadeAction
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		log.debug("Type: " + req.getParameter("type") + "|" + req.getParameter("comment"));
+		log.debug("@@@@@@@Type: " + req.getParameter("type") + "|" + req.getParameter("comment"));
 		if (publicActions.contains(StringUtil.checkVal(req.getParameter("type")))) super.retrieve(req);
 	}
 
@@ -72,7 +74,7 @@ public class PublicAjaxControllerFacadeAction extends AjaxControllerFacadeAction
 	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
-		log.debug("Building: " + req.getParameter("type"));
+		log.debug("@@@@@@@@ Building: " + req.getParameter("type"));
 		if (publicActions.contains(StringUtil.checkVal(req.getParameter("type")))) super.build(req);
 	}
 }

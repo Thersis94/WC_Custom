@@ -32,6 +32,7 @@ public class PublicTicketTransaction extends TicketTransactionAction {
 		publicActions.add(TicketAssetTransaction.AJAX_KEY);
 		publicActions.add(TicketTransaction.AJAX_KEY);
 		publicActions.add(TicketScheduleTransaction.AJAX_KEY);
+		publicActions.add(UserTransaction.AJAX_KEY);
 	}
 	
 	/**

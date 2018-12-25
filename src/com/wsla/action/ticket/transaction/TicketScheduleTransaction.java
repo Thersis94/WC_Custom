@@ -169,6 +169,11 @@ public class TicketScheduleTransaction extends BaseTransactionAction {
 		modifyNotes(ts);
 		UserVO user = (UserVO) getAdminUser(req).getUserExtendedInfo();
 		
+		if(user == null) {
+			user = new UserVO();
+			user.setUserId(req.getStringParameter("userId"));
+		}
+		
 		// Add in the details of the ticket assignments that this schedule is using
 		mergeTicketAssignments(ts);
 		
