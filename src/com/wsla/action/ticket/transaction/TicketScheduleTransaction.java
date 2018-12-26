@@ -81,7 +81,7 @@ public class TicketScheduleTransaction extends BaseTransactionAction {
 	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
-		log.debug("################ build called");
+		log.debug(" build called");
 		try {
 			TicketScheduleVO ts;
 			

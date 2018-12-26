@@ -86,7 +86,7 @@ public class CASSelectionAction extends SBActionAdapter {
 		sql.append("order by distance, city_nm ");
 		sql.append("limit 10 ");
 		
-		log.debug("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ "+sql.toString()+"|"+vals);
+		log.debug(sql.toString()+"|"+vals);
 		
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		return db.executeSelect(sql.toString(), vals, new GenericVO());
