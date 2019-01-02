@@ -1213,10 +1213,8 @@ public class ProductManagementAction extends ManagementAction {
 				attr.setProductAttributeGroupId(attr.getProductAttributeId());
 				db.insert(attr);
 			} else {
-				if(createArchive) {
-					//Clone Existing Attribute Values
-					archiveAttribute(attr.getProductAttributeId(), db);
-				}
+				//Clone Existing Attribute Values
+				archiveAttribute(attr.getProductAttributeId(), db);
 
 				//Update with New Values
 				db.update(attr);

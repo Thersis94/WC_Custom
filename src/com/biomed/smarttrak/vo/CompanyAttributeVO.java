@@ -36,6 +36,7 @@ public class CompanyAttributeVO implements NoteInterface  {
 	private String altText;
 	private String groupName;
 	private String parentName;
+	private String revisionNote;
 	private List<NoteVO> notes;
 	private String statusNo;
 	private String sectionId;
@@ -66,6 +67,7 @@ public class CompanyAttributeVO implements NoteInterface  {
 		altText = req.getParameter("altText");
 		orderNo = Convert.formatInteger(req.getParameter("orderNo"));
 		statusNo = req.getParameter("statusNo");
+		revisionNote = req.getParameter("revisionNote");
 	}
 
 
@@ -239,4 +241,19 @@ public class CompanyAttributeVO implements NoteInterface  {
 		this.sectionId = sectionId;
 	}
 
+	/**
+	 * @return the revisionNote
+	 */
+	@Column(name="REVISION_NOTE")
+	public String getRevisionNote() {
+		return revisionNote;
+	}
+
+
+	/**
+	 * @param revisionNote the revisionNote to set.
+	 */
+	public void setRevisionNote(String revisionNote) {
+		this.revisionNote = revisionNote;
+	}
 }

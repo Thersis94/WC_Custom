@@ -916,9 +916,7 @@ public class CompanyManagementAction extends ManagementAction {
 			} else {
 
 				//Clone Existing Attribute Values
-				if(createArchive) {
-					archiveAttribute(attr.getCompanyAttributeId(), db);
-				}
+				archiveAttribute(attr.getCompanyAttributeId(), db);
 
 				//Update with New Values.
 				db.update(attr);
