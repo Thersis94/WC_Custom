@@ -37,8 +37,10 @@ public class PublicAjaxControllerFacadeAction extends AjaxControllerFacadeAction
 	 */
 	static {
 		publicActions.add(TicketEditAction.AJAX_KEY);
+		publicActions.add(DEFAULT_TYPE);
 		publicActions.add(TicketLedgerAction.AJAX_KEY);
 		publicActions.add("productSerial");
+		publicActions.add(TicketEditAction.AJAX_KEY);
 	}
 	
 	/**
