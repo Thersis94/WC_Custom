@@ -1,6 +1,7 @@
 package com.wsla.action.ticket;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 // SMT Base Libs
@@ -19,6 +20,7 @@ import com.smt.sitebuilder.util.ParseException;
 import com.smt.sitebuilder.util.WorkflowSender;
 import com.smt.sitebuilder.util.MessageParser.MessageType;
 import com.wsla.action.BasePortalAction;
+import com.wsla.action.admin.StatusCodeAction;
 import com.wsla.common.WSLAConstants.WorkflowSlug;
 import com.wsla.data.ticket.NextStepVO;
 import com.wsla.data.ticket.StatusCode;
@@ -200,8 +202,9 @@ public class BaseTransactionAction extends SBActionAdapter {
 		sc.setStatusCode(status.name());
 		
 		try {
-			DBProcessor dbp = new DBProcessor(getDBConnection(), getCustomSchema());
-			dbp.getByPrimaryKey(sc);
+			StatusCodeAction sca = new StatusCodeAction(getDBConnection(), getAttributes());
+			List<StatusCodeVO> statusList = sca.getStatusCodes(null, null, sc.getStatusCode());
+			sc = !statusList.isEmpty() ? statusList.get(0) : sc;
 
 			// Create the next step data
 			nextStep = new NextStepVO(status);
@@ -214,8 +217,9 @@ public class BaseTransactionAction extends SBActionAdapter {
 
 			nextStep.setButtonKeyCode(sc.getNextStepBtnKeyCode());
 			nextStep.setStatusName(sc.getStatusName());
+			nextStep.setRoleName(sc.getRoleName());
 			nextStep.setNeedsReloadFlag(needsReload);
-		} catch (InvalidDataException | DatabaseException | ParseException e) {
+		} catch (ParseException e) {
 			throw new DatabaseException(e);
 		}
 	}

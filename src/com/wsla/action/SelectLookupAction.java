@@ -424,7 +424,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		Locale locale = new ResourceBundleManagerAction().getUserLocale(req);
 		List<GenericVO> data = new ArrayList<>(64);
 		StatusCodeAction sca = new StatusCodeAction(getDBConnection(), getAttributes());
-		List<StatusCodeVO> codes = sca.getStatusCodes(req.getParameter("roleId"), locale);
+		List<StatusCodeVO> codes = sca.getStatusCodes(req.getParameter("roleId"), locale, null);
 		
 		for(StatusCodeVO sc : codes) {
 			data.add(new GenericVO(sc.getStatusCode(), sc.getStatusName()));
