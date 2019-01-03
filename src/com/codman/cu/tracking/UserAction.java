@@ -13,21 +13,19 @@ import java.util.Map;
 // DePuy SB
 import com.codman.cu.tracking.vo.PersonVO;
 import com.codman.cu.tracking.vo.UserSearchVO;
-
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.common.constants.GlobalConfig;
 import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.exception.MailException;
-import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.security.AbstractLoginModule;
 import com.siliconmtn.security.SecurityModuleFactoryImpl;
 import com.siliconmtn.security.UserDataComparator;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
-
 // SB II
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.action.user.ProfileManager;
@@ -37,6 +35,7 @@ import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.common.constants.Constants;
+import com.smt.sitebuilder.security.LoginConfigurationVO;
 import com.smt.sitebuilder.security.SBUserRole;
 import com.smt.sitebuilder.security.SecurityController;
 
@@ -335,11 +334,15 @@ public class UserAction extends SimpleActionAdapter {
 		
 		//save core LOGIN info
 		try {
+			SecurityController sc = new SecurityController(site.getLoginModules(), site.getRoleModule(), attributes);
+
+			LoginConfigurationVO conf = sc.getQualifiedLoginConfig(vo.getEmailAddress());
 			Map<String, Object> lm = new HashMap<>();
 			lm.put(Constants.ENCRYPT_KEY, (String)getAttribute(Constants.ENCRYPT_KEY));
 			lm.put(Constants.CFG_PASSWORD_SALT, (String) getAttribute(Constants.CFG_PASSWORD_SALT));
 			lm.put(GlobalConfig.KEY_DB_CONN, dbConn);
-			AbstractLoginModule loginModule = SecurityModuleFactoryImpl.getLoginInstance(site.getLoginModule(), lm);
+			lm.putAll(conf.getConfig());
+			AbstractLoginModule loginModule = SecurityModuleFactoryImpl.getLoginInstance(conf.getClassNm(), lm);
 			
 			//try to discover the authId via emailAddress lookup
 			if (StringUtil.checkVal(vo.getAuthenticationId()).length() == 0)
