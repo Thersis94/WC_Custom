@@ -19,7 +19,7 @@ import com.smt.sitebuilder.common.constants.ErrorCodes;
 import com.wsla.action.ticket.transaction.DiagnosticTransaction;
 import com.wsla.action.ticket.transaction.ProductSerialTransaction;
 import com.wsla.action.ticket.transaction.ProviderLocationTransaction;
-
+import com.wsla.action.ticket.transaction.RefundReplacementTransaction;
 // WSLA libs
 import com.wsla.action.ticket.transaction.TicketAssetTransaction;
 import com.wsla.action.ticket.transaction.TicketAssignmentTransaction;
@@ -93,6 +93,7 @@ public class TicketTransactionAction extends FacadeActionAdapter {
 		actionMap.put(TicketPartsTransaction.AJAX_KEY, TicketPartsTransaction.class);
 		actionMap.put(TicketRepairTransaction.AJAX_KEY, TicketRepairTransaction.class);
 		actionMap.put(ProductSerialTransaction.AJAX_KEY, ProductSerialTransaction.class);
+		actionMap.put(RefundReplacementTransaction.AJAX_KEY, RefundReplacementTransaction.class);
 	}
 
 	/*
