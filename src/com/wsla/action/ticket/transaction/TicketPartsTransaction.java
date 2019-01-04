@@ -346,6 +346,8 @@ public class TicketPartsTransaction extends BaseTransactionAction {
 	 * @throws ActionException 
 	 */
 	private void decrementInventory(String ticketId, List<PartVO> partsList) throws ActionException {
+		if (partsList == null || partsList.isEmpty()) return;
+		
 		// Get the CAS location so we can update their inventory with the consumed parts
 		String casLocationId = null;
 		try {
