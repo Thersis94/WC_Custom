@@ -7,6 +7,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.ResourceBundle;
@@ -348,5 +349,46 @@ public class LogisticsAction extends SBActionAdapter {
 		//after query, adjust the count to be # of unique shipments, not total SQL rows
 		DBProcessor db = new DBProcessor(getDBConnection(), schema);
 		return db.executeSQLWithCount(sql.toString(), params, new ShipmentVO(), "shipment_id", bst);
+	}
+	
+	/**
+	 * Looks up shipments tied to a ticket. Optionally, filtering by one or more statuses.
+	 * 
+	 * @param ticketId
+	 * @param statuses
+	 * @return
+	 */
+	public List<ShipmentVO> getTicketShipments(String ticketId, List<ShipmentStatus> statuses) {
+		StringBuilder sql = new StringBuilder(200);
+		sql.append(DBUtil.SELECT_FROM_STAR).append(getCustomSchema()).append("wsla_shipment ");
+		sql.append("where ticket_id = ? and status_cd in (").append(DBUtil.preparedStatmentQuestion(statuses.size())).append(") ");
+		log.debug(sql);
+		
+		List<Object> params = new ArrayList<>();
+		params.add(ticketId);
+		for (ShipmentStatus status : statuses) {
+			params.add(status.name());
+		}
+		
+		DBProcessor dbp = new DBProcessor(getDBConnection(), getCustomSchema());
+		return dbp.executeSelect(sql.toString(), params, new ShipmentVO());
+	}
+	
+	/**
+	 * Cancels pending/open shipments for a specified ticket
+	 * 
+	 * @param ticketId
+	 * @throws com.siliconmtn.db.util.DatabaseException 
+	 * @throws InvalidDataException 
+	 */
+	public void cancelPendingShipments(String ticketId) throws InvalidDataException, com.siliconmtn.db.util.DatabaseException {
+		DBProcessor dbp = new DBProcessor(getDBConnection(), getCustomSchema());
+		
+		List<ShipmentVO> shipments = getTicketShipments(ticketId, Arrays.asList(ShipmentStatus.CREATED, ShipmentStatus.BACKORDERED));
+		for (ShipmentVO shipment : shipments) {
+			shipment.setStatus(ShipmentStatus.CANCELED);
+			shipment.setUpdateDate(new Date());
+			dbp.save(shipment);
+		}
 	}
 }
