@@ -27,8 +27,8 @@ public class SmartTRAKUserValidator implements UserValidatorInterface {
 
 	@Override
 	public String getRedirectUrl(SMTServletRequest req) {
-		return ACCOUNT_PAGE.equals(StringUtil.checkVal(req.getRequestURI()).replace(req.getContextPath(), ""))?
-				"" : ACCOUNT_PAGE + PAGE_QS;
+		return ACCOUNT_PAGE.equals(StringUtil.checkVal(req.getRequestURI()).replace(req.getContextPath(), "")) ||
+			"logOff=true".equals(req.getQueryString())	? "" : ACCOUNT_PAGE + PAGE_QS;
 	}
 	
 	
