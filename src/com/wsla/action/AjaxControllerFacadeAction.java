@@ -41,6 +41,7 @@ import com.wsla.action.admin.ScheduleAdminAction;
 import com.wsla.action.admin.StatusCodeAction;
 import com.wsla.action.admin.WarrantyAction;
 import com.wsla.action.admin.WarrantyBillableAction;
+import com.wsla.action.report.DebitMemoWidget;
 
 /****************************************************************************
  * <b>Title</b>: AjaxControllerFacadeAction.java
@@ -104,6 +105,7 @@ public class AjaxControllerFacadeAction extends FacadeActionAdapter {
 		actionMap.put(BillableActivityAction.AJAX_KEY , BillableActivityAction.class);
 		actionMap.put(WarrantyBillableAction.AJAX_KEY , WarrantyBillableAction.class);
 		actionMap.put(LanguageBundleMapAction.AJAX_KEY , LanguageBundleMapAction.class);
+		actionMap.put(DebitMemoWidget.AJAX_KEY , DebitMemoWidget.class);
 		actionMap.put("productMaster", ProductMasterAction.class);
 		actionMap.put("productSet", ProductSetAction.class);
 		actionMap.put("productSerial", ProductSerialAction.class);

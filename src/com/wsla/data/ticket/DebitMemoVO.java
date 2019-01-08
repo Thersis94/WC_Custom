@@ -1,0 +1,298 @@
+package com.wsla.data.ticket;
+
+// JDK 1.8.x
+import java.sql.ResultSet;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+
+// SMT Base Libs
+import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.data.parser.BeanDataVO;
+import com.siliconmtn.db.orm.BeanSubElement;
+import com.siliconmtn.db.orm.Column;
+import com.siliconmtn.db.orm.Table;
+import com.wsla.data.provider.ProviderVO;
+
+/****************************************************************************
+ * <b>Title</b>: DebitMemoVO.java
+ * <b>Project</b>: WC_Custom
+ * <b>Description: </b> Value object for the Debit Memo data
+ * <b>Copyright:</b> Copyright (c) 2019
+ * <b>Company:</b> Silicon Mountain Technologies
+ * 
+ * @author James Camire
+ * @version 3.0
+ * @since Jan 8, 2019
+ * @updates:
+ ****************************************************************************/
+@Table(name="wsla_debit_memo")
+public class DebitMemoVO extends BeanDataVO {
+
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -3300811711353420674L;
+
+	// String Member Variables
+	private String debitMemoId;
+	private String customerMemoCode;
+	private String oemId;
+	private String retailId;
+	private String approvedBy;
+	private String transferNumber;
+	private String filePathUrl;
+	
+	// Numeric Members
+	private double transferAmount;
+	private double totalCreditMemoAmount;
+		
+	// Date Members
+	private Date approvalDate;
+	private Date transferDate;
+	
+	// Sub Beans
+	private List<CreditMemoVO> creditMemos = new ArrayList<>();
+	private ProviderVO oem;
+	private ProviderVO retailer;
+	
+	/**
+	 * 
+	 */
+	public DebitMemoVO() {
+		super();
+	}
+
+	/**
+	 * @param req
+	 */
+	public DebitMemoVO(ActionRequest req) {
+		super(req);
+	}
+
+	/**
+	 * @param rs
+	 */
+	public DebitMemoVO(ResultSet rs) {
+		super(rs);
+	}
+
+	/**
+	 * @return the debitMemoId
+	 */
+	@Column(name="debit_memo_id", isPrimaryKey=true, isAutoGen=true)
+	public String getDebitMemoId() {
+		return debitMemoId;
+	}
+
+	/**
+	 * @return the customerMemoCode
+	 */
+	@Column(name="customer_memo_cd")
+	public String getCustomerMemoCode() {
+		return customerMemoCode;
+	}
+
+	/**
+	 * @return the oemId
+	 */
+	@Column(name="oem_id")
+	public String getOemId() {
+		return oemId;
+	}
+
+	/**
+	 * @return the retailId
+	 */
+	@Column(name="retail_id")
+	public String getRetailId() {
+		return retailId;
+	}
+
+	/**
+	 * @return the approvedBy
+	 */
+	@Column(name="approved_by_txt")
+	public String getApprovedBy() {
+		return approvedBy;
+	}
+
+	/**
+	 * @return the transferNumber
+	 */
+	@Column(name="transfer_no_txt")
+	public String getTransferNumber() {
+		return transferNumber;
+	}
+
+	/**
+	 * @return the transferAmount
+	 */
+	@Column(name="amount_no")
+	public double getTransferAmount() {
+		return transferAmount;
+	}
+
+	/**
+	 * @return the approvalDate
+	 */
+	@Column(name="approval_dt")
+	public Date getApprovalDate() {
+		return approvalDate;
+	}
+
+	/**
+	 * @return the transferDate
+	 */
+	@Column(name="transfer_dt")
+	public Date getTransferDate() {
+		return transferDate;
+	}
+
+	/**
+	 * @return the totalCreditMemoAmount
+	 */
+	@Column(name="total_credit_memo", isReadOnly=true)
+	public double getTotalCreditMemoAmount() {
+		return totalCreditMemoAmount;
+	}
+
+	/**
+	 * @return the oem
+	 */
+	public ProviderVO getOem() {
+		return oem;
+	}
+
+	/**
+	 * @return the retailer
+	 */
+	public ProviderVO getRetailer() {
+		return retailer;
+	}
+
+	/**
+	 * @param debitMemoId the debitMemoId to set
+	 */
+	public void setDebitMemoId(String debitMemoId) {
+		this.debitMemoId = debitMemoId;
+	}
+
+	/**
+	 * @param customerMemoCode the customerMemoCode to set
+	 */
+	public void setCustomerMemoCode(String customerMemoCode) {
+		this.customerMemoCode = customerMemoCode;
+	}
+
+	/**
+	 * @param oemId the oemId to set
+	 */
+	public void setOemId(String oemId) {
+		this.oemId = oemId;
+	}
+
+	/**
+	 * @param retailId the retailId to set
+	 */
+	public void setRetailId(String retailId) {
+		this.retailId = retailId;
+	}
+
+	/**
+	 * @param approvedBy the approvedBy to set
+	 */
+	public void setApprovedBy(String approvedBy) {
+		this.approvedBy = approvedBy;
+	}
+
+	/**
+	 * @param transferNumber the transferNumber to set
+	 */
+	public void setTransferNumber(String transferNumber) {
+		this.transferNumber = transferNumber;
+	}
+
+	/**
+	 * @param transferAmount the transferAmount to set
+	 */
+	public void setTransferAmount(double transferAmount) {
+		this.transferAmount = transferAmount;
+	}
+
+	/**
+	 * @param approvalDate the approvalDate to set
+	 */
+	public void setApprovalDate(Date approvalDate) {
+		this.approvalDate = approvalDate;
+	}
+
+	/**
+	 * @param transferDate the transferDate to set
+	 */
+	public void setTransferDate(Date transferDate) {
+		this.transferDate = transferDate;
+	}
+
+	/**
+	 * @return the creditMemos
+	 */
+	public List<CreditMemoVO> getCreditMemos() {
+		return creditMemos;
+	}
+
+	/**
+	 * @param creditMemos the creditMemos to set
+	 */
+	public void setCreditMemos(List<CreditMemoVO> creditMemos) {
+		this.creditMemos = creditMemos;
+	}
+
+	/**
+	 * 
+	 * @param creditMemo
+	 */
+	@BeanSubElement
+	public void addCreditMemo(CreditMemoVO creditMemo) {
+		if (creditMemo != null) creditMemos.add(creditMemo);
+	}
+
+	/**
+	 * @param totalCreditMemoAmount the totalCreditMemoAmount to set
+	 */
+	public void setTotalCreditMemoAmount(double totalCreditMemoAmount) {
+		this.totalCreditMemoAmount = totalCreditMemoAmount;
+	}
+
+	/**
+	 * @param oem the oem to set
+	 */
+	@BeanSubElement
+	public void setOem(ProviderVO oem) {
+		this.oem = oem;
+	}
+
+	/**
+	 * @param retailer the retailer to set
+	 */
+	@BeanSubElement
+	public void setRetailer(ProviderVO retailer) {
+		this.retailer = retailer;
+	}
+
+	/**
+	 * @return the filePathUrl
+	 */
+	@Column(name="document_path_url")
+	public String getFilePathUrl() {
+		return filePathUrl;
+	}
+
+	/**
+	 * @param filePathUrl the filePathUrl to set
+	 */
+	public void setFilePathUrl(String filePathUrl) {
+		this.filePathUrl = filePathUrl;
+	}
+}
+
