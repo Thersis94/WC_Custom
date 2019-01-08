@@ -32,6 +32,7 @@ import com.wsla.action.ticket.transaction.TicketRepairTransaction;
 import com.wsla.action.ticket.transaction.TicketUtilityTransaction;
 import com.wsla.action.ticket.transaction.UserTransaction;
 import com.wsla.action.ticket.transaction.TicketScheduleTransaction;
+import com.wsla.action.ticket.transaction.TicketSearchTransaction;
 import com.wsla.action.ticket.transaction.TicketTransaction;
 
 /****************************************************************************
@@ -93,6 +94,7 @@ public class TicketTransactionAction extends FacadeActionAdapter {
 		actionMap.put(TicketPartsTransaction.AJAX_KEY, TicketPartsTransaction.class);
 		actionMap.put(TicketRepairTransaction.AJAX_KEY, TicketRepairTransaction.class);
 		actionMap.put(ProductSerialTransaction.AJAX_KEY, ProductSerialTransaction.class);
+		actionMap.put(TicketSearchTransaction.AJAX_KEY, TicketSearchTransaction.class);
 	}
 
 	/*

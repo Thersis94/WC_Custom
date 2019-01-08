@@ -96,7 +96,10 @@ public class NotificationWorkflowModule extends AbstractWorkflowModule {
 		
 		// Send the emails to each user
 		for (UserVO user : users) {
+			
+			
 			sendLocaleEmail(user, roleNotifications);
+		
 		}
 	}
 	
@@ -120,6 +123,7 @@ public class NotificationWorkflowModule extends AbstractWorkflowModule {
 		
 		// Send the email to the user
 		EmailCampaignBuilderUtil util = new EmailCampaignBuilderUtil(getConnection(), attributes);
+		//TODO likely have the ticket no here as a hashmap param.  
 		util.sendMessage(new HashMap<>(), rcpts, notification.getCampaignInstanceId());
 	}
 	
