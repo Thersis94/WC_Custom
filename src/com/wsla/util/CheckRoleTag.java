@@ -1,6 +1,5 @@
 package com.wsla.util;
 
-import java.util.Arrays;
 import java.util.List;
 
 import javax.servlet.jsp.JspException;
@@ -51,15 +50,15 @@ public class CheckRoleTag extends BodyTagSupport {
 	/**
 	 * @return the authorizedRole
 	 */
-	public WSLARole[] getAuthorizedRole() {
-		return authorizedRole.toArray(new WSLARole[0]);
+	public List<WSLARole> getAuthorizedRole() {
+		return authorizedRole;
 	}
 
 	/**
 	 * @param authorizedRole the authorizedRole to set
 	 */
-	public void setAuthorizedRole(WSLARole[] authorizedRole) {
-		this.authorizedRole = Arrays.asList(authorizedRole);
+	public void setAuthorizedRole(List<WSLARole> authorizedRole) {
+		this.authorizedRole = authorizedRole;
 	}
 
 	/* (non-Javadoc)
