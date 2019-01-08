@@ -54,8 +54,8 @@ public class NexusKitPDFReport  extends AbstractSBReportVO {
 			Document doc = tidy.parseDOM(bais, new ByteArrayOutputStream());
 	
 			ITextRenderer renderer = new ITextRenderer();
-			renderer.getFontResolver().addFont("http://"+data.get("baseDomain")+"/binary/themes/CUSTOM/DEPUY/DPY_SYN_NEXUS/scripts/fonts/fontawesome-webfont.ttf", BaseFont.IDENTITY_H, true);
-			renderer.setDocument(doc, "http://"+data.get("baseDomain")+"/");
+			renderer.getFontResolver().addFont("https://"+data.get("baseDomain")+"/binary/themes/CUSTOM/DEPUY/DPY_SYN_NEXUS/scripts/fonts/fontawesome-webfont.ttf", BaseFont.IDENTITY_H, true);
+			renderer.setDocument(doc, "https://"+data.get("baseDomain")+"/");
 			renderer.layout();
 			renderer.createPDF(os);
 		} catch (Exception e) {
