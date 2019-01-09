@@ -1,5 +1,6 @@
 package com.wsla.util;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.servlet.jsp.JspException;
@@ -60,6 +61,36 @@ public class CheckRoleTag extends BodyTagSupport {
 	public void setAuthorizedRole(List<WSLARole> authorizedRole) {
 		this.authorizedRole = authorizedRole;
 	}
+	
+	/**
+	 * @return the prohibitedRole
+	 */
+	public List<WSLARole> getProhibitedRole() {
+		List<WSLARole> excludedRoles = new ArrayList<>();
+		for (WSLARole role : WSLARole.values()) {
+			if (!authorizedRole.contains(role)) {
+				excludedRoles.add(role);
+			}
+		}
+		
+		return excludedRoles;
+	}
+
+	/**
+	 * @param prohibitedRole the prohibitedRole to set
+	 */
+	public void setProhibitedRole(List<WSLARole> prohibitedRole) {
+		List<WSLARole> includedRoles = new ArrayList<>();
+		for (WSLARole role : WSLARole.values()) {
+			if (!prohibitedRole.contains(role)) {
+				includedRoles.add(role);
+			}
+		}
+		
+		this.authorizedRole = includedRoles;
+	}
+	
+	
 
 	/* (non-Javadoc)
 	 * @see javax.servlet.jsp.tagext.Tag#doEndTag()
