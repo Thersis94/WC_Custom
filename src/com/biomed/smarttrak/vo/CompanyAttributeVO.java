@@ -9,6 +9,7 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.StringUtil;
 
 /****************************************************************************
  * <b>Title</b>: CompanyAttributeVO.java <p/>
@@ -237,6 +238,35 @@ public class CompanyAttributeVO implements NoteInterface  {
 
 	public void setSectionId(String sectionId) {
 		this.sectionId = sectionId;
+	}
+
+
+	/**
+	 * Helper method that determines proper orderNo value based on titleTxt
+	 * business rules.
+	 */
+	public void calulateOrderNo() {
+		int tOrderNo = 100;
+		String title = StringUtil.checkVal(titleText).toLowerCase();
+		if(title.contains("overview")) {
+			tOrderNo = 1;
+		} else if(title.contains("funding")) {
+			tOrderNo = 5;
+		} else if(title.contains("revenues") || title.contains("earnings")) {
+			tOrderNo = 10;
+		} else if(title.contains("recent") || title.contains("commentary")) {
+			tOrderNo = 15;
+		} else if(title.contains("technology platform")) {
+			tOrderNo = 20;
+		} else if(title.contains("product")) {
+			tOrderNo = 25;
+		} else if(title.contains("intellectual property")) {
+			tOrderNo = 30;
+		} else if(title.contains("strategic alliances")) {
+			tOrderNo = 35;
+		}
+
+		orderNo = tOrderNo;
 	}
 
 }
