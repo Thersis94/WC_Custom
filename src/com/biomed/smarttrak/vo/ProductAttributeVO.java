@@ -40,6 +40,7 @@ public class ProductAttributeVO {
 	private String revisionNote;
 	private int orderNo;
 	private int hasArchives;
+	private String authorNm;
 
 	private Date createDt;
 	private Date updateDt;
@@ -72,6 +73,7 @@ public class ProductAttributeVO {
 		orderNo = Convert.formatInteger(req.getParameter("orderNo"));
 		statusNo = req.getParameter("statusNo");
 		revisionNote = req.getParameter("revisionNote");
+		authorNm = req.getParameter("authorNm");
 	}
 
 
@@ -218,5 +220,14 @@ public class ProductAttributeVO {
 	 */
 	public void setRevisionNote(String revisionNote) {
 		this.revisionNote = revisionNote;
+	}
+
+	@Column(name="author_nm")
+	public String getAuthorNm() {
+		return authorNm;
+	}
+
+	public void setAuthorNm(String authorNm) {
+		this.authorNm = authorNm;
 	}
 }
