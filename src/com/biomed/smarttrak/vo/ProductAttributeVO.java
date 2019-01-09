@@ -203,6 +203,7 @@ public class ProductAttributeVO {
 
 	@Column(name="CREATE_DT", isAutoGen=true, isInsertOnly=true)
 	public Date getCreateDate() {return createDt;}
+	public void setCreateDate(Date createDt) {this.createDt = createDt;}
 
 	/**
 	 * @return the revisionNote
