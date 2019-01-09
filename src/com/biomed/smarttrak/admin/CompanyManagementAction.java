@@ -620,8 +620,9 @@ public class CompanyManagementAction extends ManagementAction {
 		List<Object> params = new ArrayList<>();
 		params.add(Status.A.name());
 		params.add(company.getCompanyId());
-		StringBuilder sql = new StringBuilder(150);
-		sql.append(DBUtil.SELECT_CLAUSE).append("distinct xr.*, a.*, ");
+
+		StringBuilder sql = new StringBuilder(1400);
+		sql.append(DBUtil.SELECT_CLAUSE).append("xr.*, a.*, ");
 		sql.append("case when arch.company_attribute_group_id is not null then 1 else 0 end as has_archives ");
 		sql.append(DBUtil.FROM_CLAUSE).append(customDbSchema).append("BIOMEDGPS_COMPANY_ATTRIBUTE_XR xr ");
 		sql.append(LEFT_OUTER_JOIN).append(customDbSchema).append("BIOMEDGPS_COMPANY_ATTRIBUTE a ");
@@ -636,7 +637,8 @@ public class CompanyManagementAction extends ManagementAction {
 			params.add(attributeType);
 		}
 		sql.append("and xr.company_attribute_id = xr.company_attribute_group_id ");
-		sql.append("ORDER BY a.DISPLAY_ORDER_NO, xr.ORDER_NO ");
+		sql.append("ORDER BY a.DISPLAY_ORDER_NO, xr.ORDER_NO, XR.TITLE_TXT ");
+
 		log.debug(sql+"|"+company.getCompanyId()+"|"+attributeType);
 		DBProcessor db = new DBProcessor(dbConn);
 
@@ -935,6 +937,7 @@ public class CompanyManagementAction extends ManagementAction {
 	 * @throws ActionException
 	 */
 	protected void saveAttribute(CompanyAttributeVO attr, DBProcessor db) throws ActionException {
+		attr.calulateOrderNo();
 		try {
 			if (StringUtil.isEmpty(attr.getCompanyAttributeId())) {
 				attr.setCompanyAttributeId(new UUIDGenerator().getUUID());
@@ -1301,10 +1304,9 @@ public class CompanyManagementAction extends ManagementAction {
 	 * @throws SQLException
 	 */
 	protected void populateReorderBatch(PreparedStatement ps, ActionRequest req, String idField) throws SQLException {
-		String[] order = req.getParameterValues("orderNo");
 		String[] ids = req.getParameterValues(idField);
-		for (int i=0; i < order.length || i < ids.length; i++) {
-			ps.setInt(1, Convert.formatInteger(order[i]));
+		for (int i=0; i < ids.length; i++) {
+			ps.setInt(1, i+1);
 			ps.setString(2, ids[i]);
 			ps.addBatch();
 		}

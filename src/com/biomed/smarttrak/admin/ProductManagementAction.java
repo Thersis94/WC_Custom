@@ -30,6 +30,7 @@ import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.EnumUtil;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
 import com.smt.sitebuilder.common.PageVO;
@@ -65,20 +66,26 @@ public class ProductManagementAction extends ManagementAction {
 	 * Enum for ensuring that the details fields are presented in the proper order
 	 */
 	private enum DetailsField {
-		CLASSIFICATION(0),
-		APPROACH(1),
-		MARKET(2),
-		TECHNOLOGY(3),
-		INDICATION(4);
+		CLASSIFICATION(0, 2),
+		APPROACH(1, 1),
+		MARKET(2, 4),
+		TECHNOLOGY(3, 3),
+		INDICATION(4, 5);
 
 		int order;
+		int publicOrder;
 
-		DetailsField(int order) {
+		DetailsField(int order, int publicOrder) {
 			this.order = order;
+			this.publicOrder = publicOrder;
 		}
 
 		public int getOrder() {
 			return order;
+		}
+
+		public int getPublicOrder() {
+			return publicOrder;
 		}
 
 		public static DetailsField getFromString(String detailField) {
@@ -884,10 +891,12 @@ public class ProductManagementAction extends ManagementAction {
 		params.add(Status.A.name());
 		params.add(productId);
 		params.add(DETAILS_ID);
-		StringBuilder sql = new StringBuilder(150);
-		sql.append(DBUtil.SELECT_CLAUSE).append("distinct xr.*, a.*, ");
+
+		StringBuilder sql = new StringBuilder(1500);
+		sql.append(DBUtil.SELECT_CLAUSE).append("xr.*, a.*, ");
 		sql.append("case when arch.product_attribute_group_id is not null then 1 else 0 end as has_archives ");
-		sql.append(DBUtil.FROM_CLAUSE).append(customDbSchema).append("BIOMEDGPS_PRODUCT_ATTRIBUTE_XR xr ");
+		sql.append(DBUtil.FROM_CLAUSE);
+		sql.append(customDbSchema).append("BIOMEDGPS_PRODUCT_ATTRIBUTE_XR xr ");
 		sql.append(LEFT_OUTER_JOIN).append(customDbSchema).append("BIOMEDGPS_PRODUCT_ATTRIBUTE a ");
 		sql.append("ON a.ATTRIBUTE_ID = xr.ATTRIBUTE_ID ");
 		sql.append(LEFT_OUTER_JOIN).append(customDbSchema).append("BIOMEDGPS_PRODUCT_ATTRIBUTE_XR arch ");
@@ -905,7 +914,8 @@ public class ProductManagementAction extends ManagementAction {
 			params.add(attributeType);
 		}
 		sql.append("and xr.product_attribute_id = xr.product_attribute_group_id ");
-		sql.append("ORDER BY xr.ORDER_NO ");
+		sql.append("ORDER BY xr.ORDER_NO, XR.TITLE_TXT ");
+
 		log.debug(sql+"|"+productId);
 		DBProcessor db = new DBProcessor(dbConn);
 
@@ -933,8 +943,14 @@ public class ProductManagementAction extends ManagementAction {
 			case ATTRIBUTE:
 				try {
 					ProductAttributeTypeVO t = new ProductAttributeTypeVO(req);
-					if (checkDups(t))
+					if (checkDups(t)) {
+						//Ensure Order No is set properly for Details.
+						DetailsField f = EnumUtil.safeValueOf(DetailsField.class, t.getParentId());
+						if(f != null) {
+							t.setOrderNo(f.getPublicOrder());
+						}
 						db.save(t);
+					}
 					if (StringUtil.isEmpty(t.getTypeCd()) && req.hasParameter("modulesetId"))
 						populateModuleSets(t, req);
 					putModuleData(t);
@@ -1233,6 +1249,7 @@ public class ProductManagementAction extends ManagementAction {
 	 * @throws ActionException
 	 */
 	protected void saveAttribute(ProductAttributeVO attr, DBProcessor db) throws ActionException {
+		attr.calulateOrderNo();
 		try {
 			if (StringUtil.isEmpty(attr.getProductAttributeId())) {
 				attr.setProductAttributeId(new UUIDGenerator().getUUID());
@@ -1516,10 +1533,9 @@ public class ProductManagementAction extends ManagementAction {
 	 * @throws SQLException
 	 */
 	protected void populateReorderBatch(PreparedStatement ps, ActionRequest req, String idField) throws SQLException {
-		String[] order = req.getParameterValues("orderNo");
 		String[] ids = req.getParameterValues(idField);
-		for (int i=0; i < order.length || i < ids.length; i++) {
-			ps.setInt(1, Convert.formatInteger(order[i]));
+		for (int i=0; i < ids.length; i++) {
+			ps.setInt(1, i+1);
 			ps.setString(2, ids[i]);
 			ps.addBatch();
 		}
