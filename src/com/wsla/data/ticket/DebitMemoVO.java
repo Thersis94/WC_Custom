@@ -42,14 +42,19 @@ public class DebitMemoVO extends BeanDataVO {
 	private String approvedBy;
 	private String transferNumber;
 	private String filePathUrl;
+	private String retailerName;
+	private String oemName;
 	
 	// Numeric Members
 	private double transferAmount;
 	private double totalCreditMemoAmount;
+	private long totalCreditMemos;
 		
 	// Date Members
 	private Date approvalDate;
 	private Date transferDate;
+	private Date createDate;
+	private Date updateDate;
 	
 	// Sub Beans
 	private List<CreditMemoVO> creditMemos = new ArrayList<>();
@@ -155,6 +160,54 @@ public class DebitMemoVO extends BeanDataVO {
 	@Column(name="total_credit_memo", isReadOnly=true)
 	public double getTotalCreditMemoAmount() {
 		return totalCreditMemoAmount;
+	}
+
+	/**
+	 * @return the filePathUrl
+	 */
+	@Column(name="document_path_url")
+	public String getFilePathUrl() {
+		return filePathUrl;
+	}
+
+	/**
+	 * @return the retailerName
+	 */
+	@Column(name="retailer_nm", isReadOnly=true)
+	public String getRetailerName() {
+		return retailerName;
+	}
+
+	/**
+	 * @return the oemName
+	 */
+	@Column(name="oem_nm", isReadOnly=true)
+	public String getOemName() {
+		return oemName;
+	}
+
+	/**
+	 * @return the totalCreditMemos
+	 */
+	@Column(name="num_credit_memos", isReadOnly=true)
+	public long getTotalCreditMemos() {
+		return totalCreditMemos;
+	}
+
+	/**
+	 * @return the createDate
+	 */
+	@Column(name="create_dt", isInsertOnly=true, isAutoGen=true)
+	public Date getCreateDate() {
+		return createDate;
+	}
+
+	/**
+	 * @return the updateDate
+	 */
+	@Column(name="update_dt", isUpdateOnly=true, isAutoGen=true)
+	public Date getUpdateDate() {
+		return updateDate;
 	}
 
 	/**
@@ -281,18 +334,45 @@ public class DebitMemoVO extends BeanDataVO {
 	}
 
 	/**
-	 * @return the filePathUrl
-	 */
-	@Column(name="document_path_url")
-	public String getFilePathUrl() {
-		return filePathUrl;
-	}
-
-	/**
 	 * @param filePathUrl the filePathUrl to set
 	 */
 	public void setFilePathUrl(String filePathUrl) {
 		this.filePathUrl = filePathUrl;
+	}
+
+	/**
+	 * @param retailerName the retailerName to set
+	 */
+	public void setRetailerName(String retailerName) {
+		this.retailerName = retailerName;
+	}
+
+	/**
+	 * @param oemName the oemName to set
+	 */
+	public void setOemName(String oemName) {
+		this.oemName = oemName;
+	}
+
+	/**
+	 * @param totalCreditMemos the totalCreditMemos to set
+	 */
+	public void setTotalCreditMemos(long totalCreditMemos) {
+		this.totalCreditMemos = totalCreditMemos;
+	}
+
+	/**
+	 * @param createDate the createDate to set
+	 */
+	public void setCreateDate(Date createDate) {
+		this.createDate = createDate;
+	}
+
+	/**
+	 * @param updateDate the updateDate to set
+	 */
+	public void setUpdateDate(Date updateDate) {
+		this.updateDate = updateDate;
 	}
 }
 
