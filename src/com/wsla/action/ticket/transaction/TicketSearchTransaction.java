@@ -1,7 +1,9 @@
 package com.wsla.action.ticket.transaction;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 // JDK 1.8.x
 
@@ -12,9 +14,11 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.exception.InvalidDataException;
+import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.common.constants.AdminConstants;
 // WC Libs
 import com.wsla.action.ticket.BaseTransactionAction;
+import com.wsla.data.ticket.StatusCode;
 import com.wsla.data.ticket.TicketVO;
 
 /****************************************************************************
@@ -64,7 +68,13 @@ public class TicketSearchTransaction extends BaseTransactionAction {
 	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
-		log.debug("#### ticket search build called");
+		log.debug("ticket search build called");
+		
+		if(req.hasParameter("isContact")) {
+			sendTicketSearchNotification(req.getParameter(EMAIL), req.getParameter(PHONE), req.getParameter(TICKET_NUMBER));
+			return;
+		}
+		
 		List<TicketVO> data = new ArrayList<>();
 		if(req.hasParameter(TICKET_NUMBER)) {
 			data = ticketNumberConfirm(req.getParameter(TICKET_NUMBER));
@@ -78,8 +88,24 @@ public class TicketSearchTransaction extends BaseTransactionAction {
 			}
 			
 		}
-		log.debug("##### outside count " + data.size());
+		log.debug("count " + data.size());
 		putModuleData(data);
+	}
+
+	/**
+	 * this method sends a notification to wsla with the information ented into the form.  
+	 * @param email
+	 * @param phone
+	 * @param ticketNumber
+	 */
+	private void sendTicketSearchNotification(String email, String phone, String ticketNumber) {
+		//new map of data
+		Map<String, Object> mData = new HashMap<>();
+		mData.put(EMAIL, StringUtil.checkVal(email));
+		mData.put(PHONE, StringUtil.checkVal(phone));
+		mData.put(TICKET_NUMBER, StringUtil.checkVal(ticketNumber));
+		
+		processNotification(null,null, StatusCode.SERVICE_ORDER_NUMBER_LOOKUP, mData);
 	}
 
 	/**
@@ -121,20 +147,12 @@ public class TicketSearchTransaction extends BaseTransactionAction {
 		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("wsla_user u on t.originator_user_id = u.user_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(getCustomSchema()).append("wsla_product_serial s on t.product_serial_id = s.product_serial_id ");
 		
-		
 		buildWhere(sql, email, phone, params);
 		
-		log.debug("### sql: " + sql.toString() +"|" + params);
+		log.debug("sql: " + sql.toString() +"|" + params);
 		
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
-		List<TicketVO> data = db.executeSelect(sql.toString(), params, new TicketVO());
-		log.debug("## data size " + data.size());
-		
-		for (TicketVO t : data) {
-			log.debug("# " + t.getTicketIdText());
-		}
-		
-		return data;
+		return db.executeSelect(sql.toString(), params, new TicketVO());
 		
 	}
 
