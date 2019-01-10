@@ -59,7 +59,7 @@ public class ProductManagementAction extends ManagementAction {
 
 	private enum ActionTarget {
 		PRODUCT, PRODUCTATTRIBUTE, ATTRIBUTE, PRODUCTLINK, PRODUCTATTACH,
-		ATTRIBUTELIST, ALLIANCE, DETAILSATTRIBUTE, REGULATION, PREVIEW, PRODUCTATTRIBUTEARCHIVE
+		ATTRIBUTELIST, ALLIANCE, DETAILSATTRIBUTE, REGULATION, PREVIEW, PRODUCTATTRIBUTEARCHIVE, PRODUCTATTRIBUTEARCHIVEUPDATE
 	}
 
 	/**
@@ -235,6 +235,8 @@ public class ProductManagementAction extends ManagementAction {
 			case PREVIEW:
 				retrievePreview(req);
 				break;
+			default:
+				break;
 		}
 	}
 
@@ -243,7 +245,7 @@ public class ProductManagementAction extends ManagementAction {
 	 * @param req
 	 * @throws ActionException 
 	 */
-	private void retrieveArchives(ActionRequest req) throws ActionException {
+	private void retrieveArchives(ActionRequest req) {
 		String attributeType = req.getParameter("attributeTypeCd");
 		String productAttributeGroupId = req.getParameter("productAttributeGroupId");
 		List<Object> params = new ArrayList<>();
@@ -293,7 +295,7 @@ public class ProductManagementAction extends ManagementAction {
 	 */
 	protected void retrieveRegulatory(ActionRequest req) {
 		StringBuilder sql = new StringBuilder(475);
-		sql.append("SELECT * FROM ").append(customDbSchema).append("BIOMEDGPS_PRODUCT_REGULATORY r ");
+		sql.append(DBUtil.SELECT_FROM_STAR).append(customDbSchema).append("BIOMEDGPS_PRODUCT_REGULATORY r ");
 		sql.append(LEFT_OUTER_JOIN).append(customDbSchema).append("BIOMEDGPS_REGULATORY_STATUS s ");
 		sql.append("ON s.STATUS_ID = r.STATUS_ID ");
 		sql.append(LEFT_OUTER_JOIN).append(customDbSchema).append("BIOMEDGPS_REGULATORY_REGION re ");
@@ -453,7 +455,7 @@ public class ProductManagementAction extends ManagementAction {
 	 */
 	protected void retrieveAlliance(String allianceId) {
 		StringBuilder sql = new StringBuilder(100);
-		sql.append("SELECT * FROM ").append(customDbSchema).append("BIOMEDGPS_PRODUCT_ALLIANCE_XR ");
+		sql.append(DBUtil.SELECT_FROM_STAR).append(customDbSchema).append("BIOMEDGPS_PRODUCT_ALLIANCE_XR ");
 		sql.append("WHERE PRODUCT_ALLIANCE_XR_ID = ? ");
 
 		List<Object> params = new ArrayList<>();
@@ -501,7 +503,7 @@ public class ProductManagementAction extends ManagementAction {
 		List<Object> params = new ArrayList<>();
 		params.add(req.getParameter("productAttributeId"));
 		DBProcessor db = new DBProcessor(dbConn);
-		ProductAttributeVO attr = (ProductAttributeVO) db.executeSelect(sql.toString(), params, new ProductAttributeVO()).get(0);
+		ProductAttributeVO attr = db.executeSelect(sql.toString(), params, new ProductAttributeVO()).get(0);
 		super.putModuleData(attr);
 		req.setParameter("rootNode", attr.getAttributeId());
 	}
@@ -514,10 +516,10 @@ public class ProductManagementAction extends ManagementAction {
 	protected void retrieveAttributes(ActionRequest req) {
 		StringBuilder sql = new StringBuilder(100);
 		List<Object> params = new ArrayList<>();
-		sql.append("SELECT * FROM ").append(customDbSchema).append("BIOMEDGPS_PRODUCT_ATTRIBUTE ");
-		if (req.hasParameter("search")) {
+		sql.append(DBUtil.SELECT_FROM_STAR).append(customDbSchema).append("BIOMEDGPS_PRODUCT_ATTRIBUTE ");
+		if (req.hasParameter(DBUtil.TABLE_SEARCH)) {
 			sql.append("WHERE lower(ATTRIBUTE_NM) like ? ");
-			params.add("%" + req.getParameter("search").toLowerCase() + "%");
+			params.add("%" + req.getParameter(DBUtil.TABLE_SEARCH).toLowerCase() + "%");
 		}
 		if (req.hasParameter("attributeTypeCd")) {
 			sql.append("WHERE TYPE_CD = ? ");
@@ -545,14 +547,14 @@ public class ProductManagementAction extends ManagementAction {
 	 * @param orderedResults
 	 */
 	private void storeAttributeData(ActionRequest req, List<Node> orderedResults) {
-		int rpp = Convert.formatInteger(req.getParameter("limit"), 10);
-		int page = Convert.formatInteger(req.getParameter("offset"), 0)/rpp;
+		int rpp = Convert.formatInteger(req.getParameter(DBUtil.TABLE_LIMIT), 10);
+		int page = Convert.formatInteger(req.getParameter(DBUtil.TABLE_OFFSET), 0)/rpp;
 		int end = orderedResults.size() < rpp*(page+1)? orderedResults.size() : rpp*(page+1);
 
 		// If all attributes of a type is being requested set it as a request attribute since it is
 		// being used to supplement the attribute xr editing.
 		// Search data should not be turned into a tree after a search as requisite nodes may be missing
-		if (req.hasParameter("search")) {
+		if (req.hasParameter(DBUtil.TABLE_SEARCH)) {
 			super.putModuleData(orderedResults.subList(rpp*page, end), orderedResults.size(), false);
 		} else {
 			super.putModuleData(new Tree(orderedResults).getPreorderList().subList(rpp*page, end), orderedResults.size(), false);
@@ -581,7 +583,7 @@ public class ProductManagementAction extends ManagementAction {
 	protected void retrieveAttribute(String attributeId) {
 		StringBuilder sql = new StringBuilder(100);
 		List<Object> params = new ArrayList<>();
-		sql.append("SELECT * FROM ").append(customDbSchema).append("BIOMEDGPS_PRODUCT_ATTRIBUTE ");
+		sql.append(DBUtil.SELECT_FROM_STAR).append(customDbSchema).append("BIOMEDGPS_PRODUCT_ATTRIBUTE ");
 		sql.append("WHERE ATTRIBUTE_ID = ? ");
 		params.add(attributeId);
 		log.debug(sql);
@@ -589,7 +591,7 @@ public class ProductManagementAction extends ManagementAction {
 		List<Object> res = db.executeSelect(sql.toString(), params, new ProductAttributeTypeVO());
 
 		if (!res.isEmpty()) {
-			ProductAttributeTypeVO attr = (ProductAttributeTypeVO) db.executeSelect(sql.toString(), params, new ProductAttributeTypeVO()).get(0);
+			ProductAttributeTypeVO attr = db.executeSelect(sql.toString(), params, new ProductAttributeTypeVO()).get(0);
 			super.putModuleData(attr);
 		} else {
 			super.putModuleData(new ProductAttributeTypeVO());
@@ -612,11 +614,11 @@ public class ProductManagementAction extends ManagementAction {
 		sql.append("WHERE 1=1 ");
 
 		// If the request has search terms on it add them here
-		if (req.hasParameter("search")) {
+		if (req.hasParameter(DBUtil.TABLE_SEARCH)) {
 			sql.append("and (lower(PRODUCT_NM) like ? ");
-			params.add("%" + req.getParameter("search").toLowerCase() + "%");
+			params.add("%" + req.getParameter(DBUtil.TABLE_SEARCH).toLowerCase() + "%");
 			sql.append("or lower(COMPANY_NM) like ? )");
-			params.add("%" + req.getParameter("search").toLowerCase() + "%");
+			params.add("%" + req.getParameter(DBUtil.TABLE_SEARCH).toLowerCase() + "%");
 		}
 
 		if (!req.hasParameter("inactive")) {
@@ -632,19 +634,19 @@ public class ProductManagementAction extends ManagementAction {
 		SortField s = SortField.getFromString(req.getParameter("sort"));
 
 		sql.append("ORDER BY ").append(s.getDbField());
-		sql.append(" ").append(req.hasParameter("order")? req.getParameter("order"):"asc").append(" ");
+		sql.append(" ").append(req.hasParameter(DBUtil.TABLE_ORDER)? req.getParameter(DBUtil.TABLE_ORDER):DBUtil.SortDirection.ASC.name()).append(" ");
 
-		int limit  = Convert.formatInteger(req.getParameter("limit"));
+		int limit  = Convert.formatInteger(req.getParameter(DBUtil.TABLE_LIMIT));
 		if (limit != 0) {
 			sql.append("LIMIT ? OFFSET ? ");
-			params.add(Convert.formatInteger(req.getParameter("limit")));
-			params.add(Convert.formatInteger(req.getParameter("offset")));
+			params.add(Convert.formatInteger(req.getParameter(DBUtil.TABLE_LIMIT)));
+			params.add(Convert.formatInteger(req.getParameter(DBUtil.TABLE_OFFSET)));
 		}
 		log.debug(sql);
 
 		DBProcessor db = new DBProcessor(dbConn);
 		List<Object> products = db.executeSelect(sql.toString(), params, new ProductVO());
-		super.putModuleData(products, getProductCount(req.getParameter("search"), req.getParameter("authorId"), req.hasParameter("inactive")), false);
+		super.putModuleData(products, getProductCount(req.getParameter(DBUtil.TABLE_SEARCH), req.getParameter("authorId"), req.hasParameter("inactive")), false);
 	}
 
 
@@ -700,7 +702,7 @@ public class ProductManagementAction extends ManagementAction {
 	protected void retrieveProduct(String productId, ActionRequest req) throws ActionException {
 		ProductVO product;
 		StringBuilder sql = new StringBuilder(100);
-		sql.append("SELECT * FROM ").append(customDbSchema).append("BIOMEDGPS_PRODUCT ");
+		sql.append(DBUtil.SELECT_FROM_STAR).append(customDbSchema).append("BIOMEDGPS_PRODUCT ");
 		sql.append("WHERE PRODUCT_ID = ? ");
 
 		List<Object> params = new ArrayList<>();
@@ -738,7 +740,7 @@ public class ProductManagementAction extends ManagementAction {
 	 */
 	protected void addRegulations(ProductVO product) {
 		StringBuilder sql = new StringBuilder(475);
-		sql.append("SELECT * FROM ").append(customDbSchema).append("BIOMEDGPS_PRODUCT_REGULATORY r ");
+		sql.append(DBUtil.SELECT_FROM_STAR).append(customDbSchema).append("BIOMEDGPS_PRODUCT_REGULATORY r ");
 		sql.append(LEFT_OUTER_JOIN).append(customDbSchema).append("BIOMEDGPS_REGULATORY_STATUS s ");
 		sql.append("ON s.STATUS_ID = r.STATUS_ID ");
 		sql.append(LEFT_OUTER_JOIN).append(customDbSchema).append("BIOMEDGPS_REGULATORY_REGION re ");
@@ -764,7 +766,7 @@ public class ProductManagementAction extends ManagementAction {
 	 */
 	protected void addAlliances(ProductVO product) {
 		StringBuilder sql = new StringBuilder(525);
-		sql.append("SELECT * FROM ").append(customDbSchema).append("BIOMEDGPS_PRODUCT_ALLIANCE_XR pax ");
+		sql.append(DBUtil.SELECT_FROM_STAR).append(customDbSchema).append("BIOMEDGPS_PRODUCT_ALLIANCE_XR pax ");
 		sql.append(LEFT_OUTER_JOIN).append(customDbSchema).append("BIOMEDGPS_ALLIANCE_TYPE at ");
 		sql.append("ON pax.ALLIANCE_TYPE_ID = at.ALLIANCE_TYPE_ID ");
 		sql.append(LEFT_OUTER_JOIN).append(customDbSchema).append("BIOMEDGPS_PRODUCT p  ");
@@ -868,7 +870,7 @@ public class ProductManagementAction extends ManagementAction {
 	 * @param product
 	 * @throws ActionException 
 	 */
-	protected void addAttributes(ProductVO product, String attributeType) throws ActionException {
+	protected void addAttributes(ProductVO product, String attributeType) {
 		List<Object> results = getProductAttributes(product.getProductId(), attributeType);
 
 		for (Object o : results) {
@@ -936,7 +938,7 @@ public class ProductManagementAction extends ManagementAction {
 				break;
 			case PRODUCTATTRIBUTE:
 				ProductAttributeVO attr = new ProductAttributeVO(req);
-				saveAttribute(attr, db, req.getBooleanParameter("archiveFlg"));
+				saveAttribute(attr, db);
 				break;
 			case ATTRIBUTE:
 				try {
@@ -967,7 +969,31 @@ public class ProductManagementAction extends ManagementAction {
 				RegulationVO reg = new RegulationVO(req);
 				saveRegulation(reg, db);
 				break;
+			case PRODUCTATTRIBUTEARCHIVEUPDATE:
+				attr = new ProductAttributeVO(req);
+				updateArchiveNote(attr);
+				break;
 			default:break;
+		}
+	}
+
+	/**
+	 * Update an Archives Revision Text.
+	 * @param attr
+	 * @param db
+	 */
+	private void updateArchiveNote(ProductAttributeVO attr) {
+		StringBuilder sql = new StringBuilder(150);
+		sql.append("update ").append(getCustomSchema()).append("BIOMEDGPS_PRODUCT_ATTRIBUTE_XR x ");
+		sql.append("set REVISION_NOTE = ?, update_dt = ? where product_attribute_id = ?");
+
+		try(PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, attr.getRevisionNote());
+			ps.setTimestamp(2, Convert.getCurrentTimestamp());
+			ps.setString(3, attr.getProductAttributeId());
+			ps.executeUpdate();
+		} catch (SQLException e) {
+			log.error("Error Updating Archive Revision Text", e);
 		}
 	}
 
@@ -1222,7 +1248,7 @@ public class ProductManagementAction extends ManagementAction {
 	 * @param db
 	 * @throws ActionException
 	 */
-	protected void saveAttribute(ProductAttributeVO attr, DBProcessor db, boolean createArchive) throws ActionException {
+	protected void saveAttribute(ProductAttributeVO attr, DBProcessor db) throws ActionException {
 		attr.calulateOrderNo();
 		try {
 			if (StringUtil.isEmpty(attr.getProductAttributeId())) {
@@ -1230,10 +1256,8 @@ public class ProductManagementAction extends ManagementAction {
 				attr.setProductAttributeGroupId(attr.getProductAttributeId());
 				db.insert(attr);
 			} else {
-				if(createArchive) {
-					//Clone Existing Attribute Values
-					archiveAttribute(attr.getProductAttributeId(), db);
-				}
+				//Clone Existing Attribute Values
+				archiveAttribute(attr.getProductAttributeId(), db);
 
 				//Update with New Values
 				db.update(attr);
@@ -1370,7 +1394,7 @@ public class ProductManagementAction extends ManagementAction {
 		sql.append(DBUtil.WHERE_CLAUSE).append("product_attribute_group_id = ?");
 		try(PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, productAttributeId);
-			ps.executeQuery();
+			ps.executeUpdate();
 		}
 	}
 

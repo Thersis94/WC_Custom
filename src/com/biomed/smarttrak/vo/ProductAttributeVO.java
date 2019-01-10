@@ -37,8 +37,10 @@ public class ProductAttributeVO {
 	private String attributeTypeCd;
 	private String groupName;
 	private String statusNo;
+	private String revisionNote;
 	private int orderNo;
 	private int hasArchives;
+	private String authorNm;
 
 	private Date createDt;
 	private Date updateDt;
@@ -70,6 +72,8 @@ public class ProductAttributeVO {
 		altText = req.getParameter("altText");
 		orderNo = Convert.formatInteger(req.getParameter("orderNo"));
 		statusNo = req.getParameter("statusNo");
+		revisionNote = req.getParameter("revisionNote");
+		authorNm = req.getParameter("authorNm");
 	}
 
 
@@ -200,7 +204,32 @@ public class ProductAttributeVO {
 	@Column(name="CREATE_DT", isAutoGen=true, isInsertOnly=true)
 	public Date getCreateDate() {return createDt;}
 	public void setCreateDate(Date createDt) {this.createDt = createDt;}
-	
+
+	/**
+	 * @return the revisionNote
+	 */
+	@Column(name="REVISION_NOTE")
+	public String getRevisionNote() {
+		return revisionNote;
+	}
+
+
+	/**
+	 * @param revisionNote the revisionNote to set.
+	 */
+	public void setRevisionNote(String revisionNote) {
+		this.revisionNote = revisionNote;
+	}
+
+	@Column(name="author_nm")
+	public String getAuthorNm() {
+		return authorNm;
+	}
+
+	public void setAuthorNm(String authorNm) {
+		this.authorNm = authorNm;
+	}
+
 	/**
 	 * Helper method that determines proper orderNo value based on titleTxt
 	 * business rules.
