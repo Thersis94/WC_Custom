@@ -155,12 +155,12 @@ public class FinancialDashDataRowVO implements Serializable {
 	 */
 	public void setColumns(DBUtil util, ResultSet rs, FinancialDashVO dashboard) throws SQLException {
 		int maxYear = util.getIntVal("YEAR_NO", rs);
-		int year = Calendar.getInstance().get(Calendar.YEAR);
+		int year = dashboard.getCurrentYear();
 
 		Map<Integer, Integer> cyTotals = new HashMap<>(); // calendar year totals without adjustment
 		Map<Integer, Integer> ytdTotals = new HashMap<>(); // totals with adjustments when the current year is not complete
 		Map<Integer, String> ids = new HashMap<>();
-
+		
 		ResultSetMetaData rsmd = rs.getMetaData();
 		int colCount = rsmd.getColumnCount();
 		
