@@ -23,6 +23,7 @@ import com.siliconmtn.exception.NotAuthorizedException;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.action.registration.RegistrationFacadeAction;
+import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.security.UserLogin;
 /****************************************************************************
@@ -49,18 +50,33 @@ public class SmarttrakRegistrationAction extends SimpleActionAdapter {
 		//Load the Registration data.
 		loadRegistration().retrieve(req);
 
-		AccountPermissionAction apa = ActionControllerFactoryImpl.loadAction(AccountPermissionAction.class, this);
-		SmarttrakTree t = apa.getAccountPermissionTree(req);
-		req.setAttribute("permissionTree", t);
-
-		UserVO user = (UserVO) req.getSession().getAttribute(Constants.USER_DATA);
-		req.setAttribute(SKIPPED_MARKETS, loadSkippedMarkets(user));
+		loadMarketsInformation(req);
 
 		//Check if we need to load any extra Account data.
 		AccountVO acct = (AccountVO)req.getSession().getAttribute(AccountAction.SESS_ACCOUNT);
 		if(StringUtil.isEmpty(acct.getLeadEmail())) {
 			loadAccountRepOwnerInfo(acct);
 		}
+	}
+
+	/**
+	 * Helper method for loading Markets Info for a User.
+	 * @param req
+	 */
+	@SuppressWarnings("unchecked")
+	public void loadMarketsInformation(ActionRequest req) {
+		AccountPermissionAction apa = ActionControllerFactoryImpl.loadAction(AccountPermissionAction.class, this);
+		SmarttrakTree t = apa.getAccountPermissionTree(req);
+		req.setAttribute("permissionTree", t);
+
+		UserVO user;
+		if(req.hasParameter("userId") && attributes.get(Constants.MODULE_DATA) != null) {
+			ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
+			user = ((List<UserVO>)mod.getActionData()).get(0);
+		} else {
+			user = (UserVO) req.getSession().getAttribute(Constants.USER_DATA);
+		}
+		req.setAttribute(SKIPPED_MARKETS, loadSkippedMarkets(user));
 	}
 
 	/**
@@ -105,7 +121,7 @@ public class SmarttrakRegistrationAction extends SimpleActionAdapter {
 	 * @param user
 	 * @return
 	 */
-	private Set<String> loadSkippedMarkets(UserVO user) {
+	public Set<String> loadSkippedMarkets(UserVO user) {
 		Set<String> skippedMarkets = new HashSet<>();
 		StringBuilder sql = new StringBuilder(100);
 		sql.append("select section_id from ").append(getCustomSchema());
