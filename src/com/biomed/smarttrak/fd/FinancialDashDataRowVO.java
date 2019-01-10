@@ -4,7 +4,6 @@ import java.io.Serializable;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
-import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -160,7 +159,7 @@ public class FinancialDashDataRowVO implements Serializable {
 		Map<Integer, Integer> cyTotals = new HashMap<>(); // calendar year totals without adjustment
 		Map<Integer, Integer> ytdTotals = new HashMap<>(); // totals with adjustments when the current year is not complete
 		Map<Integer, String> ids = new HashMap<>();
-		
+
 		ResultSetMetaData rsmd = rs.getMetaData();
 		int colCount = rsmd.getColumnCount();
 		
