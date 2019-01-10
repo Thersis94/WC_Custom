@@ -14,6 +14,8 @@ import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
 import com.wsla.data.provider.ProviderVO;
 
+import opennlp.tools.util.StringUtil;
+
 /****************************************************************************
  * <b>Title</b>: DebitMemoVO.java
  * <b>Project</b>: WC_Custom
@@ -82,6 +84,26 @@ public class DebitMemoVO extends BeanDataVO {
 		super(rs);
 	}
 
+	/**
+	 * Checks the data to see if the transfer data was added so the transfer 
+	 * date can be assigned
+	 */
+	public void assignTransferDate() {
+		if (transferDate == null && (! StringUtil.isEmpty(transferNumber) || transferAmount > 0)) {
+			transferDate = new Date();
+		}
+	}
+	
+	/**
+	 * Set the approval date if empty and approved by has been passed
+	 */
+	public void assignApprovalDate() {
+
+		if (getApprovalDate() == null && ! StringUtil.isEmpty(getApprovedBy())) {
+			setApprovalDate(new Date());
+		}
+	}
+	
 	/**
 	 * @return the debitMemoId
 	 */

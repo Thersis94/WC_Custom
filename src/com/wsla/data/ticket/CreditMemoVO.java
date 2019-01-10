@@ -47,6 +47,10 @@ public class CreditMemoVO extends BeanDataVO {
 	// Sub-beans
 	private TicketDataVO asset = new TicketDataVO();
 	private DebitMemoVO debitMemo = new DebitMemoVO();
+	
+	// Read-Only Members
+	private String ticketIdText;
+	private String filePathUrl;
 
 	/**
 	 * 
@@ -158,6 +162,22 @@ public class CreditMemoVO extends BeanDataVO {
 	}
 
 	/**
+	 * @return the ticketIdText
+	 */
+	@Column(name="ticket_no", isReadOnly=true)
+	public String getTicketIdText() {
+		return ticketIdText;
+	}
+
+	/**
+	 * @return the filePathUrl
+	 */
+	@Column(name="file_path_url", isReadOnly=true)
+	public String getFilePathUrl() {
+		return filePathUrl;
+	}
+
+	/**
 	 * @return the asset
 	 */
 	public TicketDataVO getAsset() {
@@ -262,6 +282,20 @@ public class CreditMemoVO extends BeanDataVO {
 	@BeanSubElement
 	public void setDebitMemo(DebitMemoVO debitMemo) {
 		this.debitMemo = debitMemo;
+	}
+
+	/**
+	 * @param ticketIdText the ticketIdText to set
+	 */
+	public void setTicketIdText(String ticketIdText) {
+		this.ticketIdText = ticketIdText;
+	}
+
+	/**
+	 * @param filePathUrl the filePathUrl to set
+	 */
+	public void setFilePathUrl(String filePathUrl) {
+		this.filePathUrl = filePathUrl;
 	}
 
 }

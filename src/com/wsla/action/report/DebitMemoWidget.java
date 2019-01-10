@@ -2,7 +2,6 @@ package com.wsla.action.report;
 
 // JDK 1.8.x
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 // SMT Base Libs
@@ -18,6 +17,7 @@ import com.siliconmtn.util.StringUtil;
 
 // WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
+import com.wsla.data.ticket.CreditMemoVO;
 import com.wsla.data.ticket.DebitMemoVO;
 
 /****************************************************************************
@@ -59,10 +59,14 @@ public class DebitMemoWidget extends SBActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		String oemId = req.getParameter("oemId");
-		String retailerId = req.getParameter("retailerId");
-		String complete = req.getParameter("complete");
-		setModuleData(getDebitMemos(new BSTableControlVO(req, DebitMemoVO.class), oemId, retailerId, complete));
+		if (req.getBooleanParameter("listcm")) {
+			setModuleData(getCreditMemos(req.getParameter("debitMemoId")));
+		} else {
+			String oemId = req.getParameter("oemId");
+			String retailerId = req.getParameter("retailerId");
+			String complete = req.getParameter("complete");
+			setModuleData(getDebitMemos(new BSTableControlVO(req, DebitMemoVO.class), oemId, retailerId, complete));
+		}
 	}
 	
 	/*
@@ -71,14 +75,45 @@ public class DebitMemoWidget extends SBActionAdapter {
 	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
-		log.info("Saving .... ");
-		
+		// Load the debit memo
 		DebitMemoVO dm = new DebitMemoVO(req);
-		log.info("Approval Date: " + dm.getApprovalDate());
-		// Set the approval date if empty and approved by has been passed
-		if (dm.getApprovalDate() == null && ! StringUtil.isEmpty(dm.getApprovedBy())) {
-			dm.setApprovalDate(new Date());
+		dm.assignTransferDate();
+		dm.assignApprovalDate();
+		
+		// Save the data
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		try {
+			db.save(dm);
+			putModuleData(dm);
+		} catch (Exception e) {
+			log.error("Unable to save Debit Memo", e);
+			putModuleData(dm, 1, false, e.getLocalizedMessage(), true);
 		}
+	}
+	
+	/**
+	 * 
+	 * @param dmid
+	 * @return
+	 */
+	public List<CreditMemoVO> getCreditMemos(String dmid) {
+		List<Object> params = new ArrayList<>();
+		params.add(dmid);
+		
+		StringBuilder sql = new StringBuilder(376);
+		sql.append("select d.value_txt as file_path_url, c.ticket_no, a.* ");
+		sql.append("from wsla_credit_memo a ");
+		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema());
+		sql.append("wsla_ticket_ref_rep b on a.ticket_ref_rep_id = b.ticket_ref_rep_id ");
+		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema());
+		sql.append("wsla_ticket c on b.ticket_id = c.ticket_id ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(getCustomSchema());
+		sql.append("wsla_ticket_data d on a.asset_id = d.data_entry_id ");
+		sql.append("where debit_memo_id = ? ");
+		log.debug(sql.length() + "|" + sql);
+		
+		DBProcessor db = new DBProcessor(getDBConnection());
+		return db.executeSelect(sql.toString(), params, new CreditMemoVO());
 	}
 	
 	/**
