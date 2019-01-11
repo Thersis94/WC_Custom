@@ -107,7 +107,7 @@ public class DebitMemoVO extends BeanDataVO {
 	/**
 	 * @return the debitMemoId
 	 */
-	@Column(name="debit_memo_id", isPrimaryKey=true, isAutoGen=true)
+	@Column(name="debit_memo_id", isPrimaryKey=true)
 	public String getDebitMemoId() {
 		return debitMemoId;
 	}
@@ -181,6 +181,12 @@ public class DebitMemoVO extends BeanDataVO {
 	 */
 	@Column(name="total_credit_memo", isReadOnly=true)
 	public double getTotalCreditMemoAmount() {
+		if (totalCreditMemoAmount == 0 && creditMemos.size() > 0) {
+			for (CreditMemoVO cm : creditMemos) {
+				totalCreditMemoAmount += cm.getRefundAmount();
+			}
+		}
+		
 		return totalCreditMemoAmount;
 	}
 
@@ -211,7 +217,7 @@ public class DebitMemoVO extends BeanDataVO {
 	/**
 	 * @return the totalCreditMemos
 	 */
-	@Column(name="num_credit_memos", isReadOnly=true)
+	@Column(name="credit_memo_no")
 	public long getTotalCreditMemos() {
 		return totalCreditMemos;
 	}

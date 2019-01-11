@@ -51,6 +51,7 @@ public class CreditMemoVO extends BeanDataVO {
 	// Read-Only Members
 	private String ticketIdText;
 	private String filePathUrl;
+	private String productName;
 
 	/**
 	 * 
@@ -178,6 +179,14 @@ public class CreditMemoVO extends BeanDataVO {
 	}
 
 	/**
+	 * @return the productName
+	 */
+	@Column(name="product_nm", isReadOnly=true)
+	public String getProductName() {
+		return productName;
+	}
+
+	/**
 	 * @return the asset
 	 */
 	public TicketDataVO getAsset() {
@@ -296,6 +305,13 @@ public class CreditMemoVO extends BeanDataVO {
 	 */
 	public void setFilePathUrl(String filePathUrl) {
 		this.filePathUrl = filePathUrl;
+	}
+
+	/**
+	 * @param productName the productName to set
+	 */
+	public void setProductName(String productName) {
+		this.productName = productName;
 	}
 
 }
