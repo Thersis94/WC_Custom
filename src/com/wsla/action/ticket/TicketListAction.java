@@ -145,7 +145,7 @@ public class TicketListAction extends SimpleActionAdapter {
 		// Add the limit and offset for the display query
 		sql.append(bst.getSQLOrderBy("create_dt", "desc"));
 		sql.append(" limit ").append(bst.getLimit()).append(" offset ").append(bst.getOffset());
-		log.debug(sql.length() + "|" + sql);
+		log.debug(sql.length() + "|" + sql + "| " + params);
 
 		// Build the grid object and assign the number of rows total
 		GridDataVO<TicketVO> grid = new GridDataVO<>();
@@ -189,11 +189,13 @@ public class TicketListAction extends SimpleActionAdapter {
 	public String getStatusFilter(String statusCode, String status, List<String> params) {
 		if (StringUtil.isEmpty(statusCode) && StringUtil.isEmpty(status)) return "";
 
-		if(StringUtil.isEmpty(status) || "CLOSED".equals(status)) {
+		if ("CLOSED".equals(status)) {
 			params.add("CLOSED".equals(status) ? status : statusCode);
 			return "and a.status_cd = ? ";
-		} else {
+		} else if ("OPENED".equals(status)) {
 			return "and a.status_cd != 'CLOSED' ";
+		} else {
+			return "";
 		}
 	}
 
