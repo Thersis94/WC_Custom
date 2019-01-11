@@ -2,9 +2,7 @@ package com.wsla.data.ticket;
 
 // JDK 1.8.x
 import java.sql.ResultSet;
-import java.util.ArrayList;
 import java.util.Date;
-import java.util.List;
 
 // SMT Base Libs
 import com.siliconmtn.action.ActionRequest;
@@ -12,8 +10,6 @@ import com.siliconmtn.data.parser.BeanDataVO;
 import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
-import com.siliconmtn.util.StringUtil;
-import com.wsla.data.ticket.RefundMemoVO.MemoType;
 
 /****************************************************************************
  * <b>Title</b>: RefundReplacementVO.java
@@ -56,7 +52,8 @@ public class RefundReplacementVO extends BeanDataVO {
 	private Date updateDate;
 	
 	// Sub-elements
-	private List<RefundMemoVO> memos = new ArrayList<>();
+	private CreditMemoVO creditMemo;
+	private DebitMemoVO debitMemo;
 	
 	/**
 	 * 
@@ -77,29 +74,6 @@ public class RefundReplacementVO extends BeanDataVO {
 	 */
 	public RefundReplacementVO(ResultSet rs) {
 		super(rs);
-	}
-	
-	/**
-	 * Helper method to get a credit memo type
-	 * @return
-	 */
-	public RefundMemoVO getCreditMemo() {
-		for (RefundMemoVO memo : memos) {
-			if (MemoType.CREDIT.equals(memo.getMemoType())) return memo;
-		}
-		
-		return null;
-	}
-	
-	/**
-	 * Helper method to get a debit memo type
-	 * @return
-	 */
-	public RefundMemoVO getDebitMemo() {
-		for (RefundMemoVO memo : memos) {
-			if (MemoType.DEBIT.equals(memo.getMemoType())) return memo;
-		}
-		return null;
 	}
 
 	/**
@@ -215,10 +189,17 @@ public class RefundReplacementVO extends BeanDataVO {
 	}
 
 	/**
-	 * @return the memos
+	 * @return the creditMemo
 	 */
-	public List<RefundMemoVO> getMemos() {
-		return memos;
+	public CreditMemoVO getCreditMemo() {
+		return creditMemo;
+	}
+
+	/**
+	 * @return the debitMemo
+	 */
+	public DebitMemoVO getDebitMemo() {
+		return debitMemo;
 	}
 
 	/**
@@ -320,20 +301,19 @@ public class RefundReplacementVO extends BeanDataVO {
 	}
 
 	/**
-	 * @param memos the memos to set
+	 * @param creditMemo the creditMemo to set
 	 */
-	public void setMemos(List<RefundMemoVO> memos) {
-		this.memos = memos;
+	@BeanSubElement
+	public void setCreditMemo(CreditMemoVO creditMemo) {
+		this.creditMemo = creditMemo;
 	}
 
 	/**
-	 * Add a memo
-	 * @param memo
+	 * @param debitMemo the debitMemo to set
 	 */
 	@BeanSubElement
-	public void addMemo(RefundMemoVO memo) {
-		if (memo != null && ! StringUtil.isEmpty(memo.getRefundMemoId()))
-			memos.add(memo);
+	public void setDebitMemo(DebitMemoVO debitMemo) {
+		this.debitMemo = debitMemo;
 	}
 }
 
