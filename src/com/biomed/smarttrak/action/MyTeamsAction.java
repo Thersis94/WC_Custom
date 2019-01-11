@@ -62,6 +62,7 @@ public class MyTeamsAction extends SimpleActionAdapter {
 		if ("team-members".equals(req.getParameter("actionType"))) {
 			ae = new TeamMemberAction();
 		} else {
+			req.setParameter("loadData", "true");
 			ae = new TeamAction();
 		}
 		ae.setDBConnection(dbConn);
