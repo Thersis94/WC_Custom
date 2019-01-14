@@ -129,7 +129,7 @@ public class DebitMemoWidget extends SBActionAdapter {
 		sql.append(getCustomSchema()).append("wsla_debit_memo dm ");
 		sql.append(DBUtil.INNER_JOIN).append(" ( select debit_memo_id, ");
 		sql.append("sum(a.refund_amount_no) as total_credit_memo, ");
-		sql.append("count(*) as num_credit_memos, oem_id, retailer_id ");
+		sql.append("count(*) as credit_memo_no, oem_id, retailer_id ");
 		sql.append("from ").append(getCustomSchema()).append("wsla_credit_memo a ");
 		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema());
 		sql.append("wsla_ticket_ref_rep b on a.ticket_ref_rep_id = b.ticket_ref_rep_id ");
