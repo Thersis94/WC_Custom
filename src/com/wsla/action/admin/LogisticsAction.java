@@ -37,8 +37,10 @@ import com.smt.sitebuilder.action.AbstractSBReportVO;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.report.vo.DownloadReportVO;
 import com.smt.sitebuilder.common.constants.Constants;
+import com.smt.sitebuilder.security.SBUserRole;
 import com.wsla.action.ticket.BaseTransactionAction;
 import com.wsla.action.ticket.TicketEditAction;
+import com.wsla.common.UserSqlFilter;
 import com.wsla.common.WSLAConstants;
 import com.wsla.data.provider.ProviderLocationVO;
 import com.wsla.data.ticket.LedgerSummary;
@@ -118,7 +120,11 @@ public class LogisticsAction extends SBActionAdapter {
 			}
 
 		} else {
-			setModuleData(getData(toLocnId, sts, new BSTableControlVO(req, ShipmentVO.class)));
+			UserVO user = (UserVO) getAdminUser(req).getUserExtendedInfo();
+			String roleId = ((SBUserRole)req.getSession().getAttribute(Constants.ROLE_DATA)).getRoleId();
+			UserSqlFilter userFilter = new UserSqlFilter(user, roleId, getCustomSchema());
+
+			setModuleData(getData(toLocnId, sts, userFilter, new BSTableControlVO(req, ShipmentVO.class)));
 		}
 
 
@@ -305,7 +311,7 @@ public class LogisticsAction extends SBActionAdapter {
 	 * @param bst vo to populate data into
 	 * @return
 	 */
-	public GridDataVO<ShipmentVO> getData(String toLocationId, ShipmentStatus status, BSTableControlVO bst) {
+	public GridDataVO<ShipmentVO> getData(String toLocationId, ShipmentStatus status, UserSqlFilter userFilter, BSTableControlVO bst) {
 		String schema = getCustomSchema();
 		List<Object> params = new ArrayList<>();
 		StringBuilder sql = new StringBuilder(200);
@@ -315,6 +321,7 @@ public class LogisticsAction extends SBActionAdapter {
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("wsla_provider_location srclcn on s.from_location_id=srclcn.location_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("wsla_provider_location destlcn on s.to_location_id=destlcn.location_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("wsla_ticket t on s.ticket_id=t.ticket_id ");
+		sql.append(userFilter.getTicketFilter("t", params));
 		sql.append("where (s.status_cd != ? or (s.status_cd=? and coalesce(s.shipment_dt, s.update_dt, s.create_dt) > CURRENT_DATE-31)) "); //only show ingested items for 30 days past receipt
 		params.add(ShipmentStatus.RECEIVED.toString());
 		params.add(ShipmentStatus.RECEIVED.toString());
