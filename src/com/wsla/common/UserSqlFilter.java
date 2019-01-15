@@ -65,7 +65,7 @@ public class UserSqlFilter {
 	 * Returns a filter for ticket based queries, according to the user's role.
 	 * This is an inner join filter and must be placed with the other tables in the query.
 	 * 
-	 * @param ticketAlias - wsla_ticet table alias
+	 * @param ticketAlias - wsla_ticket table alias
 	 * @param params
 	 * @return
 	 */
