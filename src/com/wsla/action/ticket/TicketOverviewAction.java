@@ -274,7 +274,6 @@ public class TicketOverviewAction extends BasePortalAction {
 	 */
 	public void updateWSLAUser(UserVO user) throws InvalidDataException, DatabaseException, com.siliconmtn.exception.DatabaseException {
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
-		log.debug("##### saving user " + user);
 		db.update(user);
 		
 		ProfileManager pm = ProfileManagerFactory.getInstance(attributes);

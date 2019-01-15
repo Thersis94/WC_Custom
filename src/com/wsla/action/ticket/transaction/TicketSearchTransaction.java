@@ -1,11 +1,9 @@
 package com.wsla.action.ticket.transaction;
-
+//JDK 1.8.x
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-// JDK 1.8.x
 
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
@@ -16,6 +14,7 @@ import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.common.constants.AdminConstants;
+
 // WC Libs
 import com.wsla.action.ticket.BaseTransactionAction;
 import com.wsla.data.ticket.StatusCode;
@@ -27,7 +26,7 @@ import com.wsla.data.ticket.TicketVO;
  * <b>Copyright:</b> Copyright (c) 2018 <b>Company:</b> Silicon Mountain
  * Technologies
  * 
- * @author Tim Johnson
+ * @author Ryan Riker
  * @version 3.0
  * @since Nov 19, 2018
  * @updates:
@@ -35,7 +34,6 @@ import com.wsla.data.ticket.TicketVO;
 
 public class TicketSearchTransaction extends BaseTransactionAction {
 	
-
 	/**
 	 * Key for the Ajax Controller to utilize when calling this class
 	 */
