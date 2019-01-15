@@ -57,7 +57,7 @@ public class UserSqlFilter {
 				role = WSLARole.ADMIN;
 				break;
 			default:
-				role = EnumUtil.safeValueOf(WSLARole.class, roleId, WSLARole.PUBLIC);		
+				role = EnumUtil.safeValueOf(WSLARole.class, roleId, WSLARole.PUBLIC);
 		}
 	}
 	
@@ -91,9 +91,9 @@ public class UserSqlFilter {
 				break;
 			default:
 				// TODO: remove this line when testing is complete and uncomment the other two
-				filterParams.add(TypeCode.RETAILER.name());
-				//sql.setLength(0);
-				//filterParams.clear();
+				//filterParams.add(TypeCode.RETAILER.name());
+				sql.setLength(0);
+				filterParams.clear();
 		}
 		
 		// Finalize the filter to be added to the query
