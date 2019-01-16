@@ -48,6 +48,7 @@ import com.wsla.action.admin.WarrantyAction;
 import com.wsla.action.admin.WarrantyAction.ServiceTypeCode;
 import com.wsla.action.ticket.CASSelectionAction;
 import com.wsla.action.ticket.TicketListAction;
+import com.wsla.action.ticket.TicketSearchAction;
 import com.wsla.action.ticket.TicketEditAction;
 import com.wsla.common.LocaleWrapper;
 import com.wsla.common.WSLALocales;
@@ -133,6 +134,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		keyMap.put("billable", new GenericVO("getBillableCodes", Boolean.TRUE));
 		keyMap.put("billableType", new GenericVO("getBillableTypes", Boolean.FALSE));
 		keyMap.put("supportNumbers", new GenericVO("getSupportNumbers", Boolean.TRUE));
+		keyMap.put("ticketSearch", new GenericVO("ticketSearch", Boolean.TRUE));
 	}
 
 	/**
@@ -775,5 +777,16 @@ public class SelectLookupAction extends SBActionAdapter {
 		}
 		
 		return data;
+	}
+	
+	/**
+	 * Performs a fuzzy search against multiple fields
+	 * @param req
+	 * @return
+	 */
+	public List<GenericVO> ticketSearch(ActionRequest req) {
+		TicketSearchAction tsa = new TicketSearchAction(getDBConnection(), getAttributes());
+		
+		return tsa.getTickets(req.getParameter(REQ_SEARCH));
 	}
 }
