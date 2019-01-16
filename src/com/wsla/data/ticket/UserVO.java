@@ -45,6 +45,7 @@ public class UserVO extends BeanDataVO {
 	private String lastNamePre;
 	private String lastNamePost;
 	private String email;
+	private String mainPhone;
 	private String locale;
 	private String roleId;
 	private String profileRoleId;
@@ -392,5 +393,20 @@ public class UserVO extends BeanDataVO {
 	 */
 	public void setLastNamePre(String lastNamePre) {
 		this.lastNamePre = lastNamePre;
+	}
+
+	/**
+	 * @return the mainPhone
+	 */
+	@Column(name="main_phone_txt")
+	public String getMainPhone() {
+		return mainPhone;
+	}
+
+	/**
+	 * @param mainPhone the mainPhone to set
+	 */
+	public void setMainPhone(String mainPhone) {
+		this.mainPhone = mainPhone;
 	}
 }

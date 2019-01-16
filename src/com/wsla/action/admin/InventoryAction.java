@@ -1,5 +1,7 @@
 package com.wsla.action.admin;
 
+import static com.wsla.action.admin.ProductMasterAction.REQ_PRODUCT_ID;
+
 // JDK 1.8.x
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -13,7 +15,6 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.common.html.BSTableControlVO;
-import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.orm.GridDataVO;
@@ -71,19 +72,27 @@ public class InventoryAction extends SBActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		String locationId;
 		
-		// Inventory management should always be filtered by the user's location
-		String roleId = ((SBUserRole)req.getSession().getAttribute(Constants.ROLE_DATA)).getRoleId();
-		if (!WSLARole.ADMIN.getRoleId().equals(roleId)) {
-			UserVO user = (UserVO) getAdminUser(req).getUserExtendedInfo();
-			locationId = user.getLocationId();
+		if (req.hasParameter("suppliers")) {
+			String partId = req.getParameter(REQ_PRODUCT_ID, req.getParameter("custProductId"));
+			Integer min = req.getIntegerParameter("minInventory", 0);
+			setModuleData(listInvetorySuppliers(partId, min, null));
 		} else {
-			locationId = req.getParameter("locationId");
-		}
+			String locationId;
 		
-		BSTableControlVO bst = new BSTableControlVO(req, LocationItemMasterVO.class);
-		setModuleData(listInventory(locationId, bst.getSQLOrderBy("p.provider_nm, lcn.location_nm, pm.product_nm",  "asc"), bst));
+			// Inventory management should always be filtered by the user's location
+			String roleId = ((SBUserRole)req.getSession().getAttribute(Constants.ROLE_DATA)).getRoleId();
+			if (!WSLARole.ADMIN.getRoleId().equals(roleId)) {
+				UserVO user = (UserVO) getAdminUser(req).getUserExtendedInfo();
+				locationId = user.getLocationId();
+			} else {
+				locationId = req.getParameter("locationId");
+			}
+			
+			BSTableControlVO bst = new BSTableControlVO(req, LocationItemMasterVO.class);
+			String orderBy =  bst.getSQLOrderBy("p.provider_nm, lcn.location_nm, pm.product_nm",  "asc");
+			setModuleData(listInventory(locationId, orderBy, bst, false));
+		}
 	}
 
 	/*
@@ -139,7 +148,7 @@ public class InventoryAction extends SBActionAdapter {
 	 * @param term (search keyword)
 	 * @return
 	 */
-	public GridDataVO<LocationItemMasterVO> listInventory(String locationId, String orderBy, BSTableControlVO bst) {
+	public GridDataVO<LocationItemMasterVO> listInventory(String locationId, String orderBy, BSTableControlVO bst, boolean setOnly) {
 		String schema = getCustomSchema();
 		List<Object> params = new ArrayList<>();
 		StringBuilder sql = new StringBuilder(200);
@@ -150,7 +159,8 @@ public class InventoryAction extends SBActionAdapter {
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("wsla_provider_location lcn on lim.location_id=lcn.location_id ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("wsla_provider p on lcn.provider_id=p.provider_id ");
 		sql.append("where 1=1 ");
-
+		if (setOnly) sql.append("and set_flg = 1 ");
+		
 		//fuzzy keyword search
 		String term = bst.getLikeSearch().toLowerCase();
 		if (!StringUtil.isEmpty(term)) {
@@ -182,16 +192,19 @@ public class InventoryAction extends SBActionAdapter {
 	 * @param minInventory only used with productId - ensures the matched locationId has a minimum amount of inventory on hand.
 	 * @return List<GenericVO> Used for data filter box (selectpicker)
 	 */
-	public List<GenericVO> listInvetorySuppliers(String productIdOrModelNo, Integer minInventory, UserVO user) {
+	public List<LocationItemMasterVO> listInvetorySuppliers(String productIdOrModelNo, Integer minInventory, UserVO user) {
 		String schema = getCustomSchema();
 		List<Object> params = null;
 		StringBuilder sql = new StringBuilder(250);
-		sql.append("select lcn.location_id as key, concat(p.provider_nm, ': ', lcn.location_nm, ' ', lcn.store_no) as value ");
-		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("wsla_provider_location lcn ");
-		sql.append(DBUtil.INNER_JOIN).append(schema).append("wsla_location_item_master lim on lcn.location_id=lim.location_id ");
-		sql.append(DBUtil.INNER_JOIN).append(schema).append("wsla_provider p on lcn.provider_id=p.provider_id ");
+		sql.append("select * ").append(DBUtil.FROM_CLAUSE).append(schema);
+		sql.append("wsla_provider_location lcn ");
+		sql.append(DBUtil.INNER_JOIN).append(schema);
+		sql.append("wsla_location_item_master lim on lcn.location_id=lim.location_id ");
+		sql.append(DBUtil.INNER_JOIN).append(schema);
+		sql.append("wsla_provider p on lcn.provider_id=p.provider_id ");
 		if (!StringUtil.isEmpty(productIdOrModelNo)) {
-			sql.append(DBUtil.INNER_JOIN).append(schema).append("wsla_product_master prod on lim.product_id=prod.product_id ");
+			sql.append(DBUtil.INNER_JOIN).append(schema);
+			sql.append("wsla_product_master prod on lim.product_id=prod.product_id ");
 			sql.append("and (prod.product_id=? or lower(prod.cust_product_id)=?) ");
 			params = new ArrayList<>(Arrays.asList(productIdOrModelNo, productIdOrModelNo));
 			if (minInventory != null) {
@@ -206,7 +219,7 @@ public class InventoryAction extends SBActionAdapter {
 		log.debug(sql);
 
 		DBProcessor db = new DBProcessor(getDBConnection(), schema);
-		return db.executeSelect(sql.toString(), params, new GenericVO(), "key");
+		return db.executeSelect(sql.toString(), params, new LocationItemMasterVO(), "location_id");
 	}
 
 

@@ -662,7 +662,7 @@ public class SelectLookupAction extends SBActionAdapter {
 	 */
 	public List<GenericVO> getInventorySuppliers(ActionRequest req) {
 		String partId = req.getParameter(REQ_PRODUCT_ID, req.getParameter("custProductId"));
-		Integer min = req.getIntegerParameter("minInventory"); //the minimum inventory to be on hand in order to match
+		Integer min = req.getIntegerParameter("minInventory", 0); //the minimum inventory to be on hand in order to match
 		
 		UserVO user = null;
 		String roleId = ((SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA)).getRoleId();
@@ -670,7 +670,20 @@ public class SelectLookupAction extends SBActionAdapter {
 			user = (UserVO) getAdminUser(req).getUserExtendedInfo();
 		}
 		
-		return new InventoryAction(getAttributes(), getDBConnection()).listInvetorySuppliers(partId, min, user);
+		InventoryAction ia = new InventoryAction(getAttributes(), getDBConnection());
+		List<LocationItemMasterVO> data = ia.listInvetorySuppliers(partId, min, user);
+		
+		// Convert the location item master to a generic vo
+		List<GenericVO> results = new ArrayList<>(data.size());
+		for (LocationItemMasterVO im : data) {
+			StringBuilder name = new StringBuilder(64);
+			name.append(im.getProvider().getProviderName()).append(": ");
+			name.append(im.getLocation().getLocationName()).append(" ");
+			name.append(im.getLocation().getStoreNumber());
+			results.add(new GenericVO(im.getLocationId(), name));
+		}
+		
+		return results;
 	}
 
 	/**
@@ -680,9 +693,12 @@ public class SelectLookupAction extends SBActionAdapter {
 	 */
 	public List<GenericVO> getLocationInventory(ActionRequest req) {
 		String locationId = req.getParameter("locationId");
-
+		
+		BSTableControlVO bst = new BSTableControlVO(req, LocationItemMasterVO.class);
 		InventoryAction pa = new InventoryAction(getAttributes(), getDBConnection());
-		GridDataVO<LocationItemMasterVO> data = pa.listInventory(locationId, null, null);
+		boolean setFlag = req.getBooleanParameter("setFlag");
+		GridDataVO<LocationItemMasterVO> data = pa.listInventory(locationId, null, bst, setFlag);
+		
 		List<GenericVO> products = new ArrayList<>(data.getRowData().size());
 		for (LocationItemMasterVO lim : data.getRowData())
 			products.add(new GenericVO(lim.getProductId(), lim.getProductName()));
