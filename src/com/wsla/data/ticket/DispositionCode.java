@@ -15,9 +15,9 @@ package com.wsla.data.ticket;
 
 public enum DispositionCode {
 	
-	NONREPAIRABLE(StatusCode.UNREPAIRABLE, LedgerSummary.DIAGNOSTIC_COMPLETED),
-	REPAIRABLE(StatusCode.REPAIRABLE, LedgerSummary.DIAGNOSTIC_COMPLETED),
-	REPAIRED(StatusCode.CAS_REPAIR_COMPLETE, LedgerSummary.REPAIR_STATUS_CHANGED);
+	NONREPAIRABLE(StatusCode.UNREPAIRABLE, LedgerSummary.DISPOSITION_CHANGED),
+	REPAIRABLE(StatusCode.REPAIRABLE, LedgerSummary.DISPOSITION_CHANGED),
+	REPAIRED(StatusCode.CAS_REPAIR_COMPLETE, LedgerSummary.DISPOSITION_CHANGED);
 	
 	private StatusCode status;
 	private LedgerSummary ledgerSummary;
@@ -32,7 +32,7 @@ public enum DispositionCode {
 	}
 	
 	public String getLedgerSummary() {
-		return ledgerSummary.summary;
+		return ledgerSummary.summary + " : " + this.name();
 	}
 }
 

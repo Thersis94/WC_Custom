@@ -34,7 +34,7 @@ import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.admin.action.ResourceBundleManagerAction;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
-
+import com.smt.sitebuilder.security.SBUserRole;
 // WSLA Libs
 import com.wsla.action.admin.BillableActivityAction;
 import com.wsla.action.admin.InventoryAction;
@@ -51,6 +51,7 @@ import com.wsla.action.ticket.TicketListAction;
 import com.wsla.action.ticket.TicketEditAction;
 import com.wsla.common.LocaleWrapper;
 import com.wsla.common.WSLALocales;
+import com.wsla.common.WSLAConstants.WSLARole;
 import com.wsla.data.product.LocationItemMasterVO;
 import com.wsla.data.product.ProductSetVO;
 import com.wsla.data.product.ProductVO;
@@ -424,7 +425,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		Locale locale = new ResourceBundleManagerAction().getUserLocale(req);
 		List<GenericVO> data = new ArrayList<>(64);
 		StatusCodeAction sca = new StatusCodeAction(getDBConnection(), getAttributes());
-		List<StatusCodeVO> codes = sca.getStatusCodes(req.getParameter("roleId"), locale);
+		List<StatusCodeVO> codes = sca.getStatusCodes(req.getParameter("roleId"), locale, null);
 		
 		for(StatusCodeVO sc : codes) {
 			data.add(new GenericVO(sc.getStatusCode(), sc.getStatusName()));
@@ -662,8 +663,15 @@ public class SelectLookupAction extends SBActionAdapter {
 	public List<GenericVO> getInventorySuppliers(ActionRequest req) {
 		String partId = req.getParameter(REQ_PRODUCT_ID, req.getParameter("custProductId"));
 		Integer min = req.getIntegerParameter("minInventory", 0); //the minimum inventory to be on hand in order to match
+		
+		UserVO user = null;
+		String roleId = ((SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA)).getRoleId();
+		if (StringUtil.isEmpty(partId) && !WSLARole.ADMIN.getRoleId().equals(roleId)) {
+			user = (UserVO) getAdminUser(req).getUserExtendedInfo();
+		}
+		
 		InventoryAction ia = new InventoryAction(getAttributes(), getDBConnection());
-		List<LocationItemMasterVO> data = ia.listInvetorySuppliers(partId, min);
+		List<LocationItemMasterVO> data = ia.listInvetorySuppliers(partId, min, user);
 		
 		// Convert the location item master to a generic vo
 		List<GenericVO> results = new ArrayList<>(data.size());

@@ -11,6 +11,8 @@ import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.util.StringUtil;
+import com.wsla.action.admin.LogisticsAction;
+
 // WC Libs
 import com.wsla.action.ticket.BaseTransactionAction;
 import com.wsla.action.ticket.TicketEditAction;
@@ -135,6 +137,9 @@ public class DiagnosticTransaction extends BaseTransactionAction {
 			notesData.setAttributeCode("attr_partsNotes");
 			notesData.setValue(notes);
 			dbp.save(notesData);
+			
+			// Check for any pending shipments and cancel them
+			new LogisticsAction(getAttributes(), getDBConnection()).cancelPendingShipments(td.getTicketId());
 		}
 		
 		// Build the next step

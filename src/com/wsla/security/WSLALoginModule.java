@@ -63,10 +63,11 @@ public class WSLALoginModule extends DBLoginModule {
 	protected UserVO getWSLAUser(String profileId) {
 		String schema = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(256);
-		sql.append("select u.*, locn.location_id, locn.provider_id from ").append(schema);
+		sql.append("select u.*, locn.location_id, locn.provider_id, p.provider_type_id from ").append(schema);
 		sql.append("wsla_user u ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("WSLA_PROVIDER_USER_XR xr on u.user_id=xr.user_id and xr.active_flg=1 ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("WSLA_PROVIDER_LOCATION locn on xr.location_id=locn.location_id ");
+		sql.append(DBUtil.INNER_JOIN).append(schema).append("WSLA_PROVIDER p on locn.provider_id = p.provider_id ");
 		sql.append("where u.profile_id=? ");
 		sql.append("order by coalesce(xr.primary_contact_flg, -1) desc limit 1"); //favor any location where the user is a primary contact
 		log.debug(sql);

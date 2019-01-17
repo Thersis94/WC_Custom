@@ -30,6 +30,7 @@ public class PartVO extends ProductVO {
 	private String shipmentId;
 	private int quantity;
 	private int quantityReceived;
+	private int usedQuantityNo;
 	private int destEstQuantity;
 	private int harvestedFlag;
 	private int submitApprovalFlag;
@@ -76,6 +77,14 @@ public class PartVO extends ProductVO {
 	@Column(name="rcvd_qnty_no")
 	public int getQuantityReceived() {
 		return quantityReceived;
+	}
+
+	/**
+	 * @return the usedQuantityNo
+	 */
+	@Column(name="used_qnty_no")
+	public int getUsedQuantityNo() {
+		return usedQuantityNo;
 	}
 
 	@Column(name="harvested_flg")
@@ -150,6 +159,13 @@ public class PartVO extends ProductVO {
 
 	public void setQuantityReceived(int quantityReceived) {
 		this.quantityReceived = quantityReceived;
+	}
+
+	/**
+	 * @param usedQuantityNo the usedQuantityNo to set
+	 */
+	public void setUsedQuantityNo(int usedQuantityNo) {
+		this.usedQuantityNo = usedQuantityNo;
 	}
 
 	public void setDestEstQuantity(int destEstQuantity) {

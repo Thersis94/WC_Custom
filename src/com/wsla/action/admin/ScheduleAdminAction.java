@@ -3,9 +3,11 @@ package com.wsla.action.admin;
 //JDK 1.8.x
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 // SMT Base Libs
@@ -19,10 +21,14 @@ import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 // WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
+import com.smt.sitebuilder.common.constants.Constants;
+import com.smt.sitebuilder.security.SBUserRole;
+import com.wsla.common.UserSqlFilter;
 //WSLA Libs
 import com.wsla.data.ticket.CASTicketAssignmentVO;
 import com.wsla.data.ticket.OwnerTicketAssignmentVO;
 import com.wsla.data.ticket.TicketScheduleVO;
+import com.wsla.data.ticket.UserVO;
 
 
 /****************************************************************************
@@ -88,8 +94,12 @@ public class ScheduleAdminAction extends SBActionAdapter {
 		
 		Map<String, Date> dates =  processDateChange(startDate,endDate,direction);
 
+		UserVO user = (UserVO) getAdminUser(req).getUserExtendedInfo();
+		String roleId = ((SBUserRole)req.getSession().getAttribute(Constants.ROLE_DATA)).getRoleId();
+		UserSqlFilter userFilter = new UserSqlFilter(user, roleId, getCustomSchema());
+		
 		String locationId = req.getParameter("locationId");
-		GridDataVO<TicketScheduleVO> resData = getSchedules( locationId, dates.get(START_DATE), dates.get(END_DATE) );
+		GridDataVO<TicketScheduleVO> resData = getSchedules( locationId, userFilter, dates.get(START_DATE), dates.get(END_DATE) );
 		Map<String, Object> resMap = new HashMap<>();
 		
 		resMap.put("attributes", dates);
@@ -135,7 +145,7 @@ public class ScheduleAdminAction extends SBActionAdapter {
 	 * @param providerId
 	 * @return
 	 */
-	public GridDataVO<TicketScheduleVO> getSchedules( String locationId,  Date startDate, Date endDate ) {
+	public GridDataVO<TicketScheduleVO> getSchedules( String locationId, UserSqlFilter userFilter, Date startDate, Date endDate ) {
 		
 		StringBuilder sql = new StringBuilder(780);
 		sql.append("select t.ticket_no,  ts.*, ");
@@ -149,6 +159,11 @@ public class ScheduleAdminAction extends SBActionAdapter {
 		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("wsla_ticket_assignment cta on cta.ticket_assg_id = ts.cas_location_id ");
 		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("wsla_provider_location cl on cta.location_id = cl.location_id ");
 		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("wsla_assignment_location_view ov on ov.ticket_assg_id = ts.owner_location_id ");
+		
+		// Reduce data down by what the user is allowed to see
+		List<Object> params = new ArrayList<>();
+		sql.append(userFilter.getTicketFilter("t", params));
+		
 		sql.append(DBUtil.WHERE_1_CLAUSE);
 		
 		if (!StringUtil.isEmpty(locationId)) {
@@ -165,6 +180,10 @@ public class ScheduleAdminAction extends SBActionAdapter {
 		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 
+			for (Object param : params) {
+				ps.setString(count++, param.toString());
+			}
+			
 			if (!StringUtil.isEmpty(locationId)) {
 				ps.setString(count, locationId);
 				count++;

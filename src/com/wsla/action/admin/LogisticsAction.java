@@ -7,6 +7,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.ResourceBundle;
@@ -36,8 +37,10 @@ import com.smt.sitebuilder.action.AbstractSBReportVO;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.report.vo.DownloadReportVO;
 import com.smt.sitebuilder.common.constants.Constants;
+import com.smt.sitebuilder.security.SBUserRole;
 import com.wsla.action.ticket.BaseTransactionAction;
 import com.wsla.action.ticket.TicketEditAction;
+import com.wsla.common.UserSqlFilter;
 import com.wsla.common.WSLAConstants;
 import com.wsla.data.provider.ProviderLocationVO;
 import com.wsla.data.ticket.LedgerSummary;
@@ -117,7 +120,11 @@ public class LogisticsAction extends SBActionAdapter {
 			}
 
 		} else {
-			setModuleData(getData(toLocnId, sts, new BSTableControlVO(req, ShipmentVO.class)));
+			UserVO user = (UserVO) getAdminUser(req).getUserExtendedInfo();
+			String roleId = ((SBUserRole)req.getSession().getAttribute(Constants.ROLE_DATA)).getRoleId();
+			UserSqlFilter userFilter = new UserSqlFilter(user, roleId, getCustomSchema());
+
+			setModuleData(getData(toLocnId, sts, userFilter, new BSTableControlVO(req, ShipmentVO.class)));
 		}
 
 
@@ -304,7 +311,7 @@ public class LogisticsAction extends SBActionAdapter {
 	 * @param bst vo to populate data into
 	 * @return
 	 */
-	public GridDataVO<ShipmentVO> getData(String toLocationId, ShipmentStatus status, BSTableControlVO bst) {
+	public GridDataVO<ShipmentVO> getData(String toLocationId, ShipmentStatus status, UserSqlFilter userFilter, BSTableControlVO bst) {
 		String schema = getCustomSchema();
 		List<Object> params = new ArrayList<>();
 		StringBuilder sql = new StringBuilder(200);
@@ -314,6 +321,7 @@ public class LogisticsAction extends SBActionAdapter {
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("wsla_provider_location srclcn on s.from_location_id=srclcn.location_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("wsla_provider_location destlcn on s.to_location_id=destlcn.location_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("wsla_ticket t on s.ticket_id=t.ticket_id ");
+		sql.append(userFilter.getTicketFilter("t", params));
 		sql.append("where (s.status_cd != ? or (s.status_cd=? and coalesce(s.shipment_dt, s.update_dt, s.create_dt) > CURRENT_DATE-31)) "); //only show ingested items for 30 days past receipt
 		params.add(ShipmentStatus.RECEIVED.toString());
 		params.add(ShipmentStatus.RECEIVED.toString());
@@ -348,5 +356,46 @@ public class LogisticsAction extends SBActionAdapter {
 		//after query, adjust the count to be # of unique shipments, not total SQL rows
 		DBProcessor db = new DBProcessor(getDBConnection(), schema);
 		return db.executeSQLWithCount(sql.toString(), params, new ShipmentVO(), "shipment_id", bst);
+	}
+	
+	/**
+	 * Looks up shipments tied to a ticket. Optionally, filtering by one or more statuses.
+	 * 
+	 * @param ticketId
+	 * @param statuses
+	 * @return
+	 */
+	public List<ShipmentVO> getTicketShipments(String ticketId, List<ShipmentStatus> statuses) {
+		StringBuilder sql = new StringBuilder(200);
+		sql.append(DBUtil.SELECT_FROM_STAR).append(getCustomSchema()).append("wsla_shipment ");
+		sql.append("where ticket_id = ? and status_cd in (").append(DBUtil.preparedStatmentQuestion(statuses.size())).append(") ");
+		log.debug(sql);
+		
+		List<Object> params = new ArrayList<>();
+		params.add(ticketId);
+		for (ShipmentStatus status : statuses) {
+			params.add(status.name());
+		}
+		
+		DBProcessor dbp = new DBProcessor(getDBConnection(), getCustomSchema());
+		return dbp.executeSelect(sql.toString(), params, new ShipmentVO());
+	}
+	
+	/**
+	 * Cancels pending/open shipments for a specified ticket
+	 * 
+	 * @param ticketId
+	 * @throws com.siliconmtn.db.util.DatabaseException 
+	 * @throws InvalidDataException 
+	 */
+	public void cancelPendingShipments(String ticketId) throws InvalidDataException, com.siliconmtn.db.util.DatabaseException {
+		DBProcessor dbp = new DBProcessor(getDBConnection(), getCustomSchema());
+		
+		List<ShipmentVO> shipments = getTicketShipments(ticketId, Arrays.asList(ShipmentStatus.CREATED, ShipmentStatus.BACKORDERED));
+		for (ShipmentVO shipment : shipments) {
+			shipment.setStatus(ShipmentStatus.CANCELED);
+			shipment.setUpdateDate(new Date());
+			dbp.save(shipment);
+		}
 	}
 }
