@@ -91,7 +91,7 @@ public class BaseTransactionAction extends SBActionAdapter {
 		}
 		
 		// Send the notification and add the ledger entry
-		processNotification(ticket.getTicketIdText(), userId, newStatus);
+		processNotification(ticket.getTicketIdText(), userId, newStatus, null);
 		return addLedger(ticketId, userId, newStatus, summary, location);
 	}
 
@@ -102,7 +102,7 @@ public class BaseTransactionAction extends SBActionAdapter {
 	 * @param ticketIdText
 	 * @param status
 	 */
-	public void processNotification(String ticketIdText, String userId, StatusCode status) {
+	public void processNotification(String ticketIdText, String userId, StatusCode status, Map<String,Object> emailData) {
 		// Lookup the workflow Id
 		WorkflowLookupUtil wlu = new WorkflowLookupUtil(getDBConnection());
 		String workflowId = wlu.getWorkflowFromSlug(WorkflowSlug.WSLA_NOTIFICATION.name()).getWorkflowId();
@@ -122,6 +122,7 @@ public class BaseTransactionAction extends SBActionAdapter {
 		wmv.addParameter(NotificationWorkflowModule.TICKET_ID_TEXT, ticketIdText);
 		wmv.addParameter(NotificationWorkflowModule.USER_ID, userId);
 		wmv.addParameter(NotificationWorkflowModule.STATUS_CODE, status);
+		wmv.addParameter(NotificationWorkflowModule.EMAIL_DATA, emailData);
 		
 		// Send the workflow to the engine
 		WorkflowSender ws = new WorkflowSender(getAttributes());

@@ -11,6 +11,7 @@ import java.util.Set;
 
 import com.siliconmtn.sb.email.util.EmailCampaignBuilderUtil;
 import com.siliconmtn.sb.email.vo.EmailRecipientVO;
+import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.workflow.data.WorkflowModuleVO;
 import com.siliconmtn.workflow.modules.AbstractWorkflowModule;
 import com.wsla.action.BasePortalAction;
@@ -19,6 +20,8 @@ import com.wsla.action.ticket.TicketEditAction;
 import com.wsla.data.ticket.StatusNotificationVO;
 import com.wsla.data.ticket.TicketVO;
 import com.wsla.data.ticket.UserVO;
+
+
 
 /********************************************************************
  * <b>Title:</b> NotificationWorkflowModule.java<br/>
@@ -35,6 +38,7 @@ public class NotificationWorkflowModule extends AbstractWorkflowModule {
 	public static final String TICKET_ID_TEXT = "ticketIdText";
 	public static final String USER_ID = "userId";
 	public static final String STATUS_CODE = "statusCode";
+	public static final String EMAIL_DATA = "emailData";
 	
 	public static final String WSLA_END_CUSTOMER = "WSLA_END_CUSTOMER";
 
@@ -79,21 +83,20 @@ public class NotificationWorkflowModule extends AbstractWorkflowModule {
 	 * @throws SQLException
 	 */
 	protected void sendMails(String roleId, List<StatusNotificationVO> notifications) throws SQLException {
-		String ticketIdText = mod.getWorkflowConfig(TICKET_ID_TEXT).toString();
+		String ticketIdText = StringUtil.checkVal(mod.getWorkflowConfig(TICKET_ID_TEXT));
 		Map<String, StatusNotificationVO> roleNotifications = getNotifications(roleId, notifications);
 		
 		// If the role is an end customer, send ONE email to the originator user on the ticket.
 		// Otherwise, send an email to all users in the system with the given role.
 		BasePortalAction bpa = new BasePortalAction(getConnection(), attributes);
 		List<UserVO> users = new ArrayList<>();
-		if (WSLA_END_CUSTOMER.equals(roleId)) {
+		if (WSLA_END_CUSTOMER.equals(roleId) && !StringUtil.isEmpty(ticketIdText)) {
 			TicketEditAction tea = new TicketEditAction(getConnection(), attributes);
 			TicketVO ticket = tea.getBaseTicket(ticketIdText);
 			users.add(bpa.getUser(ticket.getUserId()));
-		} else {
+		} else if(!WSLA_END_CUSTOMER.equals(roleId)) {
 			users = bpa.getUsersByRole(roleId);
 		}
-		
 		// Send the emails to each user
 		for (UserVO user : users) {
 			sendLocaleEmail(user, roleNotifications);
@@ -120,7 +123,15 @@ public class NotificationWorkflowModule extends AbstractWorkflowModule {
 		
 		// Send the email to the user
 		EmailCampaignBuilderUtil util = new EmailCampaignBuilderUtil(getConnection(), attributes);
-		util.sendMessage(new HashMap<>(), rcpts, notification.getCampaignInstanceId());
+
+		@SuppressWarnings("unchecked")
+		Map<String, Object> mData = (Map<String, Object>) mod.getWorkflowConfig(NotificationWorkflowModule.EMAIL_DATA);
+		
+		if (mData == null || mData.size() == 0 ) {
+			mData = new HashMap<>();
+		}
+		
+		util.sendMessage(mData, rcpts, notification.getCampaignInstanceId());
 	}
 	
 	/**
