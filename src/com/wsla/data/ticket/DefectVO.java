@@ -31,7 +31,7 @@ public class DefectVO extends BeanDataVO {
 	 * and the post-repair repair code
 	 */
 	public enum Type {
-		DEFECT_CODE("Defect Code"), REPAIR_CODE("Repair Code");
+		DEFECT_CODE("Defect Code"), REPAIR_CODE("Repair Code"), BOTH("Defect and Repair");
 		
 		protected final String typeCode;
 		Type(String typeCode) { this.typeCode = typeCode; }

@@ -481,7 +481,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		sql.append("left outer join resource_bundle_key c on a.defect_cd = c.key_id ");
 		sql.append("left outer join resource_bundle_data d on c.key_id = d.key_id ");
 		sql.append("and language_cd = ? and country_cd = ? ");
-		sql.append("where a.active_flg = 1 and defect_type_cd = ? ");
+		sql.append("where a.active_flg = 1 and defect_type_cd in ('BOTH', ?) ");
 		sql.append("and (a.provider_id is null ");
 		if (req.hasParameter(REQ_PROVIDER_ID)) {
 			sql.append("or a.provider_id = ? ");
@@ -489,7 +489,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		}
 
 		sql.append(") order by value");
-		log.debug("defects SQL " + sql);
+		log.debug("defects SQL " + sql + "|" + params);
 		
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		return db.executeSelect(sql.toString(), params, new GenericVO());
