@@ -17,6 +17,7 @@ import com.siliconmtn.util.StringUtil;
 
 // WSLA Libs
 import com.wsla.common.WSLAConstants;
+import com.wsla.data.provider.ProviderType;
 
 /****************************************************************************
  * <b>Title</b>: UserVO.java
@@ -59,6 +60,7 @@ public class UserVO extends BeanDataVO {
 	// Variables picked up at login for downstream usage ("My Location", "My Provider")
 	private String locationId;
 	private String providerId;
+	private ProviderType providerType;
 
 	/**
 	 * 
@@ -335,6 +337,22 @@ public class UserVO extends BeanDataVO {
 	 */
 	public void setProviderId(String providerId) {
 		this.providerId = providerId;
+	}
+
+	/**
+	 * @return the providerType
+	 */
+	@Column(name="provider_type_id", isReadOnly=true)
+	public ProviderType getProviderType() {
+		return providerType;
+	}
+
+	/**
+	 * @param providerType the providerType to set
+	 */
+	
+	public void setProviderType(ProviderType providerType) {
+		this.providerType = providerType;
 	}
 
 	/**

@@ -20,9 +20,12 @@ import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 // WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
+import com.smt.sitebuilder.common.constants.Constants;
+import com.smt.sitebuilder.security.SBUserRole;
 import com.wsla.action.ticket.BaseTransactionAction;
 import com.wsla.action.ticket.PartsAction;
 import com.wsla.action.ticket.ShipmentAction;
+import com.wsla.common.WSLAConstants.WSLARole;
 import com.wsla.data.ticket.LedgerSummary;
 import com.wsla.data.ticket.PartVO;
 import com.wsla.data.ticket.ShipmentVO;
@@ -91,6 +94,13 @@ public class LogisticsPartsAction extends SBActionAdapter {
 			List<ShipmentVO> lst = sa.listShipments(null, req.getParameter("shipmentId"), null);
 			ShipmentVO shipment = !lst.isEmpty() ? lst.get(0) : null;
 			if (shipment == null) throw new ActionException("null data - shipment not found");
+			
+			// Enforce front end security
+			UserVO user = (UserVO) getAdminUser(req).getUserExtendedInfo();
+			String roleId = ((SBUserRole)req.getSession().getAttribute(Constants.ROLE_DATA)).getRoleId();
+			if (!user.getLocationId().equals(shipment.getToLocationId()) && !WSLARole.ADMIN.getRoleId().equals(roleId)) {
+				throw new ActionException("this user can not receive the shipment");
+			}
 
 			//mark the shipment as complete
 			shipment.setStatus(ShipmentStatus.RECEIVED);
@@ -101,8 +111,6 @@ public class LogisticsPartsAction extends SBActionAdapter {
 			// If this is for a service order, change the ticket's status
 			if (!StringUtil.isEmpty(shipment.getTicketId())) {
 				try {
-					UserVO user = (UserVO) getAdminUser(req).getUserExtendedInfo();
-					
 					BaseTransactionAction bta = new BaseTransactionAction(getDBConnection(), getAttributes());
 					TicketLedgerVO ledger = bta.changeStatus(shipment.getTicketId(), user.getUserId(), StatusCode.PARTS_RCVD_CAS, LedgerSummary.SHIPMENT_RECEIVED.summary, null);
 					

@@ -31,6 +31,7 @@ public class NextStepVO extends BeanDataVO {
 	private String buttonUrl;
 	private String buttonKeyCode;
 	private String statusName;
+	private String roleName;
 	private boolean needsReloadFlag;
 	
 	/**
@@ -120,6 +121,20 @@ public class NextStepVO extends BeanDataVO {
 	 */
 	public void setStatusName(String statusName) {
 		this.statusName = statusName;
+	}
+
+	/**
+	 * @return the roleName
+	 */
+	public String getRoleName() {
+		return roleName;
+	}
+
+	/**
+	 * @param roleName the roleName to set
+	 */
+	public void setRoleName(String roleName) {
+		this.roleName = roleName;
 	}
 
 	/**

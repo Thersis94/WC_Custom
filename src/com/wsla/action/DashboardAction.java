@@ -1,5 +1,6 @@
 package com.wsla.action;
 
+import java.util.ArrayList;
 //Jdk 1.8.x
 import java.util.Arrays;
 import java.util.Calendar;
@@ -30,7 +31,9 @@ import com.siliconmtn.util.Convert;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.security.SBUserRole;
+import com.wsla.common.UserSqlFilter;
 import com.wsla.data.ticket.TicketVO;
+import com.wsla.data.ticket.UserVO;
 
 /****************************************************************************
  * <b>Title</b>: DashboardAction.java
@@ -80,6 +83,7 @@ public class DashboardAction extends SimpleActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
+		UserVO user = (UserVO) getAdminUser(req).getUserExtendedInfo();
 		String roleId = ((SBUserRole)req.getSession().getAttribute(Constants.ROLE_DATA)).getRoleId();
 		
 		if (req.hasParameter("json")) {
@@ -87,10 +91,10 @@ public class DashboardAction extends SimpleActionAdapter {
 				putModuleData(getAttentionOrders(roleId));
 				
 			} else if ("trends".equalsIgnoreCase(req.getParameter(REQ_KEY))) {
-				putModuleData(getOrderTrends(req.getIntegerParameter("numMonths", 12)));
+				putModuleData(getOrderTrends(req.getIntegerParameter("numMonths", 12), user, roleId));
 				
 			} else if ("progress".equalsIgnoreCase(req.getParameter(REQ_KEY))) {
-				putModuleData(getOrderProgress(req.getIntegerParameter("numDays", 30)));
+				putModuleData(getOrderProgress(req.getIntegerParameter("numDays", 30), user, roleId));
 				
 			}
 			
@@ -174,72 +178,86 @@ public class DashboardAction extends SimpleActionAdapter {
 	
 	/**
 	 * Gets the data for the order trends chart
+	 * 
+	 * @param numMonths
+	 * @param roleId
+	 * @param user
 	 * @return
 	 */
-	public SMTChartIntfc getOrderTrends(int numMonths) {
+	public SMTChartIntfc getOrderTrends(int numMonths, UserVO user, String roleId) {
+		UserSqlFilter filter = new UserSqlFilter(user, roleId, getCustomSchema());
+		List<Object> params = new ArrayList<>();
+		
 		StringBuilder sql = new StringBuilder(576);
 		sql.append("select replace(newid(), '-', '') as chart_detail_id, ");
-		sql.append("to_char(create_dt, 'Mon') as label_nm, to_char(create_dt, 'Mon') as order_nm, "); 
+		sql.append("to_char(t.create_dt, 'Mon') as label_nm, to_char(t.create_dt, 'Mon') as order_nm, "); 
 		sql.append("cast(count(*) as varchar(10)) as value, 'Closed' as serie_nm, ");
-		sql.append("Extract(month from create_dt) as month_num ");
-		sql.append(DBUtil.FROM_CLAUSE).append(getCustomSchema()).append("wsla_ticket ");
-		sql.append("where status_cd = 'CLOSED' ");
-		sql.append("and create_dt > to_char(create_dt - interval '");
+		sql.append("Extract(month from t.create_dt) as month_num ");
+		sql.append(DBUtil.FROM_CLAUSE).append(getCustomSchema()).append("wsla_ticket t ");
+		sql.append(filter.getTicketFilter("t", params));
+		sql.append("where t.status_cd = 'CLOSED' ");
+		sql.append("and t.create_dt > to_char(t.create_dt - interval '");
 		sql.append(numMonths).append(" month', 'YYYY-MM-01')::date ");
 		sql.append("group by label_nm, month_num ");
 		sql.append("union ");
 		sql.append("select replace(newid(), '-', '') as chart_detail_id, ");
-		sql.append("to_char(create_dt, 'Mon') as label_nm, to_char(create_dt, 'Mon') as order_nm, "); 
+		sql.append("to_char(t.create_dt, 'Mon') as label_nm, to_char(t.create_dt, 'Mon') as order_nm, "); 
 		sql.append("cast(count(*) as varchar(10)) as value, 'Open' as serie_nm, ");
-		sql.append("Extract(month from create_dt) as month_num ");
-		sql.append(DBUtil.FROM_CLAUSE).append(getCustomSchema()).append("wsla_ticket ");
-		sql.append("where status_cd != 'CLOSED' ");
-		sql.append("and create_dt > to_char(create_dt - interval '");
+		sql.append("Extract(month from t.create_dt) as month_num ");
+		sql.append(DBUtil.FROM_CLAUSE).append(getCustomSchema()).append("wsla_ticket t ");
+		sql.append(filter.getTicketFilter("t", params));
+		sql.append("where t.status_cd != 'CLOSED' ");
+		sql.append("and t.create_dt > to_char(t.create_dt - interval '");
 		sql.append(numMonths).append(" month', 'YYYY-MM-01')::date ");
 		sql.append("group by label_nm, month_num ");
 		sql.append("order by month_num, serie_nm ");
 				
 		// Get the data and process into a chart vo
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
-		List<SMTChartDetailVO> chartData = db.executeSelect(sql.toString(),null, new SMTChartDetailVO());
+		List<SMTChartDetailVO> chartData = db.executeSelect(sql.toString(), params, new SMTChartDetailVO());
 		return buildChart(chartData, "", "", ChartType.COLUMN, true);
 	}
 	
 	/**
 	 * Gets the data for the order progress charts
 	 * @param numDays
+	 * @param roleId
 	 * @return
 	 */
-	public SMTChartIntfc getOrderProgress(int numDays) {
+	public SMTChartIntfc getOrderProgress(int numDays, UserVO user, String roleId) {
+		UserSqlFilter filter = new UserSqlFilter(user, roleId, getCustomSchema());
+		List<Object> params = new ArrayList<>();
+		
 		StringBuilder sql = new StringBuilder(800);
 		sql.append("select replace(newid(), '-', '') as chart_detail_id, ");
 		sql.append("'Closed' as label_nm, cast(count(*) as varchar(10)) as value ");
-		sql.append(DBUtil.FROM_CLAUSE).append(getCustomSchema());
-		sql.append("wsla_ticket where status_cd = 'CLOSED' and ");
-		sql.append("create_dt > now() - interval '").append(numDays).append(" day' ");
+		sql.append(DBUtil.FROM_CLAUSE).append(getCustomSchema()).append("wsla_ticket t ");
+		sql.append(filter.getTicketFilter("t", params));
+		sql.append("where t.status_cd = 'CLOSED' and ");
+		sql.append("t.create_dt > now() - interval '").append(numDays).append(" day' ");
 		sql.append(DBUtil.UNION);
 		sql.append("select replace(newid(), '-', ''), 'Good', cast(count(*) as varchar(10)) "); 
-		sql.append(DBUtil.FROM_CLAUSE).append(getCustomSchema());
-		sql.append("wsla_ticket where status_cd != 'CLOSED' and ");
-		sql.append("standing_cd = 'GOOD' and create_dt > now() - interval '");
-		sql.append(numDays).append(" day' ");
+		sql.append(DBUtil.FROM_CLAUSE).append(getCustomSchema()).append("wsla_ticket t ");
+		sql.append(filter.getTicketFilter("t", params));
+		sql.append("where t.status_cd != 'CLOSED' and t.standing_cd = 'GOOD' and ");
+		sql.append("t.create_dt > now() - interval '").append(numDays).append(" day' ");
 		sql.append(DBUtil.UNION);
 		sql.append("select replace(newid(), '-', ''), 'Critical', cast(count(*) as varchar(10)) "); 
-		sql.append(DBUtil.FROM_CLAUSE).append(getCustomSchema());
-		sql.append("wsla_ticket where status_cd != 'CLOSED' and ");
-		sql.append("standing_cd = 'CRITICAL' and create_dt > now() - interval '");
-		sql.append(numDays).append(" day' ");
+		sql.append(DBUtil.FROM_CLAUSE).append(getCustomSchema()).append("wsla_ticket t ");
+		sql.append(filter.getTicketFilter("t", params));
+		sql.append("where t.status_cd != 'CLOSED' and t.standing_cd = 'CRITICAL' and ");
+		sql.append("t.create_dt > now() - interval '").append(numDays).append(" day' ");
 		sql.append(DBUtil.UNION);
 		sql.append("select replace(newid(), '-', ''), 'Delayed', cast(count(*) as varchar(10)) "); 
-		sql.append(DBUtil.FROM_CLAUSE).append(getCustomSchema());
-		sql.append("wsla_ticket where status_cd != 'CLOSED' and ");
-		sql.append("standing_cd = 'DELAYED' and create_dt > now() - interval '");
-		sql.append(numDays).append(" day' ");
+		sql.append(DBUtil.FROM_CLAUSE).append(getCustomSchema()).append("wsla_ticket t ");
+		sql.append(filter.getTicketFilter("t", params));
+		sql.append("where t.status_cd != 'CLOSED' and t.standing_cd = 'DELAYED' and ");
+		sql.append("t.create_dt > now() - interval '").append(numDays).append(" day' ");
 		log.debug(sql);
 		
 		// Get the data and process into a chart vo
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
-		List<SMTChartDetailVO> chartData = db.executeSelect(sql.toString(),null, new SMTChartDetailVO());
+		List<SMTChartDetailVO> chartData = db.executeSelect(sql.toString(), params, new SMTChartDetailVO());
 		return buildChart(chartData, "Service Order Progress", "", ChartType.PIE, true);
 	}
 	

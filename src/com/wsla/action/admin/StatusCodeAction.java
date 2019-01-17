@@ -92,7 +92,7 @@ public class StatusCodeAction extends SBActionAdapter {
 		if (req.hasParameter("statusCode")) 
 			setModuleData(getNotifications(req.getParameter("statusCode")));
 		else 
-			setModuleData(getStatusCodes(null, null));
+			setModuleData(getStatusCodes(null, null, null));
 	}
 	
 	/**
@@ -118,7 +118,7 @@ public class StatusCodeAction extends SBActionAdapter {
 	 * Gets all of the status codes
 	 * @return
 	 */
-	public List<StatusCodeVO> getStatusCodes(String roleId, Locale locale) {
+	public List<StatusCodeVO> getStatusCodes(String roleId, Locale locale, String statusCode) {
 		StringBuilder sql = new StringBuilder(128);
 		List<Object> vals = new ArrayList<>();
 		
@@ -140,6 +140,9 @@ public class StatusCodeAction extends SBActionAdapter {
 		if (! StringUtil.isEmpty(roleId)) {
 			sql.append("where a.role_id = ? ");
 			vals.add(roleId);
+		} else if (!StringUtil.isEmpty(statusCode)) {
+			sql.append("where a.status_cd = ? ");
+			vals.add(statusCode);
 		}
 		
 		sql.append("order by status_nm");
