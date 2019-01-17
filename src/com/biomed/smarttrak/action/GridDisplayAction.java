@@ -190,8 +190,10 @@ public class GridDisplayAction extends SimpleActionAdapter {
 		List<SMTChartDetailVO> data;
 		if (ChartType.COLUMN == type) {
 			data = convertColumnData(grid, columns);
+			log.debug("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$");
 		} else {
 			data = convertChartData(grid, columns);
+			log.debug("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%");
 		}
 		
 		chart.processData(data, true);
@@ -215,7 +217,8 @@ public class GridDisplayAction extends SimpleActionAdapter {
 			List<String> names = new ArrayList<>();
 			String serie = getSerie(gDetail, series);
 			for (int i=0; i<grid.getSeries().length; i++) {
-				if (!columns.isEmpty() && !columns.contains(i+1)) continue;
+				if (!columns.isEmpty() && !columns.contains(i+1) ||
+						grid.getSeries()[i] == null) continue;
 				String name = grid.getSeries()[i];
 				if (names.contains(name))
 					name = findNewName(names, name);
@@ -246,7 +249,8 @@ public class GridDisplayAction extends SimpleActionAdapter {
 			names.add(name);
 			List<String> series = new ArrayList<>();
 			for (int i=0; i<grid.getSeries().length; i++) {
-				if (!columns.isEmpty() && !columns.contains(i+1)) continue;
+				if (!columns.isEmpty() && !columns.contains(i+1)
+						|| grid.getSeries()[i] == null) continue;
 				String serie = grid.getSeries()[i];
 				if (series.contains(serie))
 					serie = findNewName(series, serie);
