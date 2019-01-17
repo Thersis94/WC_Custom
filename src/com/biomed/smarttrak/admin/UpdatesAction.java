@@ -307,7 +307,7 @@ public class UpdatesAction extends ManagementAction {
 		String end = CookieUtil.getValue(COOK_UPD_END_DT, req.getCookies());
 		if (end == null) {
 			HttpServletResponse res = (HttpServletResponse) req.getAttribute(GlobalConfig.HTTP_RESPONSE);
-			end = Convert.formatDate(Calendar.getInstance().getTime(), Convert.DATE_SLASH_PATTERN); //today
+			end = Convert.formatDate(Convert.convertTimeZoneOffset(Calendar.getInstance().getTime(), "EST5EDT"), Convert.DATE_SLASH_PATTERN); //today
 			CookieUtil.add(res, COOK_UPD_END_DT, end, "/", -1);
 		}
 		req.setParameter(COOK_UPD_START_DT, start);
