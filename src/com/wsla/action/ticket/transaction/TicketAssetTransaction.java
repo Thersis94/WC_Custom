@@ -1,6 +1,7 @@
 package com.wsla.action.ticket.transaction;
 
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
@@ -20,6 +21,7 @@ import com.wsla.action.ticket.BaseTransactionAction;
 import com.wsla.action.ticket.CASSelectionAction;
 import com.wsla.action.ticket.TicketEditAction;
 import com.wsla.data.ticket.ApprovalCode;
+import com.wsla.data.ticket.CreditMemoVO;
 // WSLA Libs
 import com.wsla.data.ticket.LedgerSummary;
 import com.wsla.data.ticket.StatusCode;
@@ -125,6 +127,13 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 			status = ticket.getStatusCode();
 		}
 		
+		if("attr_credit_memo".equalsIgnoreCase(req.getParameter("attributeCode"))) {
+			log.debug("### save the attribute id in credit memo table");
+			String creditMemoId = req.getParameter("creditMemoId");
+			saveMemoAssetId(creditMemoId, td.getDataEntryId());
+			
+		}
+		
 		// Build the next step
 		Map<String, Object> params = new HashMap<>();
 		params.put("ticketId", ledger.getTicketId());
@@ -135,10 +144,45 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 		td.setMetaValue(req.getParameter("fileName"));
 		
 		db.save(td);
+		String test = db.getGeneratedPKId();
+		log.debug("#### new id? " + test +"|"+ td.getDataEntryId());
+		if("attr_credit_memo".equalsIgnoreCase(req.getParameter("attributeCode"))) {
+			log.debug("### save the attribute id in credit memo table");
+			String creditMemoId = req.getParameter("creditMemoId");
+			saveMemoAssetId(creditMemoId, td.getDataEntryId());
+			
+		}
 	}
 	
 	
 	
+	/**
+	 * this method updates the credit memo id when a new credit memo asset is saved.
+	 * @param ticketId
+	 * @param dataEntryId
+	 */
+	private void saveMemoAssetId(String creditMemoId, String dataEntryId) {
+		CreditMemoVO cmvo = new CreditMemoVO();
+		cmvo.setAssetId(dataEntryId);
+		cmvo.setCreditMemoId(creditMemoId);
+		cmvo.setUpdateDate(new Date());
+		
+		List<String> fields = new ArrayList<>();
+		fields.add("asset_id");
+		fields.add("credit_memo_id");
+		
+		StringBuilder sql = new StringBuilder(93);
+		sql.append("update ").append("wsla_credit_memo set asset_id = ? where credit_memo_id = ? ");
+		
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		try {
+			db.executeSqlUpdate(sql.toString(), cmvo, fields);
+		} catch (DatabaseException e) {
+			log.error("could not save asset id to credit memo",e);
+			putModuleData(cmvo, 0, false, e.getLocalizedMessage(), true);
+		}
+	}
+
 	/**
 	 * Checks if a status change is warranted on the ticket based on the assets submitted by the user.
 	 * The TicketDataVO passed in is assumed to not exist in the db yet.
