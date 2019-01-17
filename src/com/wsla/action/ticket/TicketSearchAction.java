@@ -70,13 +70,13 @@ public class TicketSearchAction extends SBActionAdapter {
 		// Build the sql
 		StringBuilder sql = new StringBuilder(576);
 		sql.append("select ticket_no as key, ticket_no || ' - ' || first_nm || ");
-		sql.append("' ' || last_nm || ': ' || serial_no_txt as value from ");
-		sql.append(getCustomSchema()).append("wsla_ticket a ");
+		sql.append("' ' || last_nm || ': ' || coalesce(serial_no_txt, 'NOSN') as value ");
+		sql.append(DBUtil.FROM_CLAUSE).append(getCustomSchema()).append("wsla_ticket a ");
 		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema());
 		sql.append("wsla_ticket_assignment b  on a.ticket_id = b.ticket_id ");
 		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema());
 		sql.append("wsla_user c on b.user_id = c.user_id ");
-		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema());
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(getCustomSchema());
 		sql.append("wsla_product_serial d on a.product_serial_id = d.product_serial_id ");
 		sql.append("where lower(first_nm) like ? or lower(last_nm) like ? ");
 		sql.append("or lower(email_address_txt) like ? or main_phone_txt like ? ");

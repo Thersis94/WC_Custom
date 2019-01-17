@@ -465,12 +465,13 @@ public class SelectLookupAction extends SBActionAdapter {
 	 * @return
 	 */
 	public List<GenericVO> getDefects(ActionRequest req) {
-		
+
 		// Get the Locale to pull correct language and add to the DB params
 		Locale locale = new ResourceBundleManagerAction().getUserLocale(req);
 		List<Object> params = new ArrayList<>();
 		params.add(locale.getLanguage());
 		params.add(locale.getCountry());
+		params.add(req.getStringParameter("defectType", "DEFECT_CODE"));
 		
 		StringBuilder sql = new StringBuilder(64);
 		sql.append("select defect_cd as key, ");
@@ -479,7 +480,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		sql.append("left outer join resource_bundle_key c on a.defect_cd = c.key_id ");
 		sql.append("left outer join resource_bundle_data d on c.key_id = d.key_id ");
 		sql.append("and language_cd = ? and country_cd = ? ");
-		sql.append("where a.active_flg = 1 ");
+		sql.append("where a.active_flg = 1 and defect_type_cd = ? ");
 		sql.append("and (a.provider_id is null ");
 		if (req.hasParameter(REQ_PROVIDER_ID)) {
 			sql.append("or a.provider_id = ? ");
