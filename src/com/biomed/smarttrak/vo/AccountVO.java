@@ -51,6 +51,8 @@ public class AccountVO implements HumanNameIntfc, Serializable {
 	private int gaAuthFlg;
 	private int mktAuthFlg;
 	private int seatsNo;
+	private int compFlg;
+	private int enterpriseFlg;
 
 	/*
 	 * Account Type enum - not to be confused with status, which is Active or Inactive only.  (e.g. Inactive Staff account)
@@ -153,6 +155,8 @@ public class AccountVO implements HumanNameIntfc, Serializable {
 		setGaAuthFlg(Convert.formatInteger(req.getParameter("gaAuthFlg")));
 		setMktAuthFlg(Convert.formatInteger(req.getParameter("mktAuthFlg")));
 		setSeatsNo(Convert.formatInteger(req.getParameter("seatsNo")));
+		setCompFlg(Convert.formatInteger(req.getParameter("compFlg")));
+		setEnterpriseFlg(Convert.formatInteger(req.getParameter("enterpriseFlg")));
 	}
 
 
@@ -540,5 +544,35 @@ public class AccountVO implements HumanNameIntfc, Serializable {
 
 	public void setClassificationId(int classificationId) {
 		this.classificationId = classificationId;
+	}
+
+	/**
+	 * @return the compFlg
+	 */
+	@Column(name="complimentary_flg")
+	public int getCompFlg() {
+		return compFlg;
+	}
+
+	/**
+	 * @param compFlg the compFlg to set
+	 */
+	public void setCompFlg(int compFlg) {
+		this.compFlg = compFlg;
+	}
+
+	/**
+	 * @return the enterpriseFlg
+	 */
+	@Column(name="enterprise_flg")
+	public int getEnterpriseFlg() {
+		return enterpriseFlg;
+	}
+
+	/**
+	 * @param enterpriseFlg the enterpriseFlg to set
+	 */
+	public void setEnterpriseFlg(int enterpriseFlg) {
+		this.enterpriseFlg = enterpriseFlg;
 	}
 }
