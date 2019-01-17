@@ -218,6 +218,8 @@ public class BaseTransactionAction extends SBActionAdapter {
 
 			nextStep.setButtonKeyCode(sc.getNextStepBtnKeyCode());
 			nextStep.setStatusName(sc.getStatusName());
+			nextStep.setStatusCode(sc.getStatusCode());
+			nextStep.setGroupStatusCode(sc.getGroupStatusCode().name());
 			nextStep.setRoleName(sc.getRoleName());
 			nextStep.setNeedsReloadFlag(needsReload);
 		} catch (ParseException e) {
