@@ -54,6 +54,7 @@ public class RefundReplacementVO extends BeanDataVO {
 	// Sub-elements
 	private CreditMemoVO creditMemo;
 	private DebitMemoVO debitMemo;
+	private ShipmentVO shipment;
 	
 	/**
 	 * 
@@ -314,6 +315,21 @@ public class RefundReplacementVO extends BeanDataVO {
 	@BeanSubElement
 	public void setDebitMemo(DebitMemoVO debitMemo) {
 		this.debitMemo = debitMemo;
+	}
+
+	/**
+	 * @return the shipment
+	 */
+	public ShipmentVO getShipment() {
+		return shipment;
+	}
+
+	/**
+	 * @param shipment the shipment to set
+	 */
+	@BeanSubElement
+	public void setShipment(ShipmentVO shipment) {
+		this.shipment = shipment;
 	}
 }
 

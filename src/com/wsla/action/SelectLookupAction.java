@@ -210,7 +210,8 @@ public class SelectLookupAction extends SBActionAdapter {
 		List<Object> vals = new ArrayList<>();
 		StringBuilder sql = new StringBuilder(128);
 		sql.append("select attribute_cd as key, attribute_nm as value from ");
-		sql.append(getCustomSchema()).append("wsla_ticket_attribute where 1=1 ");
+		//limit the credit memo asset to only using the refund tab
+		sql.append(getCustomSchema()).append("wsla_ticket_attribute where 1=1 and attribute_cd != 'attr_credit_memo' ");
 
 		if (req.hasParameter("groupCode")) {
 			sql.append("and attribute_group_cd = ? ");

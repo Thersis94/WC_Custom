@@ -250,15 +250,19 @@ public class TicketEditAction extends SBActionAdapter {
 	 */
 	private RefundReplacementVO getRefundReplacement(String ticketId) {
 		StringBuilder sql = new StringBuilder(93);
-		sql.append(DBUtil.SELECT_FROM_STAR).append(getCustomSchema());
+		sql.append("select rr.*,cm.*, s.*, dl.location_nm as to_location_nm, sl.location_nm as from_location_nm  from ").append(getCustomSchema());
 		sql.append("wsla_ticket_ref_rep rr ");
-		sql.append("left outer join ").append(getCustomSchema()).append("wsla_credit_memo cm on rr.ticket_ref_rep_id = cm.ticket_ref_rep_id");
+		sql.append("left outer join ").append(getCustomSchema()).append("wsla_credit_memo cm on rr.ticket_ref_rep_id = cm.ticket_ref_rep_id ");
+		sql.append("left outer join ").append(getCustomSchema()).append("wsla_shipment s on rr.ticket_id = s.ticket_id ");
+		sql.append("left outer join ").append(getCustomSchema()).append("wsla_provider_location dl on s.to_location_id = dl.location_id " );
+		sql.append("left outer join ").append(getCustomSchema()).append("wsla_provider_location sl on s.from_location_id =sl.location_id ");
 		sql.append(DBUtil.WHERE_CLAUSE).append("rr.ticket_id = ? ");
 		
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		List<RefundReplacementVO> data = db.executeSelect(sql.toString(), Arrays.asList(ticketId), new RefundReplacementVO());
 		
 		if(data != null && data.size() == 1) {
+			log.debug(" data " + data.get(0).getShipmentId());
 			return data.get(0);
 		}else {
 			return new RefundReplacementVO();

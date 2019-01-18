@@ -127,12 +127,6 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 			status = ticket.getStatusCode();
 		}
 		
-		if("attr_credit_memo".equalsIgnoreCase(req.getParameter("attributeCode"))) {
-			log.debug("### save the attribute id in credit memo table");
-			String creditMemoId = req.getParameter("creditMemoId");
-			saveMemoAssetId(creditMemoId, td.getDataEntryId());
-			
-		}
 		
 		// Build the next step
 		Map<String, Object> params = new HashMap<>();
@@ -144,12 +138,10 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 		td.setMetaValue(req.getParameter("fileName"));
 		
 		db.save(td);
-		String test = db.getGeneratedPKId();
-		log.debug("#### new id? " + test +"|"+ td.getDataEntryId());
+
 		if("attr_credit_memo".equalsIgnoreCase(req.getParameter("attributeCode"))) {
-			log.debug("### save the attribute id in credit memo table");
-			String creditMemoId = req.getParameter("creditMemoId");
-			saveMemoAssetId(creditMemoId, td.getDataEntryId());
+			log.debug(" save the attribute id in credit memo table");
+			saveMemoAssetId(req.getParameter("creditMemoId"), td.getDataEntryId(), req.getDoubleParameter("refundAmount"), req.getParameter("approvedBy"));
 			
 		}
 	}
@@ -161,18 +153,24 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 	 * @param ticketId
 	 * @param dataEntryId
 	 */
-	private void saveMemoAssetId(String creditMemoId, String dataEntryId) {
+	private void saveMemoAssetId(String creditMemoId, String dataEntryId, Double refundAmount, String approvedBy) {
 		CreditMemoVO cmvo = new CreditMemoVO();
 		cmvo.setAssetId(dataEntryId);
 		cmvo.setCreditMemoId(creditMemoId);
+		cmvo.setRefundAmount(refundAmount);
+		cmvo.setApprovedBy(approvedBy);
+		cmvo.setApprovalDate(new Date());
 		cmvo.setUpdateDate(new Date());
 		
 		List<String> fields = new ArrayList<>();
 		fields.add("asset_id");
+		fields.add("refund_amount_no");
+		fields.add("approved_by_txt");
+		fields.add("approval_dt");
 		fields.add("credit_memo_id");
 		
 		StringBuilder sql = new StringBuilder(93);
-		sql.append("update ").append("wsla_credit_memo set asset_id = ? where credit_memo_id = ? ");
+		sql.append("update ").append("wsla_credit_memo set asset_id = ?, refund_amount_no = ?, approved_by_txt = ?, approval_dt = ?  where credit_memo_id = ? ");
 		
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		try {

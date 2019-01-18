@@ -1,10 +1,12 @@
 package com.wsla.action.ticket.transaction;
 
+//java 1.8
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
+//base libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
@@ -15,6 +17,8 @@ import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.util.RandomAlphaNumeric;
 import com.siliconmtn.util.StringUtil;
+
+//wc custom
 import com.wsla.action.ticket.BaseTransactionAction;
 import com.wsla.common.WSLAConstants;
 import com.wsla.data.ticket.CreditMemoVO;
@@ -85,7 +89,7 @@ public class RefundReplacementTransaction extends BaseTransactionAction {
 	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
-		log.debug("#### refund replacement transaction build called ");
+		log.debug("refund replacement transaction build called ");
 
 		RefundReplacementVO rrvo = new RefundReplacementVO(req);
 		UserVO user = (UserVO) getAdminUser(req).getUserExtendedInfo();
@@ -99,7 +103,7 @@ public class RefundReplacementTransaction extends BaseTransactionAction {
 				createCreditMemo(rrvo);
 				processDispostion(rrvo, user);
 			} catch (Exception e) {
-				log.error("!!! could not create credit memo or process dispostion ",e);
+				log.error("could not create credit memo or process dispostion ",e);
 				putModuleData(rrvo, 0, false, e.getLocalizedMessage(), true);
 			}
 		}
@@ -108,7 +112,7 @@ public class RefundReplacementTransaction extends BaseTransactionAction {
 			try {
 				processRejection(rrvo, user);
 			} catch (DatabaseException e) {
-				log.error("!!! could not write ledger entry or save status", e);
+				log.error("could not write ledger entry or save status", e);
 				putModuleData(rrvo, 0, false, e.getLocalizedMessage(), true);
 			}
 		}
@@ -125,17 +129,16 @@ public class RefundReplacementTransaction extends BaseTransactionAction {
 	 * @throws InvalidDataException 
 	 */
 	private void processDispostion(RefundReplacementVO rrvo, UserVO user) throws DatabaseException, InvalidDataException {
+		TicketVO tvo  = getBaseTicket(rrvo.getTicketId());
+		if(tvo == null) throw new InvalidDataException("Unable to find ticket by id ");
 		
 		if(rrvo.getUnitDisposition().equalsIgnoreCase(DispositionCodes.DISPOSE.name())) {
 			//dispose of unit status change
 			changeStatus(rrvo.getTicketId(), user.getUserId(), StatusCode.DISPOSE_UNIT, null, null);
 			
 			//save new location
-			TicketVO tvo  = getBaseTicket(rrvo.getTicketId());
-			if(tvo == null) throw new InvalidDataException("Unable to find ticket by id ");
 			tvo.setUnitLocation(UnitLocation.DECOMMISSIONED);
 			DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
-			log.debug("# save " + tvo);
 			try {
 				db.save(tvo);
 			} catch (InvalidDataException e) {
@@ -147,13 +150,27 @@ public class RefundReplacementTransaction extends BaseTransactionAction {
 			changeStatus(rrvo.getTicketId(), user.getUserId(), StatusCode.CLOSED, null, null);
 			
 		}else if (rrvo.getUnitDisposition().equalsIgnoreCase(DispositionCodes.HARVEST_UNIT.name())) {
+			//set to harvest status
 			changeStatus(rrvo.getTicketId(), user.getUserId(), StatusCode.HARVEST_REQ, null, null);
-
 		}else {
 			//is return
-			//TODO return status and ledgers control here
+			if(UnitLocation.WSLA.name().equalsIgnoreCase(tvo.getUnitLocation().name())) {
+				//status change for harvest
+				changeStatus(rrvo.getTicketId(), user.getUserId(), StatusCode.HARVEST_REQ, null, null);
+			}else {
+				//if anywhere other then wsla make a shipment
+				TicketPartsTransaction tpt = new TicketPartsTransaction();
+				tpt.setActionInit(actionInit);
+				tpt.setDBConnection(dbConn);
+				tpt.setAttributes(getAttributes());
+				try {
+					tpt.saveShipment(tvo.getTicketId(), true);
+				} catch (Exception e) {
+					log.error("could not build shipment ",e);
+					putModuleData(tvo, 0, false, e.getLocalizedMessage(), true);
+				}
+			}
 		}
-
 	}
 
 	/**
@@ -163,16 +180,14 @@ public class RefundReplacementTransaction extends BaseTransactionAction {
 	 * @throws InvalidDataException 
 	 */
 	public void createCreditMemo(RefundReplacementVO rrvo) throws Exception {
-		log.debug("# start save credit memo ");
 		CreditMemoVO cmvo = new CreditMemoVO();
-		cmvo.setCustomerMemoCode(RandomAlphaNumeric.generateRandom(WSLAConstants.TICKET_RANDOM_CHARS));
+		cmvo.setCustomerMemoCode(RandomAlphaNumeric.generateRandom(WSLAConstants.TICKET_RANDOM_CHARS).toUpperCase());
 		cmvo.setRefundReplacementId(rrvo.getRefundReplacementId());
 		cmvo.setCreateDate(new Date());
 		
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
-		log.debug("# save " + cmvo);
 		db.save(cmvo);
-		log.debug("####### post save " + cmvo);
+	
 		
 	}
 
