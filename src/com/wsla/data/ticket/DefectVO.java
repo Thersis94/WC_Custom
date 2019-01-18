@@ -7,6 +7,7 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.parser.BeanDataVO;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
+import com.siliconmtn.util.StringUtil;
 
 /****************************************************************************
  * <b>Title</b>: DefectVO.java
@@ -25,11 +26,24 @@ public class DefectVO extends BeanDataVO {
 
 	private static final long serialVersionUID = -2028564476651021590L;
 	
+	/**
+	 * Defines the types of defect codes.  The initial defect type pre-repair 
+	 * and the post-repair repair code
+	 */
+	public enum Type {
+		DEFECT_CODE("Defect Code"), REPAIR_CODE("Repair Code"), BOTH("Defect and Repair");
+		
+		protected final String typeCode;
+		Type(String typeCode) { this.typeCode = typeCode; }
+		public String getType() { return typeCode; }
+	}
+	
 	// Member Variables
 	private String defectCode;
 	private String providerId;
 	private String providerName;
 	private String defectName;
+	private Type defectType;
 	private int activeFlag;
 	private Date createDate;
 	private Date updateDate;
@@ -87,6 +101,14 @@ public class DefectVO extends BeanDataVO {
 		return activeFlag;
 	}
 
+	/**
+	 * @return the defectType
+	 */
+	@Column(name="defect_type_cd")
+	public Type getDefectType() {
+		return defectType;
+	}
+	
 	/**
 	 * @return the createDate
 	 */
@@ -150,7 +172,8 @@ public class DefectVO extends BeanDataVO {
 	 * @param providerCode the providerCode to set
 	 */
 	public void setProviderId(String providerId) {
-		this.providerId = providerId;
+		if (StringUtil.isEmpty(providerId)) providerId = null;
+		else this.providerId = providerId;
 	}
 
 	/**
@@ -158,6 +181,13 @@ public class DefectVO extends BeanDataVO {
 	 */
 	public void setDefectCode(String defectCode) {
 		this.defectCode = defectCode;
+	}
+
+	/**
+	 * @param defectType the defectType to set
+	 */
+	public void setDefectType(Type defectType) {
+		this.defectType = defectType;
 	}
 
 }
