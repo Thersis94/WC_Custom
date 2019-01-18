@@ -161,7 +161,6 @@ public class FinancialDashImportAction extends FinancialDashBaseAction {
 					dataRow.setRegionCode(getCellValue(cursor.getCell(FinancialDashImportReportVO.REGION_COL), objDefaultFormat, objFormulaEvaluator));
 					dataRow.setScenarioId(getCellValue(cursor.getCell(FinancialDashImportReportVO.SCENARIO_ID_COL), objDefaultFormat, objFormulaEvaluator));
 					dataRow.setRevenueId(getCellValue(cursor.getCell(cur++), objDefaultFormat, objFormulaEvaluator));
-					dataRow.setOverlayId(getCellValue(cursor.getCell(cur++), objDefaultFormat, objFormulaEvaluator));
 					dataRow.setYearNo(Convert.formatInteger(getCellValue(cursor.getCell(cur++), objDefaultFormat, objFormulaEvaluator)));
 					dataRow.setQ1No(Convert.formatInteger(getCellValue(cursor.getCell(cur++), objDefaultFormat, objFormulaEvaluator)));
 					dataRow.setQ2No(Convert.formatInteger(getCellValue(cursor.getCell(cur++), objDefaultFormat, objFormulaEvaluator)));

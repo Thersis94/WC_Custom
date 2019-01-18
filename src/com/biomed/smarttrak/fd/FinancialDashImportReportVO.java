@@ -110,8 +110,6 @@ public class FinancialDashImportReportVO extends AbstractSBReportVO {
 			sheet.setColumnWidth(cellCount, 0);
 			row.createCell(cellCount++).setCellValue(i + "Revenue Id");
 			sheet.setColumnWidth(cellCount, 0);
-			row.createCell(cellCount++).setCellValue(i + "Overlay Id");
-			sheet.setColumnWidth(cellCount, 0);
 			row.createCell(cellCount++).setCellValue("Year No");
 			sheet.setColumnWidth(cellCount, 5000);
 			row.createCell(cellCount++).setCellValue("Q1 " + i + COL_SUFFIX);
@@ -181,9 +179,6 @@ public class FinancialDashImportReportVO extends AbstractSBReportVO {
 				}
 				cell = row.createCell(cellCount++);
 				cell.setCellValue(dataRow.getRevenueId());
-				cell.setCellStyle(locked);
-				cell = row.createCell(cellCount++);
-				cell.setCellValue(dataRow.getOverlayId());
 				cell.setCellStyle(locked);
 				cell = row.createCell(cellCount++);
 				cell.setCellValue(dataRow.getYearNo());
