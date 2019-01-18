@@ -90,8 +90,6 @@ public class UserSqlFilter {
 				filterParams.add(TypeCode.OEM.name());
 				break;
 			default:
-				// TODO: remove this line when testing is complete and uncomment the other two
-				//filterParams.add(TypeCode.RETAILER.name());
 				sql.setLength(0);
 				filterParams.clear();
 		}

@@ -31,6 +31,8 @@ public class NextStepVO extends BeanDataVO {
 	private String buttonUrl;
 	private String buttonKeyCode;
 	private String statusName;
+	private String statusCode;
+	private String groupStatusCode;
 	private String roleName;
 	private boolean needsReloadFlag;
 	
@@ -121,6 +123,34 @@ public class NextStepVO extends BeanDataVO {
 	 */
 	public void setStatusName(String statusName) {
 		this.statusName = statusName;
+	}
+
+	/**
+	 * @return the statusCode
+	 */
+	public String getStatusCode() {
+		return statusCode;
+	}
+
+	/**
+	 * @param statusCode the statusCode to set
+	 */
+	public void setStatusCode(String statusCode) {
+		this.statusCode = statusCode;
+	}
+
+	/**
+	 * @return the groupStatusCode
+	 */
+	public String getGroupStatusCode() {
+		return groupStatusCode;
+	}
+
+	/**
+	 * @param groupStatusCode the groupStatusCode to set
+	 */
+	public void setGroupStatusCode(String groupStatusCode) {
+		this.groupStatusCode = groupStatusCode;
 	}
 
 	/**
