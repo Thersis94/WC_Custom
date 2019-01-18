@@ -190,10 +190,8 @@ public class GridDisplayAction extends SimpleActionAdapter {
 		List<SMTChartDetailVO> data;
 		if (ChartType.COLUMN == type) {
 			data = convertColumnData(grid, columns);
-			log.debug("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$");
 		} else {
 			data = convertChartData(grid, columns);
-			log.debug("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%");
 		}
 		
 		chart.processData(data, true);
