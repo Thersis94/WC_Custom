@@ -34,7 +34,7 @@ import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.admin.action.ResourceBundleManagerAction;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
-
+import com.smt.sitebuilder.security.SBUserRole;
 // WSLA Libs
 import com.wsla.action.admin.BillableActivityAction;
 import com.wsla.action.admin.InventoryAction;
@@ -48,9 +48,11 @@ import com.wsla.action.admin.WarrantyAction;
 import com.wsla.action.admin.WarrantyAction.ServiceTypeCode;
 import com.wsla.action.ticket.CASSelectionAction;
 import com.wsla.action.ticket.TicketListAction;
+import com.wsla.action.ticket.TicketSearchAction;
 import com.wsla.action.ticket.TicketEditAction;
 import com.wsla.common.LocaleWrapper;
 import com.wsla.common.WSLALocales;
+import com.wsla.common.WSLAConstants.WSLARole;
 import com.wsla.data.product.LocationItemMasterVO;
 import com.wsla.data.product.ProductSetVO;
 import com.wsla.data.product.ProductVO;
@@ -133,6 +135,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		keyMap.put("billable", new GenericVO("getBillableCodes", Boolean.TRUE));
 		keyMap.put("billableType", new GenericVO("getBillableTypes", Boolean.FALSE));
 		keyMap.put("supportNumbers", new GenericVO("getSupportNumbers", Boolean.TRUE));
+		keyMap.put("ticketSearch", new GenericVO("ticketSearch", Boolean.TRUE));
 	}
 
 	/**
@@ -425,7 +428,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		Locale locale = new ResourceBundleManagerAction().getUserLocale(req);
 		List<GenericVO> data = new ArrayList<>(64);
 		StatusCodeAction sca = new StatusCodeAction(getDBConnection(), getAttributes());
-		List<StatusCodeVO> codes = sca.getStatusCodes(req.getParameter("roleId"), locale);
+		List<StatusCodeVO> codes = sca.getStatusCodes(req.getParameter("roleId"), locale, null);
 		
 		for(StatusCodeVO sc : codes) {
 			data.add(new GenericVO(sc.getStatusCode(), sc.getStatusName()));
@@ -464,12 +467,13 @@ public class SelectLookupAction extends SBActionAdapter {
 	 * @return
 	 */
 	public List<GenericVO> getDefects(ActionRequest req) {
-		
+
 		// Get the Locale to pull correct language and add to the DB params
 		Locale locale = new ResourceBundleManagerAction().getUserLocale(req);
 		List<Object> params = new ArrayList<>();
 		params.add(locale.getLanguage());
 		params.add(locale.getCountry());
+		params.add(req.getStringParameter("defectType", "DEFECT_CODE"));
 		
 		StringBuilder sql = new StringBuilder(64);
 		sql.append("select defect_cd as key, ");
@@ -478,7 +482,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		sql.append("left outer join resource_bundle_key c on a.defect_cd = c.key_id ");
 		sql.append("left outer join resource_bundle_data d on c.key_id = d.key_id ");
 		sql.append("and language_cd = ? and country_cd = ? ");
-		sql.append("where a.active_flg = 1 ");
+		sql.append("where a.active_flg = 1 and defect_type_cd in ('BOTH', ?) ");
 		sql.append("and (a.provider_id is null ");
 		if (req.hasParameter(REQ_PROVIDER_ID)) {
 			sql.append("or a.provider_id = ? ");
@@ -486,7 +490,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		}
 
 		sql.append(") order by value");
-		log.debug("defects SQL " + sql);
+		log.debug("defects SQL " + sql + "|" + params);
 		
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		return db.executeSelect(sql.toString(), params, new GenericVO());
@@ -663,8 +667,15 @@ public class SelectLookupAction extends SBActionAdapter {
 	public List<GenericVO> getInventorySuppliers(ActionRequest req) {
 		String partId = req.getParameter(REQ_PRODUCT_ID, req.getParameter("custProductId"));
 		Integer min = req.getIntegerParameter("minInventory", 0); //the minimum inventory to be on hand in order to match
+		
+		UserVO user = null;
+		String roleId = ((SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA)).getRoleId();
+		if (StringUtil.isEmpty(partId) && !WSLARole.ADMIN.getRoleId().equals(roleId)) {
+			user = (UserVO) getAdminUser(req).getUserExtendedInfo();
+		}
+		
 		InventoryAction ia = new InventoryAction(getAttributes(), getDBConnection());
-		List<LocationItemMasterVO> data = ia.listInvetorySuppliers(partId, min);
+		List<LocationItemMasterVO> data = ia.listInvetorySuppliers(partId, min, user);
 		
 		// Convert the location item master to a generic vo
 		List<GenericVO> results = new ArrayList<>(data.size());
@@ -776,5 +787,16 @@ public class SelectLookupAction extends SBActionAdapter {
 		}
 		
 		return data;
+	}
+	
+	/**
+	 * Performs a fuzzy search against multiple fields
+	 * @param req
+	 * @return
+	 */
+	public List<GenericVO> ticketSearch(ActionRequest req) {
+		TicketSearchAction tsa = new TicketSearchAction(getDBConnection(), getAttributes());
+		
+		return tsa.getTickets(req.getParameter(REQ_SEARCH));
 	}
 }

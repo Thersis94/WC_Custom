@@ -26,7 +26,11 @@ import com.siliconmtn.util.StringUtil;
 
 // WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
+import com.smt.sitebuilder.common.constants.Constants;
+import com.smt.sitebuilder.security.SBUserRole;
+import com.wsla.common.WSLAConstants.WSLARole;
 import com.wsla.data.product.LocationItemMasterVO;
+import com.wsla.data.ticket.UserVO;
 
 /****************************************************************************
  * <b>Title</b>: InventoryAction.java
@@ -72,9 +76,19 @@ public class InventoryAction extends SBActionAdapter {
 		if (req.hasParameter("suppliers")) {
 			String partId = req.getParameter(REQ_PRODUCT_ID, req.getParameter("custProductId"));
 			Integer min = req.getIntegerParameter("minInventory", 0);
-			setModuleData(listInvetorySuppliers(partId, min));
+			setModuleData(listInvetorySuppliers(partId, min, null));
 		} else {
-			String locationId = req.getParameter("locationId");
+			String locationId;
+		
+			// Inventory management should always be filtered by the user's location
+			String roleId = ((SBUserRole)req.getSession().getAttribute(Constants.ROLE_DATA)).getRoleId();
+			if (!WSLARole.ADMIN.getRoleId().equals(roleId)) {
+				UserVO user = (UserVO) getAdminUser(req).getUserExtendedInfo();
+				locationId = user.getLocationId();
+			} else {
+				locationId = req.getParameter("locationId");
+			}
+			
 			BSTableControlVO bst = new BSTableControlVO(req, LocationItemMasterVO.class);
 			String orderBy =  bst.getSQLOrderBy("p.provider_nm, lcn.location_nm, pm.product_nm",  "asc");
 			setModuleData(listInventory(locationId, orderBy, bst, false));
@@ -93,11 +107,38 @@ public class InventoryAction extends SBActionAdapter {
 			if (req.hasParameter("isDelete")) {
 				db.delete(vo);
 			} else {
-				db.save(vo);
+				String roleId = ((SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA)).getRoleId();
+				saveInventoryRecord(vo, roleId);
 			}
 		} catch (InvalidDataException | DatabaseException e) {
 			log.error("Unable to save location inventory", e);
 		}
+	}
+	
+	/**
+	 * Saves an inventory record
+	 * @param vo
+	 * @throws DatabaseException 
+	 * @throws InvalidDataException 
+	 */
+	private void saveInventoryRecord(LocationItemMasterVO vo, String roleId) throws InvalidDataException, DatabaseException {
+		// CAS can't edit their inventory
+		if (WSLARole.WSLA_SERVICE_CENTER.getRoleId().equals(roleId))
+			return;
+
+		DBProcessor dbp = new DBProcessor(getDBConnection(), getCustomSchema());
+		
+		// Only Admins can directly edit quantity-on-hand. The UI prevents submission
+		// of a changed value. However, if someone hacks the UI in order to submit
+		// a different value anyway, we are changing it back to the original value here.
+		if (!WSLARole.ADMIN.getRoleId().equals(roleId)) {
+			LocationItemMasterVO original = new LocationItemMasterVO();
+			original.setItemMasterId(vo.getItemMasterId());
+			dbp.getByPrimaryKey(original);
+			vo.setQuantityOnHand(original.getQuantityOnHand());
+		}
+		
+		dbp.save(vo);
 	}
 	
 	/**
@@ -151,7 +192,7 @@ public class InventoryAction extends SBActionAdapter {
 	 * @param minInventory only used with productId - ensures the matched locationId has a minimum amount of inventory on hand.
 	 * @return List<GenericVO> Used for data filter box (selectpicker)
 	 */
-	public List<LocationItemMasterVO> listInvetorySuppliers(String productIdOrModelNo, Integer minInventory) {
+	public List<LocationItemMasterVO> listInvetorySuppliers(String productIdOrModelNo, Integer minInventory, UserVO user) {
 		String schema = getCustomSchema();
 		List<Object> params = null;
 		StringBuilder sql = new StringBuilder(250);
@@ -170,6 +211,9 @@ public class InventoryAction extends SBActionAdapter {
 				sql.append("where lim.actual_qnty_no >= ? ");
 				params.add(minInventory);
 			}
+		} else if (user != null) {
+			sql.append("where lcn.location_id = ? ");
+			params = new ArrayList<>(Arrays.asList(user.getLocationId()));
 		}
 		sql.append("order by p.provider_nm, lcn.location_nm, lcn.store_no, lcn.location_id");
 		log.debug(sql);

@@ -42,6 +42,34 @@ public class WSLAConstants {
 	}
 	
 	/**
+	 * Defines the roles used by this site
+	 */
+	public enum WSLARole {
+		PUBLIC("0"),
+		REGISTERED("10"),
+		ADMIN("100"),
+		WSLA_CALL_CENTER("WSLA_CALL_CENTER"),
+		WSLA_CUSTOMER_SVC("WSLA_CUSTOMER_SVC"),
+		WSLA_END_CUSTOMER("WSLA_END_CUSTOMER"),
+		WSLA_EXECUTIVE("WSLA_EXECUTIVE"),
+		WSLA_OEM("WSLA_OEM"),
+		WSLA_PROSPECT("WSLA_PROSPECT"),
+		WSLA_RETAILER("WSLA_RETAILER"),
+		WSLA_SERVICE_CENTER("WSLA_SERVICE_CENTER"),
+		WSLA_WAREHOUSE("WSLA_WAREHOUSE");
+		
+		private String roleId;
+		
+		WSLARole(String roleId) {
+			this.roleId = roleId;
+		}
+		
+		public String getRoleId() {
+			return roleId;
+		}
+	}
+	
+	/**
 	 * "References" email header suffix for tickets, to denote where the
 	 * reference came from in a chain of references. 
 	 */
@@ -68,6 +96,16 @@ public class WSLAConstants {
 	 * value for the serial number field
 	 */
 	public static final String NO_SERIAL_NUMBER = "NOSN";
+	
+	/**
+	 * Key used to identify the service order
+	 */
+	public static final String TICKET_ID = "ticketId";
+	
+	/**
+	 * Key used to identify the service order number
+	 */
+	public static final String TICKET_NO = "ticketIdText";
 	
 	/**
 	 * 

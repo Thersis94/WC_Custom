@@ -23,6 +23,9 @@ import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.util.StringUtil;
 // WC Libs
 import com.smt.sitebuilder.action.SimpleActionAdapter;
+import com.smt.sitebuilder.common.constants.Constants;
+import com.smt.sitebuilder.security.SBUserRole;
+import com.wsla.common.UserSqlFilter;
 import com.wsla.data.product.ProductSerialNumberVO;
 
 // WSLA Libs
@@ -102,7 +105,8 @@ public class TicketListAction extends SimpleActionAdapter {
 	 */
 	public GridDataVO<TicketVO> retrieveTickets(ActionRequest req ) throws SQLException {
 		BSTableControlVO bst = new BSTableControlVO(req, TicketVO.class);
-
+		List<String> params = new ArrayList<>();
+		
 		// Build the sql for the main query
 		StringBuilder sql = new StringBuilder(768);
 		sql.append(DBUtil.SELECT_CLAUSE).append("a.ticket_id, ticket_no, provider_nm, ");
@@ -115,12 +119,13 @@ public class TicketListAction extends SimpleActionAdapter {
 		cSql.append(DBUtil.SELECT_CLAUSE).append("cast(count(*) as int) ");
 
 		// Get the base query and append to the count and display select
-		StringBuilder base = getBaseSql(req.getParameter("status", ""));
+		UserVO user = (UserVO) getAdminUser(req).getUserExtendedInfo();
+		String roleId = ((SBUserRole)req.getSession().getAttribute(Constants.ROLE_DATA)).getRoleId();
+		StringBuilder base = getBaseSql(req.getParameter("status", ""), params, user, roleId);
 		cSql.append(base);
 		sql.append(base);
 
 		// Manage the search
-		List<String> params = new ArrayList<>();
 		if (bst.hasSearch()) {
 			String search = getBSTSearch(bst, params);
 			cSql.append(search);
@@ -187,16 +192,14 @@ public class TicketListAction extends SimpleActionAdapter {
 	 * @return
 	 */
 	public String getStatusFilter(String statusCode, String status, List<String> params) {
-		if (StringUtil.isEmpty(statusCode) && StringUtil.isEmpty(status)) return "";
-
-		if ("CLOSED".equals(status)) {
+		if(!StringUtil.isEmpty(statusCode) || "CLOSED".equals(status)) {
 			params.add("CLOSED".equals(status) ? status : statusCode);
 			return "and a.status_cd = ? ";
-		} else if ("OPENED".equals(status)) {
+		} else if (!StringUtil.isEmpty(status) && !"ALL".equals(status)) {
 			return "and a.status_cd != 'CLOSED' ";
-		} else {
-			return "";
-		}
+		} 
+
+		return "";
 	}
 
 	/**
@@ -267,7 +270,7 @@ public class TicketListAction extends SimpleActionAdapter {
 	 * Builds the base query and joins
 	 * @return
 	 */
-	public StringBuilder getBaseSql(String status) {
+	public StringBuilder getBaseSql(String status, List<String> params, UserVO user, String roleId) {
 		StringBuilder base = new StringBuilder(768);
 		base.append(DBUtil.FROM_CLAUSE).append(getCustomSchema()).append("wsla_ticket a ");
 		base.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("wsla_user e ");
@@ -292,6 +295,13 @@ public class TicketListAction extends SimpleActionAdapter {
 			base.append("where end_user_flg = 1 and (wsla_reply_flg = 0 or wsla_reply_flg is null) ");
 			base.append("group by ticket_id) tc on a.ticket_id = tc.ticket_id ");
 		}
+		
+		// Add a filter to make sure users only see the tickets they are supposed to.
+		// (i.e. CAS sees only tickets they are assigned to, etc.)
+		UserSqlFilter filter = new UserSqlFilter(user, roleId, getCustomSchema());
+		List<Object> filterParams = new ArrayList<>();
+		base.append(filter.getTicketFilter("a", filterParams));
+		filterParams.forEach(param -> params.add(param.toString()));
 		
 		base.append("where 1 = 1 ");
 

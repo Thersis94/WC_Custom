@@ -4,24 +4,31 @@ package com.wsla.action.ticket.transaction;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
+import com.wsla.action.admin.InventoryAction;
 import com.wsla.action.admin.LogisticsAction;
 
 // WC Libs
 import com.wsla.action.ticket.BaseTransactionAction;
 import com.wsla.common.WSLAConstants;
 import com.wsla.data.ticket.LedgerSummary;
+import com.wsla.data.ticket.PartVO;
 import com.wsla.data.ticket.ShipmentVO;
 import com.wsla.data.ticket.ShipmentVO.ShipmentStatus;
 import com.wsla.data.ticket.StatusCode;
@@ -75,6 +82,9 @@ public class TicketPartsTransaction extends BaseTransactionAction {
 		try {
 			if (req.hasParameter("isApproved")) {
 				setApproval(req);
+			} else if (req.hasParameter("consumeParts")) {
+				addRepairCode(req.getParameter(WSLAConstants.TICKET_ID), req.getParameter("attr_unitRepairCode")); 
+				consumeParts(req);
 			} else {
 				submitForApproval(req);
 			}
@@ -101,7 +111,7 @@ public class TicketPartsTransaction extends BaseTransactionAction {
 		
 		// Build next step
 		Map<String, Object> params = new HashMap<>();
-		params.put("ticketId", ledger.getTicketId());
+		params.put(WSLAConstants.TICKET_ID, ledger.getTicketId());
 		buildNextStep(ledger.getStatusCode(), params, false);
 	}
 	
@@ -130,7 +140,7 @@ public class TicketPartsTransaction extends BaseTransactionAction {
 	 * @throws InvalidDataException 
 	 */
 	private void setApproval(ActionRequest req) throws Exception {
-		String ticketId = req.getParameter("ticketId");
+		String ticketId = req.getParameter(WSLAConstants.TICKET_ID);
 		String note = req.getParameter(PART_NOTE_APPROVAL_KEY);
 		boolean isApproved = Convert.formatBoolean(req.getParameter("isApproved"));
 		if (!isApproved) {
@@ -172,7 +182,7 @@ public class TicketPartsTransaction extends BaseTransactionAction {
 		TicketLedgerVO ldgr = setPartsStatus(req, StatusCode.UNREPAIRABLE, summary.toString(), null);
 		
 		// Add ticket data for Rejection / Approval Note
-		addTicketData(req.getParameter("ticketId"), ldgr.getLedgerEntryId(), note);
+		addTicketData(req.getParameter(WSLAConstants.TICKET_ID), ldgr.getLedgerEntryId(), note);
 		
 		// Depending on reject type add ledger/status 
 		// for PENDING_UNIT_RETURN or REPLACMENT_REQUEST
@@ -282,6 +292,110 @@ public class TicketPartsTransaction extends BaseTransactionAction {
 		buildNextStep(ledger.getStatusCode(), params, false);
 		
 		return ledger;
+	}
+	
+	/**
+	 * Adds the repair codefrom the consumption modal
+	 * @param ticketId
+	 * @param defectType
+	 * @throws InvalidDataException
+	 * @throws DatabaseException
+	 */
+	public void addRepairCode(String ticketId, String defectType) 
+	throws InvalidDataException, DatabaseException {
+		TicketDataVO rc = new TicketDataVO();
+		rc.setAttributeCode("attr_unitRepairCode");
+		rc.setValue(defectType);
+		rc.setTicketId(ticketId);
+		log.info(rc);
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		db.insert(rc);
+	}
+	
+	/**
+	 * Saves the used/consumption values for the parts,
+	 * and decrements from the CAS inventory.
+	 * 
+	 * @param req
+	 * @throws ActionException 
+	 * @throws SQLException 
+	 */
+	private void consumeParts(ActionRequest req) throws ActionException {
+		List<PartVO> partsList = new ArrayList<>();
+		
+		// Build the PartVOs from the submitted data
+		for (Map.Entry<String, String[]> param : req.getParameterMap().entrySet()) {
+			String paramName = StringUtil.checkVal(param.getKey());
+			if (!paramName.startsWith("qnty_") || req.getIntegerParameter(paramName) <= 0)
+				continue;
+
+			PartVO part = new PartVO();
+			String partId = paramName.substring(5);
+			part.setPartId(partId);
+			part.setProductId(req.getParameter("prodId_" + partId));
+			part.setUsedQuantityNo(req.getIntegerParameter(paramName));
+			part.setUpdateDate(new Date());
+			partsList.add(part);
+		}
+		
+		// Save the consumed values and decrement inventory
+		saveConsumption(partsList);
+		decrementInventory(req.getParameter(WSLAConstants.TICKET_ID), partsList);
+	}
+	
+	/**
+	 * Saves the quantities that were consumed on the requested ticket parts
+	 * 
+	 * @param partsList
+	 * @throws ActionException 
+	 */
+	private void saveConsumption(List<PartVO> partsList) throws ActionException {
+		if (partsList == null || partsList.isEmpty()) return;
+		
+		// Create the SQL to update the consumption for each part
+		String sql = StringUtil.join(DBUtil.UPDATE_CLAUSE, getCustomSchema(), 
+					"wsla_part set used_qnty_no = ?, update_dt = ? where part_id = ?");
+		log.debug(sql);
+		
+		// Create the lists of values to be batch inserted from the VOs
+		Map<String, List<Object>> psValues = new HashMap<>();
+		for (PartVO part : partsList) {
+			List<Object> recValues = Arrays.asList(part.getUsedQuantityNo(), part.getUpdateDate(), part.getPartId());
+			psValues.put(part.getPartId(), recValues);
+		}
+		
+		// Insert the records
+		DBProcessor dbp = new DBProcessor(getDBConnection(), getCustomSchema());
+		try {
+			dbp.executeBatch(sql, psValues);
+		} catch (DatabaseException e) {
+			throw new ActionException(e);
+		}
+	}
+	
+	/**
+	 * Decrements the inventory for the CAS assigned to the ticket
+	 * 
+	 * @param ticketId
+	 * @param partsList
+	 * @throws ActionException 
+	 */
+	private void decrementInventory(String ticketId, List<PartVO> partsList) throws ActionException {
+		if (partsList == null || partsList.isEmpty()) return;
+		
+		// Get the CAS location so we can update their inventory with the consumed parts
+		String casLocationId = null;
+		try {
+			casLocationId = getCasLocationId(ticketId);
+		} catch (SQLException e) {
+			throw new ActionException(e);
+		}
+
+		// Decrement what was used from the CAS location's inventory
+		InventoryAction ia = new InventoryAction(getAttributes(), getDBConnection());
+		for (PartVO part : partsList) {
+			ia.recordInventory(part.getProductId(), casLocationId, part.getUsedQuantityNo() * -1);
+		}
 	}
 }
 

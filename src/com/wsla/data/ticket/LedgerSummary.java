@@ -31,6 +31,7 @@ public enum LedgerSummary {
 	INVALID_SERIAL_SAVED("Invalid Serial number saved to the ticket"),
 	SERIAL_APPROVED("The serial number was approved"),
 	REPAIR_STATUS_CHANGED ("The repair status was changed"),
+	DISPOSITION_CHANGED("The ticket's disposition was changed"),
 	ACTIVITY_ADDED ("An activity was added to the ticket"),
 	CAS_ASSIGNED ("A Service Center was assigned to the ticket"),
 	TICKET_CLONED ("A closed ticket was cloned"),

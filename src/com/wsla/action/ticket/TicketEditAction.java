@@ -373,16 +373,16 @@ public class TicketEditAction extends SBActionAdapter {
 	 */
 	public List<TicketDataVO> getExtendedData(String ticketId, String groupCode, boolean isUserPortal) {
 
-		StringBuilder sql = new StringBuilder(256);
+		StringBuilder sql = new StringBuilder(512);
 		sql.append("select a.*, b.attribute_nm, c.group_nm, e.first_nm, e.last_nm, disposition_by_id from ");
 		sql.append(getCustomSchema()).append("wsla_ticket_data a ");
 		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema());
 		sql.append("wsla_ticket_attribute b on a.attribute_cd = b.attribute_cd ");
 		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema());
 		sql.append("wsla_attribute_group c ON c.attribute_group_cd = b.attribute_group_cd ");
-		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema());
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(getCustomSchema());
 		sql.append("wsla_ticket_ledger d on a.ledger_entry_id = d.ledger_entry_id ");
-		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema());
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(getCustomSchema());
 		sql.append("wsla_user e on d.disposition_by_id = e.user_id ");
 		sql.append("where a.ticket_id = ? ");
 		if (! StringUtil.isEmpty(groupCode)) sql.append("and b.attribute_group_cd = ? ");
@@ -392,7 +392,7 @@ public class TicketEditAction extends SBActionAdapter {
 		}
 		
 		sql.append("order by b.attribute_group_cd ");
-		
+		log.debug(sql.length() + "|" + sql + "|" + ticketId);
 		List<TicketDataVO> data = new ArrayList<>();
 		try(PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, ticketId);
@@ -405,6 +405,8 @@ public class TicketEditAction extends SBActionAdapter {
 					tdv.setLedger(new TicketLedgerVO(rs));
 					
 					if ("attr_unitDefect".equals(tdv.getAttributeCode())) {
+						tdv.setMetaValue(getDefectName(tdv.getValue()));
+					} else if ("attr_unitRepairCode".equals(tdv.getAttributeCode())) {
 						tdv.setMetaValue(getDefectName(tdv.getValue()));
 					}
 					
