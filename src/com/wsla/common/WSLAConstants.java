@@ -98,6 +98,16 @@ public class WSLAConstants {
 	public static final String NO_SERIAL_NUMBER = "NOSN";
 	
 	/**
+	 * Key used to identify the service order
+	 */
+	public static final String TICKET_ID = "ticketId";
+	
+	/**
+	 * Key used to identify the service order number
+	 */
+	public static final String TICKET_NO = "ticketIdText";
+	
+	/**
 	 * 
 	 */
 	private WSLAConstants() {

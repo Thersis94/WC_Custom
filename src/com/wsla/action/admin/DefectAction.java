@@ -93,7 +93,6 @@ public class DefectAction extends SBActionAdapter {
 		
 		DefectVO dvo = new DefectVO(req);
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
-
 		try {
 			if(StringUtil.isEmpty(req.getParameter("origDefectCode"))) {
 				db.insert(dvo);

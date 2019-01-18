@@ -48,6 +48,7 @@ import com.wsla.action.admin.WarrantyAction;
 import com.wsla.action.admin.WarrantyAction.ServiceTypeCode;
 import com.wsla.action.ticket.CASSelectionAction;
 import com.wsla.action.ticket.TicketListAction;
+import com.wsla.action.ticket.TicketSearchAction;
 import com.wsla.action.ticket.TicketEditAction;
 import com.wsla.common.LocaleWrapper;
 import com.wsla.common.WSLALocales;
@@ -134,6 +135,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		keyMap.put("billable", new GenericVO("getBillableCodes", Boolean.TRUE));
 		keyMap.put("billableType", new GenericVO("getBillableTypes", Boolean.FALSE));
 		keyMap.put("supportNumbers", new GenericVO("getSupportNumbers", Boolean.TRUE));
+		keyMap.put("ticketSearch", new GenericVO("ticketSearch", Boolean.TRUE));
 	}
 
 	/**
@@ -464,12 +466,13 @@ public class SelectLookupAction extends SBActionAdapter {
 	 * @return
 	 */
 	public List<GenericVO> getDefects(ActionRequest req) {
-		
+
 		// Get the Locale to pull correct language and add to the DB params
 		Locale locale = new ResourceBundleManagerAction().getUserLocale(req);
 		List<Object> params = new ArrayList<>();
 		params.add(locale.getLanguage());
 		params.add(locale.getCountry());
+		params.add(req.getStringParameter("defectType", "DEFECT_CODE"));
 		
 		StringBuilder sql = new StringBuilder(64);
 		sql.append("select defect_cd as key, ");
@@ -478,7 +481,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		sql.append("left outer join resource_bundle_key c on a.defect_cd = c.key_id ");
 		sql.append("left outer join resource_bundle_data d on c.key_id = d.key_id ");
 		sql.append("and language_cd = ? and country_cd = ? ");
-		sql.append("where a.active_flg = 1 ");
+		sql.append("where a.active_flg = 1 and defect_type_cd in ('BOTH', ?) ");
 		sql.append("and (a.provider_id is null ");
 		if (req.hasParameter(REQ_PROVIDER_ID)) {
 			sql.append("or a.provider_id = ? ");
@@ -486,7 +489,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		}
 
 		sql.append(") order by value");
-		log.debug("defects SQL " + sql);
+		log.debug("defects SQL " + sql + "|" + params);
 		
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		return db.executeSelect(sql.toString(), params, new GenericVO());
@@ -783,5 +786,16 @@ public class SelectLookupAction extends SBActionAdapter {
 		}
 		
 		return data;
+	}
+	
+	/**
+	 * Performs a fuzzy search against multiple fields
+	 * @param req
+	 * @return
+	 */
+	public List<GenericVO> ticketSearch(ActionRequest req) {
+		TicketSearchAction tsa = new TicketSearchAction(getDBConnection(), getAttributes());
+		
+		return tsa.getTickets(req.getParameter(REQ_SEARCH));
 	}
 }

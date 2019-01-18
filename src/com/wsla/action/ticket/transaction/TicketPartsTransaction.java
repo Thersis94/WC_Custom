@@ -83,6 +83,7 @@ public class TicketPartsTransaction extends BaseTransactionAction {
 			if (req.hasParameter("isApproved")) {
 				setApproval(req);
 			} else if (req.hasParameter("consumeParts")) {
+				addRepairCode(req.getParameter(WSLAConstants.TICKET_ID), req.getParameter("attr_unitRepairCode")); 
 				consumeParts(req);
 			} else {
 				submitForApproval(req);
@@ -110,7 +111,7 @@ public class TicketPartsTransaction extends BaseTransactionAction {
 		
 		// Build next step
 		Map<String, Object> params = new HashMap<>();
-		params.put("ticketId", ledger.getTicketId());
+		params.put(WSLAConstants.TICKET_ID, ledger.getTicketId());
 		buildNextStep(ledger.getStatusCode(), params, false);
 	}
 	
@@ -140,7 +141,7 @@ public class TicketPartsTransaction extends BaseTransactionAction {
 	 */
 	private void setApproval(ActionRequest req) 
 	throws DatabaseException, InvalidDataException, SQLException {
-		String ticketId = req.getParameter("ticketId");
+		String ticketId = req.getParameter(WSLAConstants.TICKET_ID);
 		String note = req.getParameter(PART_NOTE_APPROVAL_KEY);
 		boolean isApproved = Convert.formatBoolean(req.getParameter("isApproved"));
 		if (!isApproved) {
@@ -182,7 +183,7 @@ public class TicketPartsTransaction extends BaseTransactionAction {
 		TicketLedgerVO ldgr = setPartsStatus(req, StatusCode.UNREPAIRABLE, summary.toString(), null);
 		
 		// Add ticket data for Rejection / Approval Note
-		addTicketData(req.getParameter("ticketId"), ldgr.getLedgerEntryId(), note);
+		addTicketData(req.getParameter(WSLAConstants.TICKET_ID), ldgr.getLedgerEntryId(), note);
 		
 		// Depending on reject type add ledger/status 
 		// for PENDING_UNIT_RETURN or REPLACMENT_REQUEST
@@ -278,6 +279,24 @@ public class TicketPartsTransaction extends BaseTransactionAction {
 	}
 	
 	/**
+	 * Adds the repair codefrom the consumption modal
+	 * @param ticketId
+	 * @param defectType
+	 * @throws InvalidDataException
+	 * @throws DatabaseException
+	 */
+	public void addRepairCode(String ticketId, String defectType) 
+	throws InvalidDataException, DatabaseException {
+		TicketDataVO rc = new TicketDataVO();
+		rc.setAttributeCode("attr_unitRepairCode");
+		rc.setValue(defectType);
+		rc.setTicketId(ticketId);
+		log.info(rc);
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		db.insert(rc);
+	}
+	
+	/**
 	 * Saves the used/consumption values for the parts,
 	 * and decrements from the CAS inventory.
 	 * 
@@ -305,7 +324,7 @@ public class TicketPartsTransaction extends BaseTransactionAction {
 		
 		// Save the consumed values and decrement inventory
 		saveConsumption(partsList);
-		decrementInventory(req.getParameter("ticketId"), partsList);
+		decrementInventory(req.getParameter(WSLAConstants.TICKET_ID), partsList);
 	}
 	
 	/**
