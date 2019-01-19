@@ -123,6 +123,7 @@ public class DebitMemoWidget extends SBActionAdapter {
 	 */
 	public GridDataVO<DebitMemoVO> getDebitMemos(BSTableControlVO bst, String oemId, String retId, String complete) {
 		List<Object> params = new ArrayList<>();
+		if (! StringUtil.isEmpty(bst.getSearch())) bst.setSearch(bst.getSearch().toLowerCase());
 		
 		StringBuilder sql = new StringBuilder(896);
 		sql.append("select retailer_nm, provider_nm as oem_nm, cm.*, dm.* from ");
@@ -168,16 +169,30 @@ public class DebitMemoWidget extends SBActionAdapter {
 
 		// Add the text search
 		if (bst.hasSearch()) {
+			sql.append("and dm.debit_memo_id in ( ");
+			sql.append("select dm.debit_memo_id from wsla_debit_memo dm ");
+			sql.append("inner join wsla_credit_memo cm on dm.debit_memo_id = cm.debit_memo_id ");
+			sql.append("inner join wsla_ticket_ref_rep rr on cm.ticket_ref_rep_id = rr.ticket_ref_rep_id ");
+			sql.append("inner join wsla_ticket t on rr.ticket_id = t.ticket_id ");
+			sql.append("where lower(dm.debit_memo_id) like ? ");
+			sql.append("or lower(cm.customer_memo_cd) like ? ");
+			sql.append("or lower(dm.customer_memo_cd) like ? ");
+			sql.append("or lower(ticket_no) like ? ");
+			sql.append("or lower(credit_memo_id) like ? ");
+			sql.append("or lower(transfer_no_txt) like ? ");
+			sql.append("group by dm.debit_memo_id ) ");
+			
 			params.add(bst.getLikeSearch());
 			params.add(bst.getLikeSearch());
 			params.add(bst.getLikeSearch());
-			sql.append("and (lower(dm.debit_memo_id) like ? ");
-			sql.append(" or lower(customer_memo_cd) like ? ");
-			sql.append(" or lower(transfer_no_txt) like ?) ");
+			params.add(bst.getLikeSearch());
+			params.add(bst.getLikeSearch());
+			params.add(bst.getLikeSearch());
+
 		}
 		
 		sql.append(bst.getSQLOrderBy("create_dt", "desc"));
-		log.debug(sql.length() + "|" + sql);
+		log.info(sql.length() + "|" + sql);
 		
 		DBProcessor db = new DBProcessor(getDBConnection());
 		return db.executeSQLWithCount(sql.toString(), params, new DebitMemoVO(), bst);
