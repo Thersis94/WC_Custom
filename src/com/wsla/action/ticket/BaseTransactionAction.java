@@ -1,11 +1,15 @@
 package com.wsla.action.ticket;
 
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 // SMT Base Libs
 import com.siliconmtn.action.ActionInitVO;
+import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.db.util.DatabaseException;
@@ -22,6 +26,7 @@ import com.smt.sitebuilder.util.MessageParser.MessageType;
 import com.wsla.action.BasePortalAction;
 import com.wsla.action.admin.StatusCodeAction;
 import com.wsla.common.WSLAConstants.WorkflowSlug;
+import com.wsla.data.product.WarrantyBillableVO;
 import com.wsla.data.ticket.NextStepVO;
 import com.wsla.data.ticket.StatusCode;
 import com.wsla.data.ticket.StatusCodeVO;
@@ -135,13 +140,36 @@ public class BaseTransactionAction extends SBActionAdapter {
 	 * Adds a ledger entry for the given ticket. Determination is made as to
 	 * which billable code to use here based on the status.
 	 * 
+	 * Uses the default billable amount for the status' billable code.
+	 * 
 	 * @param ticketId
+	 * @param userId
 	 * @param status
 	 * @param summary
-	 * @return ledgerId
-	 * @throws DatabaseException 
+	 * @param location
+	 * @return
+	 * @throws DatabaseException
 	 */
 	public TicketLedgerVO addLedger(String ticketId, String userId, StatusCode status, String summary, UnitLocation location) throws DatabaseException {
+		return addLedger(ticketId, userId, status, summary, location, null);
+	}
+
+	/**
+	 * Adds a ledger entry for the given ticket. Determination is made as to
+	 * which billable code to use here based on the status.
+	 * 
+	 * Overloaded to take a different amount than what is specified on the billable code.
+	 * 
+	 * @param ticketId
+	 * @param userId
+	 * @param status
+	 * @param summary
+	 * @param location
+	 * @param billableAmt
+	 * @return
+	 * @throws DatabaseException
+	 */
+	public TicketLedgerVO addLedger(String ticketId, String userId, StatusCode status, String summary, UnitLocation location, Double billableAmt) throws DatabaseException {
 		// Create a new ledger record
 		TicketLedgerVO ledger = new TicketLedgerVO();
 		ledger.setDispositionBy(userId);
@@ -149,21 +177,37 @@ public class BaseTransactionAction extends SBActionAdapter {
 		ledger.setStatusCode(status);
 		ledger.setSummary(summary);
 		ledger.setUnitLocation(location);
+		ledger.setBillableAmtNo(billableAmt);
 		
 		// Get status billable data to be added to the ledger
 		if (status != null) {
-			DBProcessor dbp = new DBProcessor(getDBConnection(), getCustomSchema());
-			StatusCodeVO sc = new StatusCodeVO();
-			sc.setStatusCode(status.name());
 			try {
-				dbp.getByPrimaryKey(sc);
-				ledger.setBillableActivityCode(sc.getBillableActivityCode());
-			} catch (InvalidDataException e) {
+				WarrantyBillableVO billableData = getBillableData(ticketId, status);
+				ledger.setBillableActivityCode(billableData.getBillableActivityCode());
+				
+				// If we aren't overriding the default amount with a passed in value,
+				// then just use the default amount.
+				if (billableAmt == null) {
+					ledger.setBillableAmtNo(billableData.getCost());
+				}
+			} catch (SQLException e) {
 				throw new DatabaseException(e);
 			}
 		}
 		
 		// Add the ledger entry
+		return addLedger(ledger);
+	}
+	
+	/**
+	 * Adds a ledger entry. Overloaded to directly add the ledger entry with
+	 * pre-populated data.
+	 * 
+	 * @param ledger
+	 * @return
+	 * @throws DatabaseException
+	 */
+	public TicketLedgerVO addLedger(TicketLedgerVO ledger) throws DatabaseException {
 		try {
 			BasePortalAction bpa = new BasePortalAction(getDBConnection(), getAttributes());
 			bpa.addLedger(ledger);
@@ -172,6 +216,40 @@ public class BaseTransactionAction extends SBActionAdapter {
 		}
 		
 		return ledger;
+	}
+	
+	/**
+	 * Get's the billable data for the ticket's status
+	 * 
+	 * @return
+	 * @throws SQLException 
+	 */
+	private WarrantyBillableVO getBillableData(String ticketId, StatusCode status) throws SQLException {
+		StringBuilder sql = new StringBuilder(416);
+		sql.append(DBUtil.SELECT_CLAUSE).append("ts.billable_activity_cd, b.cost_no");
+		sql.append(DBUtil.FROM_CLAUSE).append(getCustomSchema()).append("wsla_ticket_status ts");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append("(");
+		sql.append(DBUtil.SELECT_CLAUSE).append("wb.cost_no, wb.billable_activity_cd");
+		sql.append(DBUtil.FROM_CLAUSE).append(getCustomSchema()).append("wsla_ticket t");
+		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("wsla_product_warranty pw on t.product_warranty_id = pw.product_warranty_id");
+		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("wsla_warranty_billable_xr wb on pw.warranty_id = wb.warranty_id");
+		sql.append(DBUtil.WHERE_CLAUSE).append("t.ticket_id = ?");
+		sql.append(") as b on ts.billable_activity_cd = b.billable_activity_cd");
+		sql.append(DBUtil.WHERE_CLAUSE).append("ts.status_cd = ?");
+		log.debug(sql);
+		
+		WarrantyBillableVO billableData = null;
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, ticketId);
+			ps.setString(2, status.name());
+			
+			ResultSet rs = ps.executeQuery();
+			if (rs.next()) {
+				billableData = new WarrantyBillableVO(rs);
+			}
+		}
+		
+		return billableData == null ? new WarrantyBillableVO() : billableData;
 	}
 	
 	/**
