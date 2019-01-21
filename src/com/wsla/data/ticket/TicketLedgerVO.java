@@ -43,6 +43,7 @@ public class TicketLedgerVO extends BeanDataVO {
 	private StatusCode statusCode;
 	private UnitLocation unitLocation;
 	private String billableActivityCode;
+	private Double billableAmtNo;
 	private Date createDate;
 	
 	// Bean Sub-Elements
@@ -138,6 +139,14 @@ public class TicketLedgerVO extends BeanDataVO {
 	@Column(name="billable_activity_cd")
 	public String getBillableActivityCode() {
 		return billableActivityCode;
+	}
+
+	/**
+	 * @return the billableAmtNo
+	 */
+	@Column(name="billable_amt_no")
+	public Double getBillableAmtNo() {
+		return billableAmtNo;
 	}
 
 	/**
@@ -263,6 +272,13 @@ public class TicketLedgerVO extends BeanDataVO {
 	 */
 	public void setBillableActivityCode(String billableActivityCode) {
 		this.billableActivityCode = billableActivityCode;
+	}
+
+	/**
+	 * @param billableAmtNo the billableAmtNo to set
+	 */
+	public void setBillableAmtNo(Double billableAmtNo) {
+		this.billableAmtNo = billableAmtNo;
 	}
 
 	/**
