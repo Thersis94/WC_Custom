@@ -27,7 +27,8 @@ import com.siliconmtn.db.orm.Table;
 public class TicketCommentVO extends BeanDataVO {
 	
 	public enum ActivityType {
-		COMMENT("Ticket Comment"), EMAIL("Email Activity"), PHONE("Phone Call Activity");
+		COMMENT("Ticket Comment"), EMAIL("Email Activity"), PHONE("Phone Call Activity"),
+		MISC_ACTIVITY("Misc. Activity");
 		
 		private String typeName;
 		private ActivityType(String typeName) { this.typeName = typeName; }
