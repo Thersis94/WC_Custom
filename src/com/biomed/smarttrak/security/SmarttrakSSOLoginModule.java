@@ -64,6 +64,7 @@ public class SmarttrakSSOLoginModule extends SAMLLoginModule {
 		
 		if (StringUtil.isEmpty(user.getUserId())) {
 			user.setAccountId(loadAccount());
+			user.setAuthenticated(true);
 			createUser(user);
 		}
 		
