@@ -104,7 +104,7 @@ public class TicketOverviewAction extends BasePortalAction {
 	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
-
+		log.info("Saving Ticket: " + req.getParameter("ticketId") + "|" + StringUtil.isEmpty(req.getParameter("ticketId")));
 		TicketVO ticket = null;
 		try {
 			if(StringUtil.isEmpty(req.getParameter("ticketId"))) {
@@ -227,16 +227,18 @@ public class TicketOverviewAction extends BasePortalAction {
 		req.setParameter("ticketId", ticket.getTicketId());
 		
 		// Add User and assignment to the ticket
-		UserDataVO profile = (UserDataVO)req.getSession().getAttribute(Constants.USER_DATA);
-		UserVO user = (UserVO)profile.getUserExtendedInfo();
+		UserVO user = new UserVO(req);
 		Locale locale = user.getUserLocale();
+
 		req.setParameter("countryCode", locale.getCountry());
 		this.saveUser(site, user, false, true);
 		ticket.addAssignment(manageTicketAssignment(user, null, ticket.getTicketId(), null, 0, TypeCode.CALLER));
 
-		// Add an item to the ledger
+		// Add an item to the ledger using the logged in user info user
+		UserDataVO profile = (UserDataVO)req.getSession().getAttribute(Constants.USER_DATA);
+		UserVO adminUser = (UserVO)profile.getUserExtendedInfo();
 		BaseTransactionAction bta = new BaseTransactionAction(getDBConnection(), getAttributes());
-		TicketLedgerVO ledger = bta.addLedger(ticket.getTicketId(), user.getUserId(), ticket.getStatusCode(), LedgerSummary.CALL_RECVD.summary, null);
+		TicketLedgerVO ledger = bta.addLedger(ticket.getTicketId(), adminUser.getUserId(), ticket.getStatusCode(), LedgerSummary.CALL_RECVD.summary, null);
 		
 		// Add Data Attributes
 		assignDataAttributes(ticket, ledger);

@@ -213,7 +213,7 @@ public class DashboardAction extends SimpleActionAdapter {
 		sql.append(numMonths).append(" month', 'YYYY-MM-01')::date ");
 		sql.append("group by label_nm, year_num, month_num ");
 		sql.append("order by year_num, month_num, serie_nm ");
-		log.info("Dashboard SQL: " + sql.length() + "|" + sql);
+		log.debug("Dashboard SQL: " + sql.length() + "|" + sql);
 		
 		// Get the data and process into a chart vo
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
