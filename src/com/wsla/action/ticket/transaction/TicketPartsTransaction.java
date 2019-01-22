@@ -83,8 +83,10 @@ public class TicketPartsTransaction extends BaseTransactionAction {
 			if (req.hasParameter("isApproved")) {
 				setApproval(req);
 			} else if (req.hasParameter("consumeParts")) {
-				addRepairCode(req.getParameter(WSLAConstants.TICKET_ID), req.getParameter("attr_unitRepairCode")); 
-				consumeParts(req);
+				//******* Add a ledger entry for the Repair Type
+				addLedgerForRepairType(req);
+				//addRepairCode(req.getParameter(WSLAConstants.TICKET_ID), req.getParameter("attr_unitRepairCode")); 
+				//consumeParts(req);
 			} else {
 				submitForApproval(req);
 			}
@@ -92,6 +94,19 @@ public class TicketPartsTransaction extends BaseTransactionAction {
 			log.error("Unable to submit parts for approval", e);
 			putModuleData("", 0, false, e.getLocalizedMessage(), true);
 		}
+	}
+	
+	/**
+	 * 
+	 * @param req
+	 */
+	public void addLedgerForRepairType(ActionRequest req) {
+		UserVO user = (UserVO) getAdminUser(req).getUserExtendedInfo();
+		TicketLedgerVO l = new TicketLedgerVO(req);
+		l.setSummary(LedgerSummary.REPAIR_TYPE.summary + ": " + l.getBillableActivityCode());
+		l.setDispositionBy(user.getUserId());
+		
+		// Call base transaction
 	}
 
 	/**

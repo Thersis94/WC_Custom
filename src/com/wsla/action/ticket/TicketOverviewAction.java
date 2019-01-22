@@ -22,11 +22,11 @@ import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.RandomAlphaNumeric;
 import com.siliconmtn.util.StringUtil;
+
+//WC Libs 3.x
 import com.smt.sitebuilder.action.user.ProfileManager;
 import com.smt.sitebuilder.action.user.ProfileManagerFactory;
 import com.smt.sitebuilder.common.SiteVO;
-
-// WC Libs 3.x
 import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.common.constants.Constants;
 
@@ -104,10 +104,9 @@ public class TicketOverviewAction extends BasePortalAction {
 	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
-
 		TicketVO ticket = null;
 		try {
-			if(StringUtil.isEmpty(req.getParameter("ticketId"))) {
+			if (StringUtil.isEmpty(req.getParameter("ticketId"))) {
 				ticket = createTicket(req);
 			} else {
 				ticket = saveTicketCall(req);
@@ -229,13 +228,16 @@ public class TicketOverviewAction extends BasePortalAction {
 		// Add User and assignment to the ticket
 		UserVO user = new UserVO(req);
 		Locale locale = user.getUserLocale();
+
 		req.setParameter("countryCode", locale.getCountry());
 		this.saveUser(site, user, false, true);
 		ticket.addAssignment(manageTicketAssignment(user, null, ticket.getTicketId(), null, 0, TypeCode.CALLER));
 
-		// Add an item to the ledger
+		// Add an item to the ledger using the logged in user info user
+		UserDataVO profile = (UserDataVO)req.getSession().getAttribute(Constants.USER_DATA);
+		UserVO adminUser = (UserVO)profile.getUserExtendedInfo();
 		BaseTransactionAction bta = new BaseTransactionAction(getDBConnection(), getAttributes());
-		TicketLedgerVO ledger = bta.addLedger(ticket.getTicketId(), user.getUserId(), ticket.getStatusCode(), LedgerSummary.CALL_RECVD.summary, null);
+		TicketLedgerVO ledger = bta.addLedger(ticket.getTicketId(), adminUser.getUserId(), ticket.getStatusCode(), LedgerSummary.CALL_RECVD.summary, null);
 		
 		// Add Data Attributes
 		assignDataAttributes(ticket, ledger);

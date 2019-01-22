@@ -21,11 +21,13 @@ import com.siliconmtn.db.orm.GridDataVO;
 import com.siliconmtn.db.orm.SQLTotalVO;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.util.StringUtil;
+
 // WC Libs
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.security.SBUserRole;
 import com.wsla.common.UserSqlFilter;
+import com.wsla.common.WSLAConstants.WSLARole;
 import com.wsla.data.product.ProductSerialNumberVO;
 
 // WSLA Libs
@@ -143,7 +145,7 @@ public class TicketListAction extends SimpleActionAdapter {
 		cSql.append(statusCode);
 
 		// Add the Status Code
-		String roleFilter = getRoleFilter(req.getParameter("roleId"),params);
+		String roleFilter = getRoleFilter(req.getParameter("roleId"), user.getUserId(),params);
 		sql.append(roleFilter);
 		cSql.append(roleFilter);		
 
@@ -165,11 +167,19 @@ public class TicketListAction extends SimpleActionAdapter {
 	 * @param params
 	 * @return
 	 */
-	public String getRoleFilter(String roleId, List<String> params) {
+	public String getRoleFilter(String roleId, String userId, List<String> params) {
 		if (StringUtil.isEmpty(roleId)) return "";
-
-		params.add(roleId);
-		return "and d.role_id = ? ";
+		String filter = null;
+		
+		if (WSLARole.WSLA_CALL_CENTER.getRoleId().equals(roleId)) {
+			filter = "and i.disposition_by_id = ? ";
+			params.add(userId);
+		} else {
+			params.add(roleId);
+			filter = "and d.role_id = ? ";
+		}
+		
+		return filter;
 	}
 
 	/**
@@ -287,13 +297,21 @@ public class TicketListAction extends SimpleActionAdapter {
 		base.append("on a.retailer_id = g.location_id ");
 		base.append(DBUtil.LEFT_OUTER_JOIN).append(getCustomSchema()).append("wsla_user h ");
 		base.append("on a.locked_by_id = h.user_id ");
+		base.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("wsla_ticket_ledger i ");
+		base.append("on a.ticket_id = i.ticket_id and i.status_cd = 'OPENED' ");
 		
-		// Join if searching only for tickets that need a comment reply
+		// Join if searching only for tickets that need a comment reply or have an open credit memo
 		if ("NEEDS_REPLY".equals(status)) {
 			base.append(DBUtil.INNER_JOIN).append("(select ticket_id ");
 			base.append(DBUtil.FROM_CLAUSE).append(getCustomSchema()).append("wsla_ticket_comment ");
 			base.append("where end_user_flg = 1 and (wsla_reply_flg = 0 or wsla_reply_flg is null) ");
 			base.append("group by ticket_id) tc on a.ticket_id = tc.ticket_id ");
+		} else if ("CM_OPEN".equals(status)) {
+			base.append(DBUtil.INNER_JOIN).append("(select ticket_id ");
+			base.append(DBUtil.FROM_CLAUSE).append(getCustomSchema()).append("wsla_ticket_ref_rep rr ");
+			base.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("wsla_credit_memo cm ");
+			base.append("on rr.ticket_ref_rep_id = cm.ticket_ref_rep_id ");
+			base.append("where cm.approval_dt is null) trr on a.ticket_id = trr.ticket_id ");
 		}
 		
 		// Add a filter to make sure users only see the tickets they are supposed to.

@@ -33,6 +33,7 @@ public class ProductSerialNumberVO extends ProductVO {
 	private String productSerialId;
 	private String serialNumber;
 	private Date retailerDate;
+	private double retailerCost;
 
 	// Bean Sub-Elements
 	private ProductVO product;
@@ -84,6 +85,14 @@ public class ProductSerialNumberVO extends ProductVO {
 	@Column(name="serial_no_txt")
 	public String getSerialNumber() {
 		return serialNumber;
+	}
+
+	/**
+	 * @return the retailerCost
+	 */
+	@Column(name="retailer_cost_no")
+	public double getRetailerCost() {
+		return retailerCost;
 	}
 
 	/**
@@ -178,5 +187,12 @@ public class ProductSerialNumberVO extends ProductVO {
 	 */
 	public void setProductWarrantyId(String productWarrantyId) {
 		this.productWarrantyId = productWarrantyId;
+	}
+
+	/**
+	 * @param retailerCost the retailerCost to set
+	 */
+	public void setRetailerCost(double retailerCost) {
+		this.retailerCost = retailerCost;
 	}
 }
