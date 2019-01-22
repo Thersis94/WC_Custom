@@ -2,13 +2,18 @@ package com.wsla.data.ticket;
 
 // JDK 1.8.x
 import java.sql.ResultSet;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 // SMT Base Libs
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.parser.BeanDataVO;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
+import com.siliconmtn.util.StringUtil;
+import com.siliconmtn.util.EnumUtil;
+import com.wsla.common.WSLAConstants.WSLARole;
 
 /****************************************************************************
  * <b>Title</b>: StatusCodeVO.java
@@ -44,6 +49,7 @@ public class StatusCodeVO extends BeanDataVO {
 	private int activeFlag;
 	private String nextStepUrl;
 	private String nextStepBtnKeyCode;
+	private String authorizedRoleText;
 	private Date createDate;
 	private Date updateDate;
 	
@@ -125,6 +131,29 @@ public class StatusCodeVO extends BeanDataVO {
 	@Column(name="next_step_btn_key_cd")
 	public String getNextStepBtnKeyCode() {
 		return nextStepBtnKeyCode;
+	}
+
+	/**
+	 * @return the authorizedRoleText
+	 */
+	@Column(name="authorized_role_txt")
+	public String getAuthorizedRoleText() {
+		return authorizedRoleText;
+	}
+
+	/**
+	 * @return the authorizedRole
+	 */
+	public List<WSLARole> getAuthorizedRole() {
+		List<String> authorizedRoleIds = StringUtil.parseList(authorizedRoleText);
+		List<WSLARole> roles = new ArrayList<>();
+		
+		for (String authorizedRoleId : authorizedRoleIds) {
+			WSLARole role = EnumUtil.safeValueOf(WSLARole.class, authorizedRoleId);
+			if (role != null) roles.add(role);
+		}
+		
+		return roles;
 	}
 
 	/**
@@ -220,6 +249,26 @@ public class StatusCodeVO extends BeanDataVO {
 	 */
 	public void setNextStepBtnKeyCode(String nextStepBtnKeyCode) {
 		this.nextStepBtnKeyCode = nextStepBtnKeyCode;
+	}
+
+	/**
+	 * @param authorizedRoleText the authorizedRoleText to set
+	 */
+	public void setAuthorizedRoleText(String authorizedRoleText) {
+		this.authorizedRoleText = authorizedRoleText;
+	}
+
+	/**
+	 * @param authorizedRole the authorizedRole to set
+	 */
+	public void setAuthorizedRole(List<WSLARole> authorizedRole) {
+		String[] roleIds = new String[authorizedRole.size()];
+		
+		for (int idx = 0; idx < authorizedRole.size(); idx++) {
+			roleIds[idx] = authorizedRole.get(idx).name();
+		}
+		
+		this.authorizedRoleText = StringUtil.getDelimitedList(roleIds, false, ",");
 	}
 
 	/**
