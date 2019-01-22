@@ -99,6 +99,7 @@ public class TicketDataTransaction extends SBActionAdapter {
 	throws SQLException {
 		String id = null;
 		String lId = null;
+		
 		// If we are overwriting the value, find the value and assign the ids
 		if (overwrite) {
 			StringBuilder sql = new StringBuilder(112);
@@ -108,14 +109,29 @@ public class TicketDataTransaction extends SBActionAdapter {
 			try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 				ps.setString(1, ticketId);
 				ps.setString(2, attr);
-				try (ResultSet rs = ps.executeQuery()) {
-					if (rs.next()) {
-						id = rs.getString(1);
-						lId = rs.getString(2);
-					}
+				ResultSet rs = ps.executeQuery();
+				if (rs.next()) {
+					id = rs.getString(1);
+					lId = rs.getString(2);
 				}
 			}
 		}
+		
+		// Save the data 
+		this.saveTicketData(id, lId, ticketId, attr, value);
+	}
+	
+	/**
+	 * 
+	 * @param id
+	 * @param lId
+	 * @param ticketId
+	 * @param attr
+	 * @param value
+	 * @throws SQLException
+	 */
+	private void saveTicketData(String id, String lId, String ticketId, String attr, String value) 
+	throws SQLException {
 		
 		// Build a ticket data vo
 		TicketDataVO tdvo = new TicketDataVO();

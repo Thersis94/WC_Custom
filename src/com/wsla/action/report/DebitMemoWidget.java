@@ -169,11 +169,14 @@ public class DebitMemoWidget extends SBActionAdapter {
 
 		// Add the text search
 		if (bst.hasSearch()) {
-			sql.append("and dm.debit_memo_id in ( ");
-			sql.append("select dm.debit_memo_id from wsla_debit_memo dm ");
-			sql.append("inner join wsla_credit_memo cm on dm.debit_memo_id = cm.debit_memo_id ");
-			sql.append("inner join wsla_ticket_ref_rep rr on cm.ticket_ref_rep_id = rr.ticket_ref_rep_id ");
-			sql.append("inner join wsla_ticket t on rr.ticket_id = t.ticket_id ");
+			sql.append("and dm.debit_memo_id in (select dm.debit_memo_id from ");
+			sql.append(getCustomSchema()).append("wsla_debit_memo dm ");
+			sql.append(DBUtil.INNER_JOIN).append(getCustomSchema());
+			sql.append("wsla_credit_memo cm on dm.debit_memo_id = cm.debit_memo_id ");
+			sql.append(DBUtil.INNER_JOIN).append(getCustomSchema());
+			sql.append("wsla_ticket_ref_rep rr on cm.ticket_ref_rep_id = rr.ticket_ref_rep_id ");
+			sql.append(DBUtil.INNER_JOIN).append(getCustomSchema());
+			sql.append("wsla_ticket t on rr.ticket_id = t.ticket_id ");
 			sql.append("where lower(dm.debit_memo_id) like ? ");
 			sql.append("or lower(cm.customer_memo_cd) like ? ");
 			sql.append("or lower(dm.customer_memo_cd) like ? ");

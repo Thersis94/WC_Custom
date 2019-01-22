@@ -179,7 +179,6 @@ public class TicketListAction extends SimpleActionAdapter {
 			filter = "and d.role_id = ? ";
 		}
 		
-		log.info(filter);
 		return filter;
 	}
 

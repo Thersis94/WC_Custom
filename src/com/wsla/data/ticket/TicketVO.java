@@ -75,6 +75,7 @@ public class TicketVO extends BeanDataVO {
 	private Standing standingCode = Standing.GOOD;
 	private UnitLocation unitLocation;
 	private int warrantyValidFlag;
+	private int creationTime;
 	private Date purchaseDate;
 	private Date createDate;
 	private Date updateDate;
@@ -396,6 +397,14 @@ public class TicketVO extends BeanDataVO {
 	@Column(name="locked_nm", isReadOnly=true)
 	public String getLockedByName() {
 		return lockedByName;
+	}
+
+	/**
+	 * @return the creationTime
+	 */
+	@Column(name="creation_time_no")
+	public int getCreationTime() {
+		return creationTime;
 	}
 
 	/**
@@ -774,5 +783,12 @@ public class TicketVO extends BeanDataVO {
 	 */
 	public void setRar(RefundReplacementVO rar) {
 		this.rar = rar;
+	}
+
+	/**
+	 * @param creationTime the creationTime to set
+	 */
+	public void setCreationTime(int creationTime) {
+		this.creationTime = creationTime;
 	}
 }
