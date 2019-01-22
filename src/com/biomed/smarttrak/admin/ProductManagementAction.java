@@ -134,10 +134,10 @@ public class ProductManagementAction extends ManagementAction {
 	 */
 	private enum ContentType {
 		DESCRIPTION("Product Description", 1),
-		INDICATION("Indication", 2),
-		UPDATE("Clinical Update", 3),
-		STATUS("Regulatory Status", 4),
-		SALES("Sales & Distribution", 5);
+		INDICATION("Indication", 5),
+		UPDATE("Clinical Update", 10),
+		STATUS("Regulatory Status", 15),
+		SALES("Sales & Distribution", 30);
 
 		private String contentName;
 		private int order;
