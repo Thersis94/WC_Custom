@@ -93,8 +93,8 @@ public class ProductSetAction extends SBActionAdapter {
 	 * @return
 	 */
 	public GridDataVO<ProductSetVO> getSet(String setId, BSTableControlVO bst) {
+		log.debug(" start get set set id: " + setId);
 		if (StringUtil.isEmpty(setId)) return null;
-
 		String schema = getCustomSchema();
 		List<Object> params = new ArrayList<>();
 		StringBuilder sql = new StringBuilder(200);
@@ -115,7 +115,7 @@ public class ProductSetAction extends SBActionAdapter {
 		params.add(setId);
 
 		sql.append(bst.getSQLOrderBy("p.product_nm",  "asc"));
-		log.debug(sql);
+		log.debug("sql "+sql);
 
 		DBProcessor db = new DBProcessor(getDBConnection(), schema);
 		return db.executeSQLWithCount(sql.toString(), params, new ProductSetVO(), bst.getLimit(), bst.getOffset());

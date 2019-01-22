@@ -20,6 +20,7 @@ import com.siliconmtn.util.StringUtil;
 
 //wc custom
 import com.wsla.action.ticket.BaseTransactionAction;
+import com.wsla.action.ticket.TicketEditAction;
 import com.wsla.common.WSLAConstants;
 import com.wsla.data.ticket.CreditMemoVO;
 import com.wsla.data.ticket.LedgerSummary;
@@ -56,7 +57,7 @@ public class RefundReplacementTransaction extends BaseTransactionAction {
 	}
 
 	public enum DispositionCodes {
-		RETURN, HARVEST_UNIT, DISPOSE;
+		RETURN_REPAIR, RETURN_HARVEST, HARVEST_UNIT, DISPOSE;
 	}
 
 	/**
@@ -106,9 +107,7 @@ public class RefundReplacementTransaction extends BaseTransactionAction {
 				log.error("could not create credit memo or process dispostion ",e);
 				putModuleData(rrvo, 0, false, e.getLocalizedMessage(), true);
 			}
-		}
-
-		if (ApprovalTypes.REFUND_DENIED.name().equalsIgnoreCase(req.getParameter(APPROVAL_TYPE))) {
+		}else if (ApprovalTypes.REFUND_DENIED.name().equalsIgnoreCase(req.getParameter(APPROVAL_TYPE))) {
 			try {
 				processRejection(rrvo, user);
 			} catch (DatabaseException e) {
@@ -128,49 +127,113 @@ public class RefundReplacementTransaction extends BaseTransactionAction {
 	 * @throws DatabaseException 
 	 * @throws InvalidDataException 
 	 */
-	private void processDispostion(RefundReplacementVO rrvo, UserVO user) throws DatabaseException, InvalidDataException {
+	private void processDispostion(RefundReplacementVO rrvo, UserVO user) throws Exception {
 		TicketVO tvo  = getBaseTicket(rrvo.getTicketId());
 		if(tvo == null) throw new InvalidDataException("Unable to find ticket by id ");
 		
+		if(!UnitLocation.WSLA.name().equalsIgnoreCase(tvo.getUnitLocation().name()) || 
+				!UnitLocation.CAS.name().equalsIgnoreCase(tvo.getUnitLocation().name())) {
+			changeStatus(rrvo.getTicketId(), user.getUserId(), StatusCode.PENDING_PICKUP, null, null);
+			return;
+		}
+		
 		if(rrvo.getUnitDisposition().equalsIgnoreCase(DispositionCodes.DISPOSE.name())) {
-			//dispose of unit status change
-			changeStatus(rrvo.getTicketId(), user.getUserId(), StatusCode.DISPOSE_UNIT, null, null);
-			
-			//save new location
-			tvo.setUnitLocation(UnitLocation.DECOMMISSIONED);
-			DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
-			try {
-				db.save(tvo);
-			} catch (InvalidDataException e) {
-				log.error("could not save location change to ticket",e);
-				putModuleData(rrvo, 0, false, e.getLocalizedMessage(), true);
-			}
-			
-			//after dispose records close ticket.
-			changeStatus(rrvo.getTicketId(), user.getUserId(), StatusCode.CLOSED, null, null);
-			
+			disposeUnit(rrvo, user, tvo);
 		}else if (rrvo.getUnitDisposition().equalsIgnoreCase(DispositionCodes.HARVEST_UNIT.name())) {
 			//set to harvest status
 			changeStatus(rrvo.getTicketId(), user.getUserId(), StatusCode.HARVEST_REQ, null, null);
 		}else {
 			//is return
-			if(UnitLocation.WSLA.name().equalsIgnoreCase(tvo.getUnitLocation().name())) {
+			returnUnit(rrvo, user, tvo);
+		}
+	}
+
+	/**
+	 * @param rrvo
+	 * @param user
+	 * @param tvo
+	 * @throws DatabaseException 
+	 */
+	private void returnUnit(RefundReplacementVO rrvo, UserVO user, TicketVO tvo) throws DatabaseException {
+		
+		if(UnitLocation.WSLA.name().equalsIgnoreCase(tvo.getUnitLocation().name())) {
+			if(rrvo.getUnitDisposition().equalsIgnoreCase(DispositionCodes.RETURN_REPAIR.name())) {
+				//set status to repair
+				changeStatus(rrvo.getTicketId(), user.getUserId(), StatusCode.CLOSED, null, null);
+				
+				DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+				TicketEditAction tea = new TicketEditAction(dbConn, attributes);
+				
+				//clone a new ticket
+				TicketCloneTransaction tct = new TicketCloneTransaction();
+				tct.setActionInit(actionInit);
+				tct.setAttributes(getAttributes());
+				tct.setDBConnection(dbConn);
+				
+				// Load ticket core data
+				TicketVO childTicket = null;
+				try {
+					childTicket = tct.processTicket(db, tea, tvo.getTicketId());
+					childTicket.setTicketData(tct.processTicketData(db, childTicket, tea));
+					childTicket.setAssignments(tct.processAssignments(db, childTicket, tea));
+					tct.addLedgerEntry(db, user, tvo.getTicketId());
+					
+				} catch (Exception e) {
+					log.error("could not clone ticket",e);
+					putModuleData(rrvo, 0, false, e.getLocalizedMessage(), true);
+				}
+				
+				//wlas as cas, location unit is wsla and owner of oem
+				childTicket.set
+				
+				//set ticket to "repair in progress"
+				changeStatus(childTicket.getTicketId(), user.getUserId(), StatusCode.CAS_IN_REPAIR, null, null);
+				
+			}else {
 				//status change for harvest
 				changeStatus(rrvo.getTicketId(), user.getUserId(), StatusCode.HARVEST_REQ, null, null);
-			}else {
-				//if anywhere other then wsla make a shipment
-				TicketPartsTransaction tpt = new TicketPartsTransaction();
-				tpt.setActionInit(actionInit);
-				tpt.setDBConnection(dbConn);
-				tpt.setAttributes(getAttributes());
-				try {
-					tpt.saveShipment(tvo.getTicketId(), true);
-				} catch (Exception e) {
-					log.error("could not build shipment ",e);
-					putModuleData(tvo, 0, false, e.getLocalizedMessage(), true);
-				}
 			}
+		}else {
+			//if anywhere other then wsla make a shipment
+			TicketPartsTransaction tpt = new TicketPartsTransaction();
+			tpt.setActionInit(actionInit);
+			tpt.setDBConnection(dbConn);
+			tpt.setAttributes(getAttributes());
+			try {
+				tpt.saveShipment(tvo.getTicketId(), true);
+			} catch (Exception e) {
+				log.error("could not build shipment ",e);
+				putModuleData(tvo, 0, false, e.getLocalizedMessage(), true);
+			}
+			
 		}
+		
+	}
+
+	/**
+	 * processes the disposal of a unit
+	 * @param rrvo
+	 * @param user
+	 * @param tvo
+	 * @throws DatabaseException 
+	 */
+	private void disposeUnit(RefundReplacementVO rrvo, UserVO user, TicketVO tvo) throws DatabaseException {
+		//dispose of unit status change
+		changeStatus(rrvo.getTicketId(), user.getUserId(), StatusCode.DISPOSE_UNIT, null, null);
+		
+		//save new location
+		tvo.setUnitLocation(UnitLocation.DECOMMISSIONED);
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		try {
+			db.save(tvo);
+		} catch (InvalidDataException e) {
+			log.error("could not save location change to ticket",e);
+			putModuleData(rrvo, 0, false, e.getLocalizedMessage(), true);
+		}
+		
+		//after dispose records close ticket.
+		changeStatus(rrvo.getTicketId(), user.getUserId(), StatusCode.CLOSED, null, null);
+		
 	}
 
 	/**
@@ -187,8 +250,7 @@ public class RefundReplacementTransaction extends BaseTransactionAction {
 		
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		db.save(cmvo);
-	
-		
+			
 	}
 
 	/**

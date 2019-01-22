@@ -541,8 +541,14 @@ public class SelectLookupAction extends SBActionAdapter {
 		bst.setLimit(1000);
 		bst.setOffset(0);
 		GridDataVO<ProductSetVO> products = psa.getSet(req.getParameter("productId"), bst);
-
-		List<GenericVO> data = new ArrayList<>(products.getTotal());
+		
+		List<GenericVO> data;
+		if(products ==null) {
+			data = new ArrayList<>();
+		}else {
+			data = new ArrayList<>(products.getTotal());
+		}
+			
 		for (ProductVO product : products.getRowData()) {
 			data.add(new GenericVO(product.getProductId(), product.getProductName()	));
 		}

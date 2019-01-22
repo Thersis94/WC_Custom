@@ -35,6 +35,7 @@ public class CreditMemoVO extends BeanDataVO {
 	private String creditMemoId;
 	private String refundReplacementId;
 	private String customerMemoCode;
+	private String debitMemoCode;
 	private String debitMemoId;
 	private String assetId;
 	private String approvalFlag;
@@ -312,6 +313,21 @@ public class CreditMemoVO extends BeanDataVO {
 	 */
 	public void setProductName(String productName) {
 		this.productName = productName;
+	}
+
+	/**
+	 * @return the debitMemoCode
+	 */
+	@Column(name="debit_memo_code_txt", isReadOnly=true)
+	public String getDebitMemoCode() {
+		return debitMemoCode;
+	}
+
+	/**
+	 * @param debitMemoCode the debitMemoCode to set
+	 */
+	public void setDebitMemoCode(String debitMemoCode) {
+		this.debitMemoCode = debitMemoCode;
 	}
 
 }

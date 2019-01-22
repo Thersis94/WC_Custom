@@ -248,9 +248,14 @@ public class TicketPartsTransaction extends BaseTransactionAction {
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		db.save(shipment);
 		
-		// Add the parts to the shipment 
 		LogisticsAction la = new LogisticsAction(getAttributes(), getDBConnection());
-		la.addTicketPartsToShipment(shipment.getShipmentId(), tId);
+		if(isReturn) {
+			//look at the ticket and insert a new part for this ticket
+			la.saveProductAsPart(tId, shipment.getShipmentId());
+		}else {
+			// update the parts entered by the human to this shipment 
+			la.addTicketPartsToShipment(shipment.getShipmentId(), tId);
+		}
 		
 	}
 	
