@@ -83,8 +83,10 @@ public class TicketPartsTransaction extends BaseTransactionAction {
 			if (req.hasParameter("isApproved")) {
 				setApproval(req);
 			} else if (req.hasParameter("consumeParts")) {
-				addRepairCode(req.getParameter(WSLAConstants.TICKET_ID), req.getParameter("attr_unitRepairCode")); 
-				consumeParts(req);
+				//******* Add a ledger entry for the Repair Type
+				addLedgerForRepairType(req);
+				//addRepairCode(req.getParameter(WSLAConstants.TICKET_ID), req.getParameter("attr_unitRepairCode")); 
+				//consumeParts(req);
 			} else {
 				submitForApproval(req);
 			}
@@ -92,6 +94,19 @@ public class TicketPartsTransaction extends BaseTransactionAction {
 			log.error("Unable to submit parts for approval", e);
 			putModuleData("", 0, false, e.getLocalizedMessage(), true);
 		}
+	}
+	
+	/**
+	 * 
+	 * @param req
+	 */
+	public void addLedgerForRepairType(ActionRequest req) {
+		UserVO user = (UserVO) getAdminUser(req).getUserExtendedInfo();
+		TicketLedgerVO l = new TicketLedgerVO(req);
+		l.setSummary(LedgerSummary.REPAIR_TYPE.summary + ": " + l.getBillableActivityCode());
+		l.setDispositionBy(user.getUserId());
+		
+		// Call base transaction
 	}
 
 	/**
@@ -139,8 +154,7 @@ public class TicketPartsTransaction extends BaseTransactionAction {
 	 * @throws SQLException 
 	 * @throws InvalidDataException 
 	 */
-	private void setApproval(ActionRequest req) 
-	throws DatabaseException, InvalidDataException, SQLException {
+	private void setApproval(ActionRequest req) throws Exception {
 		String ticketId = req.getParameter(WSLAConstants.TICKET_ID);
 		String note = req.getParameter(PART_NOTE_APPROVAL_KEY);
 		boolean isApproved = Convert.formatBoolean(req.getParameter("isApproved"));
@@ -221,12 +235,27 @@ public class TicketPartsTransaction extends BaseTransactionAction {
 	 * @throws DatabaseException
 	 * @throws SQLException 
 	 */
-	public void addShipmentFromParts(String tId) 
-	throws InvalidDataException, DatabaseException, SQLException {
+	public void addShipmentFromParts(String tId) throws Exception {
+		saveShipment(tId, false);
+	}
+	
+	/**
+	 * will create and save a new shipment can also change direction if it is a return shipment.
+	 * @throws Exception 
+	 * 
+	 */
+	public void saveShipment(String tId, boolean isReturn) throws Exception {
+		
 		// Create a shipment
 		ShipmentVO shipment = new ShipmentVO();
-		shipment.setFromLocationId(WSLAConstants.DEFAULT_SHIPPING_SRC);
-		shipment.setToLocationId(getCasLocationId(tId));
+		if(isReturn) {
+			shipment.setFromLocationId(getCasLocationId(tId));
+			shipment.setToLocationId(WSLAConstants.DEFAULT_SHIPPING_SRC);
+		}else {
+			shipment.setFromLocationId(WSLAConstants.DEFAULT_SHIPPING_SRC);
+			shipment.setToLocationId(getCasLocationId(tId));
+		}
+		
 		shipment.setTicketId(tId);
 		shipment.setStatus(ShipmentStatus.CREATED);
 		
@@ -237,7 +266,9 @@ public class TicketPartsTransaction extends BaseTransactionAction {
 		// Add the parts to the shipment 
 		LogisticsAction la = new LogisticsAction(getAttributes(), getDBConnection());
 		la.addTicketPartsToShipment(shipment.getShipmentId(), tId);
+		
 	}
+	
 	
 	/**
 	 * Gets the location of the CAS so the shipment info can be preassigned

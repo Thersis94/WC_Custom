@@ -61,6 +61,7 @@ public enum StatusCode {
 	REFUND_COMPLETE ("Refund Complete"),
 	DEFECTIVE_SHIPPED ("Defective Shipped"),
 	DEFECTIVE_RCVD ("Defective Received"),
+	DISPOSE_UNIT ("Unit disposed of"),
 	HARVEST_REQ ("Harvest Requested"),
 	HARVEST_DENIED ("Harvest Denied"),
 	HARVEST_DENIED_SHIPPED ("Harvest Denied Shipped"),

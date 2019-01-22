@@ -213,7 +213,8 @@ public class SelectLookupAction extends SBActionAdapter {
 		List<Object> vals = new ArrayList<>();
 		StringBuilder sql = new StringBuilder(128);
 		sql.append("select attribute_cd as key, attribute_nm as value from ");
-		sql.append(getCustomSchema()).append("wsla_ticket_attribute where 1=1 ");
+		//limit the credit memo asset to only using the refund tab
+		sql.append(getCustomSchema()).append("wsla_ticket_attribute where 1=1 and attribute_cd != 'attr_credit_memo' ");
 
 		if (req.hasParameter("groupCode")) {
 			sql.append("and attribute_group_cd = ? ");
@@ -768,9 +769,13 @@ public class SelectLookupAction extends SBActionAdapter {
 	 * @return
 	 */
 	public List<GenericVO> getSupportNumbers(ActionRequest req) {
+		boolean phoneNumberKey = req.getBooleanParameter("phoneNumberKey");
+		
 		StringBuilder sql = new StringBuilder(156);
-		sql.append("select provider_nm as key, phone_number_txt as value ");
-		sql.append(DBUtil.FROM_CLAUSE).append(getCustomSchema()).append("wsla_provider a ");
+		if (phoneNumberKey) sql.append("select phone_number_txt as key, ");
+		else sql.append("select provider_nm as key, ");
+		sql.append("phone_number_txt as value ").append(DBUtil.FROM_CLAUSE);
+		sql.append(getCustomSchema()).append("wsla_provider a ");
 		sql.append("where provider_type_id = 'OEM' and length(phone_number_txt) > 0 ");
 		sql.append("order by provider_nm ");
 

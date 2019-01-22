@@ -58,7 +58,7 @@ public class TicketVO extends BeanDataVO {
 	 * Definition of who has possession the product
 	 */
 	public enum UnitLocation {
-		CALLER, OEM, RETAILER, COURIER, WSLA, CAS;
+		CALLER, OEM, RETAILER, COURIER, WSLA, DECOMMISSIONED, CAS;
 	}
 		
 	// Member Variables
@@ -75,6 +75,7 @@ public class TicketVO extends BeanDataVO {
 	private Standing standingCode = Standing.GOOD;
 	private UnitLocation unitLocation;
 	private int warrantyValidFlag;
+	private int creationTime;
 	private Date purchaseDate;
 	private Date createDate;
 	private Date updateDate;
@@ -95,6 +96,7 @@ public class TicketVO extends BeanDataVO {
 	private List<DiagnosticRunVO> diagnosticRun = new ArrayList<>();
 	private ProductSerialNumberVO productSerial = new ProductSerialNumberVO();
 	private ProviderLocationVO retailer;
+	private RefundReplacementVO rar;
 	private ProviderVO oem;
 	private UserVO originator;
 	private ProductWarrantyVO warranty;
@@ -395,6 +397,14 @@ public class TicketVO extends BeanDataVO {
 	@Column(name="locked_nm", isReadOnly=true)
 	public String getLockedByName() {
 		return lockedByName;
+	}
+
+	/**
+	 * @return the creationTime
+	 */
+	@Column(name="creation_time_no")
+	public int getCreationTime() {
+		return creationTime;
 	}
 
 	/**
@@ -759,5 +769,26 @@ public class TicketVO extends BeanDataVO {
 	 */
 	public void setLockedByName(String lockedByName) {
 		this.lockedByName = lockedByName;
+	}
+
+	/**
+	 * @return the rar
+	 */
+	public RefundReplacementVO getRar() {
+		return rar;
+	}
+
+	/**
+	 * @param rar the rar to set
+	 */
+	public void setRar(RefundReplacementVO rar) {
+		this.rar = rar;
+	}
+
+	/**
+	 * @param creationTime the creationTime to set
+	 */
+	public void setCreationTime(int creationTime) {
+		this.creationTime = creationTime;
 	}
 }

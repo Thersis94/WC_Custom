@@ -29,7 +29,10 @@ public class BillableActivityVO extends BeanDataVO {
 	 * 
 	 */
 	public enum BillableTypeCode {
-		STATUS("Status Code Activity"), ACTIVITY("WSLA User Activity"), REPAIR("Unit Repair Activity");
+		STATUS("Status Code Activity"), 
+		ACTIVITY("WSLA User Activity"),
+		REPAIR_TYPE("Unit Repair Type"),
+		REPAIR("Unit Repair Activity");
 		
 		protected String typeName;
 		public String getTypeName() { return typeName; }
