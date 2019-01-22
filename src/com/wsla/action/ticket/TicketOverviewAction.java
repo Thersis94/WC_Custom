@@ -22,11 +22,11 @@ import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.RandomAlphaNumeric;
 import com.siliconmtn.util.StringUtil;
+
+//WC Libs 3.x
 import com.smt.sitebuilder.action.user.ProfileManager;
 import com.smt.sitebuilder.action.user.ProfileManagerFactory;
 import com.smt.sitebuilder.common.SiteVO;
-
-// WC Libs 3.x
 import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.common.constants.Constants;
 
@@ -104,10 +104,9 @@ public class TicketOverviewAction extends BasePortalAction {
 	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
-		log.info("Saving Ticket: " + req.getParameter("ticketId") + "|" + StringUtil.isEmpty(req.getParameter("ticketId")));
 		TicketVO ticket = null;
 		try {
-			if(StringUtil.isEmpty(req.getParameter("ticketId"))) {
+			if (StringUtil.isEmpty(req.getParameter("ticketId"))) {
 				ticket = createTicket(req);
 			} else {
 				ticket = saveTicketCall(req);
