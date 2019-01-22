@@ -188,30 +188,33 @@ public class DashboardAction extends SimpleActionAdapter {
 		UserSqlFilter filter = new UserSqlFilter(user, roleId, getCustomSchema());
 		List<Object> params = new ArrayList<>();
 		
-		StringBuilder sql = new StringBuilder(576);
+		StringBuilder sql = new StringBuilder(1024);
 		sql.append("select replace(newid(), '-', '') as chart_detail_id, ");
 		sql.append("to_char(t.create_dt, 'Mon') as label_nm, to_char(t.create_dt, 'Mon') as order_nm, "); 
 		sql.append("cast(count(*) as varchar(10)) as value, 'Closed' as serie_nm, ");
-		sql.append("Extract(month from t.create_dt) as month_num ");
+		sql.append("Extract(month from t.create_dt) as month_num, ");
+		sql.append("Extract(year from t.create_dt) as year_num ");
 		sql.append(DBUtil.FROM_CLAUSE).append(getCustomSchema()).append("wsla_ticket t ");
 		sql.append(filter.getTicketFilter("t", params));
 		sql.append("where t.status_cd = 'CLOSED' ");
 		sql.append("and t.create_dt > to_char(t.create_dt - interval '");
 		sql.append(numMonths).append(" month', 'YYYY-MM-01')::date ");
-		sql.append("group by label_nm, month_num ");
+		sql.append("group by label_nm, year_num, month_num ");
 		sql.append("union ");
 		sql.append("select replace(newid(), '-', '') as chart_detail_id, ");
 		sql.append("to_char(t.create_dt, 'Mon') as label_nm, to_char(t.create_dt, 'Mon') as order_nm, "); 
 		sql.append("cast(count(*) as varchar(10)) as value, 'Open' as serie_nm, ");
-		sql.append("Extract(month from t.create_dt) as month_num ");
+		sql.append("Extract(month from t.create_dt) as month_num, ");
+		sql.append("Extract(year from t.create_dt) as year_num ");
 		sql.append(DBUtil.FROM_CLAUSE).append(getCustomSchema()).append("wsla_ticket t ");
 		sql.append(filter.getTicketFilter("t", params));
 		sql.append("where t.status_cd != 'CLOSED' ");
 		sql.append("and t.create_dt > to_char(t.create_dt - interval '");
 		sql.append(numMonths).append(" month', 'YYYY-MM-01')::date ");
-		sql.append("group by label_nm, month_num ");
-		sql.append("order by month_num, serie_nm ");
-				
+		sql.append("group by label_nm, year_num, month_num ");
+		sql.append("order by year_num, month_num, serie_nm ");
+		log.info("Dashboard SQL: " + sql.length() + "|" + sql);
+		
 		// Get the data and process into a chart vo
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		List<SMTChartDetailVO> chartData = db.executeSelect(sql.toString(), params, new SMTChartDetailVO());

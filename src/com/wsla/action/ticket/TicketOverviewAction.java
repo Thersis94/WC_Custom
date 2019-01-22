@@ -227,7 +227,8 @@ public class TicketOverviewAction extends BasePortalAction {
 		req.setParameter("ticketId", ticket.getTicketId());
 		
 		// Add User and assignment to the ticket
-		UserVO user = new UserVO(req);
+		UserDataVO profile = (UserDataVO)req.getSession().getAttribute(Constants.USER_DATA);
+		UserVO user = (UserVO)profile.getUserExtendedInfo();
 		Locale locale = user.getUserLocale();
 		req.setParameter("countryCode", locale.getCountry());
 		this.saveUser(site, user, false, true);
