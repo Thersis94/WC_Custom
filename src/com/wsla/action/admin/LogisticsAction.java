@@ -289,7 +289,7 @@ public class LogisticsAction extends SBActionAdapter {
 		StringBuilder sql = new StringBuilder(200);
 		sql.append(DBUtil.UPDATE_CLAUSE).append(getCustomSchema()).append("wsla_part ");
 		sql.append("set shipment_id=?, update_dt=? where ticket_id=? and shipment_id is null");
-		log.debug(sql);
+		log.debug("##### "+sql + "|" + shipmentId +"|"+Convert.getCurrentTimestamp() +"|"+  ticketId);
 
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, shipmentId);
@@ -379,6 +379,35 @@ public class LogisticsAction extends SBActionAdapter {
 		
 		DBProcessor dbp = new DBProcessor(getDBConnection(), getCustomSchema());
 		return dbp.executeSelect(sql.toString(), params, new ShipmentVO());
+	}
+	
+	/**
+	 * used when setting up the return of a finished product.  will build a partVO and then save it
+	 * @param ticketId
+	 * @return
+	 * @throws InvalidDataException 
+	 * @throws com.siliconmtn.db.util.DatabaseException 
+	 */
+	public void saveProductAsPart(String ticketId, String shipmentId) throws Exception{
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		List<Object> params = new ArrayList<>();
+		StringBuilder sql = new StringBuilder(200);
+		sql.append("select ps.product_id, t.ticket_id, 1 as quantity_no, 0 as harvested_flg, 0 as submit_approval_flg, ps.serial_no_txt from ").append(getCustomSchema()).append("wsla_ticket t ");
+		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("wsla_product_serial ps on t.product_serial_id = ps.product_serial_id  ");
+		sql.append(DBUtil.WHERE_CLAUSE).append("ticket_id = ? ");
+		PartVO pvo = new PartVO();
+		params.add(ticketId);
+		List<PartVO> data = db.executeSelect(sql.toString(), params, pvo);
+		
+		if (data != null && !data.isEmpty()) {
+			pvo = data.get(0);
+		}else {
+			throw new InvalidDataException("no finish product found ");
+		}
+		log.debug("#### sql " + sql.toString());
+		
+		pvo.setShipmentId(shipmentId);
+		db.save(pvo);
 	}
 	
 	/**

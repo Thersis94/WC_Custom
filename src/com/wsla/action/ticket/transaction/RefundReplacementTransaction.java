@@ -1,5 +1,6 @@
 package com.wsla.action.ticket.transaction;
 
+import java.sql.SQLException;
 //java 1.8
 import java.util.ArrayList;
 import java.util.Date;
@@ -20,11 +21,14 @@ import com.siliconmtn.util.StringUtil;
 
 //wc custom
 import com.wsla.action.ticket.BaseTransactionAction;
+import com.wsla.action.ticket.TicketEditAction;
 import com.wsla.common.WSLAConstants;
 import com.wsla.data.ticket.CreditMemoVO;
 import com.wsla.data.ticket.LedgerSummary;
 import com.wsla.data.ticket.RefundReplacementVO;
 import com.wsla.data.ticket.StatusCode;
+import com.wsla.data.ticket.TicketAssignmentVO;
+import com.wsla.data.ticket.TicketAssignmentVO.TypeCode;
 import com.wsla.data.ticket.TicketVO;
 import com.wsla.data.ticket.TicketVO.UnitLocation;
 import com.wsla.data.ticket.UserVO;
@@ -56,7 +60,7 @@ public class RefundReplacementTransaction extends BaseTransactionAction {
 	}
 
 	public enum DispositionCodes {
-		RETURN, HARVEST_UNIT, DISPOSE;
+		RETURN_REPAIR, RETURN_HARVEST, HARVEST_UNIT, DISPOSE;
 	}
 
 	/**
@@ -106,9 +110,7 @@ public class RefundReplacementTransaction extends BaseTransactionAction {
 				log.error("could not create credit memo or process dispostion ",e);
 				putModuleData(rrvo, 0, false, e.getLocalizedMessage(), true);
 			}
-		}
-
-		if (ApprovalTypes.REFUND_DENIED.name().equalsIgnoreCase(req.getParameter(APPROVAL_TYPE))) {
+		}else if (ApprovalTypes.REFUND_DENIED.name().equalsIgnoreCase(req.getParameter(APPROVAL_TYPE))) {
 			try {
 				processRejection(rrvo, user);
 			} catch (DatabaseException e) {
@@ -128,49 +130,186 @@ public class RefundReplacementTransaction extends BaseTransactionAction {
 	 * @throws DatabaseException 
 	 * @throws InvalidDataException 
 	 */
-	private void processDispostion(RefundReplacementVO rrvo, UserVO user) throws DatabaseException, InvalidDataException {
+	private void processDispostion(RefundReplacementVO rrvo, UserVO user) throws Exception {
 		TicketVO tvo  = getBaseTicket(rrvo.getTicketId());
 		if(tvo == null) throw new InvalidDataException("Unable to find ticket by id ");
 		
+		if(!UnitLocation.WSLA.name().equalsIgnoreCase(tvo.getUnitLocation().name()) && 
+				!UnitLocation.CAS.name().equalsIgnoreCase(tvo.getUnitLocation().name())) {
+			log.debug("##### is schld pickup");
+			changeStatus(rrvo.getTicketId(), user.getUserId(), StatusCode.PENDING_PICKUP, null, null);
+			return;
+		}
+		
 		if(rrvo.getUnitDisposition().equalsIgnoreCase(DispositionCodes.DISPOSE.name())) {
-			//dispose of unit status change
-			changeStatus(rrvo.getTicketId(), user.getUserId(), StatusCode.DISPOSE_UNIT, null, null);
-			
-			//save new location
-			tvo.setUnitLocation(UnitLocation.DECOMMISSIONED);
-			DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
-			try {
-				db.save(tvo);
-			} catch (InvalidDataException e) {
-				log.error("could not save location change to ticket",e);
-				putModuleData(rrvo, 0, false, e.getLocalizedMessage(), true);
-			}
-			
-			//after dispose records close ticket.
-			changeStatus(rrvo.getTicketId(), user.getUserId(), StatusCode.CLOSED, null, null);
-			
+			log.debug("##### is despose");
+			disposeUnit(rrvo, user, tvo);
 		}else if (rrvo.getUnitDisposition().equalsIgnoreCase(DispositionCodes.HARVEST_UNIT.name())) {
+			log.debug("##### is harvest");
 			//set to harvest status
 			changeStatus(rrvo.getTicketId(), user.getUserId(), StatusCode.HARVEST_REQ, null, null);
 		}else {
 			//is return
-			if(UnitLocation.WSLA.name().equalsIgnoreCase(tvo.getUnitLocation().name())) {
+			log.debug("##### is return");
+			returnUnit(rrvo, user, tvo);
+		}
+	}
+
+	/**
+	 * @param rrvo
+	 * @param user
+	 * @param tvo
+	 * @throws DatabaseException 
+	 */
+	private void returnUnit(RefundReplacementVO rrvo, UserVO user, TicketVO tvo) throws DatabaseException {
+		log.debug("##### start");
+		if(UnitLocation.WSLA.name().equalsIgnoreCase(tvo.getUnitLocation().name())) {
+			log.debug("##### unit location wsla");
+			if(rrvo.getUnitDisposition().equalsIgnoreCase(DispositionCodes.RETURN_REPAIR.name())) {
+				log.debug("##### disposition return_repair");
+				//set status to repair
+				changeStatus(rrvo.getTicketId(), user.getUserId(), StatusCode.CLOSED, null, null);
+				
+				DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+				TicketEditAction tea = new TicketEditAction(dbConn, attributes);
+				
+				//clone a new ticket
+				TicketCloneTransaction tct = new TicketCloneTransaction();
+				tct.setActionInit(actionInit);
+				tct.setAttributes(getAttributes());
+				tct.setDBConnection(dbConn);
+				
+				// Load ticket core data
+				TicketVO childTicket = getCloneTicket(db,tea,tvo, tct, user, rrvo);
+			
+				//set assign the cas as wlsa ware house
+				assignWSLACas(childTicket, user, db);
+				
+				//set the ticket owner element to oem
+				TicketDataTransaction tdt = new TicketDataTransaction();
+				tdt.setActionInit(actionInit);
+				tdt.setAttributes(getAttributes());
+				tdt.setDBConnection(dbConn);
+				//String ticketId, String attr, String value, boolean overwrite
+				try {
+					tdt.saveDataAttribute(childTicket.getTicketId(), "attr_ownsTv","OEM", true);
+				} catch (SQLException e) {
+					log.error("could not set owner to wsla and or the cas to wsla",e);
+				}
+				
+				//set ticket to "repair in progress"
+				changeStatus(childTicket.getTicketId(), user.getUserId(), StatusCode.CAS_IN_REPAIR, null, null);
+				
+			}else {
+				log.debug("##### inner else");
 				//status change for harvest
 				changeStatus(rrvo.getTicketId(), user.getUserId(), StatusCode.HARVEST_REQ, null, null);
-			}else {
-				//if anywhere other then wsla make a shipment
-				TicketPartsTransaction tpt = new TicketPartsTransaction();
-				tpt.setActionInit(actionInit);
-				tpt.setDBConnection(dbConn);
-				tpt.setAttributes(getAttributes());
-				try {
-					tpt.saveShipment(tvo.getTicketId(), true);
-				} catch (Exception e) {
-					log.error("could not build shipment ",e);
-					putModuleData(tvo, 0, false, e.getLocalizedMessage(), true);
-				}
 			}
+		}else {
+			log.debug("##### outer else");
+			//if anywhere other then wsla make a shipment
+			TicketPartsTransaction tpt = new TicketPartsTransaction();
+			tpt.setActionInit(actionInit);
+			tpt.setDBConnection(dbConn);
+			tpt.setAttributes(getAttributes());
+			try {
+				tpt.saveShipment(tvo.getTicketId(), true);
+			} catch (Exception e) {
+				log.error("could not build shipment ",e);
+				putModuleData(tvo, 0, false, e.getLocalizedMessage(), true);
+			}
+			
 		}
+		log.debug("##### end");
+		
+	}
+
+	/**
+	 * @param user 
+	 * @param childTicket 
+	 * @param db 
+	 * 
+	 */
+	private void assignWSLACas(TicketVO childTicket, UserVO user, DBProcessor db) {
+		TicketAssignmentTransaction tat = new TicketAssignmentTransaction();
+		tat.setActionInit(actionInit);
+		tat.setAttributes(getAttributes());
+		tat.setDBConnection(dbConn);
+		
+		TicketAssignmentVO tAss = new TicketAssignmentVO();
+		tAss.setTicketId(childTicket.getTicketId());
+		tAss.setLocationId(WSLAConstants.DEFAULT_SHIPPING_SRC);
+		tAss.setUserId(user.getUserId());
+		tAss.setTypeCode(TypeCode.CAS);
+		
+		try {
+			tat.getAssignmentData(tAss, db);
+		} catch (Exception e1) {
+			log.error("could not save ticket assigment",e1);
+		}
+		
+	}
+
+	/**
+	 * @param tvo 
+	 * @param tea 
+	 * @param db 
+	 * @param tct 
+	 * @param rrvo 
+	 * @param user 
+	 * @return
+	 */
+	private TicketVO getCloneTicket(DBProcessor db, TicketEditAction tea, TicketVO tvo, TicketCloneTransaction tct, UserVO user, RefundReplacementVO rrvo) {
+		
+		TicketVO childTicket = new TicketVO();
+		try {
+			childTicket = tct.processTicket(db, tea, tvo.getTicketId());
+			childTicket.setTicketData(tct.processTicketData(db, childTicket, tea));
+			childTicket.setAssignments(tct.processAssignments(db, childTicket, tea));
+			tct.addLedgerEntry(db, user, tvo.getTicketId());
+			
+		} catch (Exception e) {
+			log.error("could not clone ticket",e);
+			putModuleData(rrvo, 0, false, e.getLocalizedMessage(), true);
+		}
+		
+		childTicket.setUnitLocation(UnitLocation.WSLA);
+		childTicket.setCreateDate(new Date());
+		try {
+			db.save(childTicket);
+		} catch (Exception e1) {
+			log.error("could not save cloned ticket",e1);
+		}
+		
+		log.debug("##### new id is " + childTicket.getTicketId());
+		
+		return childTicket;
+	}
+
+	/**
+	 * processes the disposal of a unit
+	 * @param rrvo
+	 * @param user
+	 * @param tvo
+	 * @throws DatabaseException 
+	 */
+	private void disposeUnit(RefundReplacementVO rrvo, UserVO user, TicketVO tvo) throws DatabaseException {
+		//dispose of unit status change
+		changeStatus(rrvo.getTicketId(), user.getUserId(), StatusCode.DISPOSE_UNIT, null, null);
+		
+		//save new location
+		tvo.setUnitLocation(UnitLocation.DECOMMISSIONED);
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		try {
+			db.save(tvo);
+		} catch (InvalidDataException e) {
+			log.error("could not save location change to ticket",e);
+			putModuleData(rrvo, 0, false, e.getLocalizedMessage(), true);
+		}
+		
+		//after dispose records close ticket.
+		changeStatus(rrvo.getTicketId(), user.getUserId(), StatusCode.CLOSED, null, null);
+		
 	}
 
 	/**
@@ -187,8 +326,7 @@ public class RefundReplacementTransaction extends BaseTransactionAction {
 		
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		db.save(cmvo);
-	
-		
+			
 	}
 
 	/**

@@ -36,6 +36,7 @@ public class PartVO extends ProductVO {
 	private int submitApprovalFlag;
 	private String availabilityCode;
 	private Date availabilityDate;
+	private String serialNumberText;
 
 	private int quantityOnHand; //used for display, if negative we display "cas not assigned".  If >0 we display 'in stock'
 	private ShipmentStatus shipmentStatus;
@@ -181,5 +182,20 @@ public class PartVO extends ProductVO {
 	 */
 	public void setSubmitApprovalFlag(int submitApprovalFlag) {
 		this.submitApprovalFlag = submitApprovalFlag;
+	}
+
+	/**
+	 * @return the serialNumberText
+	 */
+	@Column(name="serial_no_txt")
+	public String getSerialNumberText() {
+		return serialNumberText;
+	}
+
+	/**
+	 * @param serialNumberText the serialNumberText to set
+	 */
+	public void setSerialNumberText(String serialNumberText) {
+		this.serialNumberText = serialNumberText;
 	}
 }
