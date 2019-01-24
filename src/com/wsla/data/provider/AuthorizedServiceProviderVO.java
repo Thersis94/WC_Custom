@@ -24,14 +24,11 @@ import com.wsla.data.product.ProductCategoryVO;
  * @since Sep 15, 2018
  * @updates:
  ****************************************************************************/
-@Table(name="wsla_auth_svc_provider_id")
+@Table(name="wsla_auth_svc_provider")
 public class AuthorizedServiceProviderVO extends BeanDataVO {
 
-	/**
-	 * 
-	 */
 	private static final long serialVersionUID = 5277512713759693823L;
-	
+
 	// Member Variables
 	private String authorizedServiceCenterId;
 	private String locationId;
@@ -40,14 +37,11 @@ public class AuthorizedServiceProviderVO extends BeanDataVO {
 	private Date contractEndDate;
 	private Date createDate;
 	private Date updateDate;
-	
+
 	// Bean Sub-Elements
 	private ProductCategoryVO category;
 	private ProviderLocationVO location;
-	
-	/**
-	 * 
-	 */
+
 	public AuthorizedServiceProviderVO() {
 		super();
 	}
@@ -200,6 +194,4 @@ public class AuthorizedServiceProviderVO extends BeanDataVO {
 	public void setLocation(ProviderLocationVO location) {
 		this.location = location;
 	}
-
 }
-
