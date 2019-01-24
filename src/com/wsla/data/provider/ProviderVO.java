@@ -14,6 +14,9 @@ import com.siliconmtn.data.parser.BeanDataVO;
 import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
+import com.wsla.data.admin.InvoiceTypeCasVO;
+
+import opennlp.tools.util.StringUtil;
 
 /****************************************************************************
  * <b>Title</b>: ProviderVO.java
@@ -49,7 +52,8 @@ public class ProviderVO extends BeanDataVO {
 	
 	// Bean Sub-Elements
 	List<ProviderLocationVO> locations = new ArrayList<>();
-
+	List<InvoiceTypeCasVO> invoiceItems = new ArrayList<>();
+	
 	/**
 	 * 
 	 */
@@ -163,7 +167,14 @@ public class ProviderVO extends BeanDataVO {
 	public void setProviderName(String providerName) {
 		this.providerName = providerName;
 	}
-	
+
+	/**
+	 * @return the invoiceItems
+	 */
+	public List<InvoiceTypeCasVO> getInvoiceItems() {
+		return invoiceItems;
+	}
+
 	/**
 	 * @param createDate the createDate to set
 	 */
@@ -247,5 +258,21 @@ public class ProviderVO extends BeanDataVO {
 		this.phoneNumber = phoneNumber;
 	}
 
+	/**
+	 * @param invoiceItems the invoiceItems to set
+	 */
+	public void setInvoiceItems(List<InvoiceTypeCasVO> invoiceItems) {
+		this.invoiceItems = invoiceItems;
+	}
+
+	/**
+	 * 
+	 * @param invoiceItem
+	 */
+	@BeanSubElement
+	public void addInvoiceItem(InvoiceTypeCasVO invoiceItem) {
+		if (invoiceItem != null && ! StringUtil.isEmpty(invoiceItem.getProviderId()))
+			this.invoiceItems.add(invoiceItem);
+	}
 }
 

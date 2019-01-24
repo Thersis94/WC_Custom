@@ -207,7 +207,7 @@ public class DebitMemoJob extends AbstractSMTJob {
 		}
 		
 		// Return the full path
-		return fs.getFullPath() + fs.getStorageFileName();
+		return "/binary/file_transfer/" + fs.getCanonicalPath() + fs.getStorageFileName();
 	}
 	
 	/**
