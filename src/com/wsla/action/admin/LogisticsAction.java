@@ -289,7 +289,7 @@ public class LogisticsAction extends SBActionAdapter {
 		StringBuilder sql = new StringBuilder(200);
 		sql.append(DBUtil.UPDATE_CLAUSE).append(getCustomSchema()).append("wsla_part ");
 		sql.append("set shipment_id=?, update_dt=? where ticket_id=? and shipment_id is null");
-		log.debug("##### "+sql + "|" + shipmentId +"|"+Convert.getCurrentTimestamp() +"|"+  ticketId);
+		log.debug(sql + "|" + shipmentId +"|"+Convert.getCurrentTimestamp() +"|"+  ticketId);
 
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, shipmentId);

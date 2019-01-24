@@ -14,6 +14,7 @@ import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
+import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.workflow.WorkflowLookupUtil;
 import com.siliconmtn.workflow.data.WorkflowMessageVO;
@@ -177,7 +178,7 @@ public class BaseTransactionAction extends SBActionAdapter {
 		ledger.setStatusCode(status);
 		ledger.setSummary(summary);
 		ledger.setUnitLocation(location);
-		ledger.setBillableAmtNo(billableAmt);
+		ledger.setBillableAmtNo(Convert.formatDouble(billableAmt));
 		
 		// Get status billable data to be added to the ledger
 		if (status != null) {
