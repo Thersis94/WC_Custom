@@ -66,6 +66,7 @@ import com.wsla.data.ticket.StatusCodeVO;
 import com.wsla.data.ticket.TicketAssignmentVO;
 import com.wsla.data.ticket.TicketAssignmentVO.TypeCode;
 import com.wsla.data.ticket.TicketScheduleVO;
+import com.wsla.data.ticket.TicketVO.Standing;
 import com.wsla.data.ticket.UserVO;
 
 /****************************************************************************
@@ -136,6 +137,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		keyMap.put("billableType", new GenericVO("getBillableTypes", Boolean.FALSE));
 		keyMap.put("supportNumbers", new GenericVO("getSupportNumbers", Boolean.TRUE));
 		keyMap.put("ticketSearch", new GenericVO("ticketSearch", Boolean.TRUE));
+		keyMap.put("standing", new GenericVO("getStanding", Boolean.FALSE));
 	}
 
 	/**
@@ -808,5 +810,18 @@ public class SelectLookupAction extends SBActionAdapter {
 		TicketSearchAction tsa = new TicketSearchAction(getDBConnection(), getAttributes());
 		
 		return tsa.getTickets(req.getParameter(REQ_SEARCH));
+	}
+	
+	/**
+	 * Gets the standing list
+	 * @return
+	 */
+	public List<GenericVO> getStanding() {
+		List<GenericVO> data = new ArrayList<>();
+		for(Standing standing : Standing.values()) {
+			data.add(new GenericVO(standing.name(), StringUtil.capitalize(standing.name())));
+		}
+		
+		return data;
 	}
 }

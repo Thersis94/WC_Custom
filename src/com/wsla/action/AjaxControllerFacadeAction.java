@@ -18,6 +18,8 @@ import com.wsla.action.admin.DiagnosticAction;
 import com.wsla.action.admin.HarvestApprovalAction;
 import com.wsla.action.admin.HarvestPartsAction;
 import com.wsla.action.admin.InventoryAction;
+import com.wsla.action.admin.InvoiceTypeAction;
+import com.wsla.action.admin.InvoiceTypeCASAction;
 import com.wsla.action.admin.LanguageBundleMapAction;
 import com.wsla.action.admin.LogisticsAction;
 import com.wsla.action.admin.LogisticsPartsAction;
@@ -106,6 +108,8 @@ public class AjaxControllerFacadeAction extends FacadeActionAdapter {
 		actionMap.put(WarrantyBillableAction.AJAX_KEY , WarrantyBillableAction.class);
 		actionMap.put(LanguageBundleMapAction.AJAX_KEY , LanguageBundleMapAction.class);
 		actionMap.put(DebitMemoWidget.AJAX_KEY , DebitMemoWidget.class);
+		actionMap.put(InvoiceTypeAction.AJAX_KEY , InvoiceTypeAction.class);
+		actionMap.put(InvoiceTypeCASAction.AJAX_KEY , InvoiceTypeCASAction.class);
 		actionMap.put("productMaster", ProductMasterAction.class);
 		actionMap.put("productSet", ProductSetAction.class);
 		actionMap.put("productSerial", ProductSerialAction.class);
