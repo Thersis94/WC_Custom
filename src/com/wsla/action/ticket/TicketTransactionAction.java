@@ -31,6 +31,7 @@ import com.wsla.action.ticket.transaction.TicketPartsTransaction;
 import com.wsla.action.ticket.transaction.TicketRepairTransaction;
 import com.wsla.action.ticket.transaction.TicketUtilityTransaction;
 import com.wsla.action.ticket.transaction.UserTransaction;
+import com.wsla.action.ticket.transaction.creditMemoPDFCreator;
 import com.wsla.action.ticket.transaction.TicketScheduleTransaction;
 import com.wsla.action.ticket.transaction.TicketSearchTransaction;
 import com.wsla.action.ticket.transaction.TicketTransaction;
@@ -90,6 +91,7 @@ public class TicketTransactionAction extends FacadeActionAdapter {
 		actionMap.put(TicketDataTransaction.AJAX_KEY, TicketDataTransaction.class);
 		actionMap.put(TicketUtilityTransaction.AJAX_KEY, TicketUtilityTransaction.class);
 		actionMap.put(TicketPDFCreator.AJAX_KEY, TicketPDFCreator.class);
+		actionMap.put(creditMemoPDFCreator.AJAX_KEY, creditMemoPDFCreator.class);
 		actionMap.put(TicketTransaction.AJAX_KEY, TicketTransaction.class);
 		actionMap.put(TicketPartsTransaction.AJAX_KEY, TicketPartsTransaction.class);
 		actionMap.put(TicketRepairTransaction.AJAX_KEY, TicketRepairTransaction.class);
@@ -106,9 +108,10 @@ public class TicketTransactionAction extends FacadeActionAdapter {
 	public void build(ActionRequest req) throws ActionException {
 		ActionInterface action = loadActionByType(req.getParameter(SELECT_KEY));
 		action.build(req);
-		
+
 		// Add in the Next Step data to the returned data
 		if (action instanceof BaseTransactionAction) {
+
 			ModuleVO mod = (ModuleVO) attributes.get(Constants.MODULE_DATA);
 			Map<String, Object> data = new HashMap<>();
 			data.put(GlobalConfig.SUCCESS_KEY, !mod.getErrorCondition());
@@ -118,6 +121,7 @@ public class TicketTransactionAction extends FacadeActionAdapter {
 			data.put("nextStep", ((BaseTransactionAction) action).getNextStep());
 			putModuleData(data);
 		}
+
 	}
 }
 

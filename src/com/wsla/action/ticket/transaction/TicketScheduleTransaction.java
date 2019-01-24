@@ -168,6 +168,7 @@ public class TicketScheduleTransaction extends BaseTransactionAction {
 		ts.setUpdateDate(new Date());
 		modifyNotes(ts);
 		UserVO user = (UserVO) getAdminUser(req).getUserExtendedInfo();
+		boolean isRefund = req.getBooleanParameter("isRefund");
 		
 		if(user == null) {
 			user = new UserVO();
@@ -187,6 +188,19 @@ public class TicketScheduleTransaction extends BaseTransactionAction {
 
 		// Save the transfer completion data
 		saveCompletion(ts);
+		
+		//if this is  a refund process the disposition
+		if(ledger.getStatusCode() == StatusCode.PICKUP_COMPLETE && isRefund) {
+			log.debug("pick up complete and is refund");
+			RefundReplacementTransaction rrt = new RefundReplacementTransaction();
+			rrt.setActionInit(actionInit);
+			rrt.setAttributes(getAttributes());
+			rrt.setDBConnection(getDBConnection());
+			
+			//Instantiate the refrep transaction and call process disposition code,
+			rrt.processDisposition(ts.getTicketId(), req);
+			
+		}
 		
 		// When the post repair transfer is complete, the ticket is finished (closed).
 		// Add an additional ledger entry & status change to denote this.  

@@ -53,6 +53,7 @@ public class CreditMemoVO extends BeanDataVO {
 	private String ticketIdText;
 	private String filePathUrl;
 	private String productName;
+	private String ticketId;
 
 	/**
 	 * 
@@ -199,6 +200,21 @@ public class CreditMemoVO extends BeanDataVO {
 	 */
 	public DebitMemoVO getDebitMemo() {
 		return debitMemo;
+	}
+
+	/**
+	 * @return the ticketId
+	 */
+	@Column(name="ticket_id", isReadOnly=true)
+	public String getTicketId() {
+		return ticketId;
+	}
+
+	/**
+	 * @param ticketId the ticketId to set
+	 */
+	public void setTicketId(String ticketId) {
+		this.ticketId = ticketId;
 	}
 
 	/**

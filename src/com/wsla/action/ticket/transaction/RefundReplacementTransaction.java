@@ -136,21 +136,17 @@ public class RefundReplacementTransaction extends BaseTransactionAction {
 		
 		if(!UnitLocation.WSLA.name().equalsIgnoreCase(tvo.getUnitLocation().name()) && 
 				!UnitLocation.CAS.name().equalsIgnoreCase(tvo.getUnitLocation().name())) {
-			log.debug("##### is schld pickup");
-			changeStatus(rrvo.getTicketId(), user.getUserId(), StatusCode.PENDING_PICKUP, null, null);
+			changeStatus(rrvo.getTicketId(), user.getUserId(), StatusCode.CAS_ASSIGNED, null, null);
 			return;
 		}
 		
 		if(rrvo.getUnitDisposition().equalsIgnoreCase(DispositionCodes.DISPOSE.name())) {
-			log.debug("##### is despose");
 			disposeUnit(rrvo, user, tvo);
 		}else if (rrvo.getUnitDisposition().equalsIgnoreCase(DispositionCodes.HARVEST_UNIT.name())) {
-			log.debug("##### is harvest");
 			//set to harvest status
 			changeStatus(rrvo.getTicketId(), user.getUserId(), StatusCode.HARVEST_REQ, null, null);
 		}else {
 			//is return
-			log.debug("##### is return");
 			returnUnit(rrvo, user, tvo);
 		}
 	}
@@ -162,11 +158,8 @@ public class RefundReplacementTransaction extends BaseTransactionAction {
 	 * @throws DatabaseException 
 	 */
 	private void returnUnit(RefundReplacementVO rrvo, UserVO user, TicketVO tvo) throws DatabaseException {
-		log.debug("##### start");
 		if(UnitLocation.WSLA.name().equalsIgnoreCase(tvo.getUnitLocation().name())) {
-			log.debug("##### unit location wsla");
 			if(rrvo.getUnitDisposition().equalsIgnoreCase(DispositionCodes.RETURN_REPAIR.name())) {
-				log.debug("##### disposition return_repair");
 				//set status to repair
 				changeStatus(rrvo.getTicketId(), user.getUserId(), StatusCode.CLOSED, null, null);
 				
@@ -201,12 +194,10 @@ public class RefundReplacementTransaction extends BaseTransactionAction {
 				changeStatus(childTicket.getTicketId(), user.getUserId(), StatusCode.CAS_IN_REPAIR, null, null);
 				
 			}else {
-				log.debug("##### inner else");
 				//status change for harvest
 				changeStatus(rrvo.getTicketId(), user.getUserId(), StatusCode.HARVEST_REQ, null, null);
 			}
 		}else {
-			log.debug("##### outer else");
 			//if anywhere other then wsla make a shipment
 			TicketPartsTransaction tpt = new TicketPartsTransaction();
 			tpt.setActionInit(actionInit);
@@ -220,7 +211,6 @@ public class RefundReplacementTransaction extends BaseTransactionAction {
 			}
 			
 		}
-		log.debug("##### end");
 		
 	}
 
@@ -281,7 +271,7 @@ public class RefundReplacementTransaction extends BaseTransactionAction {
 			log.error("could not save cloned ticket",e1);
 		}
 		
-		log.debug("##### new id is " + childTicket.getTicketId());
+		log.debug("new id is " + childTicket.getTicketId());
 		
 		return childTicket;
 	}
@@ -394,6 +384,68 @@ public class RefundReplacementTransaction extends BaseTransactionAction {
 
 		log.info(rrvo);
 		return rrvo;
+	}
+
+	/**
+	 * @param ticketId
+	 */
+	public void processDisposition(String ticketId, ActionRequest req) {
+		
+		RefundReplacementVO rrvo = getRefRepVoByTicketId(ticketId);
+		UserVO user = (UserVO) getAdminUser(req).getUserExtendedInfo();
+		try {
+			processDispostion(rrvo, user);
+		} catch (Exception e) {
+			log.error("could not process disposition ",e);
+		}
+		
+	}
+
+	/**
+	 * @param ticketId
+	 * @return
+	 */
+	private RefundReplacementVO getRefRepVoByTicketId(String ticketId) {
+		List<Object> params = new ArrayList<>();
+		params.add(ticketId);
+
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+
+		StringBuilder sql = new StringBuilder(93);
+		sql.append(DBUtil.SELECT_FROM_STAR).append(getCustomSchema()).append("wsla_ticket_ref_rep where ticket_id = ? ");
+
+		List<RefundReplacementVO> data = db.executeSelect(sql.toString(), params, new RefundReplacementVO());
+		
+		if (data != null && !data.isEmpty()) {
+			return data.get(0);
+		}else {
+			return new RefundReplacementVO();
+		}
+		
+	}
+
+	/**
+	 * @param creditMemoId
+	 * @return
+	 */
+	public CreditMemoVO getCompleteCreditMemo(String creditMemoId) {
+		List<Object> params = new ArrayList<>();
+		params.add(creditMemoId);
+
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+
+		StringBuilder sql = new StringBuilder(93);
+		sql.append(DBUtil.SELECT_FROM_STAR).append(getCustomSchema()).append("wsla_credit_memo cm ");
+		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("wsla_ticket_ref_rep rr on cm.ticket_ref_rep_id = rr.ticket_ref_rep_id ");
+		sql.append("where credit_memo_id = ? "); 
+		
+		List<CreditMemoVO> data = db.executeSelect(sql.toString(), params, new CreditMemoVO());
+		
+		if (data != null && !data.isEmpty()) {
+			return data.get(0);
+		}else {
+			return new CreditMemoVO();
+		}
 	}
 
 }
