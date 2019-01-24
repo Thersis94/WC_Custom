@@ -131,6 +131,7 @@ public class TicketOverviewAction extends BasePortalAction {
 		UserDataVO profile = (UserDataVO)req.getSession().getAttribute(Constants.USER_DATA);
 		UserVO user = (UserVO)profile.getUserExtendedInfo();
 		TicketVO ticket = new TicketVO(req);
+		ticket.setStatusCode(StatusCode.USER_CALL_DATA_INCOMPLETE);
 		ticket.addDiagnosticRun(new DiagnosticRunVO(req));
 		
 		// Check the productSerial and add it if it is missing
@@ -213,6 +214,7 @@ public class TicketOverviewAction extends BasePortalAction {
 		
 		// Add the core information
 		TicketVO ticket = new TicketVO(req);
+		ticket.setStatusCode(StatusCode.OPENED);
 		String slug = RandomAlphaNumeric.generateRandom(WSLAConstants.TICKET_RANDOM_CHARS);
 		ticket.setTicketIdText(slug.toUpperCase());
 		
