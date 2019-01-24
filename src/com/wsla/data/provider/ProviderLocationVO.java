@@ -37,6 +37,7 @@ public class ProviderLocationVO extends GeocodeLocation {
 	// Member Variables
 	private String providerId;
 	private String locationName;
+	private String locationDescription;
 	private String storeNumber;
 	private int activeFlag;
 	private int defaultFlag;
@@ -251,5 +252,20 @@ public class ProviderLocationVO extends GeocodeLocation {
 
 	public void setProviderName(String providerName) {
 		this.providerName = providerName;
+	}
+
+	/**
+	 * @return the locationDescription
+	 */
+	@Column(name="location_desc")
+	public String getLocationDescription() {
+		return locationDescription;
+	}
+
+	/**
+	 * @param locationDescription the locationDescription to set
+	 */
+	public void setLocationDescription(String locationDescription) {
+		this.locationDescription = locationDescription;
 	}
 }
