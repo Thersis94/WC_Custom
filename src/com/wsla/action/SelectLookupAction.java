@@ -19,7 +19,6 @@ import java.util.ResourceBundle;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
-import com.siliconmtn.common.constants.GlobalConfig;
 import com.siliconmtn.common.html.BSTableControlVO;
 import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.db.DBUtil;
@@ -30,11 +29,14 @@ import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.EnumUtil;
 import com.siliconmtn.util.PhoneNumberFormat;
 import com.siliconmtn.util.StringUtil;
+
+// WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.admin.action.ResourceBundleManagerAction;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.security.SBUserRole;
+
 // WSLA Libs
 import com.wsla.action.admin.BillableActivityAction;
 import com.wsla.action.admin.InventoryAction;
@@ -50,7 +52,6 @@ import com.wsla.action.ticket.CASSelectionAction;
 import com.wsla.action.ticket.TicketListAction;
 import com.wsla.action.ticket.TicketSearchAction;
 import com.wsla.action.ticket.TicketEditAction;
-import com.wsla.common.LocaleWrapper;
 import com.wsla.common.WSLALocales;
 import com.wsla.common.WSLAConstants.WSLARole;
 import com.wsla.data.product.LocationItemMasterVO;
