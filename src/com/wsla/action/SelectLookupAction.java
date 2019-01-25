@@ -58,6 +58,7 @@ import com.wsla.data.product.ProductSetVO;
 import com.wsla.data.product.ProductVO;
 import com.wsla.data.product.WarrantyType;
 import com.wsla.data.provider.ProviderLocationVO;
+import com.wsla.data.provider.ProviderPhoneVO;
 import com.wsla.data.provider.ProviderType;
 import com.wsla.data.ticket.BillableActivityVO;
 import com.wsla.data.ticket.BillableActivityVO.BillableTypeCode;
@@ -66,6 +67,7 @@ import com.wsla.data.ticket.StatusCodeVO;
 import com.wsla.data.ticket.TicketAssignmentVO;
 import com.wsla.data.ticket.TicketAssignmentVO.TypeCode;
 import com.wsla.data.ticket.TicketScheduleVO;
+import com.wsla.data.ticket.TicketVO.Standing;
 import com.wsla.data.ticket.UserVO;
 
 /****************************************************************************
@@ -136,6 +138,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		keyMap.put("billableType", new GenericVO("getBillableTypes", Boolean.FALSE));
 		keyMap.put("supportNumbers", new GenericVO("getSupportNumbers", Boolean.TRUE));
 		keyMap.put("ticketSearch", new GenericVO("ticketSearch", Boolean.TRUE));
+		keyMap.put("standing", new GenericVO("getStanding", Boolean.FALSE));
 	}
 
 	/**
@@ -777,23 +780,28 @@ public class SelectLookupAction extends SBActionAdapter {
 	public List<GenericVO> getSupportNumbers(ActionRequest req) {
 		boolean phoneNumberKey = req.getBooleanParameter("phoneNumberKey");
 		
-		StringBuilder sql = new StringBuilder(156);
-		if (phoneNumberKey) sql.append("select phone_number_txt as key, ");
-		else sql.append("select provider_nm as key, ");
-		sql.append("phone_number_txt as value ").append(DBUtil.FROM_CLAUSE);
+		StringBuilder sql = new StringBuilder(192);
+		sql.append("select b.*, a.provider_nm ").append(DBUtil.FROM_CLAUSE);
 		sql.append(getCustomSchema()).append("wsla_provider a ");
-		sql.append("where provider_type_id = 'OEM' and length(phone_number_txt) > 0 ");
-		sql.append("order by provider_nm ");
-
+		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema());
+		sql.append("wsla_provider_phone b on a.provider_id = b.provider_id ");
+		sql.append("where b.active_flg = 1 order by provider_nm ");
+		log.debug(sql.length() + "|" + sql);
+		
 		DBProcessor db = new DBProcessor(getDBConnection());
-		List<GenericVO> data = db.executeSelect(sql.toString(), null, new GenericVO());
-		log.debug("sqlsqlslq"+sql.toString());
+		List<ProviderPhoneVO> phones = db.executeSelect(sql.toString(), null, new ProviderPhoneVO());
+		List<GenericVO> data = new ArrayList<>(phones.size());
 		// Format the phone number for display
-		Locale loc = new LocaleWrapper(StringUtil.checkVal(req.getSession().getAttribute(GlobalConfig.KEY_USER_LOCALE), "en_US")).getLocale();
-		for (GenericVO entry : data) {
-			String pn = (String)entry.getValue();
-			PhoneNumberFormat pnf = new PhoneNumberFormat(pn, loc.getCountry(), PhoneNumberFormat.INTERNATIONAL_FORMAT);
-			entry.setValue(pnf.getFormattedNumber());
+		for (ProviderPhoneVO entry : phones) {
+			String pn = entry.getPhoneNumber();
+			PhoneNumberFormat pnf = new PhoneNumberFormat(pn, entry.getCountryCode(), PhoneNumberFormat.INTERNATIONAL_FORMAT);
+			
+			if (phoneNumberKey) {
+				data.add(new GenericVO(pn, pnf.getFormattedNumber()));
+				
+			} else {
+				data.add(new GenericVO(entry.getProviderName(), pnf.getFormattedNumber()));
+			}
 		}
 		
 		return data;
@@ -808,5 +816,18 @@ public class SelectLookupAction extends SBActionAdapter {
 		TicketSearchAction tsa = new TicketSearchAction(getDBConnection(), getAttributes());
 		
 		return tsa.getTickets(req.getParameter(REQ_SEARCH));
+	}
+	
+	/**
+	 * Gets the standing list
+	 * @return
+	 */
+	public List<GenericVO> getStanding() {
+		List<GenericVO> data = new ArrayList<>();
+		for(Standing standing : Standing.values()) {
+			data.add(new GenericVO(standing.name(), StringUtil.capitalize(standing.name())));
+		}
+		
+		return data;
 	}
 }
