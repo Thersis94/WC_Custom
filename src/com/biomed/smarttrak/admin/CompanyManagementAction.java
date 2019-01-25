@@ -8,11 +8,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 
-import com.biomed.smarttrak.security.SmarttrakRoleVO;
+import com.biomed.smarttrak.action.AdminControllerAction;
 import com.biomed.smarttrak.action.AdminControllerAction.Section;
 import com.biomed.smarttrak.action.AdminControllerAction.Status;
-import com.biomed.smarttrak.action.AdminControllerAction;
 import com.biomed.smarttrak.action.CompanyAction;
+import com.biomed.smarttrak.security.SmarttrakRoleVO;
 import com.biomed.smarttrak.util.BiomedCompanyIndexer;
 import com.biomed.smarttrak.vo.AllianceVO;
 import com.biomed.smarttrak.vo.CompanyAttributeTypeVO;
@@ -94,16 +94,16 @@ public class CompanyManagementAction extends ManagementAction {
 	private enum ContentType {
 		OVERVIEW("Company Overview", 1),
 		GPS_OVERVIEW("Overview", 1),
-		FUNDING("Funding", 2),
-		OUTLOOK("Revenues & Financial Outlook", 3),
-		COMMENTARY("Recent Commentary", 4),
-		LEGAL("Legal Issues", 5),
-		REGULATORY("Regulatory Issues", 6),
-		TECHNOLOGY("Technology Platform", 1),
-		PRODUCTS("Products", 2),
-		ALLIANCES("Strategic Alliances", 3),
-		INTELLECT("Intellectual Property", 4),
-		SALES("Sales & Distribution", 5);
+		FUNDING("Funding", 5),
+		OUTLOOK("Revenues & Financial Outlook", 10),
+		COMMENTARY("Recent Commentary", 15),
+		LEGAL("Legal Issues", 100),
+		REGULATORY("Regulatory Issues", 100),
+		TECHNOLOGY("Technology Platform", 20),
+		PRODUCTS("Products", 25),
+		ALLIANCES("Strategic Alliances", 35),
+		INTELLECT("Intellectual Property", 30),
+		SALES("Sales & Distribution", 100);
 
 		private String contentName;
 		private int order;
