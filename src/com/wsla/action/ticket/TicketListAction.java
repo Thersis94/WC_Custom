@@ -133,6 +133,13 @@ public class TicketListAction extends SimpleActionAdapter {
 			cSql.append(search);
 			sql.append(search);
 		}
+		
+		// Add the standing search
+		if (! StringUtil.isEmpty(req.getParameter("standingCode"))) {
+			String scSearch = this.getStandingFilter(req.getParameter("standingCode"), params);
+			sql.append(scSearch);
+			cSql.append(scSearch);
+		}
 
 		// Add the oemSearch
 		String oemSearch = getOemFilter(req.getParameter("oemId"), params);
@@ -161,6 +168,19 @@ public class TicketListAction extends SimpleActionAdapter {
 		return grid;
 	}
 
+	/**
+	 * Creates the standing filter
+	 * @param sc
+	 * @param params
+	 * @return
+	 */
+	public String getStandingFilter(String sc, List<String> params) {
+		String sql = "and standing_cd = ? ";
+		params.add(sc);
+		
+		return sql;
+	}
+	
 	/**
 	 * Adds a filter by assigned (which uses the status code role assignment)
 	 * @param roleId
