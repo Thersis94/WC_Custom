@@ -924,7 +924,8 @@ public class MarketManagementAction extends ManagementAction {
 			} else if("bulkLinkUpdate".equals(buildAction)) {
 				new ManagementActionUtil(dbConn, attributes).bulkUpdateAttributeLinks(req);
 			} else if("generateArchive".equals(buildAction)) {
-				createHTMLArchive(req.getCookie("JSESSIONID"), (SiteVO) req.getAttribute(Constants.SITE_DATA), req.getParameter(MARKET_ID));
+				String marketArchiveId = createHTMLArchive(req.getCookie("JSESSIONID"), (SiteVO) req.getAttribute(Constants.SITE_DATA), req.getParameter(MARKET_ID));
+				super.putModuleData(marketArchiveId);
 				return;
 			}
 		} catch (Exception e) {
@@ -999,7 +1000,7 @@ public class MarketManagementAction extends ManagementAction {
 	 * @throws DatabaseException 
 	 * @throws InvalidDataException 
 	 */
-	private void createHTMLArchive(SMTCookie sessionCookie, SiteVO site, String marketId) throws IOException, InvalidDataException, DatabaseException {
+	private String createHTMLArchive(SMTCookie sessionCookie, SiteVO site, String marketId) throws IOException, InvalidDataException, DatabaseException {
 
 		//Get the Archive HTML text
 		String archiveHtml = retrieveArchiveHtml(sessionCookie, site.getFullSiteAlias(), marketId);
@@ -1009,6 +1010,8 @@ public class MarketManagementAction extends ManagementAction {
 
 		//Save the VO
 		new DBProcessor(dbConn, getCustomSchema()).save(vo);
+
+		return vo.getMarketArchiveId();
 	}
 
 	/**
