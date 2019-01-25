@@ -1,9 +1,7 @@
 package com.universal.signals.action;
 
-// Java 7
+// Java 8
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -34,6 +32,8 @@ import com.siliconmtn.security.PhoneVO;
 import com.siliconmtn.security.StringEncrypter;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.StringUtil;
+
+// WebCrescendo Libs
 import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
@@ -275,13 +275,6 @@ public class PayPalCheckoutManager {
 		String postData = g.toJson(pReq, PaymentTransactionRequestVO.class);
 		log.debug("raw postData: " + postData);
 
-		try {
-			postData = URLEncoder.encode(postData,"utf-8");
-		} catch (UnsupportedEncodingException uee) {
-			log.error("Error URL encoding postData for proxy call, ", uee);
-		}
-		log.debug("URL-encoded postData: " + postData);
-
 		// build proxy URL and call proxy
 		StringBuilder smtProxyUrl = new StringBuilder((String)attributes.get(Constants.CFG_SMT_PROXY_URL));
 		log.debug("using proxy: " + smtProxyUrl.toString());
@@ -337,11 +330,12 @@ public class PayPalCheckoutManager {
 		sb.append("where SITE_ID = ? and SERVICE_PROVIDER_TYPE = ?");
 		log.debug("MERCHANT sql: " + sb.toString() + "|" + catalogSiteId + "|" + serviceType.name());
 		
+		ResultSet rs = null;
 		MerchantInfoVO m = null;
 		try (PreparedStatement ps = dbConn.prepareStatement(sb.toString())) {
 			ps.setString(1, catalogSiteId);
 			ps.setString(2, serviceType.name());
-			ResultSet rs = ps.executeQuery();
+			rs = ps.executeQuery();
 			if (rs.next()) {
 				// retrieve from db and decrypt.
 				m = new MerchantInfoVO();
@@ -356,6 +350,14 @@ public class PayPalCheckoutManager {
 		} catch (SQLException sqle) {
 			log.error("Error retrieving merchant credentials for PayPal for site, ", sqle);
 			throw new SQLException(sqle.getMessage());
+		} finally {
+			if (rs != null) {
+				try {
+					rs.close();
+				} catch (Exception e) {
+					// empty by design
+				}
+			}
 		}
 		return m;
 	}
