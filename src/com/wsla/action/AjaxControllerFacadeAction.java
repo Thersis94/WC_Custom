@@ -38,6 +38,7 @@ import com.wsla.action.ticket.TicketEditAction;
 import com.wsla.action.ticket.TicketLedgerAction;
 import com.wsla.action.ticket.TicketListAction;
 import com.wsla.action.ticket.TicketOverviewAction;
+import com.wsla.data.provider.ProviderPhoneAction;
 import com.wsla.action.admin.ProviderLocationUserAction;
 import com.wsla.action.admin.ScheduleAdminAction;
 import com.wsla.action.admin.StatusCodeAction;
@@ -95,6 +96,7 @@ public class AjaxControllerFacadeAction extends FacadeActionAdapter {
 		actionMap.put(ProviderAction.AJAX_KEY, ProviderAction.class);
 		actionMap.put(ProviderLocationAction.AJAX_KEY, ProviderLocationAction.class);
 		actionMap.put(ProviderLocationUserAction.AJAX_KEY, ProviderLocationUserAction.class);
+		actionMap.put(ProviderPhoneAction.AJAX_KEY, ProviderPhoneAction.class);
 		actionMap.put(TicketAttributeAction.AJAX_KEY, TicketAttributeAction.class);
 		actionMap.put(TicketOverviewAction.AJAX_KEY, ServiceOrderFacadeAction.class);
 		actionMap.put(TicketEditAction.AJAX_KEY, ServiceOrderFacadeAction.class);
