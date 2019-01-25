@@ -104,17 +104,25 @@ public class BusinessFormProcessor extends FormDataProcessor {
 		Iterator<Map.Entry<String, FormFieldVO>> iter = data.getCustomData().entrySet().iterator();
 		while (iter.hasNext()) {
 			Map.Entry<String, FormFieldVO> entry = iter.next();
+			FormFieldVO field = entry.getValue();
 
 			// Add parameters to the request to be saved to the business table
-			BusinessField param = EnumUtil.safeValueOf(BusinessField.class, entry.getValue().getSlugTxt());
+			BusinessField param = EnumUtil.safeValueOf(BusinessField.class, field.getSlugTxt());
 			if (param != null) {
 				if (param.isFileUpload()) {
 					//save special files separately, so we can upload them and put the file name into the DB after saving.
-					fileMap.put(entry.getValue().getFieldNm(), new GenericVO(param.getReqParam(), param.getDBColNm()));
+					fileMap.put(field.getFieldNm(), new GenericVO(param.getReqParam(), param.getDBColNm()));
 				} else {
-					req.setParameter(param.getReqParam(), entry.getValue().getResponseText());
+					req.setParameter(param.getReqParam(), field.getResponseText());
 				}
 				iter.remove();
+			}
+
+			//earmark the BUSINESS_YOUTUBEAD form field, we need it downstream in BusinessAction to evaluate notifications
+			if ("BUSINESS_YOUTUBEAD".equals(field.getSlugTxt())) {
+				req.setAttribute("newYoutubeAdUrl", field.getResponseText());
+			} else if (BusinessField.BUSINESS_AD_IMAGE.toString().equals(field.getSlugTxt())) {
+				req.setAttribute("adFileUploaded", Boolean.toString(req.getFile(field.getFieldNm()) != null));
 			}
 		}
 
