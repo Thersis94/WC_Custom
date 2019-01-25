@@ -2,6 +2,8 @@ package com.wsla.data.ticket;
 
 // JDK 1.8.x
 import java.sql.ResultSet;
+import java.util.ArrayList;
+import java.util.List;
 
 // SMT Base Libs
 import com.siliconmtn.action.ActionRequest;
@@ -34,6 +36,7 @@ public class NextStepVO extends BeanDataVO {
 	private String statusCode;
 	private String groupStatusCode;
 	private String roleName;
+	private List<String> authorizedRoles;
 	private boolean needsReloadFlag;
 	
 	/**
@@ -67,6 +70,7 @@ public class NextStepVO extends BeanDataVO {
 		setButtonUrl("");
 		setStatusName("");
 		setNeedsReloadFlag(false);
+		setAuthorizedRoles(new ArrayList<>());
 	}
 
 	/**
@@ -165,6 +169,27 @@ public class NextStepVO extends BeanDataVO {
 	 */
 	public void setRoleName(String roleName) {
 		this.roleName = roleName;
+	}
+
+	/**
+	 * @return the authorizedRoles
+	 */
+	public List<String> getAuthorizedRoles() {
+		return authorizedRoles;
+	}
+
+	/**
+	 * @param authorizedRoles the authorizedRoles to set
+	 */
+	public void setAuthorizedRoles(List<String> authorizedRoles) {
+		this.authorizedRoles = authorizedRoles;
+	}
+
+	/**
+	 * @param authorizedRoles the authorizedRoles to add
+	 */
+	public void addAuthorizedRole(String authorizedRole) {
+		this.authorizedRoles.add(authorizedRole);
 	}
 
 	/**

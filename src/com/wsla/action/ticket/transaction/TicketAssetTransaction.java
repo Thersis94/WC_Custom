@@ -16,6 +16,7 @@ import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
+import com.siliconmtn.util.EnumUtil;
 // WC Libs
 import com.wsla.action.ticket.BaseTransactionAction;
 import com.wsla.action.ticket.CASSelectionAction;
@@ -26,6 +27,7 @@ import com.wsla.data.ticket.CreditMemoVO;
 import com.wsla.data.ticket.LedgerSummary;
 import com.wsla.data.ticket.StatusCode;
 import com.wsla.data.ticket.TicketAssignmentVO;
+import com.wsla.data.ticket.TicketAssignmentVO.ProductOwner;
 import com.wsla.data.ticket.TicketAssignmentVO.TypeCode;
 import com.wsla.data.ticket.TicketDataVO;
 import com.wsla.data.ticket.TicketLedgerVO;
@@ -193,8 +195,10 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 		List<TicketDataVO> assets = tea.getExtendedData(td.getTicketId(), "ASSET_GROUP");
 		assets.add(td);
 		
-		// Assume neither type has been submitted yet
-		int popApproval = 2;
+		// Assume neither type has been submitted yet, unless the owner is a retailer.
+		// Retailers aren't required to submit a POP.
+		ProductOwner owner = getProductOwnerType(td.getTicketId());
+		int popApproval = getDefaultPopApprovalLevel(owner);
 		int snApproval = 2;
 		
 		// Determine the approval levels for each asset type requiring approval
@@ -216,6 +220,32 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 		// Approval is needed when one or both are in the UNKNOWN state
 		int unknownApprovalLevel = ApprovalCode.PENDING.getLevel();
 		return popApproval == unknownApprovalLevel || snApproval == unknownApprovalLevel;
+	}
+	
+	/**
+	 * Determines the current owner type
+	 * 
+	 * @param ticketId
+	 * @return
+	 */
+	private ProductOwner getProductOwnerType(String ticketId) {
+		TicketEditAction tea = new TicketEditAction(getDBConnection(), getAttributes());
+
+		TicketVO ticket = new TicketVO();
+		ticket.setTicketData(tea.getExtendedData(ticketId, "DATA_GROUP"));
+		String ownerAttr = ticket.getTicketDataMap().get("attr_ownsTv").getValue();
+
+		return EnumUtil.safeValueOf(ProductOwner.class, ownerAttr);
+	}
+	
+	/**
+	 * Returns the default POP approval level, dependent on the owner
+	 * 
+	 * @param owner
+	 * @return
+	 */
+	private int getDefaultPopApprovalLevel(ProductOwner owner) {
+		return ProductOwner.RETAILER == owner ? ApprovalCode.APPROVED.getLevel() : 2;
 	}
 	
 	/**
@@ -262,6 +292,10 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 		TicketEditAction tea = new TicketEditAction(getDBConnection(), getAttributes());
 		List<TicketDataVO> assets = tea.getExtendedData(ticketId, "ASSET_GROUP");
 		Map<String, ApprovalCode> approvals = new HashMap<>();
+		
+		// Retailers aren't required to submit a POP
+		if (ProductOwner.RETAILER == getProductOwnerType(ticketId))
+			approvals.put(PROOF_PURCHASE, ApprovalCode.APPROVED);
 		
 		// Determine if we have approval for each required asset
 		for (TicketDataVO asset : assets) {

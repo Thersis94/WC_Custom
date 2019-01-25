@@ -26,6 +26,7 @@ import com.smt.sitebuilder.util.WorkflowSender;
 import com.smt.sitebuilder.util.MessageParser.MessageType;
 import com.wsla.action.BasePortalAction;
 import com.wsla.action.admin.StatusCodeAction;
+import com.wsla.common.WSLAConstants.WSLARole;
 import com.wsla.common.WSLAConstants.WorkflowSlug;
 import com.wsla.data.product.WarrantyBillableVO;
 import com.wsla.data.ticket.NextStepVO;
@@ -301,6 +302,10 @@ public class BaseTransactionAction extends SBActionAdapter {
 			nextStep.setGroupStatusCode(sc.getGroupStatusCode().name());
 			nextStep.setRoleName(sc.getRoleName());
 			nextStep.setNeedsReloadFlag(needsReload);
+			
+			for (WSLARole role : sc.getAuthorizedRole()) {
+				nextStep.addAuthorizedRole(role.getRoleId());
+			}
 		} catch (ParseException e) {
 			throw new DatabaseException(e);
 		}
