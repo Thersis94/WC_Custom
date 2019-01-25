@@ -56,10 +56,11 @@ public class UpdateVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc
 	}
 	
 	public enum AnnouncementType {
-		NON("Not an Announcemenet", 0),
+		NON("Not an Announcement", 0),
 		ANNOUNCEMENT("SmartTRAK Announcement", 1),
 		POLICY("Healthcare Policy", 2),
-		TREND("Healthcare Trend", 3);
+		TREND("Healthcare Trend", 3),
+		INDUSTRY("Industry News", 4);
 		
 		private String name;
 		private int value;
@@ -82,6 +83,7 @@ public class UpdateVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc
 				case 1:return AnnouncementType.ANNOUNCEMENT;
 				case 2:return AnnouncementType.POLICY;
 				case 3:return AnnouncementType.TREND;
+				case 4:return AnnouncementType.INDUSTRY;
 				default:return AnnouncementType.NON;
 			}
 		}
