@@ -787,7 +787,7 @@ public class SelectLookupAction extends SBActionAdapter {
 
 		DBProcessor db = new DBProcessor(getDBConnection());
 		List<GenericVO> data = db.executeSelect(sql.toString(), null, new GenericVO());
-		
+		log.debug("sqlsqlslq"+sql.toString());
 		// Format the phone number for display
 		Locale loc = new LocaleWrapper(StringUtil.checkVal(req.getSession().getAttribute(GlobalConfig.KEY_USER_LOCALE), "en_US")).getLocale();
 		for (GenericVO entry : data) {
