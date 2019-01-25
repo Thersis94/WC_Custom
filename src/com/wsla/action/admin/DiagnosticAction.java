@@ -229,7 +229,7 @@ public class DiagnosticAction extends SBActionAdapter {
 		log.debug(sql);
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		GridDataVO<DiagnosticVO> data = db.executeSQLWithCount(sql.toString(), params, new DiagnosticVO(), bst.getLimit(), bst.getOffset());
-		if (data == null)log.debug("##### data null ");
+		if (data == null)log.debug("data null ");
 				
 		return data;
 	}

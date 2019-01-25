@@ -404,7 +404,7 @@ public class LogisticsAction extends SBActionAdapter {
 		}else {
 			throw new InvalidDataException("no finish product found ");
 		}
-		log.debug("#### sql " + sql.toString());
+		log.debug("sql " + sql.toString());
 		
 		pvo.setShipmentId(shipmentId);
 		db.save(pvo);

@@ -312,6 +312,7 @@ public class RefundReplacementTransaction extends BaseTransactionAction {
 		CreditMemoVO cmvo = new CreditMemoVO();
 		cmvo.setCustomerMemoCode(RandomAlphaNumeric.generateRandom(WSLAConstants.TICKET_RANDOM_CHARS).toUpperCase());
 		cmvo.setRefundReplacementId(rrvo.getRefundReplacementId());
+		
 		cmvo.setCreateDate(new Date());
 		
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());

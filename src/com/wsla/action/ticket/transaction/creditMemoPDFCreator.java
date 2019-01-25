@@ -71,7 +71,7 @@ public class creditMemoPDFCreator extends SBActionAdapter {
 	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
-		log.debug("###### build called in pdf generator");
+		log.debug("build called in pdf generator");
 		// Determine path dynamically to the template file
 		String templateDir = req.getRealPath() + attributes.get(Constants.INCLUDE_DIRECTORY) + "templates/";
 		String path = templateDir + "credit_memo.ftl";
@@ -101,7 +101,7 @@ public class creditMemoPDFCreator extends SBActionAdapter {
 	 * @throws DocumentException
 	 */
 	public byte[] getCreditMemoPDF(String creditMemoId, String path2Templ, Locale locale) throws Exception {
-		log.debug("### getting credit memo pdf");
+		log.debug("getting credit memo pdf");
 		TicketEditAction tea = new TicketEditAction(getDBConnection(), getAttributes());
 		TicketLedgerAction tla = new TicketLedgerAction(getDBConnection(), getAttributes());
 		ResourceBundle rb = ResourceBundle.getBundle(WSLAConstants.RESOURCE_BUNDLE, locale);
