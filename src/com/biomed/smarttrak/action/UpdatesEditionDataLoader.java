@@ -76,13 +76,19 @@ public class UpdatesEditionDataLoader extends SimpleActionAdapter {
 	public void retrieve(ActionRequest req) throws ActionException {
 		String emailDate = req.getParameter("date"); //the date the email was sent.  Prefer to use this to generate 'today's or "last week's" update list.
 		String timeRangeCd = StringUtil.checkVal(req.getParameter("timeRangeCd"));
+		//Get Date Range off Request (Set in DataSource)
+		int dailyRange = req.getIntegerParameter("dailyRange", 1);
+
+		//Protect Date Range.
+		dailyRange = Math.min(Math.max(dailyRange, -7), 7);
+
 		String profileId = StringUtil.checkVal(req.getParameter("profileId"));
 
 		//the end date is where we start subtracting from (base)
 		Date endDt = !StringUtil.isEmpty(emailDate) ? Convert.formatDate(Convert.DATE_SLASH_SHORT_PATTERN, emailDate) : null;
 		if (endDt == null) endDt = Calendar.getInstance().getTime();
 
-		int days = UpdatesWeeklyReportAction.TIME_RANGE_WEEKLY.equalsIgnoreCase(timeRangeCd) ? 7 : 1;
+		int days = UpdatesWeeklyReportAction.TIME_RANGE_WEEKLY.equalsIgnoreCase(timeRangeCd) ? 7 : dailyRange;
 
 		//if today is monday and the range is 1 (daily), we'll need to rollback to Friday as a start date (days=3)
 		if (days == 1) {
@@ -424,7 +430,7 @@ public class UpdatesEditionDataLoader extends SimpleActionAdapter {
 		StringBuilder sql = new StringBuilder(800);
 		appendSelect(sql);
 		sql.append("from profile p ");
-		sql.append(DBUtil.INNER_JOIN).append(schema).append("biomedgps_user u on p.profile_id=u.profile_id ");
+		sql.append(DBUtil.INNER_JOIN).append(schema).append("biomedgps_user u on p.profile_id=u.profile_id and u.active_flg = 1 ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("biomedgps_account a on a.account_id=u.account_id ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("biomedgps_account_acl acl on acl.account_id=a.account_id and acl.updates_no=1 ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("biomedgps_section s on s.section_id=acl.section_id "); //lvl3 hierarchy
