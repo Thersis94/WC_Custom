@@ -136,16 +136,16 @@ public class LinkChecker extends CommandLineUtil {
 	public void run() {
 		String days = props.getProperty("runInterval");
 		//populate our lookup tables for companies, markets, insights, and products. ..so we're not http-spamming our own site!
-		populateLookup("select market_id from custom.biomedgps_market where status_no in ('P')", validMarketIds);
-		populateLookup("select product_id from custom.biomedgps_product where status_no in ('P')", validProductIds);
-		populateLookup("select company_id from custom.biomedgps_company where status_no in ('P')", validCompanyIds);
-		populateLookup("select insight_id from custom.biomedgps_insight where status_cd in ('P')", validInsightIds);
+		populateLookup("select market_id from custom.biomedgps_market where status_no in ('P')", validMarketIds, false);
+		populateLookup("select product_id from custom.biomedgps_product where status_no in ('P')", validProductIds, false);
+		populateLookup("select company_id from custom.biomedgps_company where status_no in ('P')", validCompanyIds, false);
+		populateLookup("select insight_id from custom.biomedgps_insight where status_cd in ('P')", validInsightIds, false);
 
 		if (onlyBroken) {
 			//consider everything NOT a 404 as valid, and we won't check them
-			populateLookup("select url_txt from custom.biomedgps_link where status_no != 404", recentlyChecked);
+			populateLookup("select url_txt from custom.biomedgps_link where status_no != 404", recentlyChecked, true);
 		} else {
-			populateLookup("select url_txt from custom.biomedgps_link where check_dt > (CURRENT_DATE - interval '"+days+" days')", recentlyChecked);
+			populateLookup("select url_txt from custom.biomedgps_link where check_dt > (CURRENT_DATE - interval '"+days+" days')", recentlyChecked, true);
 		}
 
 		deleteArchives(days);
@@ -161,11 +161,16 @@ public class LinkChecker extends CommandLineUtil {
 	/**
 	 * build lists of recordIds in our database for cross-checking
 	 */
-	protected void populateLookup(String sql, List<String> records) {
+	protected void populateLookup(String sql, List<String> records, boolean removeProtocol) {
 		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
 			ResultSet rs = ps.executeQuery();
-			while (rs.next())
-				records.add(rs.getString(1));
+			while (rs.next()) {
+				if (removeProtocol) {
+					records.add(StringUtil.checkVal(rs.getString(1)).replaceAll("http(s)?://", ""));
+				} else {
+					records.add(rs.getString(1));
+				}
+			}
 		} catch (SQLException sqle) {
 			log.error("could not load lookups from: " + sql, sqle);
 		}
@@ -234,7 +239,7 @@ public class LinkChecker extends CommandLineUtil {
 				u = encoder.decodeValue(u);
 
 			//omit empty, page anchors ("#"), and recently tested (regardless of outcome)
-			boolean isRecent = recentlyChecked.contains(u);
+			boolean isRecent = recentlyChecked.contains(StringUtil.checkVal(u).replaceAll("http(s)?://", ""));
 			if (StringUtil.isEmpty(u) || u.length() < 2 || isRecent) {
 				if (isRecent) 
 					++skipped;

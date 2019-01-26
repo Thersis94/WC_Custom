@@ -727,9 +727,9 @@ public class InsightAction extends ManagementAction {
 		AccountUserAction aua = new AccountUserAction(this.actionInit);
 		aua.setDBConnection(dbConn);
 		aua.setAttributes(attributes);
-		List<Object> authors = aua.loadAccountUsers(req, ivo.getCreatorProfileId());
+		List<UserVO> authors = aua.loadAccountUsers(req, ivo.getCreatorProfileId());
 		if(authors != null && !authors.isEmpty()) {
-			ivo.setCreatorTitle(((UserVO) authors.get(0)).getTitle());
+			ivo.setCreatorTitle(authors.get(0).getTitle());
 		}
 	}
 

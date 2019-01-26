@@ -24,11 +24,13 @@ public class TeamMemberVO implements HumanNameIntfc {
 	private String teamId;
 	private String userId;
 	private String userTeamXrId;
+	private String emailAddress;
 	private String pkId;
 	private Date createDate;
 	private String firstName;
 	private String lastName;
 	private boolean expired;
+	private boolean accountOwner;
 
 	public TeamMemberVO() {
 		super();
@@ -130,5 +132,23 @@ public class TeamMemberVO implements HumanNameIntfc {
 
 	public void setExpired(boolean expired) {
 		this.expired = expired;
+	}
+
+	@Column(name="email_address_txt", isReadOnly=true)
+	public String getEmailAddress() {
+		return this.emailAddress;
+	}
+
+	public void setEmailAddress(String emailAddress) {
+		this.emailAddress = emailAddress;
+	}
+
+	@Column(name="acct_owner_flg", isReadOnly=true)
+	public boolean isAccountOwner() {
+		return accountOwner;
+	}
+
+	public void setAccountOwner(boolean accountOwner) {
+		this.accountOwner = accountOwner;
 	}
 }
