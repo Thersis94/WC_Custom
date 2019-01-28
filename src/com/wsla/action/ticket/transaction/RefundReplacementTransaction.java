@@ -337,7 +337,7 @@ public class RefundReplacementTransaction extends BaseTransactionAction {
 		sql.append(DBUtil.SELECT_FROM_STAR).append(getCustomSchema()).append("wsla_ticket_data td ");
 		sql.append("where ticket_id = ? and attribute_cd = ? ");
 		
-		log.debug("## sql " + sql + params);
+		log.debug( sql + params);
 		
 		List<TicketDataVO> data = db.executeSelect(sql.toString(), params, new TicketDataVO());
 		
@@ -346,7 +346,7 @@ public class RefundReplacementTransaction extends BaseTransactionAction {
 		if (data != null && data.size() == 1) {
 			price = Convert.formatDouble(data.get(0).getValue());
 		} 
-		log.debug("## price " + price);
+
 		return price;
 	}
 
