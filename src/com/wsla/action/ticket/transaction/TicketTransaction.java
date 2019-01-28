@@ -119,8 +119,6 @@ public class TicketTransaction extends BaseTransactionAction {
 				updateUnitLocation(ticket);
 				putModuleData(ticket);
 			} else if(req.hasParameter("dispose") && req.hasParameter("closing")) {
-				log.debug("$$$$ we have a disposed ticket closing");
-				log.debug("$$ ticketId" + req.getStringParameter("ticketId"));
 				closeForExistingTicket(ticket.getTicketId(), user.getUserId(), true);
 				putModuleData("SUCCESS");
 			}
