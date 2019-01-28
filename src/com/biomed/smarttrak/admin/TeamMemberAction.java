@@ -5,6 +5,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+//WC_Custom
+import com.biomed.smarttrak.vo.TeamMemberVO;
 // SMTBaseLibs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -12,14 +14,10 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
-import com.siliconmtn.util.user.HumanNameIntfc;
 import com.siliconmtn.util.user.LastNameComparator;
 // WebCrescendo
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.constants.Constants;
-
-//WC_Custom
-import com.biomed.smarttrak.vo.TeamMemberVO;
 
 /*****************************************************************************
  <p><b>Title</b>: TeamMemberAction.java</p>
@@ -51,7 +49,7 @@ public class TeamMemberAction extends SBActionAdapter {
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		AccountAction.loadAccount(req, dbConn, getAttributes());
-		
+
 		//this action requires accountId & teamId.  If not present throw an exception
 		String accountId = req.getParameter(ACCOUNT_ID);
 		String teamId = req.hasParameter(TEAM_ID) ? req.getParameter(TEAM_ID) : null;
@@ -65,13 +63,13 @@ public class TeamMemberAction extends SBActionAdapter {
 		params.add(accountId);
 
 		DBProcessor db = new DBProcessor(dbConn, schema);
-		List<Object>  data = db.executeSelect(sql, params, new TeamMemberVO());
+		List<TeamMemberVO>  data = db.executeSelect(sql, params, new TeamMemberVO());
 		log.debug("loaded " + data.size() + " records");
 
 		//decrypt the owner profiles
 		decryptNames(data);
 		Collections.sort(data, new LastNameComparator());
-		
+
 		putModuleData(data);
 	}
 
@@ -80,9 +78,8 @@ public class TeamMemberAction extends SBActionAdapter {
 	 * loop and decrypt owner names, which came from the profile table
 	 * @param accounts
 	 */
-	@SuppressWarnings("unchecked")
-	protected void decryptNames(List<Object> data) {
-		new LastNameComparator().decryptNames((List<? extends HumanNameIntfc>)(List<?>)data, (String)getAttribute(Constants.ENCRYPT_KEY));
+	protected void decryptNames(List<TeamMemberVO> data) {
+		new LastNameComparator().decryptNames(data, (String)getAttribute(Constants.ENCRYPT_KEY));
 	}
 
 
@@ -93,7 +90,7 @@ public class TeamMemberAction extends SBActionAdapter {
 	protected String formatRetrieveQuery(String schema) {
 		StringBuilder sql = new StringBuilder(300);
 		sql.append("select p.first_nm, p.last_nm, u.user_id, x.team_id, newid() as user_team_xr_id, x.user_team_xr_id as pkid, ");
-		sql.append("(u.status_cd='I' or u.expiration_dt <= CURRENT_DATE) as expired ");
+		sql.append("(u.status_cd='I' or u.expiration_dt <= CURRENT_DATE) as expired, u.email_address_txt, u.acct_owner_flg ");
 		sql.append("from ").append(schema).append("biomedgps_user u ");
 		sql.append("inner join profile p on p.profile_id=u.profile_id ");
 		sql.append("left outer join ").append(schema).append("biomedgps_user_team_xr x on u.user_id=x.user_id and x.team_id=? ");
