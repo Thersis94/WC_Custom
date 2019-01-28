@@ -19,7 +19,6 @@ import java.util.ResourceBundle;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
-import com.siliconmtn.common.constants.GlobalConfig;
 import com.siliconmtn.common.html.BSTableControlVO;
 import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.db.DBUtil;
@@ -50,7 +49,6 @@ import com.wsla.action.ticket.CASSelectionAction;
 import com.wsla.action.ticket.TicketListAction;
 import com.wsla.action.ticket.TicketSearchAction;
 import com.wsla.action.ticket.TicketEditAction;
-import com.wsla.common.LocaleWrapper;
 import com.wsla.common.WSLALocales;
 import com.wsla.common.WSLAConstants.WSLARole;
 import com.wsla.data.product.LocationItemMasterVO;
@@ -791,7 +789,6 @@ public class SelectLookupAction extends SBActionAdapter {
 		DBProcessor db = new DBProcessor(getDBConnection());
 		List<ProviderPhoneVO> phones = db.executeSelect(sql.toString(), null, new ProviderPhoneVO());
 		List<GenericVO> data = new ArrayList<>(phones.size());
-		
 		// Format the phone number for display
 		for (ProviderPhoneVO entry : phones) {
 			String pn = entry.getPhoneNumber();
