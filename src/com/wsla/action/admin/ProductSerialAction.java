@@ -27,6 +27,7 @@ import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.util.StringUtil;
 import com.wsla.action.ticket.BaseTransactionAction;
+import com.wsla.action.ticket.TicketEditAction;
 import com.wsla.common.WSLAConstants;
 
 // WC Libs
@@ -91,6 +92,15 @@ public class ProductSerialAction extends BatchImport {
 			// Check for another record
 			TicketVO ticket = lookupServiceOrder(productId, req.getParameter("serialNo"));
 			
+			if(req.hasParameter("ticketId") && pwvo.getDisposeFlag() == 1 && ticket.getTicketId() == null ) {
+				TicketEditAction tea = new TicketEditAction();
+				tea.setActionInit(actionInit);
+				tea.setAttributes(getAttributes());
+				tea.setDBConnection(getDBConnection());
+				
+				ticket = tea.getBaseTicket(req.getStringParameter("ticketId"));
+			}	
+
 			// Add the elements in a GVO to the response
 			putModuleData(new GenericVO(pwvo, ticket));
 			
@@ -348,9 +358,12 @@ public class ProductSerialAction extends BatchImport {
 		List<Object> vals = new ArrayList<>();
 		vals.add(serialNo.toLowerCase());
 		vals.add(productId);
-		
+		log.debug( sql +"|"+vals);
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		List<ProductWarrantyVO> lpwvo = db.executeSelect(sql.toString(), vals, new ProductWarrantyVO());
+		
+		if (lpwvo != null && !lpwvo.isEmpty() && lpwvo.get(0) != null)
+		log.debug("disposed flag " +  lpwvo.get(0).getDisposeFlag());
 		
 		if (lpwvo.isEmpty()) return new ProductWarrantyVO();
 		else return lpwvo.get(0);

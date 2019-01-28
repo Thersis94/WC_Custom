@@ -69,6 +69,7 @@ public enum StatusCode {
 	HARVEST_COMPLETE("Harvest Complete"),
 	HARVEST_RETURN("Return to OEM"),
 	HARVEST_REPAIR("Repair Product"),
+	PRODUCT_DECOMMISSIONED("Product already decommissioned"),
 	SERVICE_ORDER_NUMBER_LOOKUP("Service Order Number Look Up"),
 	CLOSED ("Ticket Closed");
 	

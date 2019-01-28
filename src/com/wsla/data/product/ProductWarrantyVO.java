@@ -31,6 +31,7 @@ public class ProductWarrantyVO extends WarrantyVO {
 	private String productWarrantyId;
 	private String productSerialId;
 	private Date expirationDate;
+	private int disposeFlag;
 
 
 	/**
@@ -128,5 +129,20 @@ public class ProductWarrantyVO extends WarrantyVO {
 	 */
 	public void setExpirationDate(Date expirationDate) {
 		this.expirationDate = expirationDate;
+	}
+
+	/**
+	 * @return the disposeFlag
+	 */
+	@Column(name="dispose_flg", isReadOnly=true)
+	public int getDisposeFlag() {
+		return disposeFlag;
+	}
+
+	/**
+	 * @param disposeFlag the disposeFlag to set
+	 */
+	public void setDisposeFlag(int disposeFlag) {
+		this.disposeFlag = disposeFlag;
 	}
 }

@@ -107,16 +107,22 @@ public class TicketTransaction extends BaseTransactionAction {
 			
 			return;
 		}
+		
 		try {
 			UserVO user = (UserVO) getAdminUser(req).getUserExtendedInfo();
 			TicketVO ticket = new TicketVO(req);
 			
 			if (req.hasParameter("existing")) {
-				closeForExistingTicket(ticket.getTicketId(), user.getUserId());
+				closeForExistingTicket(ticket.getTicketId(), user.getUserId(), false);
 				putModuleData("SUCCESS");
 			} else if (req.hasParameter(REQ_UNIT_LOCATION)) {
 				updateUnitLocation(ticket);
 				putModuleData(ticket);
+			} else if(req.hasParameter("dispose") && req.hasParameter("closing")) {
+				log.debug("$$$$ we have a disposed ticket closing");
+				log.debug("$$ ticketId" + req.getStringParameter("ticketId"));
+				closeForExistingTicket(ticket.getTicketId(), user.getUserId(), true);
+				putModuleData("SUCCESS");
 			}
 			
 		} catch (DatabaseException e) {
@@ -170,11 +176,18 @@ public class TicketTransaction extends BaseTransactionAction {
 	 * @param userId
 	 * @throws DatabaseException 
 	 */
-	public void closeForExistingTicket(String ticketId, String userId) throws DatabaseException {
+	public void closeForExistingTicket(String ticketId, String userId,boolean isDisposed) throws DatabaseException {
 		log.debug("Closing ticket id: " + ticketId);
+		log.debug("is disposed " + isDisposed);
+		if(isDisposed) {
+			// Add ledger for move to status EXISTING_TICKET
+			changeStatus(ticketId, userId, StatusCode.PRODUCT_DECOMMISSIONED, null, null);
+		}else {
+			// Add ledger for move to status EXISTING_TICKET
+			changeStatus(ticketId, userId, StatusCode.EXISTING_TICKET, null, null);
+		}
 		
-		// Add ledger for move to status EXISTING_TICKET
-		changeStatus(ticketId, userId, StatusCode.EXISTING_TICKET, null, null);
+		
 		
 		// Add ledger & update ticket status for move to status CLOSED
 		changeStatus(ticketId, userId, StatusCode.CLOSED, LedgerSummary.TICKET_CLOSED.summary, null);
