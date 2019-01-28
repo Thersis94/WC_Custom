@@ -44,7 +44,7 @@ import freemarker.template.TemplateException;
  * @since Nov 5, 2018
  * @updates:
  ****************************************************************************/
-public class creditMemoPDFCreator extends SBActionAdapter {
+public class CreditMemoPDFCreator extends SBActionAdapter {
 
 	/**
 	 * Transaction key for the facade
@@ -54,14 +54,14 @@ public class creditMemoPDFCreator extends SBActionAdapter {
 	/**
 	 * 
 	 */
-	public creditMemoPDFCreator() {
+	public CreditMemoPDFCreator() {
 		super();
 	}
 
 	/**
 	 * @param actionInit
 	 */
-	public creditMemoPDFCreator(ActionInitVO actionInit) {
+	public CreditMemoPDFCreator(ActionInitVO actionInit) {
 		super(actionInit);
 	}
 
