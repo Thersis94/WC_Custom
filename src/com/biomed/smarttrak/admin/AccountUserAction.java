@@ -14,6 +14,7 @@ import java.util.Map;
 import java.util.Set;
 
 import com.biomed.smarttrak.action.AdminControllerAction;
+import com.biomed.smarttrak.action.SmarttrakRegistrationAction;
 import com.biomed.smarttrak.action.UpdatesEditionAction;
 import com.biomed.smarttrak.admin.report.AccountUsersVO;
 import com.biomed.smarttrak.util.SmarttrakTree;
@@ -21,6 +22,7 @@ import com.biomed.smarttrak.util.SmarttrakTree;
 import com.biomed.smarttrak.vo.UserVO;
 import com.biomed.smarttrak.vo.UserVO.RegistrationMap;
 import com.biomed.smarttrak.vo.UserVO.Status;
+import com.siliconmtn.action.ActionControllerFactoryImpl;
 // SMTBaseLibs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -42,7 +44,6 @@ import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
 import com.siliconmtn.util.user.HumanNameIntfc;
 import com.siliconmtn.util.user.LastNameComparator;
-
 // WebCrescendo
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.registration.RegistrationAction;
@@ -113,11 +114,15 @@ public class AccountUserAction extends SBActionAdapter {
 			return;
 		}
 
-		List<Object> users = loadAccountUsers(req, req.getParameter(PROFILE_ID));
+		List<UserVO> users = loadAccountUsers(req, req.getParameter(PROFILE_ID));
 		//if we're not the edit page we can return the list, which should only have one record on it.
 		//for the list page we want to return a Map of lists, breaking out the users by Division (for display)
 		if (req.hasParameter(USER_ID) || req.hasParameter("view")) { //'view' is for JSON list loaders
 			putModuleData(users);
+
+			//load User Market Preferences
+			SmarttrakRegistrationAction sra = ActionControllerFactoryImpl.loadAction(SmarttrakRegistrationAction.class, this);
+			sra.loadMarketsInformation(req);
 		} else {
 			GenericVO vo = sortRecords(users);
 			summateLoginActivity(vo, req);
@@ -353,7 +358,7 @@ public class AccountUserAction extends SBActionAdapter {
 	 * @param users
 	 * @return
 	 */
-	private GenericVO sortRecords(List<Object> users) {
+	private GenericVO sortRecords(List<UserVO> users) {
 		final String noDivision = "No Division Specified";
 		Map<Integer, String> divisions = loadDivisionList();
 		Map<String, List<UserVO>> active = new LinkedHashMap<>();
@@ -370,8 +375,7 @@ public class AccountUserAction extends SBActionAdapter {
 		inactive.put(noDivision, new ArrayList<>());
 
 		//put each user into their respective display bucket
-		for (Object obj : users) {
-			UserVO user = (UserVO) obj;
+		for (UserVO user : users) {
 			String divNm = divisions.get(Convert.formatInteger(user.getPrimaryDivision()));
 			//log.debug("div=" + divNm + " id=" + user.getPrimaryDivision())
 			if (StringUtil.isEmpty(divNm)) divNm = noDivision;
@@ -456,7 +460,7 @@ public class AccountUserAction extends SBActionAdapter {
 	 * @return
 	 * @throws ActionException
 	 */
-	public List<Object> loadAccountUsers(ActionRequest req, String profileId) throws ActionException {
+	public List<UserVO> loadAccountUsers(ActionRequest req, String profileId) throws ActionException {
 		AccountAction.loadAccount(req, dbConn, getAttributes());
 		String schema = (String)getAttributes().get(Constants.CUSTOM_DB_SCHEMA);
 		String accountId = req.hasParameter(ACCOUNT_ID) ? req.getParameter(ACCOUNT_ID) : null;
@@ -485,7 +489,7 @@ public class AccountUserAction extends SBActionAdapter {
 		}
 
 		//Call Execute the Query with given params.
-		List<Object> users = executeUserQuery(sql, params);
+		List<UserVO> users = executeUserQuery(sql, params);
 
 		//get more information about this one user, so we can display the edit screen.
 		//If this is an ADD, we don't need the additional lookups
@@ -502,11 +506,11 @@ public class AccountUserAction extends SBActionAdapter {
 	 * @param users
 	 * @throws ActionException
 	 */
-	private void loadMarkets(List<Object> users) throws ActionException {
+	private void loadMarkets(List<UserVO> users) throws ActionException {
 		if (users == null || users.isEmpty() || users.size() != 1)
 			return;
 		
-		UserVO user = (UserVO) users.get(0);
+		UserVO user = users.get(0);
 		StringBuilder sql = new StringBuilder(100);
 		sql.append("select section_id from ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
 		sql.append("biomedgps_user_updates_skip where user_id = ? ");
@@ -532,11 +536,11 @@ public class AccountUserAction extends SBActionAdapter {
 	 * @return
 	 * @throws ActionException
 	 */
-	protected List<Object> executeUserQuery(String sql, List<Object> params) {
+	protected List<UserVO> executeUserQuery(String sql, List<Object> params) {
 		String schema = (String)getAttributes().get(Constants.CUSTOM_DB_SCHEMA);
 		log.debug(params);
 		DBProcessor db = new DBProcessor(dbConn, schema);
-		List<Object>  data = db.executeSelect(sql, params, new UserVO());
+		List<UserVO>  data = db.executeSelect(sql, params, new UserVO());
 		log.debug("loaded " + data.size() + " users");
 
 		//decrypt the owner profiles
@@ -553,7 +557,7 @@ public class AccountUserAction extends SBActionAdapter {
 	 * @param userObj
 	 * @throws ActionException 
 	 */
-	protected void loadRegistration(ActionRequest req, List<Object> users) throws ActionException {
+	protected void loadRegistration(ActionRequest req, List<UserVO> users) throws ActionException {
 		//load the registration form
 		ActionInitVO actionInit = new ActionInitVO();
 		actionInit.setActionGroupId(AdminControllerAction.REGISTRATION_GRP_ID);
@@ -568,7 +572,7 @@ public class AccountUserAction extends SBActionAdapter {
 			return;
 
 		//load the user's registration responses - these will go into the UserDataVO->attributes map
-		UserVO user = (UserVO) users.get(0);
+		UserVO user = users.get(0);
 		ResponseLoader rl = new ResponseLoader();
 		rl.setDbConn(dbConn);
 		rl.loadRegistrationResponses(user, AdminControllerAction.PUBLIC_SITE_ID);
@@ -606,10 +610,9 @@ public class AccountUserAction extends SBActionAdapter {
 	 * loop and decrypt owner names, which came from the profile table
 	 * @param accounts
 	 */
-	@SuppressWarnings("unchecked")
-	protected void decryptNames(List<Object> data) {
+	protected void decryptNames(List<? extends HumanNameIntfc> data) {
 		LastNameComparator c = new LastNameComparator();
-		c.decryptNames((List<? extends HumanNameIntfc>)(List<?>)data, (String)getAttribute(Constants.ENCRYPT_KEY));
+		c.decryptNames(data, (String)getAttribute(Constants.ENCRYPT_KEY));
 		Collections.sort(data, c);
 	}
 
@@ -713,7 +716,7 @@ public class AccountUserAction extends SBActionAdapter {
 		saveRecord(user, false);
 		
 		// If this is a new user add them to the default account.
-		if (StringUtil.isEmpty(req.getParameter("userId")))
+		if (StringUtil.isEmpty(req.getParameter(USER_ID)))
 			addToDefaultTeam(user);
 		
 		addSkippedMarkets(user);
@@ -727,7 +730,7 @@ public class AccountUserAction extends SBActionAdapter {
 	 * @param user
 	 * @throws ActionException
 	 */
-	private void addSkippedMarkets(UserVO user) throws ActionException {
+	public void addSkippedMarkets(UserVO user) throws ActionException {
 		deleteOldSkips(user.getUserId());
 		
 		StringBuilder sql = new StringBuilder(120);

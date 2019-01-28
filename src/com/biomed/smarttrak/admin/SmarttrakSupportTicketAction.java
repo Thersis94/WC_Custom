@@ -10,6 +10,7 @@ import java.util.Map;
 import com.biomed.smarttrak.action.AdminControllerAction;
 import com.biomed.smarttrak.security.SmarttrakRoleVO;
 import com.biomed.smarttrak.util.BiomedSupportEmailUtil;
+import com.biomed.smarttrak.vo.UserVO;
 import com.biomed.smarttrak.vo.UserVO.AssigneeSection;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -173,10 +174,10 @@ public class SmarttrakSupportTicketAction extends SupportTicketAction {
 		AccountUserAction aua = new AccountUserAction(this.actionInit);
 		aua.setDBConnection(getDBConnection());
 		aua.setAttributes(getAttributes());
-		List<Object> users = aua.loadAccountUsers(req, profileId);
+		List<UserVO> users = aua.loadAccountUsers(req, profileId);
 
 		if (!users.isEmpty())
-			return (UserDataVO) users.get(0);
+			return users.get(0);
 
 		return null;
 	}

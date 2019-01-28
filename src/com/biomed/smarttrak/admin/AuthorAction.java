@@ -108,14 +108,14 @@ public class AuthorAction extends SimpleActionAdapter {
 			for(Object o : authors) {
 				AccountVO a = (AccountVO)o;
 				if(StringUtil.isEmpty(profileId) || a.getOwnerProfileId().equals(profileId)) {
-					List<Object> authorData = aua.loadAccountUsers(req, a.getOwnerProfileId());
+					List<UserVO> authorData = aua.loadAccountUsers(req, a.getOwnerProfileId());
 
 					/*
 					 * If authorData is found for the profile, store their title on
 					 * the map.
 					 */
 					if(authorData != null && !authorData.isEmpty()) {
-						UserVO u = (UserVO)authorData.get(0);
+						UserVO u = authorData.get(0);
 						authorTitles.put(a.getOwnerProfileId(), u.getTitle());
 					}
 				}
