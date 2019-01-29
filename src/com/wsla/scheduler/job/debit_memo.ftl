@@ -74,7 +74,7 @@
 			</#list>
 			<tr><td colspan="6">&nbsp;</td></tr>
 			
-			<tr class="total"><th>Total:</th>
+			<tr class="total"><th>${rb['common.total']}:</th>
 				<th colspan="4">&nbsp;</th>
 				<th>&#36;${data.totalCreditMemoAmount}</th></tr>
 		</table>
@@ -82,11 +82,11 @@
 		<br/>
 		<br/>
 		<table class="tableFull" summary="Signature Line">
-			<tr><td width="60">Name:</td>
+			<tr><td width="60">${rb['common.recipient']}:</td>
 				<td width="250">&nbsp;</td>
-				<td width="80">Signature:</td>
+				<td width="80">${rb['wsla.ticket.schedule.signature']}:</td>
 				<td>&nbsp;</td>
-				<td width="50"> Date:</td>
+				<td width="50"> ${rb['common.date']}:</td>
 				<td width="80">&nbsp;</td>
 		</table>
 	</body>

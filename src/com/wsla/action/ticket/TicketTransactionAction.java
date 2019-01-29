@@ -16,11 +16,13 @@ import com.smt.sitebuilder.action.FacadeActionAdapter;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.common.constants.ErrorCodes;
+
+//WSLA libs
+import com.wsla.action.ticket.transaction.CreditMemoPDFCreator;
 import com.wsla.action.ticket.transaction.DiagnosticTransaction;
 import com.wsla.action.ticket.transaction.ProductSerialTransaction;
 import com.wsla.action.ticket.transaction.ProviderLocationTransaction;
 import com.wsla.action.ticket.transaction.RefundReplacementTransaction;
-// WSLA libs
 import com.wsla.action.ticket.transaction.TicketAssetTransaction;
 import com.wsla.action.ticket.transaction.TicketAssignmentTransaction;
 import com.wsla.action.ticket.transaction.TicketCloneTransaction;
@@ -31,7 +33,6 @@ import com.wsla.action.ticket.transaction.TicketPartsTransaction;
 import com.wsla.action.ticket.transaction.TicketRepairTransaction;
 import com.wsla.action.ticket.transaction.TicketUtilityTransaction;
 import com.wsla.action.ticket.transaction.UserTransaction;
-import com.wsla.action.ticket.transaction.creditMemoPDFCreator;
 import com.wsla.action.ticket.transaction.TicketScheduleTransaction;
 import com.wsla.action.ticket.transaction.TicketSearchTransaction;
 import com.wsla.action.ticket.transaction.TicketTransaction;
@@ -91,7 +92,7 @@ public class TicketTransactionAction extends FacadeActionAdapter {
 		actionMap.put(TicketDataTransaction.AJAX_KEY, TicketDataTransaction.class);
 		actionMap.put(TicketUtilityTransaction.AJAX_KEY, TicketUtilityTransaction.class);
 		actionMap.put(TicketPDFCreator.AJAX_KEY, TicketPDFCreator.class);
-		actionMap.put(creditMemoPDFCreator.AJAX_KEY, creditMemoPDFCreator.class);
+		actionMap.put(CreditMemoPDFCreator.AJAX_KEY, CreditMemoPDFCreator.class);
 		actionMap.put(TicketTransaction.AJAX_KEY, TicketTransaction.class);
 		actionMap.put(TicketPartsTransaction.AJAX_KEY, TicketPartsTransaction.class);
 		actionMap.put(TicketRepairTransaction.AJAX_KEY, TicketRepairTransaction.class);
