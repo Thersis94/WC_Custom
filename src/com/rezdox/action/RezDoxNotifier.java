@@ -12,6 +12,7 @@ import java.util.Set;
 
 import org.apache.log4j.Logger;
 
+import com.rezdox.vo.BusinessVO;
 import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
@@ -71,7 +72,8 @@ public class RezDoxNotifier {
 		NEW_BUS_ONLINE("Keep an online digital footprint of the work you performed for your customers."),
 		NEW_BUS_REWARDS("Watch your reward points grow."),
 		SHARED_RESIDENCE("${senderName} shared their residence \"${residenceName}\" with you"),
-		SHARED_BUSINESS("${senderName} shared their business \"${businessName}\" with you");
+		SHARED_BUSINESS("${senderName} shared their business \"${businessName}\" with you"),
+		NEW_BUS_PROMOTION("${companyName} has a new special offer. <a href=\"${storefrontUrl}\">Click here</a> for further details.");
 
 		private String msg;
 		private Message(String msg) {
@@ -173,8 +175,8 @@ public class RezDoxNotifier {
 		List<GenericVO> data = dbp.executeSelect(sql, Arrays.asList(memberId), new GenericVO());
 		return (data != null && !data.isEmpty()) ? StringUtil.checkVal(data.get(0).getKey()) : null; 
 	}
-	
-	
+
+
 	/**
 	 * cross-lookup profileIds based on either a residenceId or businesId. 
 	 * Used from various edge-cases where that's all we have as a starting point
@@ -206,5 +208,39 @@ public class RezDoxNotifier {
 			log.error("could not load profileIds from businessId", sqle);
 		}
 		return profileIds.toArray(new String[profileIds.size()]);
+	}
+
+
+	/**
+	 * Load profileIds for members connected to the given business, and message them.
+	 * @param site
+	 * @param business
+	 */
+	public void notifyConnectedMembers(BusinessVO business, Message msg, Map<String, Object> params, String url) {
+		StringBuilder sql = new StringBuilder(300);
+		sql.append("select distinct m.profile_id from ").append(customDbSchema).append("REZDOX_MEMBER m ");
+		sql.append(DBUtil.INNER_JOIN).append("PROFILE_ROLE pr on m.profile_id=pr.profile_id and pr.site_id=? and pr.status_id=? ");
+		sql.append(DBUtil.INNER_JOIN).append(customDbSchema).append("REZDOX_CONNECTION c on ");
+		sql.append("(m.member_id=c.sndr_member_id or m.member_id=c.rcpt_member_id) ");
+		sql.append("and (c.sndr_business_id=? or c.rcpt_business_id=?) and c.approved_flg=1");
+		log.debug(sql);
+
+		List<String> profileIds = new ArrayList<>();
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, StringUtil.checkVal(site.getAliasPathParentId(), site.getSiteId()));
+			ps.setInt(2, SecurityController.STATUS_ACTIVE);
+			ps.setString(3, business.getBusinessId());
+			ps.setString(4, business.getBusinessId());
+			ResultSet rs = ps.executeQuery();
+			while (rs.next())
+				profileIds.add(rs.getString(1));
+
+		} catch (SQLException sqle) {
+			log.error("could not load profileIds", sqle);
+		}
+		if (profileIds.isEmpty()) return;
+
+		log.debug(String.format("sending notification to %d users", profileIds.size()));
+		send(msg, params, url, profileIds.toArray(new String[profileIds.size()]));
 	}
 }

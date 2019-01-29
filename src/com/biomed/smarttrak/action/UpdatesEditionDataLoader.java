@@ -430,7 +430,7 @@ public class UpdatesEditionDataLoader extends SimpleActionAdapter {
 		StringBuilder sql = new StringBuilder(800);
 		appendSelect(sql);
 		sql.append("from profile p ");
-		sql.append(DBUtil.INNER_JOIN).append(schema).append("biomedgps_user u on p.profile_id=u.profile_id ");
+		sql.append(DBUtil.INNER_JOIN).append(schema).append("biomedgps_user u on p.profile_id=u.profile_id and u.active_flg = 1 ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("biomedgps_account a on a.account_id=u.account_id ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("biomedgps_account_acl acl on acl.account_id=a.account_id and acl.updates_no=1 ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("biomedgps_section s on s.section_id=acl.section_id "); //lvl3 hierarchy

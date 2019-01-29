@@ -34,6 +34,7 @@ public class ProductSerialNumberVO extends ProductVO {
 	private String serialNumber;
 	private Date retailerDate;
 	private double retailerCost;
+	private int disposeFlag;
 
 	// Bean Sub-Elements
 	private ProductVO product;
@@ -194,5 +195,20 @@ public class ProductSerialNumberVO extends ProductVO {
 	 */
 	public void setRetailerCost(double retailerCost) {
 		this.retailerCost = retailerCost;
+	}
+
+	/**
+	 * @return the disposeFlag
+	 */
+	@Column(name="dispose_flg")
+	public int getDisposeFlag() {
+		return disposeFlag;
+	}
+
+	/**
+	 * @param disposeFlag the disposeFlag to set
+	 */
+	public void setDisposeFlag(int disposeFlag) {
+		this.disposeFlag = disposeFlag;
 	}
 }

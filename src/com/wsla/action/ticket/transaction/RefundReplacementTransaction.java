@@ -16,6 +16,7 @@ import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
+import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.RandomAlphaNumeric;
 import com.siliconmtn.util.StringUtil;
 
@@ -29,6 +30,7 @@ import com.wsla.data.ticket.RefundReplacementVO;
 import com.wsla.data.ticket.StatusCode;
 import com.wsla.data.ticket.TicketAssignmentVO;
 import com.wsla.data.ticket.TicketAssignmentVO.TypeCode;
+import com.wsla.data.ticket.TicketDataVO;
 import com.wsla.data.ticket.TicketVO;
 import com.wsla.data.ticket.TicketVO.UnitLocation;
 import com.wsla.data.ticket.UserVO;
@@ -54,6 +56,7 @@ public class RefundReplacementTransaction extends BaseTransactionAction {
 	public static final String CREATE_RAR = "createRar";
 	public static final String APPROVAL_TYPE = "approvalType";
 	public static final String DISPOSITION_CODE = "unitDispostion";
+	public static final String TICKET_ATTRIBUTE_CODE = "attr_purchasePrice";
 
 	public enum ApprovalTypes {
 		REFUND_DENIED, REFUND_REQUEST, REPLACEMENT_REQUEST;
@@ -144,7 +147,7 @@ public class RefundReplacementTransaction extends BaseTransactionAction {
 			disposeUnit(rrvo, user, tvo);
 		}else if (rrvo.getUnitDisposition().equalsIgnoreCase(DispositionCodes.HARVEST_UNIT.name())) {
 			//set to harvest status
-			changeStatus(rrvo.getTicketId(), user.getUserId(), StatusCode.HARVEST_REQ, null, null);
+			changeStatus(rrvo.getTicketId(), user.getUserId(), StatusCode.HARVEST_APPROVED, null, null);
 		}else {
 			//is return
 			returnUnit(rrvo, user, tvo);
@@ -195,7 +198,7 @@ public class RefundReplacementTransaction extends BaseTransactionAction {
 				
 			}else {
 				//status change for harvest
-				changeStatus(rrvo.getTicketId(), user.getUserId(), StatusCode.HARVEST_REQ, null, null);
+				changeStatus(rrvo.getTicketId(), user.getUserId(), StatusCode.HARVEST_APPROVED, null, null);
 			}
 		}else {
 			//if anywhere other then wsla make a shipment
@@ -209,9 +212,7 @@ public class RefundReplacementTransaction extends BaseTransactionAction {
 				log.error("could not build shipment ",e);
 				putModuleData(tvo, 0, false, e.getLocalizedMessage(), true);
 			}
-			
 		}
-		
 	}
 
 	/**
@@ -312,11 +313,41 @@ public class RefundReplacementTransaction extends BaseTransactionAction {
 		CreditMemoVO cmvo = new CreditMemoVO();
 		cmvo.setCustomerMemoCode(RandomAlphaNumeric.generateRandom(WSLAConstants.TICKET_RANDOM_CHARS).toUpperCase());
 		cmvo.setRefundReplacementId(rrvo.getRefundReplacementId());
+		cmvo.setRefundAmount(getRefundAmount(rrvo.getTicketId()));
 		cmvo.setCreateDate(new Date());
 		
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		db.save(cmvo);
 			
+	}
+
+	/**
+	 * 
+	 * @param ticketId
+	 * @return
+	 */
+	private double getRefundAmount(String ticketId) {
+		List<Object> params = new ArrayList<>();
+		params.add(ticketId);
+		params.add(TICKET_ATTRIBUTE_CODE);
+
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+
+		StringBuilder sql = new StringBuilder(115);
+		sql.append(DBUtil.SELECT_FROM_STAR).append(getCustomSchema()).append("wsla_ticket_data td ");
+		sql.append("where ticket_id = ? and attribute_cd = ? ");
+		
+		log.debug( sql + params);
+		
+		List<TicketDataVO> data = db.executeSelect(sql.toString(), params, new TicketDataVO());
+		
+		Double price = 0.0;
+		
+		if (data != null && data.size() == 1) {
+			price = Convert.formatDouble(data.get(0).getValue());
+		} 
+
+		return price;
 	}
 
 	/**

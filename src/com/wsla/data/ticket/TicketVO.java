@@ -61,7 +61,7 @@ public class TicketVO extends BeanDataVO {
 		CALLER, OEM, RETAILER, COURIER, WSLA, DECOMMISSIONED, CAS;
 	}
 		
-	// Member Variables
+	// String Member Variables
 	private String ticketId;
 	private String parentId;
 	private String ticketIdText;
@@ -72,14 +72,21 @@ public class TicketVO extends BeanDataVO {
 	private String lockedBy;
 	private String lockedByName;
 	private StatusCode statusCode;
-	private Standing standingCode = Standing.GOOD;
-	private UnitLocation unitLocation;
+	private String phoneNumber;
+	
+	// Numeric Members
 	private int warrantyValidFlag;
 	private int creationTime;
+	
+	// Date Members
 	private Date purchaseDate;
 	private Date createDate;
 	private Date updateDate;
 	private Date lockedDate;
+	
+	// Enum Members
+	private Standing standingCode = Standing.GOOD;
+	private UnitLocation unitLocation;
 
 	// Helper Variables
 	private String retailerId;
@@ -271,6 +278,14 @@ public class TicketVO extends BeanDataVO {
 	@Column(name="status_cd")
 	public StatusCode getStatusCode() {
 		return statusCode;
+	}
+
+	/**
+	 * @return the phoneNumber
+	 */
+	@Column(name="phone_number_txt")
+	public String getPhoneNumber() {
+		return phoneNumber;
 	}
 
 	/**
@@ -790,5 +805,12 @@ public class TicketVO extends BeanDataVO {
 	 */
 	public void setCreationTime(int creationTime) {
 		this.creationTime = creationTime;
+	}
+
+	/**
+	 * @param phoneNumber the phoneNumber to set
+	 */
+	public void setPhoneNumber(String phoneNumber) {
+		this.phoneNumber = phoneNumber;
 	}
 }
