@@ -2,6 +2,7 @@ package com.wsla.data.report;
 
 // JDK 1.8.x
 import java.sql.ResultSet;
+import java.util.Date;
 
 // SMT Base Libs
 import com.siliconmtn.action.ActionRequest;
@@ -32,14 +33,22 @@ public class BillingVO extends BeanDataVO {
 	private static final long serialVersionUID = 2387553271546388173L;
 	
 	// Data Members
+	private String ticketIdText;
 	private String phoneNumber;
+	private String formattedPhoneNumber;
 	private String oem;
+	private String oemId;
 	private String productName;
+	private String country = "MX";
 	private long totalTickets;
+	private int daysBeforeCas;
+	private int daysInCas;
 	private double amount;
 	private double failureRate;
-	private String country = "MX";
-
+	private double avgDaysOpen;
+	private Date openedDate;
+	private Date closedDate;
+	
 	/**
 	 * 
 	 */
@@ -67,6 +76,13 @@ public class BillingVO extends BeanDataVO {
 	@Column(name="phone_number_txt")
 	public String getPhoneNumber() {
 		return phoneNumber;
+	}
+	
+	/**
+	 * @return the formattedPhoneNumber
+	 */
+	public String getFormattedPhoneNumber() {
+		return formattedPhoneNumber;
 	}
 
 	/**
@@ -118,6 +134,62 @@ public class BillingVO extends BeanDataVO {
 	}
 
 	/**
+	 * @return the avgDaysOpen
+	 */
+	@Column(name="avg_days_open_no")
+	public double getAvgDaysOpen() {
+		return avgDaysOpen;
+	}
+
+	/**
+	 * @return the ticketIdText
+	 */
+	@Column(name="ticket_no")
+	public String getTicketIdText() {
+		return ticketIdText;
+	}
+
+	/**
+	 * @return the daysBeforeCas
+	 */
+	@Column(name="days_to_cas")
+	public int getDaysBeforeCas() {
+		return daysBeforeCas;
+	}
+
+	/**
+	 * @return the daysinCas
+	 */
+	@Column(name="days_in_cas")
+	public int getDaysInCas() {
+		return daysInCas;
+	}
+
+	/**
+	 * @return the openedDate
+	 */
+	@Column(name="opened_dt")
+	public Date getOpenedDate() {
+		return openedDate;
+	}
+
+	/**
+	 * @return the closedDate
+	 */
+	@Column(name="closed_dt")
+	public Date getClosedDate() {
+		return closedDate;
+	}
+
+	/**
+	 * @return the oemId
+	 */
+	@Column(name="oem_id")
+	public String getOemId() {
+		return oemId;
+	}
+
+	/**
 	 * @param phoneNumber the phoneNumber to set
 	 */
 	public void setPhoneNumber(String phoneNumber) {
@@ -125,7 +197,7 @@ public class BillingVO extends BeanDataVO {
 		
 		if (! StringUtil.isEmpty(phoneNumber)) {
 			PhoneNumberFormat pnf = new PhoneNumberFormat(phoneNumber, country, PhoneNumberFormat.INTERNATIONAL_FORMAT);
-			this.phoneNumber = pnf.getFormattedNumber();
+			this.formattedPhoneNumber = pnf.getFormattedNumber();
 		}
 		
 	}
@@ -170,6 +242,63 @@ public class BillingVO extends BeanDataVO {
 	 */
 	public void setCountry(String country) {
 		this.country = country;
+	}
+
+	/**
+	 * @param avgDaysOpen the avgDaysOpen to set
+	 */
+	public void setAvgDaysOpen(double avgDaysOpen) {
+		this.avgDaysOpen = avgDaysOpen;
+	}
+
+	/**
+	 * @param ticketIdText the ticketIdText to set
+	 */
+	public void setTicketIdText(String ticketIdText) {
+		this.ticketIdText = ticketIdText;
+	}
+
+	/**
+	 * @param daysBeforeCas the daysBeforeCas to set
+	 */
+	public void setDaysBeforeCas(int daysBeforeCas) {
+		this.daysBeforeCas = daysBeforeCas;
+	}
+
+	/**
+	 * @param daysinCas the daysinCas to set
+	 */
+	public void setDaysInCas(int daysInCas) {
+		this.daysInCas = daysInCas;
+	}
+
+	/**
+	 * @param openedDate the openedDate to set
+	 */
+	public void setOpenedDate(Date openedDate) {
+		this.openedDate = openedDate;
+	}
+
+	/**
+	 * @param closedDate the closedDate to set
+	 */
+	public void setClosedDate(Date closedDate) {
+		this.closedDate = closedDate;
+	}
+
+
+	/**
+	 * @param formattedPhoneNumber the formattedPhoneNumber to set
+	 */
+	public void setFormattedPhoneNumber(String formattedPhoneNumber) {
+		this.formattedPhoneNumber = formattedPhoneNumber;
+	}
+
+	/**
+	 * @param oemId the oemId to set
+	 */
+	public void setOemId(String oemId) {
+		this.oemId = oemId;
 	}
 
 }
