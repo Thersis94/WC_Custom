@@ -405,7 +405,7 @@ public class RefundReplacementTransaction extends BaseTransactionAction {
 	 * @param ticketId
 	 * @return
 	 */
-	private RefundReplacementVO getRefRepVoByTicketId(String ticketId) {
+	public RefundReplacementVO getRefRepVoByTicketId(String ticketId) {
 		List<Object> params = new ArrayList<>();
 		params.add(ticketId);
 

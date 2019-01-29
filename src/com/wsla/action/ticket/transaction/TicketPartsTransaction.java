@@ -31,6 +31,7 @@ import com.wsla.data.ticket.LedgerSummary;
 import com.wsla.data.ticket.PartVO;
 import com.wsla.data.ticket.ShipmentVO;
 import com.wsla.data.ticket.ShipmentVO.ShipmentStatus;
+import com.wsla.data.ticket.ShipmentVO.ShipmentType;
 import com.wsla.data.ticket.StatusCode;
 import com.wsla.data.ticket.TicketDataVO;
 import com.wsla.data.ticket.TicketLedgerVO;
@@ -258,6 +259,7 @@ public class TicketPartsTransaction extends BaseTransactionAction {
 		
 		shipment.setTicketId(tId);
 		shipment.setStatus(ShipmentStatus.CREATED);
+		shipment.setShipmentType(isReturn ? ShipmentType.UNIT_MOVEMENT : ShipmentType.PARTS_REQUEST);
 		
 		// Save the shipment
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());

@@ -47,6 +47,7 @@ import com.wsla.data.ticket.LedgerSummary;
 import com.wsla.data.ticket.PartVO;
 import com.wsla.data.ticket.ShipmentVO;
 import com.wsla.data.ticket.ShipmentVO.ShipmentStatus;
+import com.wsla.data.ticket.ShipmentVO.ShipmentType;
 import com.wsla.data.ticket.StatusCode;
 import com.wsla.data.ticket.TicketVO;
 import com.wsla.data.ticket.TicketAssignmentVO.TypeCode;
@@ -264,13 +265,17 @@ public class LogisticsAction extends SBActionAdapter {
 				//the admin can remove or add on the next screen, but this is a significant convenience for them.
 				if (isInsert && req.hasParameter(REQ_TICKET_ID)) {
 					addTicketPartsToShipment(vo.getShipmentId(), req.getParameter(REQ_TICKET_ID));
+					vo.setShipmentType(ShipmentType.PARTS_REQUEST);
+				} else if (isInsert) {
+					vo.setShipmentType(ShipmentType.INVENTORY);
 				}
 				
-				// Change the service order status when shipping the service order parts
+				// Change the service order status when shipping the service order parts or unit
 				if (req.hasParameter(REQ_TICKET_ID) && ShipmentStatus.SHIPPED.equals(vo.getStatus())) {
 					UserVO user = (UserVO) getAdminUser(req).getUserExtendedInfo();
 					BaseTransactionAction bta = new BaseTransactionAction(getDBConnection(), getAttributes());
-					bta.changeStatus(req.getParameter(REQ_TICKET_ID), user.getUserId(), StatusCode.PARTS_SHIPPED_CAS, LedgerSummary.SHIPMENT_CREATED.summary, null);
+					StatusCode status = ShipmentType.UNIT_MOVEMENT == vo.getShipmentType() ? StatusCode.DEFECTIVE_SHIPPED : StatusCode.PARTS_SHIPPED_CAS;
+					bta.changeStatus(req.getParameter(REQ_TICKET_ID), user.getUserId(), status, LedgerSummary.SHIPMENT_CREATED.summary, null);
 				}
 			}
 
@@ -392,7 +397,7 @@ public class LogisticsAction extends SBActionAdapter {
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		List<Object> params = new ArrayList<>();
 		StringBuilder sql = new StringBuilder(200);
-		sql.append("select ps.product_id, t.ticket_id, 1 as quantity_no, 0 as harvested_flg, 0 as submit_approval_flg, ps.serial_no_txt from ").append(getCustomSchema()).append("wsla_ticket t ");
+		sql.append("select ps.product_id, t.ticket_id, 1 as quantity_no, 0 as harvested_flg, 1 as submit_approval_flg, ps.serial_no_txt from ").append(getCustomSchema()).append("wsla_ticket t ");
 		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("wsla_product_serial ps on t.product_serial_id = ps.product_serial_id  ");
 		sql.append(DBUtil.WHERE_CLAUSE).append("ticket_id = ? ");
 		PartVO pvo = new PartVO();

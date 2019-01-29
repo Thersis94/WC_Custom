@@ -43,6 +43,7 @@ public class ShipmentVO extends BeanDataVO {
 	private String ticketId;
 	private ShipmentStatus status;
 	private CarrierType carrierType;
+	private ShipmentType shipmentType;
 	private String trackingNo;
 	private String commentsText;
 	private String purchaseOrder;
@@ -69,6 +70,10 @@ public class ShipmentVO extends BeanDataVO {
 
 	public enum ShipmentStatus {
 		CREATED, BACKORDERED, SHIPPED, RECEIVED, CANCELED
+	}
+	
+	public enum ShipmentType {
+		INVENTORY, PARTS_REQUEST, UNIT_MOVEMENT
 	}
 
 	public ShipmentVO() {
@@ -305,5 +310,20 @@ public class ShipmentVO extends BeanDataVO {
 	@BeanSubElement
 	public void setShippedByUser(UserVO shippedByUser) {
 		this.shippedByUser = shippedByUser;
+	}
+
+	/**
+	 * @return the shipmentType
+	 */
+	@Column(name="shipment_type_cd")
+	public ShipmentType getShipmentType() {
+		return shipmentType;
+	}
+
+	/**
+	 * @param shipmentType the shipmentType to set
+	 */
+	public void setShipmentType(ShipmentType shipmentType) {
+		this.shipmentType = shipmentType;
 	}
 }

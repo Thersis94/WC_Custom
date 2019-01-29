@@ -18,8 +18,10 @@ import com.siliconmtn.util.StringUtil;
 // WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.constants.Constants;
+import com.wsla.action.ticket.TicketEditAction;
 import com.wsla.data.ticket.HarvestApprovalVO;
 import com.wsla.data.ticket.StatusCode;
+import com.wsla.data.ticket.TicketVO;
 import com.wsla.data.ticket.UserVO;
 
 /****************************************************************************
@@ -88,12 +90,28 @@ public class HarvestApprovalAction extends SBActionAdapter {
 
 			//if approved for harvesting, call the parts action so it can create a BOM of parts the Tech should collect & record.
 			if (StatusCode.HARVEST_APPROVED.equals(vo.getTicket().getStatusCode())) {
-				HarvestPartsAction hpa = new HarvestPartsAction(getAttributes(), getDBConnection());
-				hpa.prepareHarvest(req.getParameter("productSerialId"));
+				createBOM(req.getParameter("productSerialId"), null);
 			}
 		}
 	}
-
+	
+	/**
+	 * Calls the parts action so it can create a BOM of parts the Tech
+	 * should collect & record.
+	 * 
+	 * @param productSerialId - set to null if unknown
+	 * @param ticketId - use ticketId when you don't know the productSerialId
+	 */
+	public void createBOM(String productSerialId, String ticketId) {
+		if (productSerialId == null) {
+			TicketEditAction tea = new TicketEditAction(getDBConnection(), getAttributes());
+			TicketVO ticket = tea.getBaseTicket(ticketId);
+			productSerialId = ticket.getProductSerialId();
+		}
+		
+		HarvestPartsAction hpa = new HarvestPartsAction(getAttributes(), getDBConnection());
+		hpa.prepareHarvest(productSerialId);
+	}
 
 	/**
 	 * Return a list of products tied to tickets that are status=HarvestPendingApproval.

@@ -4,12 +4,14 @@ package com.wsla.action.ticket.transaction;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Map;
 
 //SMT Base Lbs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.DBProcessor;
+import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.util.Convert;
@@ -57,6 +59,16 @@ public class TicketDataTransaction extends SBActionAdapter {
 		super(actionInit);
 	}
 
+	/**
+	 * Overloaded constructor used for calling between actions.
+	 * @param conn
+	 * @param attrs
+	 */
+	public TicketDataTransaction(SMTDBConnection conn, Map<String, Object> attrs) {
+		this();
+		setAttributes(attrs);
+		setDBConnection(conn);
+	}
 	
 	/**
 	 * 
