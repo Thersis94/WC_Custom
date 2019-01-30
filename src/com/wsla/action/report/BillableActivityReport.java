@@ -11,6 +11,7 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.smt.sitebuilder.action.SBActionAdapter;
+import com.wsla.action.ticket.TicketLedgerAction;
 import com.wsla.common.LocaleWrapper;
 import com.wsla.data.report.BillingVO;
 
@@ -71,6 +72,10 @@ public class BillableActivityReport extends SBActionAdapter {
 			String id = req.getParameter("id");
 			boolean isPhone = "billablePhoneReport".equalsIgnoreCase(req.getParameter("detailType"));
 			setModuleData(getPhoneDetail(startDate, endDate, locale, id, isPhone));
+		
+		} else if ("soDetail".equalsIgnoreCase(req.getParameter("type"))) {
+			TicketLedgerAction tla = new TicketLedgerAction(dbConn, attributes);
+			setModuleData(tla.getLedgerForTicket(req.getParameter("ticketIdText")));
 		}
 	}
 	
@@ -87,7 +92,8 @@ public class BillableActivityReport extends SBActionAdapter {
 		sql.append("select a.ticket_id, ticket_no, a.create_dt as opened_dt, b.create_dt as closed_dt, ");
 		sql.append("date_part('day',age(b.create_dt, a.create_dt)) as days_open, total_billable as amount_no, ");
 		sql.append("cast(coalesce(date_part('day',age(cas_assigned_dt, a.create_dt)), 0) as int) days_to_cas, ");
-		sql.append("cast(coalesce(date_part('day',age(cas_complete_dt, a.create_dt)), 0) as int) as days_in_cas, ? as country ");
+		sql.append("cast(coalesce(date_part('day',age(cas_complete_dt, a.create_dt)), 0) as int) as days_in_cas, ? as country, ");
+		sql.append("creation_time_no as avg_create_time_no ");
 		sql.append(DBUtil.FROM_CLAUSE).append(getCustomSchema()).append("wsla_ticket a ");
 		sql.append("inner join ").append(getCustomSchema());
 		sql.append("wsla_ticket_ledger b on a.ticket_id = b.ticket_id and b.status_cd = 'CLOSED' ");
@@ -136,7 +142,8 @@ public class BillableActivityReport extends SBActionAdapter {
 		StringBuilder sql = new StringBuilder(640);
 		sql.append("select phone_number_txt, count(distinct(a.ticket_id)) as total_tickets, ");
 		sql.append("sum(total_billable) as amount_no, ? as country_cd, ");
-		sql.append("round(cast(avg(date_part('day',age(b.create_dt, a.create_dt))) as numeric), 1) as avg_days_open_no ");
+		sql.append("round(cast(avg(date_part('day',age(b.create_dt, a.create_dt))) as numeric), 1) as avg_days_open_no, ");
+		sql.append("avg(creation_time_no)::int avg_create_time_no ");
 		sql.append("from ").append(getCustomSchema()).append("wsla_ticket a ");
 		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema());
 		sql.append("wsla_ticket_ledger b on a.ticket_id = b.ticket_id and b.status_cd = 'CLOSED' ");
@@ -173,7 +180,8 @@ public class BillableActivityReport extends SBActionAdapter {
 		StringBuilder sql = new StringBuilder(640);
 		sql.append("select provider_nm, oem_id, count(distinct(a.ticket_id)) as total_tickets, ");
 		sql.append("sum(total_billable) as amount_no, ? as country_cd, ");
-		sql.append("round(cast(avg(date_part('day',age(b.create_dt, a.create_dt))) as numeric), 1) as avg_days_open_no ");
+		sql.append("round(cast(avg(date_part('day',age(b.create_dt, a.create_dt))) as numeric), 1) as avg_days_open_no, ");
+		sql.append("avg(creation_time_no)::int avg_create_time_no ");
 		sql.append("from ").append(getCustomSchema()).append("wsla_ticket a ");
 		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema());
 		sql.append("wsla_ticket_ledger b on a.ticket_id = b.ticket_id and b.status_cd = 'CLOSED' ");

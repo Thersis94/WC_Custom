@@ -46,6 +46,7 @@ public class BillingVO extends BeanDataVO {
 	private double amount;
 	private double failureRate;
 	private double avgDaysOpen;
+	private int avgCreateTime;
 	private Date openedDate;
 	private Date closedDate;
 	
@@ -190,6 +191,14 @@ public class BillingVO extends BeanDataVO {
 	}
 
 	/**
+	 * @return the avgCreateTime
+	 */
+	@Column(name="avg_create_time_no")
+	public int getAvgCreateTime() {
+		return avgCreateTime;
+	}
+
+	/**
 	 * @param phoneNumber the phoneNumber to set
 	 */
 	public void setPhoneNumber(String phoneNumber) {
@@ -299,6 +308,13 @@ public class BillingVO extends BeanDataVO {
 	 */
 	public void setOemId(String oemId) {
 		this.oemId = oemId;
+	}
+
+	/**
+	 * @param avgCreateTime the avgCreateTime to set
+	 */
+	public void setAvgCreateTime(int avgCreateTime) {
+		this.avgCreateTime = avgCreateTime;
 	}
 
 }
