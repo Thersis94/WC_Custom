@@ -792,7 +792,6 @@ public class SelectLookupAction extends SBActionAdapter {
 		DBProcessor db = new DBProcessor(getDBConnection());
 		List<ProviderPhoneVO> phones = db.executeSelect(sql.toString(), null, new ProviderPhoneVO());
 		List<GenericVO> data = new ArrayList<>(phones.size());
-		
 		// Format the phone number for display
 		for (ProviderPhoneVO entry : phones) {
 			String pn = entry.getPhoneNumber();
