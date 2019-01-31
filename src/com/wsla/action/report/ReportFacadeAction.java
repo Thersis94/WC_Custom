@@ -50,8 +50,8 @@ public class ReportFacadeAction extends FacadeActionAdapter {
 	 */
 	private void loadTypes() {
 		actionMap.put(BillableActivityReport.AJAX_KEY, BillableActivityReport.class);
-		
-	};
+		actionMap.put(SummaryActivityReport.AJAX_KEY, SummaryActivityReport.class);
+	}
 
 	/*
 	 * (non-Javadoc)
