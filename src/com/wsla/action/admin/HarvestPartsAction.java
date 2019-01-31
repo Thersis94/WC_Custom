@@ -16,12 +16,19 @@ import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.orm.GridDataVO;
 import com.siliconmtn.db.pool.SMTDBConnection;
+import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.util.StringUtil;
 // WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
+import com.wsla.action.ticket.transaction.TicketDataTransaction;
+import com.wsla.action.ticket.transaction.TicketTransaction;
 import com.wsla.data.ticket.HarvestApprovalVO;
+import com.wsla.data.ticket.LedgerSummary;
 import com.wsla.data.ticket.ProductHarvestVO;
 import com.wsla.data.ticket.StatusCode;
+import com.wsla.data.ticket.TicketVO;
+import com.wsla.data.ticket.TicketVO.UnitLocation;
+import com.wsla.data.ticket.UserVO;
 
 /****************************************************************************
  * <b>Title</b>: HarvestPartsAction.java
@@ -36,6 +43,17 @@ import com.wsla.data.ticket.StatusCode;
  * @updates:
  ****************************************************************************/
 public class HarvestPartsAction extends SBActionAdapter {
+	
+	/**
+	 * this enum exists to help control and organize the process for shipping back 
+	 * serial number stickers/plates to wsla
+	 */
+	public enum SerialPlateStatus {
+		HARVEST_COMPLETED, DISPOSE_COMPLETED, NOT_SHIPPED, SHIPPING, RECEIVIED;
+	}
+	
+	public static String SN_PLATE_SHIP_ATTRIBUTE = "attr_snPlateShipStatus";
+	public static String SO_NAME = "soName";
 
 	public HarvestPartsAction() {
 		super();
@@ -65,6 +83,24 @@ public class HarvestPartsAction extends SBActionAdapter {
 	public void retrieve(ActionRequest req) throws ActionException {
 		String productSerialId = req.getParameter("productSerialId");
 		Object data;
+		
+		if(req.hasParameter("harvestStatus")) {
+			String ticketId = StringUtil.checkVal(req.getStringParameter("ticketId"));
+			if(req.hasParameter(SO_NAME)) {
+				String soName = req.getStringParameter(SO_NAME);
+				try {
+					ticketId = getTicketIdBySONumber(req.getParameter(SO_NAME));
+					log.debug("ticket id " + ticketId + " found for service order number " + soName );
+				} catch (InvalidDataException e) {
+					log.error("could not get ticket with supplied service order number",e);
+					putModuleData(soName, 0, false, e.getLocalizedMessage(), true);
+				}
+			}
+			
+			UserVO user = (UserVO) getAdminUser(req).getUserExtendedInfo();
+			processHarvestStatus(ticketId, StringUtil.checkVal(req.getStringParameter("harvestStatus")),user);
+			return;
+		}
 
 		// load a single product (set), inclusive of all it's parts, joined to the product_harvest table for dissection view.
 		if (!StringUtil.isEmpty(productSerialId)) {
@@ -72,9 +108,75 @@ public class HarvestPartsAction extends SBActionAdapter {
 		} else {
 			// load a list of products approved for harvesting if a single product was 
 			//not requested.  This is based on ticket status.
-			data = listProducts(new BSTableControlVO(req, ProductHarvestVO.class));
+			String locationId = req.getStringParameter("locationId");
+			data = listProducts(new BSTableControlVO(req, ProductHarvestVO.class), locationId);
 		}
 		setModuleData(data);
+	}
+
+	/**
+	 * @param parameter
+	 * @return
+	 * @throws InvalidDataException 
+	 */
+	private String getTicketIdBySONumber(String soName) throws InvalidDataException {
+		List<Object> vals = new ArrayList<>();
+		vals.add(soName);
+		
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+
+		StringBuilder sql = new StringBuilder(63);
+		sql.append(DBUtil.SELECT_FROM_STAR).append(getCustomSchema()).append("wsla_ticket where ticket_no = ? ");
+		
+		List<TicketVO> data = db.executeSelect(sql.toString(), vals, new TicketVO());
+		
+		if(data != null && !data.isEmpty()) {
+			return data.get(0).getTicketId();
+		}else {
+			throw new InvalidDataException("Service order not linked to a ticket");
+		}
+	}
+
+	/**
+	 * this method exists to control the changing of the states related to harvesting a tv
+	 * @param ticketId
+	 * @param user 
+	 * @param harvestStatus
+	 */
+	public void processHarvestStatus(String ticketId, String PlateStatus, UserVO user) {
+		
+		if (SerialPlateStatus.HARVEST_COMPLETED.name().equalsIgnoreCase(PlateStatus)) {
+			try {
+				completeHarvest(ticketId, user);
+			} catch (Exception e) {
+				log.error("could not complete harvest ",e);
+				putModuleData(ticketId, 0, false, e.getLocalizedMessage(), true);
+			}
+		}
+		
+	}
+
+	/**
+	 * this method handles processing attributes and status after a ticket enters harvest completed.
+	 * @param ticketId
+	 * @param user 
+	 * @throws Exception 
+	 */
+	private void completeHarvest(String ticketId, UserVO user) throws Exception {
+		TicketTransaction tta = new TicketTransaction();
+		tta.setActionInit(actionInit);
+		tta.setAttributes(getAttributes());
+		tta.setDBConnection(getDBConnection());
+		//save the ticket data object to not shipped
+		TicketDataTransaction tdt = new TicketDataTransaction();
+		tdt.setActionInit(actionInit);
+		tdt.setAttributes(getAttributes());
+		tdt.setDBConnection(getDBConnection());
+		tdt.saveDataAttribute(ticketId, SN_PLATE_SHIP_ATTRIBUTE, SerialPlateStatus.NOT_SHIPPED.name(), true);
+		//set the ticket status to harvest complete changing the location to decomistioned
+		tta.changeStatus(ticketId, user.getUserId(), StatusCode.HARVEST_COMPLETE, LedgerSummary.HARVEST_COMPETE.summary, UnitLocation.DECOMMISSIONED);
+		//close the ticket
+		tta.changeStatus(ticketId, user.getUserId(), StatusCode.CLOSED, null, null);
 	}
 
 	/*
@@ -86,7 +188,6 @@ public class HarvestPartsAction extends SBActionAdapter {
 		ProductHarvestVO vo = new ProductHarvestVO(req);
 		//mark harvest complete
 		updateRecord(vo);
-
 		//increment inventory if parts were recovered
 		if (vo.getQuantity() > 0)
 			incrementInventory(vo);
@@ -118,25 +219,37 @@ public class HarvestPartsAction extends SBActionAdapter {
 	 * @param locationId
 	 * @throws ActionException 
 	 */
-	private void incrementInventory(ProductHarvestVO vo) 
-			throws ActionException {
+	private void incrementInventory(ProductHarvestVO vo) throws ActionException {
 		InventoryAction inv = new InventoryAction(getAttributes(), getDBConnection());
 		inv.recordInventory(vo.getProductId(), vo.getLocationId(), vo.getQuantity());
 	}
 
-
 	/**
-	 * Generate a list of products ready for harvesting
-	 * @param bsTableControlVO
+	 * overwrite to accept only table 
+	 * @param bst
 	 * @return
 	 */
 	protected GridDataVO<HarvestApprovalVO> listProducts(BSTableControlVO bst) {
+		return listProducts( bst , null);
+	}
+
+	/**
+	 * Generate a list of products ready for harvesting
+	 * @param locationId 
+	 * @param bsTableControlVO
+	 * @return
+	 */
+	protected GridDataVO<HarvestApprovalVO> listProducts(BSTableControlVO bst, String locationId) {
 		String schema = getCustomSchema();
 		List<Object> params = new ArrayList<>();
 		StringBuilder sql = new StringBuilder(200);
 		sql.append("select p.*, ps.*, t.ticket_id, t.ticket_no, t.status_cd ");
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("wsla_ticket t ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("wsla_product_serial ps on t.product_serial_id=ps.product_serial_id ");
+		if(!StringUtil.isEmpty(locationId)) {
+			sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("wsla_ticket_assignment ta on t.ticket_id = ta.ticket_id and ta.assg_type_cd ='CAS' and ta.location_id = ? ");
+			params.add(locationId);
+		}
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("wsla_product_master p on ps.product_id=p.product_id ");
 		sql.append("where 1=1 ");
 
@@ -175,10 +288,10 @@ public class HarvestPartsAction extends SBActionAdapter {
 		sql.append("where ph.product_serial_id=? and ph.outcome_cd is null "); //omit what's already complete
 		sql.append(bst.getSQLOrderBy("p.product_nm",  "asc"));
 		log.debug(sql);
+		log.debug("serial id = " + productSerialId);
 
 		DBProcessor db = new DBProcessor(getDBConnection(), schema);
-		return db.executeSQLWithCount(sql.toString(), Arrays.asList(productSerialId), 
-				new ProductHarvestVO(), bst.getLimit(), bst.getOffset());
+		return db.executeSQLWithCount(sql.toString(), Arrays.asList(productSerialId), new ProductHarvestVO(), bst.getLimit(), bst.getOffset());
 	}
 
 

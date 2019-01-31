@@ -19,7 +19,7 @@ import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.RandomAlphaNumeric;
 import com.siliconmtn.util.StringUtil;
-
+import com.wsla.action.admin.HarvestPartsAction;
 //wc custom
 import com.wsla.action.ticket.BaseTransactionAction;
 import com.wsla.action.ticket.TicketEditAction;
@@ -146,8 +146,15 @@ public class RefundReplacementTransaction extends BaseTransactionAction {
 		if(rrvo.getUnitDisposition().equalsIgnoreCase(DispositionCodes.DISPOSE.name())) {
 			disposeUnit(rrvo, user, tvo);
 		}else if (rrvo.getUnitDisposition().equalsIgnoreCase(DispositionCodes.HARVEST_UNIT.name())) {
+			
+			HarvestPartsAction hpa = new HarvestPartsAction(getAttributes(), getDBConnection());
+			hpa.prepareHarvest(tvo.getProductSerialId());
+			
 			//set to harvest status
 			changeStatus(rrvo.getTicketId(), user.getUserId(), StatusCode.HARVEST_APPROVED, null, null);
+			
+			
+			
 		}else {
 			//is return
 			returnUnit(rrvo, user, tvo);

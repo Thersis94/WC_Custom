@@ -37,6 +37,7 @@ public enum LedgerSummary {
 	TICKET_CLONED ("A closed ticket was cloned"),
 	TICKET_CLOSED ("The ticket was closed"),
 	REFUND_REJECTED ("Refund or replacement has been Rejected"),
+	HARVEST_COMPETE ("Harvesting of this tv is complete set up for shipment of SN plate"),
 	ASSET_LOADED ("User loaded an asset to the service order"),
 	ASSET_REJECTED ("User assets were rejected"),
 	ASSET_APPROVED ("User assets were approved"),
