@@ -1,5 +1,6 @@
 package com.wsla.action.admin;
 
+import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.HashMap;
@@ -30,6 +31,7 @@ import com.wsla.action.ticket.transaction.RefundReplacementTransaction;
 import com.wsla.action.ticket.transaction.RefundReplacementTransaction.ApprovalTypes;
 import com.wsla.action.ticket.transaction.RefundReplacementTransaction.DispositionCodes;
 import com.wsla.action.ticket.transaction.TicketCloneTransaction;
+import com.wsla.action.ticket.transaction.TicketDataTransaction;
 import com.wsla.common.WSLAConstants.WSLARole;
 import com.wsla.data.ticket.LedgerSummary;
 import com.wsla.data.ticket.PartVO;
@@ -118,25 +120,27 @@ public class LogisticsPartsAction extends SBActionAdapter {
 		// Enforce front end security
 		UserVO user = (UserVO) getAdminUser(req).getUserExtendedInfo();
 		String roleId = ((SBUserRole)req.getSession().getAttribute(Constants.ROLE_DATA)).getRoleId();
-		if (!user.getLocationId().equals(shipment.getToLocationId()) && !WSLARole.ADMIN.getRoleId().equals(roleId)) {
-			throw new ActionException("this user can not receive the shipment");
-		}
+		secureShipmentReceipt(user, roleId, shipment);
 
 		// Mark the shipment as complete
 		markShipmentComplete(shipment, req.getParameter("comments"));
+		boolean isUnitMovement = ShipmentType.UNIT_MOVEMENT == shipment.getShipmentType();
 		
 		// If this is for a service order, change the ticket's status
 		boolean isHarvest = false;
 		boolean isRepair = false;
-		boolean releasedPending = false;
+		boolean hasPending = false;
 		if (!StringUtil.isEmpty(shipment.getTicketId())) {
-			// Determine if this is a harvest/repair ticket and set status accordingly
+			// Determine if this is a harvest/repair ticket, and whether there is a corresponding shipment
 			RefundReplacementTransaction rrt = new RefundReplacementTransaction(getDBConnection(), getAttributes());
 			RefundReplacementVO refRep = rrt.getRefRepVoByTicketId(shipment.getTicketId());
-			isHarvest = DispositionCodes.RETURN_HARVEST.name().equals(refRep.getUnitDisposition());
-			isRepair = DispositionCodes.RETURN_REPAIR.name().equals(refRep.getUnitDisposition());
-			releasedPending = releasePendingShipment(shipment, refRep);
-			updateTicketStatus(shipment, user, isHarvest, isRepair, releasedPending);
+			DispositionCodes disposition = EnumUtil.safeValueOf(DispositionCodes.class, refRep.getUnitDisposition());
+			isHarvest = DispositionCodes.RETURN_HARVEST == disposition && isUnitMovement;
+			isRepair = DispositionCodes.RETURN_REPAIR == disposition && isUnitMovement;
+			hasPending = releasePendingShipment(shipment, refRep);
+			
+			// Set status accordingly
+			updateTicketStatus(shipment, user, isHarvest, isRepair, hasPending);
 		}
 
 		// Process harvest (create BOM) if necessary
@@ -157,6 +161,19 @@ public class LogisticsPartsAction extends SBActionAdapter {
 		// If this was a repair, clone into a new ticket (CAS = WSLA, status = in repair, owner = WSLA)
 		processRepair(shipment.getTicketId(), user, isRepair);
 	}
+
+	/**
+	 * Decides whether the user can ingest a given shipment
+	 * 
+	 * @param user
+	 * @param roleId
+	 * @param shipment
+	 * @throws ActionException
+	 */
+	private void secureShipmentReceipt(UserVO user, String roleId, ShipmentVO shipment) throws ActionException {
+		if (!user.getLocationId().equals(shipment.getToLocationId()) && !WSLARole.ADMIN.getRoleId().equals(roleId))
+			throw new ActionException("this user can not receive the shipment");
+	}
 	
 	/**
 	 * Sets up what is required for harvesting a unit after shipment has been
@@ -164,12 +181,22 @@ public class LogisticsPartsAction extends SBActionAdapter {
 	 * 
 	 * @param ticketId
 	 * @param isHarvest
+	 * @throws ActionException 
 	 */
-	private void processHarvest(String ticketId, boolean isHarvest) {
+	private void processHarvest(String ticketId, boolean isHarvest) throws ActionException {
 		if (!isHarvest) return;
 		
+		// Create the BOM to be harvested
 		HarvestApprovalAction haa = new HarvestApprovalAction(getAttributes(), getDBConnection());
 		haa.createBOM(null, ticketId);
+		
+		// Set the harvest status attribute
+		TicketDataTransaction tdt = new TicketDataTransaction(getDBConnection(), getAttributes());
+		try {
+			tdt.saveDataAttribute(ticketId, "attr_harvest_status", StatusCode.HARVEST_APPROVED.name(), true);
+		} catch (SQLException e) {
+			throw new ActionException(e);
+		}
 	}
 	
 	/**
@@ -184,6 +211,7 @@ public class LogisticsPartsAction extends SBActionAdapter {
 	private void processRepair(String ticketId, UserVO user, boolean isRepair) throws ActionException {
 		if (!isRepair) return;
 		
+		// Clone the ticket. Repairs after a return of a defective unit happen on a new ticket.
 		TicketCloneTransaction tct = new TicketCloneTransaction(getDBConnection(), getAttributes());
 		tct.cloneTicketToWSLA(ticketId, user);
 	}
@@ -224,37 +252,20 @@ public class LogisticsPartsAction extends SBActionAdapter {
 	 * @param user
 	 * @param isHarvest
 	 * @param isRepair
-	 * @param releasedPending - indicates whether a corresponding pending shipment was released
+	 * @param hasPending - indicates whether this shipment has a related pending shipment
 	 * @throws ActionException
 	 */
-	private void updateTicketStatus(ShipmentVO shipment, UserVO user, boolean isHarvest, boolean isRepair, boolean releasedPending) throws ActionException {
-		StatusCode status;
-		switch (shipment.getShipmentType()) {
-			case REPLACEMENT_UNIT:
-				status = StatusCode.RPLC_DELIVEY_RCVD;
-				break;
-			case UNIT_MOVEMENT:
-				status = StatusCode.DEFECTIVE_RCVD;
-				break;
-			case PARTS_REQUEST:
-			default:
-				status = StatusCode.PARTS_RCVD_CAS;
-		}
+	private void updateTicketStatus(ShipmentVO shipment, UserVO user, boolean isHarvest, boolean isRepair, boolean hasPending) throws ActionException {
+		StatusCode status = getIngestStatusChange(shipment.getShipmentType());
 		
 		try {
 			// Do the first (or only in some cases) status change
 			BaseTransactionAction bta = new BaseTransactionAction(getDBConnection(), getAttributes());
 			TicketLedgerVO ledger = bta.changeStatus(shipment.getTicketId(), user.getUserId(), status, LedgerSummary.SHIPMENT_RECEIVED.summary, null);
 			
-			// Do a second status change if this was a harvest/repair ticket
-			if ((isHarvest || isRepair) && shipment.getShipmentType() == ShipmentType.UNIT_MOVEMENT) {
-				if (releasedPending) {
-					
-				} else {
-					LedgerSummary ls = isHarvest ? LedgerSummary.HARVEST_AFTER_RECEIPT : LedgerSummary.REPAIR_AFTER_RECEIPT;
-					status = isHarvest ? StatusCode.HARVEST_APPROVED : StatusCode.CLOSED;
-					ledger = bta.changeStatus(shipment.getTicketId(), user.getUserId(), status, ls.summary, null);
-				}
+			// Do a second status change if this was a unit ticket
+			if (isHarvest || isRepair) {
+				ledger = updateDispositionStatus(shipment, user, isHarvest, hasPending);
 			} else if (shipment.getShipmentType() == ShipmentType.REPLACEMENT_UNIT) {
 				ledger = bta.changeStatus(shipment.getTicketId(), user.getUserId(), StatusCode.PENDING_UNIT_RETURN, null, null);
 			}
@@ -266,6 +277,55 @@ public class LogisticsPartsAction extends SBActionAdapter {
 		} catch (DatabaseException e) {
 			throw new ActionException(e);
 		}
+	}
+	
+	/**
+	 * Returns an appropriate status change for when a shipment is received.
+	 * 
+	 * @param type
+	 * @return
+	 */
+	private StatusCode getIngestStatusChange(ShipmentType type) {
+		switch (type) {
+			case REPLACEMENT_UNIT:
+				return StatusCode.RPLC_DELIVEY_RCVD;
+			case UNIT_MOVEMENT:
+				return StatusCode.DEFECTIVE_RCVD;
+			case PARTS_REQUEST:
+			default:
+				return StatusCode.PARTS_RCVD_CAS;
+		}
+	}
+
+	/**
+	 * Adds an additional status change based on the refund/replacement disposition.
+	 * If harvesting is false, then repair is assumed to be true.
+	 * 
+	 * @param shipment
+	 * @param user
+	 * @param isHarvest
+	 * @param hasPending - indicates whether this shipment has a related pending shipment
+	 * @return
+	 * @throws DatabaseException
+	 */
+	private TicketLedgerVO updateDispositionStatus(ShipmentVO shipment, UserVO user, boolean isHarvest, boolean hasPending) throws DatabaseException {
+		BaseTransactionAction bta = new BaseTransactionAction(getDBConnection(), getAttributes());
+		TicketLedgerVO ledger;
+		
+		// Add a status change & ledger entry to track harvesting
+		if (isHarvest) {
+			bta.changeStatus(shipment.getTicketId(), user.getUserId(), StatusCode.HARVEST_APPROVED, LedgerSummary.HARVEST_AFTER_RECEIPT.summary, null);
+		}
+
+		// Add a status change depending on whether another shipment exists or not
+		if (hasPending) {
+			ledger = bta.changeStatus(shipment.getTicketId(), user.getUserId(), StatusCode.REPLACEMENT_CONFIRMED, null, null);
+		} else {
+			String summary = !isHarvest ? LedgerSummary.REPAIR_AFTER_RECEIPT.summary : null;
+			ledger = bta.changeStatus(shipment.getTicketId(), user.getUserId(), StatusCode.CLOSED, summary, null);
+		}
+		
+		return ledger;
 	}
 	
 	/**
@@ -294,7 +354,7 @@ public class LogisticsPartsAction extends SBActionAdapter {
 		StringBuilder sql = new StringBuilder(100);
 		sql.append(DBUtil.UPDATE_CLAUSE).append(getCustomSchema()).append("wsla_shipment ");
 		sql.append("set status_cd = '").append(ShipmentStatus.CREATED.name()).append("' ");
-		sql.append("where ticket_id = ? and status_cd = ? shipment_type_cd = ? ");
+		sql.append("where ticket_id = ? and status_cd = ? and shipment_type_cd = ? ");
 		
 		// Update the pending shipment
 		DBProcessor dbp = new DBProcessor(getDBConnection(), getCustomSchema());
