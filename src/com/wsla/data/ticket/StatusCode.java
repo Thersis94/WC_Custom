@@ -54,7 +54,7 @@ public enum StatusCode {
 	REPLACEMENT_UNAVAILABLE ("Replacement Unavailable"),
 	RETURN_RECVD("Return Received"),
 	RPLC_DELIVERY_SCHED ("Replacement Delivery Scheduled"),
-	RPLC_DELIVEY_RCVD ("Replacment Delivery Received"),
+	RPLC_DELIVEY_RCVD ("Replacement Delivery Received"),
 	CREDIT_MEMO_STORE ("Credit Memo - Store"),
 	CREDIT_MEMO_OEM ("Credit Memo - OEM"),
 	CREDIT_MEMO_WSLA ("Credit Memo - WSLA"),

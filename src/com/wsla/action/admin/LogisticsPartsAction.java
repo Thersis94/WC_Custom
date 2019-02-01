@@ -17,6 +17,7 @@ import com.siliconmtn.db.orm.GridDataVO;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.EnumUtil;
 import com.siliconmtn.util.StringUtil;
 // WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
@@ -26,6 +27,7 @@ import com.wsla.action.ticket.BaseTransactionAction;
 import com.wsla.action.ticket.PartsAction;
 import com.wsla.action.ticket.ShipmentAction;
 import com.wsla.action.ticket.transaction.RefundReplacementTransaction;
+import com.wsla.action.ticket.transaction.RefundReplacementTransaction.ApprovalTypes;
 import com.wsla.action.ticket.transaction.RefundReplacementTransaction.DispositionCodes;
 import com.wsla.action.ticket.transaction.TicketCloneTransaction;
 import com.wsla.common.WSLAConstants.WSLARole;
@@ -37,6 +39,7 @@ import com.wsla.data.ticket.StatusCode;
 import com.wsla.data.ticket.TicketLedgerVO;
 import com.wsla.data.ticket.UserVO;
 import com.wsla.data.ticket.ShipmentVO.ShipmentStatus;
+import com.wsla.data.ticket.ShipmentVO.ShipmentType;
 
 /****************************************************************************
  * <b>Title</b>: LogisticsPartsAction.java<br>
@@ -125,13 +128,15 @@ public class LogisticsPartsAction extends SBActionAdapter {
 		// If this is for a service order, change the ticket's status
 		boolean isHarvest = false;
 		boolean isRepair = false;
+		boolean releasedPending = false;
 		if (!StringUtil.isEmpty(shipment.getTicketId())) {
 			// Determine if this is a harvest/repair ticket and set status accordingly
 			RefundReplacementTransaction rrt = new RefundReplacementTransaction(getDBConnection(), getAttributes());
 			RefundReplacementVO refRep = rrt.getRefRepVoByTicketId(shipment.getTicketId());
 			isHarvest = DispositionCodes.RETURN_HARVEST.name().equals(refRep.getUnitDisposition());
 			isRepair = DispositionCodes.RETURN_REPAIR.name().equals(refRep.getUnitDisposition());
-			updateTicketStatus(shipment, refRep, user, isHarvest, isRepair);
+			releasedPending = releasePendingShipment(shipment, refRep);
+			updateTicketStatus(shipment, user, isHarvest, isRepair, releasedPending);
 		}
 
 		// Process harvest (create BOM) if necessary
@@ -216,14 +221,25 @@ public class LogisticsPartsAction extends SBActionAdapter {
 	 * Updates a ticket's status based on parts or unit shipping data.
 	 * 
 	 * @param shipment
-	 * @param refRep
 	 * @param user
 	 * @param isHarvest
 	 * @param isRepair
+	 * @param releasedPending - indicates whether a corresponding pending shipment was released
 	 * @throws ActionException
 	 */
-	private void updateTicketStatus(ShipmentVO shipment, RefundReplacementVO refRep, UserVO user, boolean isHarvest, boolean isRepair) throws ActionException {
-		StatusCode status = StringUtil.isEmpty(refRep.getRefundReplacementId()) ? StatusCode.PARTS_RCVD_CAS : StatusCode.DEFECTIVE_RCVD;
+	private void updateTicketStatus(ShipmentVO shipment, UserVO user, boolean isHarvest, boolean isRepair, boolean releasedPending) throws ActionException {
+		StatusCode status;
+		switch (shipment.getShipmentType()) {
+			case REPLACEMENT_UNIT:
+				status = StatusCode.RPLC_DELIVEY_RCVD;
+				break;
+			case UNIT_MOVEMENT:
+				status = StatusCode.DEFECTIVE_RCVD;
+				break;
+			case PARTS_REQUEST:
+			default:
+				status = StatusCode.PARTS_RCVD_CAS;
+		}
 		
 		try {
 			// Do the first (or only in some cases) status change
@@ -231,19 +247,65 @@ public class LogisticsPartsAction extends SBActionAdapter {
 			TicketLedgerVO ledger = bta.changeStatus(shipment.getTicketId(), user.getUserId(), status, LedgerSummary.SHIPMENT_RECEIVED.summary, null);
 			
 			// Do a second status change if this was a harvest/repair ticket
-			if (isHarvest || isRepair) {
-				LedgerSummary ls = isHarvest ? LedgerSummary.HARVEST_AFTER_RECEIPT : LedgerSummary.REPAIR_AFTER_RECEIPT;
-				status = isHarvest ? StatusCode.HARVEST_APPROVED : StatusCode.CLOSED;
-				ledger = bta.changeStatus(shipment.getTicketId(), user.getUserId(), status, ls.summary, null);
+			if ((isHarvest || isRepair) && shipment.getShipmentType() == ShipmentType.UNIT_MOVEMENT) {
+				if (releasedPending) {
+					
+				} else {
+					LedgerSummary ls = isHarvest ? LedgerSummary.HARVEST_AFTER_RECEIPT : LedgerSummary.REPAIR_AFTER_RECEIPT;
+					status = isHarvest ? StatusCode.HARVEST_APPROVED : StatusCode.CLOSED;
+					ledger = bta.changeStatus(shipment.getTicketId(), user.getUserId(), status, ls.summary, null);
+				}
+			} else if (shipment.getShipmentType() == ShipmentType.REPLACEMENT_UNIT) {
+				ledger = bta.changeStatus(shipment.getTicketId(), user.getUserId(), StatusCode.PENDING_UNIT_RETURN, null, null);
 			}
 			
 			Map<String, Object> params = new HashMap<>();
 			params.put("ticketId", ledger.getTicketId());
-			bta.buildNextStep(ledger.getStatusCode(), params, false);
+			bta.buildNextStep(ledger.getStatusCode(), params, ledger.getStatusCode() == StatusCode.CLOSED);
 			putModuleData(bta.getNextStep());
 		} catch (DatabaseException e) {
 			throw new ActionException(e);
 		}
+	}
+	
+	/**
+	 * Finds a corresponding shipment for a replacement unit, and moves it from
+	 * pending status to created.
+	 * 
+	 * @param receivedShipment
+	 * @param refRep
+	 * @return
+	 */
+	private boolean releasePendingShipment(ShipmentVO receivedShipment, RefundReplacementVO refRep) {
+		ApprovalTypes approvalType = EnumUtil.safeValueOf(ApprovalTypes.class, refRep.getApprovalType());
+		
+		// If there is no replacement shipment, there is no need to proceed. Additionally, a
+		// pending shipment should not be released until the defective unit has been received.
+		if (approvalType != ApprovalTypes.REPLACEMENT_REQUEST || receivedShipment.getShipmentType() != ShipmentType.UNIT_MOVEMENT)
+			return false;
+		
+		// Set our search criteria
+		ShipmentVO searchCriteria = new ShipmentVO();
+		searchCriteria.setTicketId(refRep.getTicketId());
+		searchCriteria.setStatus(ShipmentStatus.PENDING);
+		searchCriteria.setShipmentType(ShipmentType.REPLACEMENT_UNIT);
+
+		// Create the update sql
+		StringBuilder sql = new StringBuilder(100);
+		sql.append(DBUtil.UPDATE_CLAUSE).append(getCustomSchema()).append("wsla_shipment ");
+		sql.append("set status_cd = '").append(ShipmentStatus.CREATED.name()).append("' ");
+		sql.append("where ticket_id = ? and status_cd = ? shipment_type_cd = ? ");
+		
+		// Update the pending shipment
+		DBProcessor dbp = new DBProcessor(getDBConnection(), getCustomSchema());
+		int updatedRows = 0;
+		try {
+			updatedRows = dbp.executeSqlUpdate(sql.toString(), searchCriteria, Arrays.asList("ticket_id", "status_cd", "shipment_type_cd"));
+		} catch (DatabaseException e) {
+			log.error("Could not update the pending shipment", e);
+		}
+		
+		return updatedRows > 0;
 	}
 
 	/**

@@ -40,6 +40,7 @@ import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.security.SBUserRole;
 import com.wsla.action.ticket.BaseTransactionAction;
 import com.wsla.action.ticket.TicketEditAction;
+import com.wsla.action.ticket.transaction.TicketPartsTransaction;
 import com.wsla.common.UserSqlFilter;
 import com.wsla.common.WSLAConstants;
 import com.wsla.data.provider.ProviderLocationVO;
@@ -274,7 +275,7 @@ public class LogisticsAction extends SBActionAdapter {
 				if (req.hasParameter(REQ_TICKET_ID) && ShipmentStatus.SHIPPED.equals(vo.getStatus())) {
 					UserVO user = (UserVO) getAdminUser(req).getUserExtendedInfo();
 					BaseTransactionAction bta = new BaseTransactionAction(getDBConnection(), getAttributes());
-					StatusCode status = ShipmentType.UNIT_MOVEMENT == vo.getShipmentType() ? StatusCode.DEFECTIVE_SHIPPED : StatusCode.PARTS_SHIPPED_CAS;
+					StatusCode status = getShippedStatusChange(vo.getShipmentType());
 					bta.changeStatus(req.getParameter(REQ_TICKET_ID), user.getUserId(), status, LedgerSummary.SHIPMENT_CREATED.summary, null);
 				}
 			}
@@ -284,6 +285,23 @@ public class LogisticsAction extends SBActionAdapter {
 		}
 	}
 
+	/**
+	 * Returns an appropriate status change for when a shipment is shipped.
+	 * 
+	 * @param type
+	 * @return
+	 */
+	public StatusCode getShippedStatusChange(ShipmentType type) {
+		switch (type) {
+			case UNIT_MOVEMENT:
+				return StatusCode.DEFECTIVE_SHIPPED;
+			case REPLACEMENT_UNIT:
+				return StatusCode.RPLC_DELIVERY_SCHED;
+			case PARTS_REQUEST:
+			default:
+				return StatusCode.PARTS_SHIPPED_CAS;
+		}
+	}
 
 	/**
 	 * Add the ticket's parts to the shipment if they're not already allocated elsewhere
@@ -430,6 +448,37 @@ public class LogisticsAction extends SBActionAdapter {
 			shipment.setStatus(ShipmentStatus.CANCELED);
 			shipment.setUpdateDate(new Date());
 			dbp.save(shipment);
+		}
+	}
+	
+	/**
+	 * Saves a shipment for movement of a unit. This will typically be a
+	 * replacement unit for the end user.
+	 * 
+	 * @param ticketId
+	 * @param product
+	 * @param isPending
+	 * @throws SQLException
+	 */
+	public void saveUnitShipment(String ticketId, PartVO product, boolean isPending, boolean isReplacement) throws SQLException {
+		TicketPartsTransaction tpt = new TicketPartsTransaction(getDBConnection(), getAttributes());
+		
+		// Create the shipment
+		ShipmentVO shipment = new ShipmentVO();
+		shipment.setFromLocationId(WSLAConstants.DEFAULT_SHIPPING_SRC);
+		shipment.setToLocationId(tpt.getCasLocationId(ticketId));
+		shipment.setTicketId(ticketId);
+		shipment.setStatus(isPending ? ShipmentStatus.PENDING : ShipmentStatus.CREATED);
+		shipment.setShipmentType(isReplacement ? ShipmentType.REPLACEMENT_UNIT : ShipmentType.UNIT_MOVEMENT);
+		
+		// Save the shipment
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		try {
+			db.save(shipment);
+			product.setShipmentId(shipment.getShipmentId());
+			db.save(product);
+		} catch (InvalidDataException | com.siliconmtn.db.util.DatabaseException e) {
+			throw new SQLException(e);
 		}
 	}
 }

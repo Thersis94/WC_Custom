@@ -17,6 +17,7 @@ import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
+import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.util.Convert;
@@ -74,6 +75,18 @@ public class TicketPartsTransaction extends BaseTransactionAction {
 	public TicketPartsTransaction(ActionInitVO actionInit) {
 		super(actionInit);
 	}
+
+	/**
+	 * 
+	 * @param dbConn
+	 * @param attributes
+	 */
+	public TicketPartsTransaction(SMTDBConnection dbConn, Map<String, Object> attributes) {
+		this();
+		this.dbConn = dbConn;
+		this.attributes = attributes;
+	}
+
 	/*
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.action.ActionRequest)

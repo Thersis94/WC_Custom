@@ -69,11 +69,11 @@ public class ShipmentVO extends BeanDataVO {
 	}
 
 	public enum ShipmentStatus {
-		CREATED, BACKORDERED, SHIPPED, RECEIVED, CANCELED
+		CREATED, BACKORDERED, SHIPPED, RECEIVED, CANCELED, PENDING
 	}
 	
 	public enum ShipmentType {
-		INVENTORY, PARTS_REQUEST, UNIT_MOVEMENT
+		INVENTORY, PARTS_REQUEST, UNIT_MOVEMENT, REPLACEMENT_UNIT
 	}
 
 	public ShipmentVO() {
