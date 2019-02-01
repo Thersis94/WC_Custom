@@ -20,6 +20,8 @@ public class LinkVO {
 	private String section;
 	private String linkId;
 	private String objectId; //used for the associated section's id(company, product, update, etc.)
+	private String contentId;
+	private String pageNm;
 	private String html;
 	private Date lastChecked;
 	private int outcome;
@@ -27,19 +29,21 @@ public class LinkVO {
 	private String publicUrl;
 	private String redirectUrl;
 	private int reviewFlag;
+	private int numChecks;
 
-	public LinkVO(String section, String id, String html) {
+	public LinkVO(String section, String id, String html, String contentId) {
 		this.setSection(section);
 		this.setObjectId(id);
 		this.html = html;
+		this.contentId = contentId;
 	}
 
 	public LinkVO() {
 		//no-arg constructor for simple instantiation
 	}
 
-	public static LinkVO makeForUrl(String section, String id, String url) {
-		LinkVO vo = new LinkVO(section, id, null);
+	public static LinkVO makeForUrl(String section, String id, String url, String contentId) {
+		LinkVO vo = new LinkVO(section, id, null, contentId);
 		vo.setUrl(url);
 		return vo;
 	}
@@ -54,11 +58,13 @@ public class LinkVO {
 		LinkVO vo = new LinkVO();
 		vo.setLinkId(rs.getString("link_id"));
 		vo.setObjectId(rs.getString("id"));
+		vo.setPageNm(rs.getString("nm"));
 		vo.setSection(rs.getString("section"));
 		vo.setUrl(rs.getString("url_txt"));
 		vo.setLastChecked(rs.getDate("check_dt"));
 		vo.setOutcomeNo(rs.getInt("status_no"));
 		vo.setReviewFlag(rs.getInt("review_flg"));
+		vo.setContentId(rs.getString("content_id"));
 
 		return vo;
 	}
@@ -106,6 +112,28 @@ public class LinkVO {
 
 	public void setObjectId(String objectId) {
 		this.objectId = objectId;
+	}
+
+	public String getContentId() {
+		return contentId;
+	}
+
+	public void setContentId(String contentId) {
+		this.contentId = contentId;
+	}
+
+	/**
+	 * @return the pageNm
+	 */
+	public String getPageNm() {
+		return pageNm;
+	}
+
+	/**
+	 * @param pageNm the pageNm to set
+	 */
+	public void setPageNm(String pageNm) {
+		this.pageNm = pageNm;
 	}
 
 	public Date getLastChecked() {
@@ -170,5 +198,19 @@ public class LinkVO {
 
 	public void setRedirectUrl(String redirectUrl) {
 		this.redirectUrl = redirectUrl;
+	}
+
+	/**
+	 * @return the numChecks
+	 */
+	public int getNumChecks() {
+		return numChecks;
+	}
+
+	/**
+	 * @param numChecks the numChecks to set
+	 */
+	public void setNumChecks(int numChecks) {
+		this.numChecks = numChecks;
 	}
 }

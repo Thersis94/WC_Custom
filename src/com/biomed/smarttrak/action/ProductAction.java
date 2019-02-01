@@ -28,6 +28,7 @@ import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.Node;
 import com.siliconmtn.data.Tree;
+import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -233,9 +234,10 @@ public class ProductAction extends SimpleActionAdapter {
 	 * @throws ActionException
 	 */
 	protected void addAttributes(ProductVO product, int userLevel) throws ActionException {
-		StringBuilder sql = new StringBuilder(150);
+		StringBuilder sql = new StringBuilder(1500);
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
-		sql.append("SELECT * FROM ").append(customDb).append("BIOMEDGPS_PRODUCT_ATTRIBUTE_XR xr ");
+		sql.append(DBUtil.SELECT_FROM_STAR);
+		sql.append(customDb).append("BIOMEDGPS_PRODUCT_ATTRIBUTE_XR xr ");
 		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_PRODUCT_ATTRIBUTE a ");
 		sql.append("ON a.ATTRIBUTE_ID = xr.ATTRIBUTE_ID ");
 		sql.append("WHERE PRODUCT_ID = ? and (STATUS_NO in (");
@@ -244,8 +246,8 @@ public class ProductAction extends SimpleActionAdapter {
 		}
 		// Detail attributes never have a status number but shouldn't be skipped.
 		sql.append("'").append(AdminControllerAction.Status.P).append("') or STATUS_NO is null) "); 
+		sql.append("ORDER BY xr.ORDER_NO, xr.TITLE_TXT, a.order_no ");
 
-		sql.append("ORDER BY a.ORDER_NO, xr.ORDER_NO ");
 		log.debug(sql+"|"+product.getProductId());
 
 		List<Object> params = new ArrayList<>();

@@ -15,6 +15,7 @@ import java.util.Map;
 import java.util.Set;
 
 import com.biomed.smarttrak.action.GridDisplayAction;
+import com.biomed.smarttrak.admin.report.GridClipboardReport;
 import com.biomed.smarttrak.admin.vo.GridDetailVO;
 import com.biomed.smarttrak.admin.vo.GridVO;
 // SMT Base Libs
@@ -264,7 +265,9 @@ public class GridChartAction extends SBActionAdapter {
 			deactivateLegacy(req.getParameter("slugText"));
 		} else if(req.getBooleanParameter("promoteFlg")) {
 			promoteGridCharts(req);
-		} else {
+		} else if(req.hasParameter("tableData")) {
+			buildGridExcel(req);
+		}else {
 			saveGrid(req);
 		}
 	}
@@ -348,6 +351,18 @@ public class GridChartAction extends SBActionAdapter {
 
 		//Save Record.
 		this.persistGridChanges(g, new HashMap<>());
+	}
+
+	/**
+	 * Create an excel file from the supplied table data.
+	 * @param req
+	 */
+	private void buildGridExcel(ActionRequest req) {
+		GridClipboardReport rpt = new GridClipboardReport();
+		rpt.setData(req.getParameter("tableData"));
+		rpt.setFileName(req.getParameter("chartName")+".xls");
+		req.setAttribute(Constants.BINARY_DOCUMENT_REDIR, true);
+		req.setAttribute(Constants.BINARY_DOCUMENT, rpt);
 	}
 
 	/**
@@ -549,7 +564,7 @@ public class GridChartAction extends SBActionAdapter {
 		DBUtil.preparedStatmentQuestion(gridIds.size(), sql);			
 		sql.append(") or slug_txt in ( ");
 		DBUtil.preparedStatmentQuestion(gridIds.size(), sql);	
-		sql.append(") order by a.grid_id ");
+		sql.append(") order by a.grid_id, b.order_no ");
 		log.debug(sql);
 
 		DBProcessor db = new DBProcessor(dbConn);
@@ -729,4 +744,3 @@ public class GridChartAction extends SBActionAdapter {
 		return new ArrayList<>(data.values());
 	}
 }
-
