@@ -33,6 +33,7 @@ import com.wsla.data.ticket.StatusCode;
 import com.wsla.data.ticket.TicketAssignmentVO;
 import com.wsla.data.ticket.TicketAssignmentVO.TypeCode;
 import com.wsla.data.ticket.TicketDataVO;
+import com.wsla.data.ticket.TicketLedgerVO;
 import com.wsla.data.ticket.TicketVO;
 import com.wsla.data.ticket.TicketVO.UnitLocation;
 import com.wsla.data.ticket.UserVO;
@@ -227,10 +228,12 @@ public class RefundReplacementTransaction extends BaseTransactionAction {
 	 * @throws DatabaseException 
 	 */
 	private void returnUnit(RefundReplacementVO rrvo, UserVO user, TicketVO tvo) throws DatabaseException {
+		TicketLedgerVO ledger;
+		
 		if(UnitLocation.WSLA.name().equalsIgnoreCase(tvo.getUnitLocation().name())) {
 			if(rrvo.getUnitDisposition().equalsIgnoreCase(DispositionCodes.RETURN_REPAIR.name())) {
 				//set status to repair
-				changeStatus(rrvo.getTicketId(), user.getUserId(), StatusCode.CLOSED, null, null);
+				ledger = changeStatus(rrvo.getTicketId(), user.getUserId(), StatusCode.CLOSED, null, null);
 				
 				DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 				TicketEditAction tea = new TicketEditAction(dbConn, attributes);
@@ -264,8 +267,9 @@ public class RefundReplacementTransaction extends BaseTransactionAction {
 				
 			}else {
 				//status change for harvest
-				changeStatus(rrvo.getTicketId(), user.getUserId(), StatusCode.HARVEST_APPROVED, null, null);
+				ledger = changeStatus(rrvo.getTicketId(), user.getUserId(), StatusCode.HARVEST_APPROVED, null, null);
 			}
+			buildNextStep(ledger.getStatusCode(), null, false);
 		}else {
 			//if anywhere other then wsla make a shipment
 			TicketPartsTransaction tpt = new TicketPartsTransaction();
@@ -274,6 +278,8 @@ public class RefundReplacementTransaction extends BaseTransactionAction {
 			tpt.setAttributes(getAttributes());
 			try {
 				tpt.saveShipment(tvo.getTicketId(), true);
+				ledger = changeStatus(tvo.getTicketId(), user.getUserId(), StatusCode.DEFECTIVE_PENDING, LedgerSummary.SHIPMENT_CREATED.summary, null);
+				buildNextStep(ledger.getStatusCode(), null, false);
 			} catch (Exception e) {
 				log.error("could not build shipment ",e);
 				putModuleData(tvo, 0, false, e.getLocalizedMessage(), true);

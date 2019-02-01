@@ -59,6 +59,7 @@ public enum StatusCode {
 	CREDIT_MEMO_OEM ("Credit Memo - OEM"),
 	CREDIT_MEMO_WSLA ("Credit Memo - WSLA"),
 	REFUND_COMPLETE ("Refund Complete"),
+	DEFECTIVE_PENDING ("Defective Pending Shipment"),
 	DEFECTIVE_SHIPPED ("Defective Shipped"),
 	DEFECTIVE_RCVD ("Defective Received"),
 	DISPOSE_UNIT ("Unit disposed of"),
