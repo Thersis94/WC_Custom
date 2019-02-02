@@ -19,6 +19,7 @@ import com.siliconmtn.util.StringUtil;
 // WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.wsla.data.ticket.PartVO;
+import com.wsla.data.ticket.ShipmentVO.ShipmentType;
 
 /****************************************************************************
  * <b>Title</b>: PartsAction.java
@@ -128,12 +129,12 @@ public class PartsAction extends SBActionAdapter {
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("wsla_provider_location pl on ta.location_id=pl.location_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("wsla_shipment s on p.shipment_id=s.shipment_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("wsla_location_item_master lim on pl.location_id=lim.location_id and p.product_id=lim.product_id ");
-		sql.append("where p.ticket_id=? ");
+		sql.append("where p.ticket_id = ? and s.shipment_type_cd = ? ");
 
 		sql.append(bst.getSQLOrderBy("pm.product_nm",  "asc"));
 		log.debug(sql);
 
 		DBProcessor db = new DBProcessor(getDBConnection(), schema);
-		return db.executeSQLWithCount(sql.toString(), Arrays.asList(ticketId), new PartVO(), bst);
+		return db.executeSQLWithCount(sql.toString(), Arrays.asList(ticketId, ShipmentType.PARTS_REQUEST.name()), new PartVO(), bst);
 	}
 }

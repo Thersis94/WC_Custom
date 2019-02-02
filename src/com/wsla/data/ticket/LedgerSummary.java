@@ -24,8 +24,8 @@ public enum LedgerSummary {
 	CAS_REQUESTED_PARTS ("The CAS has requested parts for the equipment"),
 	PARTS_REQUEST_REVIEWED ("WSLA has reviewed the parts request"),
 	PARTS_REQUEST_REJECTED ("WSLA has rejected the parts request"),
-	SHIPMENT_CREATED ("A parts shipment has been created"),
-	SHIPMENT_RECEIVED ("The CAS has marked the shipment received"),
+	SHIPMENT_CREATED ("A shipment has been created"),
+	SHIPMENT_RECEIVED ("The shipment was marked as received"),
 	VALID_SERIAL_SAVED("The user submitted a valid serial and it was saved to the ticket"),
 	SERIAL_UPDATED("The serial number was updated on the ticket"),
 	INVALID_SERIAL_SAVED("Invalid Serial number saved to the ticket"),
@@ -40,7 +40,9 @@ public enum LedgerSummary {
 	ASSET_LOADED ("User loaded an asset to the service order"),
 	ASSET_REJECTED ("User assets were rejected"),
 	ASSET_APPROVED ("User assets were approved"),
-	REPAIR_TYPE ("Unit Repair Type");
+	REPAIR_TYPE ("Unit Repair Type"),
+	HARVEST_AFTER_RECEIPT ("This unit is ready for harvesting"),
+	REPAIR_AFTER_RECEIPT ("A new ticket has been opened to repair the unit");
 	
 	public final String summary;
 	LedgerSummary(String summary) { this.summary = summary; }
