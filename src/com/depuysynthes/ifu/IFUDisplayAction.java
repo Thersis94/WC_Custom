@@ -16,11 +16,14 @@ import org.apache.commons.lang.StringUtils;
 
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
+import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
+
 import com.smt.sitebuilder.action.SimpleActionAdapter;
+import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.constants.Constants;
 
@@ -74,6 +77,12 @@ public class IFUDisplayAction extends SimpleActionAdapter {
 			return;
 		}
 		
+		// container for mod data
+		Map<String,Object> retData = new HashMap<>();
+		
+		// load language fields/values for the given language
+		retData.put("fieldData", loadLanguageFields(req,language));
+		
 		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
 		
 		String keyword = "";
@@ -94,7 +103,34 @@ public class IFUDisplayAction extends SimpleActionAdapter {
 		log.debug("cnt=" + data.size());
 		
 		//store the data and return
-		super.putModuleData(data);
+		retData.put("ifuData",data);
+		super.putModuleData(retData);
+	}
+	
+	/**
+	 * Loads fields/values for the given language.
+	 * @param req
+	 * @param language
+	 * @return
+	 * @throws ActionException
+	 */
+	@SuppressWarnings("unchecked")
+	private IFULanguageVO loadLanguageFields(ActionRequest req, String language) 
+			throws ActionException {
+		List<IFULanguageVO> langFields = null;
+		req.setParameter("language", language);
+		ActionInterface ai = new IFULanguageAction(actionInit);
+		ai.setAttributes(attributes);
+		ai.setDBConnection(dbConn);
+		ai.retrieve(req);
+		
+		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
+		langFields = (List<IFULanguageVO>) mod.getActionData();
+		if (langFields != null && ! langFields.isEmpty()) {
+			return langFields.get(0);
+		} else {
+			return new IFULanguageVO();
+		}
 	}
 	
 	/**

@@ -15,6 +15,8 @@ import java.util.Set;
 
 // App Libs
 import static com.biomed.smarttrak.action.GridDisplayAction.GRID_ID;
+
+import com.biomed.smarttrak.admin.report.GridClipboardReport;
 import com.biomed.smarttrak.admin.vo.GridDetailVO;
 import com.biomed.smarttrak.admin.vo.GridVO;
 
@@ -176,11 +178,25 @@ public class GridChartAction extends SBActionAdapter {
 	public void build(ActionRequest req) throws ActionException {
 		if (Convert.formatBoolean(req.getParameter("deleteLegacy"))) {
 			deactivateLegacy(req.getParameter("slugText"));
-		} else {
+		} else if(req.hasParameter("tableData")) {
+			buildGridExcel(req);
+		}else {
 			saveGrid(req);
 		}
 	}
 
+
+	/**
+	 * Create an excel file from the supplied table data.
+	 * @param req
+	 */
+	private void buildGridExcel(ActionRequest req) {
+		GridClipboardReport rpt = new GridClipboardReport();
+		rpt.setData(req.getParameter("tableData"));
+		rpt.setFileName(req.getParameter("chartName")+".xls");
+		req.setAttribute(Constants.BINARY_DOCUMENT_REDIR, true);
+		req.setAttribute(Constants.BINARY_DOCUMENT, rpt);
+	}
 
 	/**
 	 * Deactivate the legacy relation between charts.
@@ -359,7 +375,7 @@ public class GridChartAction extends SBActionAdapter {
 		DBUtil.preparedStatmentQuestion(gridIds.size(), sql);			
 		sql.append(") or slug_txt in ( ");
 		DBUtil.preparedStatmentQuestion(gridIds.size(), sql);	
-		sql.append(") order by a.grid_id ");
+		sql.append(") order by a.grid_id, b.order_no ");
 		log.debug(sql);
 
 		DBProcessor db = new DBProcessor(dbConn);
