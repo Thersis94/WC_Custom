@@ -870,7 +870,8 @@ public class CompanyManagementAction extends ManagementAction {
 			}
 			
 		} catch (Exception e) {
-			throw new ActionException(
+			throw new ActionException(e);
+		}
 	}
 
 
