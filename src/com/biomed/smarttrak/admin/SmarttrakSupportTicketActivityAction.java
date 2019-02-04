@@ -1,6 +1,7 @@
 package com.biomed.smarttrak.admin;
 
 import java.util.LinkedHashMap;
+import java.util.Map;
 
 import com.biomed.smarttrak.action.AdminControllerAction;
 import com.biomed.smarttrak.util.BiomedSupportEmailUtil;
@@ -37,6 +38,44 @@ public class SmarttrakSupportTicketActivityAction extends SupportTicketActivityA
 
 	public SmarttrakSupportTicketActivityAction(ActionInitVO actionInit) {
 		super(actionInit);
+	}
+	
+	/**
+	 * Build Support_Activity Sql Query.
+	 * @param ticketId
+	 * @param schema
+	 * @return
+	 */
+	@Override
+	protected String formatRetrieveQuery(Map<String, Object> params) {
+		
+		StringBuilder sql = new StringBuilder(150);
+		sql.append("select sa.*, p.first_nm, p.last_nm ");
+		
+		sql.append(", pd.profile_document_id, pd.file_nm ");
+		
+		sql.append("from support_activity sa ");
+		sql.append("inner join profile p on sa.profile_id = p.profile_id ");
+		
+		// Get any files uploaded as part of this activity.
+		// Uploads are associated by ticket id and must therefore be associated to
+		// activities based on file name and creation time.
+		sql.append("left outer join profile_document pd ");
+		sql.append("on pd.feature_id = sa.ticket_id and 'Attachment ' + pd.file_nm + ' uploaded' = sa.desc_txt ");
+		sql.append("and sa.create_dt - '1 minute'::interval < pd.create_dt and sa.create_dt + '1 minute'::interval > pd.create_dt ");
+		
+		sql.append("where sa.ticket_id = ? ");
+		if(params.containsKey(ACTIVITY_ID)) {
+			sql.append("and sa.activity_id = ? ");
+		}
+
+		if(params.containsKey("internalFlg")) {
+			sql.append("and sa.internal_flg = ? ");
+		}
+
+		sql.append("order by sa.create_dt desc ");
+		log.debug(sql);
+		return sql.toString();
 	}
 
 	/** 

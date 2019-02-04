@@ -7,6 +7,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -42,10 +43,9 @@ import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.user.HumanNameIntfc;
 import com.siliconmtn.util.user.NameComparator;
-
+import com.smt.sitebuilder.action.search.SolrFieldVO.FieldType;
 // WC Core libs
 import com.smt.sitebuilder.action.search.SolrResponseVO;
-import com.smt.sitebuilder.action.search.SolrFieldVO.FieldType;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.SiteVO;
@@ -307,7 +307,7 @@ public class UpdatesAction extends ManagementAction {
 		String end = CookieUtil.getValue(COOK_UPD_END_DT, req.getCookies());
 		if (end == null) {
 			HttpServletResponse res = (HttpServletResponse) req.getAttribute(GlobalConfig.HTTP_RESPONSE);
-			end = Convert.formatDate(Calendar.getInstance().getTime(), Convert.DATE_SLASH_PATTERN); //today
+			end = Convert.formatDate(Convert.convertTimeZoneOffset(Calendar.getInstance().getTime(), "EST5EDT"), Convert.DATE_SLASH_PATTERN); //today
 			CookieUtil.add(res, COOK_UPD_END_DT, end, "/", -1);
 		}
 		req.setParameter(COOK_UPD_START_DT, start);
@@ -579,7 +579,6 @@ public class UpdatesAction extends ManagementAction {
 	protected void saveRecord(ActionRequest req, boolean isDelete) throws ActionException {
 		DBProcessor db = new DBProcessor(dbConn, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		UpdateVO u = new UpdateVO(req);
-
 		//Set the redirect URL if applicable
 		setRedirectUrl(req);
 
@@ -598,6 +597,12 @@ public class UpdatesAction extends ManagementAction {
 			} else {
 				filterText(u);
 
+				//Set Converted Date for Create or Update Date depending on action being performed.
+				if(StringUtil.isEmpty(u.getUpdateId())) {
+					u.setCreateDt(Convert.convertTimeZoneOffset(new Date(), "EST5EDT"));
+				} else {
+					u.setUpdateDt(Convert.convertTimeZoneOffset(new Date(), "EST5EDT"));
+				}
 				db.save(u);
 
 				fixPkids(u);

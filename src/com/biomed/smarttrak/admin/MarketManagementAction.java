@@ -5,18 +5,26 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Calendar;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+
+import com.biomed.smarttrak.action.AdminControllerAction;
 import com.biomed.smarttrak.action.AdminControllerAction.Section;
 import com.biomed.smarttrak.action.AdminControllerAction.Status;
-import com.biomed.smarttrak.action.AdminControllerAction;
 import com.biomed.smarttrak.action.MarketAction;
+import com.biomed.smarttrak.util.ManagementActionUtil;
 import com.biomed.smarttrak.util.MarketIndexer;
 import com.biomed.smarttrak.util.SmarttrakTree;
+import com.biomed.smarttrak.vo.MarketArchiveVO;
 import com.biomed.smarttrak.vo.MarketAttributeTypeVO;
 import com.biomed.smarttrak.vo.MarketAttributeVO;
 import com.biomed.smarttrak.vo.MarketVO;
@@ -25,12 +33,21 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.Node;
 import com.siliconmtn.data.Tree;
+import com.siliconmtn.data.report.GenericReport;
+import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
+import com.siliconmtn.db.util.DatabaseException;
+import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.http.parser.StringEncoder;
+import com.siliconmtn.http.session.SMTCookie;
+import com.siliconmtn.io.http.SMTHttpConnectionManager;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
+import com.smt.sitebuilder.action.AbstractSBReportVO;
+import com.smt.sitebuilder.action.WebCrescendoReport;
 import com.smt.sitebuilder.common.PageVO;
+import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.util.RecordDuplicatorUtility;
 
@@ -60,7 +77,7 @@ public class MarketManagementAction extends ManagementAction {
 	public static final String MARKET_ID = "marketId";
 
 	private enum ActionTarget {
-		MARKET, MARKETATTRIBUTE, ATTRIBUTE, SECTION, MARKETGRAPH, MARKETLINK, MARKETATTACH, PREVIEW
+		MARKET, MARKETATTRIBUTE, ATTRIBUTE, SECTION, MARKETGRAPH, MARKETLINK, MARKETATTACH, PREVIEW, ARCHIVE
 	}
 	
 	private enum ChangeTarget{ORDER, INDENT}
@@ -134,6 +151,9 @@ public class MarketManagementAction extends ManagementAction {
 		}
 
 		switch (action) {
+			case ARCHIVE:
+				retrieveArchive(req);
+				break;
 			case MARKET:
 				retrieveMarket(req);
 				break;
@@ -152,6 +172,36 @@ public class MarketManagementAction extends ManagementAction {
 			case PREVIEW :
 				retrievePreview(req);
 				break;
+		}
+	}
+
+
+	/**
+	 * Method attempts to return an HTML Report if the marketArchiveId is passed,
+	 * otherwise returns a list of archives for a market.
+	 * @param req
+	 * @throws DatabaseException
+	 * @throws InvalidDataException
+	 */
+	private void retrieveArchive(ActionRequest req) {
+		if(req.hasParameter("marketArchiveId")) {
+			try {
+				MarketArchiveVO mav = new MarketArchiveVO(req);
+				new DBProcessor(dbConn, getCustomSchema()).getByPrimaryKey(mav);
+
+				AbstractSBReportVO mrv = new WebCrescendoReport(new GenericReport());
+				mrv.setData(StringUtil.checkVal(mav.getArchiveTxt()).getBytes());
+				req.setAttribute(Constants.BINARY_DOCUMENT_REDIR, true);
+				req.setAttribute(Constants.BINARY_DOCUMENT, mrv);
+			} catch(Exception e) {
+				log.error("Unable to load Archive", e);
+			}
+		} else {
+			String marketId = req.getParameter(MARKET_ID);
+			StringBuilder sql = new StringBuilder(150);
+			sql.append(DBUtil.SELECT_FROM_STAR).append(getCustomSchema()).append("BIOMEDGPS_MARKET_ARCHIVE");
+			sql.append(DBUtil.WHERE_CLAUSE).append(" MARKET_ID = ? ").append(DBUtil.ORDER_BY).append("create_dt desc");
+			super.putModuleData(new DBProcessor(dbConn, getCustomSchema()).executeSelect(sql.toString(), Arrays.asList(marketId), new MarketArchiveVO()));
 		}
 	}
 
@@ -785,6 +835,10 @@ public class MarketManagementAction extends ManagementAction {
 		DBProcessor db = new DBProcessor(dbConn, (String) customDbSchema);
 		try {
 			switch(action) {
+				case ARCHIVE:
+					MarketArchiveVO m = new MarketArchiveVO(req);
+					db.delete(m);
+					break;
 				case MARKET:
 					MarketVO c = new MarketVO(req);
 					db.delete(c);
@@ -866,7 +920,13 @@ public class MarketManagementAction extends ManagementAction {
 				updateChanges(req);
 				return; // We don't want to send redirects after an order/indent update
 			} else if("createArchive".equals(buildAction)) {
-				createArchive(req);
+				createDBArchive(req);
+			} else if("bulkLinkUpdate".equals(buildAction)) {
+				new ManagementActionUtil(dbConn, attributes).bulkUpdateAttributeLinks(req);
+			} else if("generateArchive".equals(buildAction)) {
+				String marketArchiveId = createHTMLArchive(req.getCookie("JSESSIONID"), (SiteVO) req.getAttribute(Constants.SITE_DATA), req.getParameter(MARKET_ID));
+				super.putModuleData(marketArchiveId);
+				return;
 			}
 		} catch (Exception e) {
 			log.error("Error attempting to build: ", e);
@@ -883,13 +943,12 @@ public class MarketManagementAction extends ManagementAction {
 		redirectRequest(msg, buildAction, req);
 	}
 
-	
 	/**
 	 * Create a copy of the supplied market and archive it.
 	 * @param req
 	 * @throws ActionException
 	 */
-	private void createArchive(ActionRequest req) throws ActionException {
+	private void createDBArchive(ActionRequest req) throws ActionException {
 		// Ensure that an empty replacevals map is in the attributes for the RDU to use.
 		Map<String, Object> replaceVals = new HashMap<>();
 		attributes.put(RecordDuplicatorUtility.REPLACE_VALS, replaceVals);
@@ -933,6 +992,74 @@ public class MarketManagementAction extends ManagementAction {
 		}
 	}
 
+	/**
+	 * Retrieve the HTML for a Market Page and then stores it in db.
+	 * @param smtCookie 
+	 * @param marketId
+	 * @throws IOException 
+	 * @throws DatabaseException 
+	 * @throws InvalidDataException 
+	 */
+	private String createHTMLArchive(SMTCookie sessionCookie, SiteVO site, String marketId) throws IOException, InvalidDataException, DatabaseException {
+
+		//Get the Archive HTML text
+		String archiveHtml = retrieveArchiveHtml(sessionCookie, site.getFullSiteAlias(), marketId);
+
+		//Build the VO
+		MarketArchiveVO vo = new MarketArchiveVO(marketId, archiveHtml);
+
+		//Save the VO
+		new DBProcessor(dbConn, getCustomSchema()).save(vo);
+
+		return vo.getMarketArchiveId();
+	}
+
+	/**
+	 * Retrieves and parse the market page for archive purposes.
+	 * @param siteAlias
+	 * @param marketId
+	 * @return
+	 * @throws IOException
+	 */
+	private String retrieveArchiveHtml(SMTCookie sessionCookie, String siteAlias, String marketId) throws IOException {
+		SMTHttpConnectionManager conn = new SMTHttpConnectionManager();
+		conn.addCookie(sessionCookie);
+
+		//Build the Market Retrieval Url.
+		StringBuilder url = new StringBuilder(200);
+		url.append(siteAlias).append("/").append(Section.MARKET.getURLToken());
+		url.append("qs/").append(marketId).append("?printMode=true");
+
+		//Retreive Data
+		byte[] marketData = conn.retrieveData(url.toString());
+
+		//Parse HTML Text to Document
+		Document doc = Jsoup.parse(new String(marketData));
+
+		//Set the Base Url
+		doc.setBaseUri(siteAlias);
+
+		//Convert Relative Src links to Absolute
+		for (Element src : doc.select("[src]")) {
+			if (src.attr("src").startsWith("/") && !src.attr("src").startsWith("//")) {
+				src.attr("src", src.attr("abs:src"));
+			}
+		}
+
+		//Convert Relative href links to Absolute
+		for (Element link : doc.select("[href]")) {
+			if (link.attr("href").startsWith("/") && !link.attr("href").startsWith("//")) {
+				link.attr("href", link.attr("abs:href"));
+			}
+		}
+
+        //Update Title Txt to be "Title Txt - ${Current Date}"
+        Element title = doc.select("h1").first();
+        title.text(String.format("%s - %s", title.text(), Convert.formatDate(Calendar.getInstance().getTime(), Convert.DATE_DASH_PATTERN)));
+
+        //Return Parsed HTML Txt
+		return doc.toString();
+	}
 
 	/**
 	 * Change the name and status of the supplied market to denote its archived status

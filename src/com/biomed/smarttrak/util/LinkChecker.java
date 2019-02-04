@@ -57,11 +57,11 @@ public class LinkChecker extends CommandLineUtil {
 	 * This enum is what we iterate when the script runs.
 	 */
 	enum Table {
-		COMPANY_ATTR_XR(COMPANIES,"select company_id, value_txt from custom.BIOMEDGPS_COMPANY_ATTRIBUTE_XR"),
-		PROD_ATTR_XR(PRODUCTS,"select product_id, value_txt from custom.BIOMEDGPS_PRODUCT_ATTRIBUTE_XR"),
-		MKRT_ATTR_XR(MARKETS,"select market_id, value_txt from custom.BIOMEDGPS_MARKET_ATTRIBUTE_XR"),
-		ANALYSIS_ABS(ANALYSIS,"select insight_id, abstract_txt from custom.BIOMEDGPS_INSIGHT"),
-		ANALYSIS_MAIN(ANALYSIS,"select insight_id, content_txt from custom.BIOMEDGPS_INSIGHT");
+		COMPANY_ATTR_XR(COMPANIES,"select company_id, value_txt, company_attribute_id from custom.BIOMEDGPS_COMPANY_ATTRIBUTE_XR"),
+		PROD_ATTR_XR(PRODUCTS,"select product_id, value_txt, product_attribute_id from custom.BIOMEDGPS_PRODUCT_ATTRIBUTE_XR"),
+		MKRT_ATTR_XR(MARKETS,"select market_id, value_txt, market_attribute_id from custom.BIOMEDGPS_MARKET_ATTRIBUTE_XR"),
+		ANALYSIS_ABS(ANALYSIS,"select insight_id, abstract_txt, 'Abstract' from custom.BIOMEDGPS_INSIGHT"),
+		ANALYSIS_MAIN(ANALYSIS,"select insight_id, content_txt, 'Article' from custom.BIOMEDGPS_INSIGHT");
 
 		String selectSql;
 		String section;
@@ -136,16 +136,16 @@ public class LinkChecker extends CommandLineUtil {
 	public void run() {
 		String days = props.getProperty("runInterval");
 		//populate our lookup tables for companies, markets, insights, and products. ..so we're not http-spamming our own site!
-		populateLookup("select market_id from custom.biomedgps_market where status_no in ('P','E')", validMarketIds);
-		populateLookup("select product_id from custom.biomedgps_product where status_no in ('P','E','A')", validProductIds);
-		populateLookup("select company_id from custom.biomedgps_company where status_no in ('P','E','A')", validCompanyIds);
-		populateLookup("select insight_id from custom.biomedgps_insight where status_cd in ('P','E')", validInsightIds);
+		populateLookup("select market_id from custom.biomedgps_market where status_no in ('P')", validMarketIds, false);
+		populateLookup("select product_id from custom.biomedgps_product where status_no in ('P')", validProductIds, false);
+		populateLookup("select company_id from custom.biomedgps_company where status_no in ('P')", validCompanyIds, false);
+		populateLookup("select insight_id from custom.biomedgps_insight where status_cd in ('P')", validInsightIds, false);
 
 		if (onlyBroken) {
 			//consider everything NOT a 404 as valid, and we won't check them
-			populateLookup("select url_txt from custom.biomedgps_link where status_no != 404", recentlyChecked);
+			populateLookup("select url_txt from custom.biomedgps_link where status_no != 404", recentlyChecked, true);
 		} else {
-			populateLookup("select url_txt from custom.biomedgps_link where check_dt > (CURRENT_DATE - interval '"+days+" days')", recentlyChecked);
+			populateLookup("select url_txt from custom.biomedgps_link where check_dt > (CURRENT_DATE - interval '"+days+" days')", recentlyChecked, true);
 		}
 
 		deleteArchives(days);
@@ -161,11 +161,16 @@ public class LinkChecker extends CommandLineUtil {
 	/**
 	 * build lists of recordIds in our database for cross-checking
 	 */
-	protected void populateLookup(String sql, List<String> records) {
+	protected void populateLookup(String sql, List<String> records, boolean removeProtocol) {
 		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
 			ResultSet rs = ps.executeQuery();
-			while (rs.next())
-				records.add(rs.getString(1));
+			while (rs.next()) {
+				if (removeProtocol) {
+					records.add(StringUtil.checkVal(rs.getString(1)).replaceAll("http(s)?://", ""));
+				} else {
+					records.add(rs.getString(1));
+				}
+			}
 		} catch (SQLException sqle) {
 			log.error("could not load lookups from: " + sql, sqle);
 		}
@@ -194,7 +199,7 @@ public class LinkChecker extends CommandLineUtil {
 		try (PreparedStatement ps = dbConn.prepareStatement(t.getSelectSql())) {
 			ResultSet rs = ps.executeQuery();
 			while (rs.next())
-				records.add(new LinkVO(t.getSection(), rs.getString(1), rs.getString(2)));
+				records.add(new LinkVO(t.getSection(), rs.getString(1), rs.getString(2), rs.getString(3)));
 		} catch (SQLException sqle) {
 			log.error("could not read records from table " + t.toString(), sqle);
 		}
@@ -234,13 +239,13 @@ public class LinkChecker extends CommandLineUtil {
 				u = encoder.decodeValue(u);
 
 			//omit empty, page anchors ("#"), and recently tested (regardless of outcome)
-			boolean isRecent = recentlyChecked.contains(u);
+			boolean isRecent = recentlyChecked.contains(StringUtil.checkVal(u).replaceAll("http(s)?://", ""));
 			if (StringUtil.isEmpty(u) || u.length() < 2 || isRecent) {
 				if (isRecent) 
 					++skipped;
 				continue;
 			}
-			urls.add(LinkVO.makeForUrl(vo.getSection(), vo.getObjectId(), u));
+			urls.add(LinkVO.makeForUrl(vo.getSection(), vo.getObjectId(), u, vo.getContentId()));
 		}
 	}
 
@@ -366,11 +371,16 @@ public class LinkChecker extends CommandLineUtil {
 	 * @param vo
 	 */
 	private void checkRedirect(LinkVO vo) {
+		// Check to see if we have been redirected multiple times
+		// Any link with this many redirects is a failure and should stop being tested.
+		if (vo.getNumChecks() >= 10) return;
+			
 		if (isRedirect(vo.getOutcome()) && !StringUtil.isEmpty(vo.getRedirectUrl())) {
 			log.debug("got redirected to: " + vo.getRedirectUrl());
 			vo.setUrl(vo.getRedirectUrl());
 			vo.setRedirectUrl(null); //flush this or we're in a continuous loop
 			vo.setOutcome(0);
+			vo.setNumChecks(vo.getNumChecks()+1);
 			httpTest(vo);
 		}
 	}
@@ -500,7 +510,7 @@ public class LinkChecker extends CommandLineUtil {
 	protected void saveOutcomes(List<LinkVO> records) {
 		UUIDGenerator uuid = new UUIDGenerator();
 		String sql = "insert into custom.biomedgps_link (link_id, company_id, market_id, product_id, insight_id, update_id, " +
-				"url_txt, check_dt, status_no, create_dt) values (?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)";
+				"url_txt, check_dt, status_no, content_id, create_dt) values (?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)";
 
 		for (LinkVO vo : records) {
 			try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
@@ -513,6 +523,7 @@ public class LinkChecker extends CommandLineUtil {
 				ps.setString(7,  vo.getUrl());
 				ps.setTimestamp(8, Convert.formatTimestamp(vo.getLastChecked()));
 				ps.setInt(9, vo.getOutcome());
+				ps.setString(10, vo.getContentId());
 				ps.executeUpdate();
 
 			} catch (Exception e) {
