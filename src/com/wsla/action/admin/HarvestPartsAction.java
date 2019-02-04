@@ -52,8 +52,8 @@ public class HarvestPartsAction extends SBActionAdapter {
 		HARVEST_COMPLETED, DISPOSE_COMPLETED, NOT_SHIPPED, SHIPPING, RECEIVIED;
 	}
 	
-	public static String SN_PLATE_SHIP_ATTRIBUTE = "attr_snPlateShipStatus";
-	public static String SO_NAME = "soName";
+	public static final String SN_PLATE_SHIP_ATTRIBUTE = "attr_snPlateShipStatus";
+	public static final String SO_NAME = "soName";
 
 	public HarvestPartsAction() {
 		super();
@@ -143,9 +143,9 @@ public class HarvestPartsAction extends SBActionAdapter {
 	 * @param user 
 	 * @param harvestStatus
 	 */
-	public void processHarvestStatus(String ticketId, String PlateStatus, UserVO user) {
+	public void processHarvestStatus(String ticketId, String plateStatus, UserVO user) {
 		
-		if (SerialPlateStatus.HARVEST_COMPLETED.name().equalsIgnoreCase(PlateStatus)) {
+		if (SerialPlateStatus.HARVEST_COMPLETED.name().equalsIgnoreCase(plateStatus)) {
 			try {
 				completeHarvest(ticketId, user);
 			} catch (Exception e) {
