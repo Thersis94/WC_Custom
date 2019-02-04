@@ -3,6 +3,8 @@ package com.wsla.data.ticket;
 // JDK 1.8.x
 import java.sql.ResultSet;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 // SMT Base Libs
 import com.siliconmtn.action.ActionRequest;
@@ -10,6 +12,7 @@ import com.siliconmtn.data.parser.BeanDataVO;
 import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
+import com.wsla.data.ticket.ShipmentVO.ShipmentType;
 
 /****************************************************************************
  * <b>Title</b>: RefundReplacementVO.java
@@ -54,7 +57,7 @@ public class RefundReplacementVO extends BeanDataVO {
 	// Sub-elements
 	private CreditMemoVO creditMemo;
 	private DebitMemoVO debitMemo;
-	private ShipmentVO shipment;
+	private Map<String, ShipmentVO> shipments = new HashMap<>();
 	
 	/**
 	 * 
@@ -321,15 +324,36 @@ public class RefundReplacementVO extends BeanDataVO {
 	 * @return the shipment
 	 */
 	public ShipmentVO getShipment() {
-		return shipment;
+		return shipments.get(ShipmentType.UNIT_MOVEMENT.name());
 	}
 
 	/**
 	 * @param shipment the shipment to set
 	 */
-	@BeanSubElement
 	public void setShipment(ShipmentVO shipment) {
-		this.shipment = shipment;
+		this.shipments.put(ShipmentType.UNIT_MOVEMENT.name(), shipment);
+	}
+
+	/**
+	 * @return the shipments
+	 */
+	public Map<String, ShipmentVO> getShipments() {
+		return shipments;
+	}
+
+	/**
+	 * @param shipments the shipments to set
+	 */
+	public void setShipments(Map<String, ShipmentVO> shipments) {
+		this.shipments = shipments;
+	}
+
+	/**
+	 * @param shipment the shipment to add
+	 */
+	@BeanSubElement
+	public void addShipment(ShipmentVO shipment) {
+		this.shipments.put(shipment.getShipmentType().name(), shipment);
 	}
 }
 

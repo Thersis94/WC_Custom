@@ -37,6 +37,7 @@ import com.wsla.data.ticket.DefectVO;
 import com.wsla.data.ticket.DiagnosticRunVO;
 import com.wsla.data.ticket.NextStepVO;
 import com.wsla.data.ticket.RefundReplacementVO;
+import com.wsla.data.ticket.ShipmentVO.ShipmentType;
 import com.wsla.data.ticket.TicketAssignmentVO;
 import com.wsla.data.ticket.TicketAttributeVO;
 import com.wsla.data.ticket.TicketCommentVO;
@@ -253,13 +254,19 @@ public class TicketEditAction extends SBActionAdapter {
 		sql.append("select rr.*,cm.*, s.*, dl.location_nm as to_location_nm, sl.location_nm as from_location_nm  from ").append(getCustomSchema());
 		sql.append("wsla_ticket_ref_rep rr ");
 		sql.append("left outer join ").append(getCustomSchema()).append("wsla_credit_memo cm on rr.ticket_ref_rep_id = cm.ticket_ref_rep_id ");
-		sql.append("left outer join ").append(getCustomSchema()).append("wsla_shipment s on rr.ticket_id = s.ticket_id ");
+		sql.append("left outer join ").append(getCustomSchema()).append("wsla_shipment s on rr.ticket_id = s.ticket_id and s.shipment_type_cd in (?,?) ");
 		sql.append("left outer join ").append(getCustomSchema()).append("wsla_provider_location dl on s.to_location_id = dl.location_id " );
 		sql.append("left outer join ").append(getCustomSchema()).append("wsla_provider_location sl on s.from_location_id =sl.location_id ");
 		sql.append(DBUtil.WHERE_CLAUSE).append("rr.ticket_id = ? ");
+		log.debug(sql);
+		
+		List<Object> params = new ArrayList<>();
+		params.add(ShipmentType.UNIT_MOVEMENT.name());
+		params.add(ShipmentType.REPLACEMENT_UNIT.name());
+		params.add(ticketId);
 		
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
-		List<RefundReplacementVO> data = db.executeSelect(sql.toString(), Arrays.asList(ticketId), new RefundReplacementVO());
+		List<RefundReplacementVO> data = db.executeSelect(sql.toString(), params, new RefundReplacementVO());
 		
 		if(data != null && data.size() == 1) {
 			log.debug(" data " + data.get(0).getShipmentId());
