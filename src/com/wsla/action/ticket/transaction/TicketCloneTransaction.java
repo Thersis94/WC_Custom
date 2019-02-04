@@ -1,15 +1,18 @@
 package com.wsla.action.ticket.transaction;
 
+import java.sql.SQLException;
 // JDK 1.8.x
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 //SMT Base Lbs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.DBProcessor;
+import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.util.RandomAlphaNumeric;
@@ -17,8 +20,7 @@ import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
 
 // WC Libs
-import com.smt.sitebuilder.action.SBActionAdapter;
-
+import com.wsla.action.ticket.BaseTransactionAction;
 // WSLA Libs
 import com.wsla.action.ticket.TicketEditAction;
 import com.wsla.common.WSLAConstants;
@@ -26,9 +28,9 @@ import com.wsla.data.ticket.LedgerSummary;
 import com.wsla.data.ticket.StatusCode;
 import com.wsla.data.ticket.TicketAssignmentVO;
 import com.wsla.data.ticket.TicketDataVO;
-import com.wsla.data.ticket.TicketLedgerVO;
 import com.wsla.data.ticket.TicketVO;
 import com.wsla.data.ticket.UserVO;
+import com.wsla.data.ticket.TicketAssignmentVO.ProductOwner;
 import com.wsla.data.ticket.TicketAssignmentVO.TypeCode;
 import com.wsla.data.ticket.TicketVO.Standing;
 
@@ -45,7 +47,7 @@ import com.wsla.data.ticket.TicketVO.Standing;
  * @updates:
  ****************************************************************************/
 
-public class TicketCloneTransaction extends SBActionAdapter {
+public class TicketCloneTransaction extends BaseTransactionAction {
 
 	/**
 	 * Key for the Ajax Controller to utilize when calling this class
@@ -67,6 +69,15 @@ public class TicketCloneTransaction extends SBActionAdapter {
 		super(actionInit);
 	}
 
+	/**
+	 * @param dbConn
+	 * @param attributes
+	 */
+	public TicketCloneTransaction(SMTDBConnection dbConn, Map<String, Object> attributes) {
+		this();
+		this.dbConn = dbConn;
+		this.attributes = attributes;
+	}
 	
 	/**
 	 * 
@@ -77,9 +88,6 @@ public class TicketCloneTransaction extends SBActionAdapter {
 	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
-
-		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
-		TicketEditAction tea = new TicketEditAction(dbConn, attributes);
 		UserVO user = ((UserVO)getAdminUser(req).getUserExtendedInfo());
 		
 		try {
@@ -87,8 +95,30 @@ public class TicketCloneTransaction extends SBActionAdapter {
 			if (StringUtil.isEmpty(ticketIdText)) 
 				throw new InvalidDataException("ticket info not passed");
 			
+			// Return the ticket data in case the js needs to display or use
+			setModuleData(cloneTicket(ticketIdText, user));
+		} catch (Exception e) {
+			log.error("Unable to clone ticket", e);
+			setModuleData("", 0, e.getLocalizedMessage());
+		}
+	}
+	
+	/**
+	 * Clones the given ticket.
+	 * 
+	 * @param ticketIdText - supports ticketId or ticketIdText
+	 * @param user
+	 * @return
+	 * @throws ActionException
+	 */
+	public TicketVO cloneTicket(String ticketIdText, UserVO user) throws ActionException {
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		TicketEditAction tea = new TicketEditAction(dbConn, attributes);
+		TicketVO ticket;
+
+		try {
 			// Load ticket core data
-			TicketVO ticket = processTicket(db, tea, ticketIdText);
+			ticket = processTicket(db, tea, ticketIdText);
 			
 			// Load ticket data
 			ticket.setTicketData(processTicketData(db, ticket, tea));
@@ -98,13 +128,49 @@ public class TicketCloneTransaction extends SBActionAdapter {
 			
 			// Add a ledger entry
 			addLedgerEntry(db, user, ticket.getTicketId());
-			
-			// Return the ticket data in case the js needs to display or use
-			setModuleData(ticket);
-		} catch (Exception e) {
-			log.error("Unable to clone ticket", e);
-			setModuleData("", 0, e.getLocalizedMessage());
+		} catch (InvalidDataException | DatabaseException | com.siliconmtn.exception.DatabaseException e) {
+			throw new ActionException(e);
 		}
+
+		return ticket;
+	}
+	
+	/**
+	 * Clones a ticket and moves ownership of the unit to WSLA. Sets to in-repair status.
+	 * 
+	 * @param ticketIdText - supports ticketId or ticketIdText
+	 * @param user
+	 * @return
+	 * @throws ActionException
+	 */
+	public TicketVO cloneTicketToWSLA(String ticketIdText, UserVO user) throws ActionException {
+		// Clone the old ticket to the new ticket
+		TicketVO newTicket = cloneTicket(ticketIdText, user);
+		
+		// Create a new ticket assignment, setting WSLA as the CAS on the new ticket
+		TicketAssignmentVO assignment = new TicketAssignmentVO();
+		assignment.setLocationId(WSLAConstants.DEFAULT_SHIPPING_SRC);
+		assignment.setUserId(user.getUserId());
+		assignment.setTicketId(newTicket.getTicketId());
+		assignment.setOwnerFlag(1);
+		assignment.setTypeCode(TypeCode.CAS);
+		
+		try {
+			// Save the new ticket assignment
+			TicketAssignmentTransaction tat = new TicketAssignmentTransaction(getDBConnection(), getAttributes());
+			tat.assign(assignment, user);
+			
+			// Set the new ticket's status to in-repair
+			changeStatus(newTicket.getTicketId(), user.getUserId(), StatusCode.CAS_IN_REPAIR, LedgerSummary.REPAIR_STATUS_CHANGED.summary, null);
+			
+			// Set WSLA as the owner of the unit
+			TicketDataTransaction tdt = new TicketDataTransaction(getDBConnection(), getAttributes());
+			tdt.saveDataAttribute(newTicket.getTicketId(), "attr_ownsTv", ProductOwner.WSLA.name(), true);
+		} catch (InvalidDataException | DatabaseException | SQLException e) {
+			throw new ActionException(e);
+		}
+		
+		return newTicket;
 	}
 	
 	/**
@@ -193,12 +259,9 @@ public class TicketCloneTransaction extends SBActionAdapter {
 	 */
 	public void addLedgerEntry(DBProcessor db, UserVO user, String ticketId) 
 	throws InvalidDataException, DatabaseException {
-		TicketLedgerVO ledger = new TicketLedgerVO();
-		ledger.setStatusCode(StatusCode.USER_CALL_DATA_INCOMPLETE);
-		ledger.setDispositionBy(user.getUserId());
-		ledger.setTicketId(ticketId);
-		ledger.setSummary(LedgerSummary.TICKET_CLONED.summary);
-		db.insert(ledger);
+		BaseTransactionAction bta = new BaseTransactionAction(getDBConnection(), getAttributes());
+		bta.addLedger(ticketId, user.getUserId(), StatusCode.OPENED, LedgerSummary.TICKET_CLONED.summary, null);
+		bta.changeStatus(ticketId, user.getUserId(), StatusCode.USER_CALL_DATA_INCOMPLETE, null, null);
 	}
 }
 

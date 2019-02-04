@@ -17,6 +17,7 @@ import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
+import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.util.Convert;
@@ -31,6 +32,7 @@ import com.wsla.data.ticket.LedgerSummary;
 import com.wsla.data.ticket.PartVO;
 import com.wsla.data.ticket.ShipmentVO;
 import com.wsla.data.ticket.ShipmentVO.ShipmentStatus;
+import com.wsla.data.ticket.ShipmentVO.ShipmentType;
 import com.wsla.data.ticket.StatusCode;
 import com.wsla.data.ticket.TicketDataVO;
 import com.wsla.data.ticket.TicketLedgerVO;
@@ -73,6 +75,18 @@ public class TicketPartsTransaction extends BaseTransactionAction {
 	public TicketPartsTransaction(ActionInitVO actionInit) {
 		super(actionInit);
 	}
+
+	/**
+	 * 
+	 * @param dbConn
+	 * @param attributes
+	 */
+	public TicketPartsTransaction(SMTDBConnection dbConn, Map<String, Object> attributes) {
+		this();
+		this.dbConn = dbConn;
+		this.attributes = attributes;
+	}
+
 	/*
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.action.ActionRequest)
@@ -258,6 +272,7 @@ public class TicketPartsTransaction extends BaseTransactionAction {
 		
 		shipment.setTicketId(tId);
 		shipment.setStatus(ShipmentStatus.CREATED);
+		shipment.setShipmentType(isReturn ? ShipmentType.UNIT_MOVEMENT : ShipmentType.PARTS_REQUEST);
 		
 		// Save the shipment
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());

@@ -17,20 +17,24 @@ import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.EnumUtil;
 import com.siliconmtn.util.RandomAlphaNumeric;
 import com.siliconmtn.util.StringUtil;
 import com.wsla.action.admin.HarvestPartsAction;
+import com.wsla.action.admin.LogisticsAction;
 //wc custom
 import com.wsla.action.ticket.BaseTransactionAction;
 import com.wsla.action.ticket.TicketEditAction;
 import com.wsla.common.WSLAConstants;
 import com.wsla.data.ticket.CreditMemoVO;
 import com.wsla.data.ticket.LedgerSummary;
+import com.wsla.data.ticket.PartVO;
 import com.wsla.data.ticket.RefundReplacementVO;
 import com.wsla.data.ticket.StatusCode;
 import com.wsla.data.ticket.TicketAssignmentVO;
 import com.wsla.data.ticket.TicketAssignmentVO.TypeCode;
 import com.wsla.data.ticket.TicketDataVO;
+import com.wsla.data.ticket.TicketLedgerVO;
 import com.wsla.data.ticket.TicketVO;
 import com.wsla.data.ticket.TicketVO.UnitLocation;
 import com.wsla.data.ticket.UserVO;
@@ -104,28 +108,92 @@ public class RefundReplacementTransaction extends BaseTransactionAction {
 		if (req.getBooleanParameter(CREATE_RAR)) {
 			saveRefundRep(rrvo);
 		}
-
-		if (ApprovalTypes.REFUND_REQUEST.name().equalsIgnoreCase(req.getParameter(APPROVAL_TYPE))) {
-			try {
-				createCreditMemo(rrvo);
-				processDispostion(rrvo, user);
-			} catch (Exception e) {
-				log.error("could not create credit memo or process dispostion ",e);
-				putModuleData(rrvo, 0, false, e.getLocalizedMessage(), true);
-			}
-		}else if (ApprovalTypes.REFUND_DENIED.name().equalsIgnoreCase(req.getParameter(APPROVAL_TYPE))) {
-			try {
-				processRejection(rrvo, user);
-			} catch (DatabaseException e) {
-				log.error("could not write ledger entry or save status", e);
-				putModuleData(rrvo, 0, false, e.getLocalizedMessage(), true);
-			}
+		
+		ApprovalTypes approvalType = EnumUtil.safeValueOf(ApprovalTypes.class, req.getParameter(APPROVAL_TYPE));
+		switch (approvalType) {
+			case REPLACEMENT_REQUEST:
+				handleReplacementRequest(rrvo, user);
+				break;
+			case REFUND_REQUEST:
+				handleRefundRequest(rrvo, user);
+				break;
+			case REFUND_DENIED:
+				handleRefRepRejection(rrvo, user);
+				break;
 		}
 
 		putModuleData(rrvo);
 
 	}
+	
+	/**
+	 * Manages the tasks associated to a replacement request.
+	 * 
+	 * @param rrvo
+	 * @param user
+	 */
+	private void handleReplacementRequest(RefundReplacementVO rrvo, UserVO user) {
+		try {
+			createReplacementShipment(rrvo);
+			processDispostion(rrvo, user);
+		} catch (Exception e) {
+			log.error("could not create replacement shipment or process dispostion", e);
+			putModuleData(rrvo, 0, false, e.getLocalizedMessage(), true);
+		}
+	}
+	
+	/**
+	 * Manages the tasks associated to a refund request.
+	 * 
+	 * @param rrvo
+	 * @param user
+	 */
+	private void handleRefundRequest(RefundReplacementVO rrvo, UserVO user) {
+		try {
+			createCreditMemo(rrvo);
+			processDispostion(rrvo, user);
+		} catch (Exception e) {
+			log.error("could not create credit memo or process dispostion", e);
+			putModuleData(rrvo, 0, false, e.getLocalizedMessage(), true);
+		}
+	}
+	
+	/**
+	 * Manages the tasks associated to a refund/replacement rejection.
+	 * 
+	 * @param rrvo
+	 * @param user
+	 */
+	private void handleRefRepRejection(RefundReplacementVO rrvo, UserVO user) {
+		try {
+			processRejection(rrvo, user);
+		} catch (DatabaseException e) {
+			log.error("could not write ledger entry or save status", e);
+			putModuleData(rrvo, 0, false, e.getLocalizedMessage(), true);
+		}
+	}
 
+	/**
+	 * Creates a shipment for a replacement unit. The shipment becomes pending
+	 * if the return of old equipment is required first.
+	 * 
+	 * @param refRep
+	 * @throws SQLException
+	 */
+	private void createReplacementShipment(RefundReplacementVO refRep) throws SQLException {
+		PartVO product = new PartVO();
+		product.setProductId(refRep.getReplacementProductId());
+		product.setTicketId(refRep.getTicketId());
+		product.setQuantity(1);
+		product.setSubmitApprovalFlag(1);
+		
+		DispositionCodes disposition = EnumUtil.safeValueOf(DispositionCodes.class, refRep.getUnitDisposition());
+		boolean isPending = disposition == DispositionCodes.RETURN_HARVEST || disposition == DispositionCodes.RETURN_REPAIR;
+
+		LogisticsAction la = new LogisticsAction(getAttributes(), getDBConnection());
+		la.saveUnitShipment(refRep.getTicketId(), product, isPending, true);
+	}
+	
 	/**
 	 * process control for each of the dispositions
 	 * @param rrvo
@@ -168,10 +236,12 @@ public class RefundReplacementTransaction extends BaseTransactionAction {
 	 * @throws DatabaseException 
 	 */
 	private void returnUnit(RefundReplacementVO rrvo, UserVO user, TicketVO tvo) throws DatabaseException {
+		TicketLedgerVO ledger;
+		
 		if(UnitLocation.WSLA.name().equalsIgnoreCase(tvo.getUnitLocation().name())) {
 			if(rrvo.getUnitDisposition().equalsIgnoreCase(DispositionCodes.RETURN_REPAIR.name())) {
 				//set status to repair
-				changeStatus(rrvo.getTicketId(), user.getUserId(), StatusCode.CLOSED, null, null);
+				ledger = changeStatus(rrvo.getTicketId(), user.getUserId(), StatusCode.CLOSED, null, null);
 				
 				DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 				TicketEditAction tea = new TicketEditAction(dbConn, attributes);
@@ -205,8 +275,9 @@ public class RefundReplacementTransaction extends BaseTransactionAction {
 				
 			}else {
 				//status change for harvest
-				changeStatus(rrvo.getTicketId(), user.getUserId(), StatusCode.HARVEST_APPROVED, null, null);
+				ledger = changeStatus(rrvo.getTicketId(), user.getUserId(), StatusCode.HARVEST_APPROVED, null, null);
 			}
+			buildNextStep(ledger.getStatusCode(), null, false);
 		}else {
 			//if anywhere other then wsla make a shipment
 			TicketPartsTransaction tpt = new TicketPartsTransaction();
@@ -215,6 +286,8 @@ public class RefundReplacementTransaction extends BaseTransactionAction {
 			tpt.setAttributes(getAttributes());
 			try {
 				tpt.saveShipment(tvo.getTicketId(), true);
+				ledger = changeStatus(tvo.getTicketId(), user.getUserId(), StatusCode.DEFECTIVE_PENDING, LedgerSummary.SHIPMENT_CREATED.summary, null);
+				buildNextStep(ledger.getStatusCode(), null, false);
 			} catch (Exception e) {
 				log.error("could not build shipment ",e);
 				putModuleData(tvo, 0, false, e.getLocalizedMessage(), true);
@@ -444,7 +517,7 @@ public class RefundReplacementTransaction extends BaseTransactionAction {
 	 * @param ticketId
 	 * @return
 	 */
-	private RefundReplacementVO getRefRepVoByTicketId(String ticketId) {
+	public RefundReplacementVO getRefRepVoByTicketId(String ticketId) {
 		List<Object> params = new ArrayList<>();
 		params.add(ticketId);
 

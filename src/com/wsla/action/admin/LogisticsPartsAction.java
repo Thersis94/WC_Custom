@@ -1,5 +1,6 @@
 package com.wsla.action.admin;
 
+import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.HashMap;
@@ -17,6 +18,7 @@ import com.siliconmtn.db.orm.GridDataVO;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.EnumUtil;
 import com.siliconmtn.util.StringUtil;
 // WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
@@ -25,14 +27,21 @@ import com.smt.sitebuilder.security.SBUserRole;
 import com.wsla.action.ticket.BaseTransactionAction;
 import com.wsla.action.ticket.PartsAction;
 import com.wsla.action.ticket.ShipmentAction;
+import com.wsla.action.ticket.transaction.RefundReplacementTransaction;
+import com.wsla.action.ticket.transaction.RefundReplacementTransaction.ApprovalTypes;
+import com.wsla.action.ticket.transaction.RefundReplacementTransaction.DispositionCodes;
+import com.wsla.action.ticket.transaction.TicketCloneTransaction;
+import com.wsla.action.ticket.transaction.TicketDataTransaction;
 import com.wsla.common.WSLAConstants.WSLARole;
 import com.wsla.data.ticket.LedgerSummary;
 import com.wsla.data.ticket.PartVO;
+import com.wsla.data.ticket.RefundReplacementVO;
 import com.wsla.data.ticket.ShipmentVO;
 import com.wsla.data.ticket.StatusCode;
 import com.wsla.data.ticket.TicketLedgerVO;
 import com.wsla.data.ticket.UserVO;
 import com.wsla.data.ticket.ShipmentVO.ShipmentStatus;
+import com.wsla.data.ticket.ShipmentVO.ShipmentType;
 
 /****************************************************************************
  * <b>Title</b>: LogisticsPartsAction.java<br>
@@ -86,61 +95,278 @@ public class LogisticsPartsAction extends SBActionAdapter {
 	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
-		PartsAction partsAction = new PartsAction(getAttributes(), getDBConnection());
-
 		if (req.hasParameter("completeIngest")) {
-			//load the shipment
-			ShipmentAction sa = new ShipmentAction(getAttributes(), getDBConnection());
-			List<ShipmentVO> lst = sa.listShipments(null, req.getParameter("shipmentId"), null);
-			ShipmentVO shipment = !lst.isEmpty() ? lst.get(0) : null;
-			if (shipment == null) throw new ActionException("null data - shipment not found");
-			
-			// Enforce front end security
-			UserVO user = (UserVO) getAdminUser(req).getUserExtendedInfo();
-			String roleId = ((SBUserRole)req.getSession().getAttribute(Constants.ROLE_DATA)).getRoleId();
-			if (!user.getLocationId().equals(shipment.getToLocationId()) && !WSLARole.ADMIN.getRoleId().equals(roleId)) {
-				throw new ActionException("this user can not receive the shipment");
-			}
-
-			//mark the shipment as complete
-			shipment.setStatus(ShipmentStatus.RECEIVED);
-			shipment.setArrivalDate(Calendar.getInstance().getTime());
-			shipment.setCommentsText(req.getParameter("comments"));
-			sa.saveShipment(shipment);
-			
-			// If this is for a service order, change the ticket's status
-			if (!StringUtil.isEmpty(shipment.getTicketId())) {
-				try {
-					BaseTransactionAction bta = new BaseTransactionAction(getDBConnection(), getAttributes());
-					TicketLedgerVO ledger = bta.changeStatus(shipment.getTicketId(), user.getUserId(), StatusCode.PARTS_RCVD_CAS, LedgerSummary.SHIPMENT_RECEIVED.summary, null);
-					
-					Map<String, Object> params = new HashMap<>();
-					params.put("ticketId", ledger.getTicketId());
-					bta.buildNextStep(ledger.getStatusCode(), params, false);
-					putModuleData(bta.getNextStep());
-				} catch (DatabaseException e) {
-					throw new ActionException(e);
-				}
-			}
-
-			//if shipping src=dest, don't modify inventory
-			if (StringUtil.checkVal(shipment.getFromLocationId()).equals(shipment.getToLocationId()))
-				return;
-
-			//load the list of parts
-			List<PartVO> parts = shipment.getParts();
-			if (parts == null || parts.isEmpty()) return; //odd to receive an empty box, but permissible in the UI
-
-			saveQntyReceived(req, parts, partsAction);
-
-			adjustInventories(shipment, parts);
-
+			completeIngest(req);
 		} else {
-			//saving a single part - used when creating the shipment, not for ingest
+			// Saving a single part - used when creating the shipment, not for ingest
+			PartsAction partsAction = new PartsAction(getAttributes(), getDBConnection());
 			partsAction.build(req);
 		}
 	}
+	
+	/**
+	 * Completes a shipment, adding parts/units to inventory
+	 * 
+	 * @param req
+	 * @throws ActionException
+	 */
+	private void completeIngest(ActionRequest req) throws ActionException {
+		PartsAction partsAction = new PartsAction(getAttributes(), getDBConnection());
+		
+		// Load the shipment
+		ShipmentVO shipment = loadShipment(req.getParameter("shipmentId"));
+		if (shipment == null) throw new ActionException("null data - shipment not found");
+		
+		// Enforce front end security
+		UserVO user = (UserVO) getAdminUser(req).getUserExtendedInfo();
+		String roleId = ((SBUserRole)req.getSession().getAttribute(Constants.ROLE_DATA)).getRoleId();
+		secureShipmentReceipt(user, roleId, shipment);
 
+		// Mark the shipment as complete
+		markShipmentComplete(shipment, req.getParameter("comments"));
+		boolean isUnitMovement = ShipmentType.UNIT_MOVEMENT == shipment.getShipmentType();
+		
+		// If this is for a service order, change the ticket's status
+		boolean isHarvest = false;
+		boolean isRepair = false;
+		boolean hasPending = false;
+		if (!StringUtil.isEmpty(shipment.getTicketId())) {
+			// Determine if this is a harvest/repair ticket, and whether there is a corresponding shipment
+			RefundReplacementTransaction rrt = new RefundReplacementTransaction(getDBConnection(), getAttributes());
+			RefundReplacementVO refRep = rrt.getRefRepVoByTicketId(shipment.getTicketId());
+			DispositionCodes disposition = EnumUtil.safeValueOf(DispositionCodes.class, refRep.getUnitDisposition());
+			isHarvest = DispositionCodes.RETURN_HARVEST == disposition && isUnitMovement;
+			isRepair = DispositionCodes.RETURN_REPAIR == disposition && isUnitMovement;
+			hasPending = releasePendingShipment(shipment, refRep);
+			
+			// Set status accordingly
+			updateTicketStatus(shipment, user, isHarvest, isRepair, hasPending);
+		}
+
+		// Process harvest (create BOM) if necessary
+		processHarvest(shipment.getTicketId(), isHarvest);
+
+		// If shipping src=dest, or if the unit will be harvested, don't modify inventory
+		if (StringUtil.checkVal(shipment.getFromLocationId()).equals(shipment.getToLocationId()) || isHarvest)
+			return;
+
+		// Load the list of parts
+		List<PartVO> parts = shipment.getParts();
+		if (parts == null || parts.isEmpty()) return; //odd to receive an empty box, but permissible in the UI
+
+		// Receive the parts or unit & adjust inventory
+		saveQntyReceived(req, parts, partsAction);
+		adjustInventories(shipment, parts);
+		
+		// If this was a repair, clone into a new ticket (CAS = WSLA, status = in repair, owner = WSLA)
+		processRepair(shipment.getTicketId(), user, isRepair);
+	}
+
+	/**
+	 * Decides whether the user can ingest a given shipment
+	 * 
+	 * @param user
+	 * @param roleId
+	 * @param shipment
+	 * @throws ActionException
+	 */
+	private void secureShipmentReceipt(UserVO user, String roleId, ShipmentVO shipment) throws ActionException {
+		if (!user.getLocationId().equals(shipment.getToLocationId()) && !WSLARole.ADMIN.getRoleId().equals(roleId))
+			throw new ActionException("this user can not receive the shipment");
+	}
+	
+	/**
+	 * Sets up what is required for harvesting a unit after shipment has been
+	 * received in the refund/replacement process.
+	 * 
+	 * @param ticketId
+	 * @param isHarvest
+	 * @throws ActionException 
+	 */
+	private void processHarvest(String ticketId, boolean isHarvest) throws ActionException {
+		if (!isHarvest) return;
+		
+		// Create the BOM to be harvested
+		HarvestApprovalAction haa = new HarvestApprovalAction(getAttributes(), getDBConnection());
+		haa.createBOM(null, ticketId);
+		
+		// Set the harvest status attribute
+		TicketDataTransaction tdt = new TicketDataTransaction(getDBConnection(), getAttributes());
+		try {
+			tdt.saveDataAttribute(ticketId, "attr_harvest_status", StatusCode.HARVEST_APPROVED.name(), true);
+		} catch (SQLException e) {
+			throw new ActionException(e);
+		}
+	}
+	
+	/**
+	 * Sets up what is required for repairing a unit after shipment has been
+	 * received in the refund/replacement process.
+	 * 
+	 * @param ticketId
+	 * @param user
+	 * @param isRepair
+	 * @throws ActionException 
+	 */
+	private void processRepair(String ticketId, UserVO user, boolean isRepair) throws ActionException {
+		if (!isRepair) return;
+		
+		// Clone the ticket. Repairs after a return of a defective unit happen on a new ticket.
+		TicketCloneTransaction tct = new TicketCloneTransaction(getDBConnection(), getAttributes());
+		tct.cloneTicketToWSLA(ticketId, user);
+	}
+	
+	/**
+	 * Returns the shipment data for the given id
+	 * 
+	 * @param shipmentId
+	 * @return
+	 */
+	private ShipmentVO loadShipment(String shipmentId) {
+		ShipmentAction sa = new ShipmentAction(getAttributes(), getDBConnection());
+		List<ShipmentVO> lst = sa.listShipments(null, shipmentId, null);
+		
+		return !lst.isEmpty() ? lst.get(0) : null;
+	}
+	
+	/**
+	 * Sets a shipment as complete/received
+	 * 
+	 * @param shipment
+	 * @param comments
+	 * @throws ActionException
+	 */
+	private void markShipmentComplete(ShipmentVO shipment, String comments) throws ActionException {
+		ShipmentAction sa = new ShipmentAction(getAttributes(), getDBConnection());
+		
+		shipment.setStatus(ShipmentStatus.RECEIVED);
+		shipment.setArrivalDate(Calendar.getInstance().getTime());
+		shipment.setCommentsText(comments);
+		sa.saveShipment(shipment);
+	}
+
+	/**
+	 * Updates a ticket's status based on parts or unit shipping data.
+	 * 
+	 * @param shipment
+	 * @param user
+	 * @param isHarvest
+	 * @param isRepair
+	 * @param hasPending - indicates whether this shipment has a related pending shipment
+	 * @throws ActionException
+	 */
+	private void updateTicketStatus(ShipmentVO shipment, UserVO user, boolean isHarvest, boolean isRepair, boolean hasPending) throws ActionException {
+		StatusCode status = getIngestStatusChange(shipment.getShipmentType());
+		
+		try {
+			// Do the first (or only in some cases) status change
+			BaseTransactionAction bta = new BaseTransactionAction(getDBConnection(), getAttributes());
+			TicketLedgerVO ledger = bta.changeStatus(shipment.getTicketId(), user.getUserId(), status, LedgerSummary.SHIPMENT_RECEIVED.summary, null);
+			
+			// Do a second status change if this was a unit ticket
+			if (isHarvest || isRepair) {
+				ledger = updateDispositionStatus(shipment, user, isHarvest, hasPending);
+			} else if (shipment.getShipmentType() == ShipmentType.REPLACEMENT_UNIT) {
+				ledger = bta.changeStatus(shipment.getTicketId(), user.getUserId(), StatusCode.PENDING_UNIT_RETURN, null, null);
+			}
+			
+			Map<String, Object> params = new HashMap<>();
+			params.put("ticketId", ledger.getTicketId());
+			bta.buildNextStep(ledger.getStatusCode(), params, ledger.getStatusCode() == StatusCode.CLOSED);
+			putModuleData(bta.getNextStep());
+		} catch (DatabaseException e) {
+			throw new ActionException(e);
+		}
+	}
+	
+	/**
+	 * Returns an appropriate status change for when a shipment is received.
+	 * 
+	 * @param type
+	 * @return
+	 */
+	private StatusCode getIngestStatusChange(ShipmentType type) {
+		switch (type) {
+			case REPLACEMENT_UNIT:
+				return StatusCode.RPLC_DELIVEY_RCVD;
+			case UNIT_MOVEMENT:
+				return StatusCode.DEFECTIVE_RCVD;
+			case PARTS_REQUEST:
+			default:
+				return StatusCode.PARTS_RCVD_CAS;
+		}
+	}
+
+	/**
+	 * Adds an additional status change based on the refund/replacement disposition.
+	 * If harvesting is false, then repair is assumed to be true.
+	 * 
+	 * @param shipment
+	 * @param user
+	 * @param isHarvest
+	 * @param hasPending - indicates whether this shipment has a related pending shipment
+	 * @return
+	 * @throws DatabaseException
+	 */
+	private TicketLedgerVO updateDispositionStatus(ShipmentVO shipment, UserVO user, boolean isHarvest, boolean hasPending) throws DatabaseException {
+		BaseTransactionAction bta = new BaseTransactionAction(getDBConnection(), getAttributes());
+		TicketLedgerVO ledger;
+		
+		// Add a status change & ledger entry to track harvesting
+		if (isHarvest) {
+			bta.changeStatus(shipment.getTicketId(), user.getUserId(), StatusCode.HARVEST_APPROVED, LedgerSummary.HARVEST_AFTER_RECEIPT.summary, null);
+		}
+
+		// Add a status change depending on whether another shipment exists or not
+		if (hasPending) {
+			ledger = bta.changeStatus(shipment.getTicketId(), user.getUserId(), StatusCode.REPLACEMENT_CONFIRMED, null, null);
+		} else {
+			String summary = !isHarvest ? LedgerSummary.REPAIR_AFTER_RECEIPT.summary : null;
+			ledger = bta.changeStatus(shipment.getTicketId(), user.getUserId(), StatusCode.CLOSED, summary, null);
+		}
+		
+		return ledger;
+	}
+	
+	/**
+	 * Finds a corresponding shipment for a replacement unit, and moves it from
+	 * pending status to created.
+	 * 
+	 * @param receivedShipment
+	 * @param refRep
+	 * @return
+	 */
+	private boolean releasePendingShipment(ShipmentVO receivedShipment, RefundReplacementVO refRep) {
+		ApprovalTypes approvalType = EnumUtil.safeValueOf(ApprovalTypes.class, refRep.getApprovalType());
+		
+		// If there is no replacement shipment, there is no need to proceed. Additionally, a
+		// pending shipment should not be released until the defective unit has been received.
+		if (approvalType != ApprovalTypes.REPLACEMENT_REQUEST || receivedShipment.getShipmentType() != ShipmentType.UNIT_MOVEMENT)
+			return false;
+		
+		// Set our search criteria
+		ShipmentVO searchCriteria = new ShipmentVO();
+		searchCriteria.setTicketId(refRep.getTicketId());
+		searchCriteria.setStatus(ShipmentStatus.PENDING);
+		searchCriteria.setShipmentType(ShipmentType.REPLACEMENT_UNIT);
+
+		// Create the update sql
+		StringBuilder sql = new StringBuilder(100);
+		sql.append(DBUtil.UPDATE_CLAUSE).append(getCustomSchema()).append("wsla_shipment ");
+		sql.append("set status_cd = '").append(ShipmentStatus.CREATED.name()).append("' ");
+		sql.append("where ticket_id = ? and status_cd = ? and shipment_type_cd = ? ");
+		
+		// Update the pending shipment
+		DBProcessor dbp = new DBProcessor(getDBConnection(), getCustomSchema());
+		int updatedRows = 0;
+		try {
+			updatedRows = dbp.executeSqlUpdate(sql.toString(), searchCriteria, Arrays.asList("ticket_id", "status_cd", "shipment_type_cd"));
+		} catch (DatabaseException e) {
+			log.error("Could not update the pending shipment", e);
+		}
+		
+		return updatedRows > 0;
+	}
 
 	/**
 	 * save the quantities received for each of the parts - comes in from the browser form.
