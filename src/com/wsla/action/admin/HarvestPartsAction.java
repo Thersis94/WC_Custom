@@ -53,6 +53,8 @@ public class HarvestPartsAction extends SBActionAdapter {
 	}
 	
 	public static final String SN_PLATE_SHIP_ATTRIBUTE = "attr_snPlateShipStatus";
+	public static final String HARVEST_STATUS_ATTRIBUTE = "attr_harvest_status";
+	
 	public static final String SO_NAME = "soName";
 
 	public HarvestPartsAction() {
@@ -173,8 +175,12 @@ public class HarvestPartsAction extends SBActionAdapter {
 		tdt.setAttributes(getAttributes());
 		tdt.setDBConnection(getDBConnection());
 		tdt.saveDataAttribute(ticketId, SN_PLATE_SHIP_ATTRIBUTE, SerialPlateStatus.NOT_SHIPPED.name(), true);
-		//set the ticket status to harvest complete changing the location to decomistioned
-		tta.changeStatus(ticketId, user.getUserId(), StatusCode.HARVEST_COMPLETE, LedgerSummary.HARVEST_COMPETE.summary, UnitLocation.DECOMMISSIONED);
+
+		//save the status of the harvest in the data attribute
+		tdt.saveDataAttribute(ticketId, HARVEST_STATUS_ATTRIBUTE, StatusCode.HARVEST_COMPLETE.name(), true);
+		
+		//set the ticket status to harvest complete changing the location to decommissioned
+		tta.addLedger(ticketId, user.getUserId(), StatusCode.HARVEST_COMPLETE, LedgerSummary.HARVEST_COMPETE.summary, UnitLocation.DECOMMISSIONED);
 		//close the ticket
 		tta.changeStatus(ticketId, user.getUserId(), StatusCode.CLOSED, null, null);
 	}
@@ -246,6 +252,8 @@ public class HarvestPartsAction extends SBActionAdapter {
 		sql.append("select p.*, ps.*, t.ticket_id, t.ticket_no, t.status_cd ");
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("wsla_ticket t ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("wsla_product_serial ps on t.product_serial_id=ps.product_serial_id ");
+		sql.append(DBUtil.INNER_JOIN).append(schema).append("wsla_ticket_data td on t.ticket_id = td.ticket_id and td.attribute_cd ='attr_harvest_status' and td.value_txt = 'HARVEST_APPROVED' ");
+		
 		if(!StringUtil.isEmpty(locationId)) {
 			sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("wsla_ticket_assignment ta on t.ticket_id = ta.ticket_id and ta.assg_type_cd ='CAS' and ta.location_id = ? ");
 			params.add(locationId);
@@ -262,12 +270,8 @@ public class HarvestPartsAction extends SBActionAdapter {
 			params.add(term);
 		}
 
-		//only show harvesting-approved records
-		sql.append("and t.status_cd=? ");
-		params.add(StatusCode.HARVEST_APPROVED.toString());
-
 		sql.append(bst.getSQLOrderBy("p.product_nm, ps.serial_no_txt",  "asc"));
-		log.debug(sql);
+		log.debug("sql: "+ sql+ "|"+params);
 
 		DBProcessor db = new DBProcessor(getDBConnection(), schema);
 		return db.executeSQLWithCount(sql.toString(), params, new HarvestApprovalVO(), bst.getLimit(), bst.getOffset());
