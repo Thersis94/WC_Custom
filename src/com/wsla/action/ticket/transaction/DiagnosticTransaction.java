@@ -128,6 +128,8 @@ public class DiagnosticTransaction extends BaseTransactionAction {
 			ledger = changeStatus(td.getTicketId(), user.getUserId(), StatusCode.PENDING_UNIT_RETURN, null, null);
 		
 		} else if (disposition == DispositionCode.NONREPAIRABLE) {
+			changeStatus(td.getTicketId(), user.getUserId(), StatusCode.CAS_REPAIR_COMPLETE, null, null);
+			
 			StatusCode nextStatus = StatusCode.valueOf(req.getParameter("nonRepairType"));
 			String notes = req.getParameter("attr_partsNotes", "");
 			String summary = StringUtil.join(LedgerSummary.REPAIR_STATUS_CHANGED.summary, ": ", notes);
