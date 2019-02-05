@@ -287,6 +287,11 @@ public class UpdatesAction extends ManagementAction {
 			fq.add(StringUtil.join("announcement_type_i:", announcementType));
 		}
 
+		String updateStatus = CookieUtil.getValue("updateStatus", req.getCookies());
+		if(!StringUtil.isEmpty(updateStatus)) {
+			fq.add(StringUtil.join("status_cd_s:", updateStatus));
+		}
+
 		req.setParameter("fq", fq.toArray(new String[fq.size()]), true);
 		req.setParameter("allowCustom", "true");
 		req.setParameter("fieldOverride", SearchDocumentHandler.PUBLISH_DATE);
