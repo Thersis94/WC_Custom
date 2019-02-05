@@ -131,6 +131,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		keyMap.put("tickets", new GenericVO("getTickets", Boolean.TRUE));
 		keyMap.put("scheduleTransferType", new GenericVO("getScheduleTransferTypes", Boolean.TRUE));
 		keyMap.put("acCas", new GenericVO("getAcCas", Boolean.TRUE));
+		keyMap.put("harvestCas", new GenericVO("getAcCas", Boolean.TRUE));
 		keyMap.put("closestCas", new GenericVO("getClosestCas", Boolean.TRUE));
 		keyMap.put("inventorySuppliers", new GenericVO("getInventorySuppliers", Boolean.TRUE));
 		keyMap.put("locationInventory", new GenericVO("getLocationInventory", Boolean.TRUE));
@@ -415,8 +416,16 @@ public class SelectLookupAction extends SBActionAdapter {
 			sql.append(" and a.provider_id = ? ");
 			vals.add(providerId);
 		}
-
+		
+		if("harvestCas".equalsIgnoreCase(req.getStringParameter(SELECT_KEY))) {
+			sql.append("and b.location_id in (select location_id from ").append(getCustomSchema());
+			sql.append("wsla_ticket_assignment where assg_type_cd = 'CAS' and ticket_id in ");
+			sql.append("( SELECT ticket_id FROM ").append(getCustomSchema()).append("wsla_ticket where status_cd = 'HARVEST_APPROVED' )");
+			sql.append("order by ticket_id, location_id asc ) ");
+		}
+		
 		sql.append("order by provider_nm");
+		log.debug(" sql " + sql +"|" + vals);
 
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		List<GenericVO> data = db.executeSelect(sql.toString(), vals, new GenericVO());
