@@ -1,6 +1,5 @@
 package com.wsla.action.admin;
 
-import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.HashMap;
@@ -31,7 +30,6 @@ import com.wsla.action.ticket.transaction.RefundReplacementTransaction;
 import com.wsla.action.ticket.transaction.RefundReplacementTransaction.ApprovalTypes;
 import com.wsla.action.ticket.transaction.RefundReplacementTransaction.DispositionCodes;
 import com.wsla.action.ticket.transaction.TicketCloneTransaction;
-import com.wsla.action.ticket.transaction.TicketDataTransaction;
 import com.wsla.common.WSLAConstants.WSLARole;
 import com.wsla.data.ticket.LedgerSummary;
 import com.wsla.data.ticket.PartVO;
@@ -186,17 +184,9 @@ public class LogisticsPartsAction extends SBActionAdapter {
 	private void processHarvest(String ticketId, boolean isHarvest) throws ActionException {
 		if (!isHarvest) return;
 		
-		// Create the BOM to be harvested
+		// Create the BOM to be harvested, set the harvesting status
 		HarvestApprovalAction haa = new HarvestApprovalAction(getAttributes(), getDBConnection());
-		haa.createBOM(null, ticketId);
-		
-		// Set the harvest status attribute
-		TicketDataTransaction tdt = new TicketDataTransaction(getDBConnection(), getAttributes());
-		try {
-			tdt.saveDataAttribute(ticketId, "attr_harvest_status", StatusCode.HARVEST_APPROVED.name(), true);
-		} catch (SQLException e) {
-			throw new ActionException(e);
-		}
+		haa.approveHarvest(ticketId);
 	}
 	
 	/**

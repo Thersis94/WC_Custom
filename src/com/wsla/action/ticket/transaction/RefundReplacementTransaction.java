@@ -20,18 +20,16 @@ import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.EnumUtil;
 import com.siliconmtn.util.RandomAlphaNumeric;
 import com.siliconmtn.util.StringUtil;
+import com.wsla.action.admin.HarvestApprovalAction;
 import com.wsla.action.admin.LogisticsAction;
 //wc custom
 import com.wsla.action.ticket.BaseTransactionAction;
-import com.wsla.action.ticket.TicketEditAction;
 import com.wsla.common.WSLAConstants;
 import com.wsla.data.ticket.CreditMemoVO;
 import com.wsla.data.ticket.LedgerSummary;
 import com.wsla.data.ticket.PartVO;
 import com.wsla.data.ticket.RefundReplacementVO;
 import com.wsla.data.ticket.StatusCode;
-import com.wsla.data.ticket.TicketAssignmentVO;
-import com.wsla.data.ticket.TicketAssignmentVO.TypeCode;
 import com.wsla.data.ticket.TicketDataVO;
 import com.wsla.data.ticket.TicketLedgerVO;
 import com.wsla.data.ticket.TicketVO;
@@ -202,21 +200,21 @@ public class RefundReplacementTransaction extends BaseTransactionAction {
 	 */
 	private void processDispostion(RefundReplacementVO rrvo, UserVO user) throws Exception {
 		TicketVO tvo  = getBaseTicket(rrvo.getTicketId());
-		if(tvo == null) throw new InvalidDataException("Unable to find ticket by id ");
+		if (tvo == null) throw new InvalidDataException("Unable to find ticket by id ");
 		
-		if(!UnitLocation.WSLA.name().equalsIgnoreCase(tvo.getUnitLocation().name()) && 
-				!UnitLocation.CAS.name().equalsIgnoreCase(tvo.getUnitLocation().name())) {
-			changeStatus(rrvo.getTicketId(), user.getUserId(), StatusCode.CAS_ASSIGNED, null, null);
+		if (UnitLocation.WSLA != tvo.getUnitLocation() && UnitLocation.CAS != tvo.getUnitLocation()) {
+			TicketLedgerVO ledger = changeStatus(rrvo.getTicketId(), user.getUserId(), StatusCode.CAS_ASSIGNED, null, null);
+			buildNextStep(ledger.getStatusCode(), null, false);
 			return;
 		}
 		
-		if(rrvo.getUnitDisposition().equalsIgnoreCase(DispositionCodes.DISPOSE.name())) {
+		DispositionCodes disposition = EnumUtil.safeValueOf(DispositionCodes.class, rrvo.getUnitDisposition());
+		if (DispositionCodes.DISPOSE == disposition) {
 			disposeUnit(rrvo, user, tvo);
-		}else if (rrvo.getUnitDisposition().equalsIgnoreCase(DispositionCodes.HARVEST_UNIT.name())) {
-			//set to harvest status
-			changeStatus(rrvo.getTicketId(), user.getUserId(), StatusCode.HARVEST_APPROVED, null, null);
-		}else {
-			//is return
+		} else if (DispositionCodes.HARVEST_UNIT == disposition) {
+			TicketLedgerVO ledger = setupHarvest(rrvo, user);
+			buildNextStep(ledger.getStatusCode(), null, false);
+		} else {
 			returnUnit(rrvo, user, tvo);
 		}
 	}
@@ -226,56 +224,21 @@ public class RefundReplacementTransaction extends BaseTransactionAction {
 	 * @param user
 	 * @param tvo
 	 * @throws DatabaseException 
+	 * @throws ActionException 
 	 */
-	private void returnUnit(RefundReplacementVO rrvo, UserVO user, TicketVO tvo) throws DatabaseException {
+	private void returnUnit(RefundReplacementVO rrvo, UserVO user, TicketVO tvo) throws DatabaseException, ActionException {
 		TicketLedgerVO ledger;
 		
 		if(UnitLocation.WSLA.name().equalsIgnoreCase(tvo.getUnitLocation().name())) {
 			if(rrvo.getUnitDisposition().equalsIgnoreCase(DispositionCodes.RETURN_REPAIR.name())) {
-				//set status to repair
-				ledger = changeStatus(rrvo.getTicketId(), user.getUserId(), StatusCode.CLOSED, null, null);
-				
-				DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
-				TicketEditAction tea = new TicketEditAction(dbConn, attributes);
-				
-				//clone a new ticket
-				TicketCloneTransaction tct = new TicketCloneTransaction();
-				tct.setActionInit(actionInit);
-				tct.setAttributes(getAttributes());
-				tct.setDBConnection(dbConn);
-				
-				// Load ticket core data
-				TicketVO childTicket = getCloneTicket(db,tea,tvo, tct, user, rrvo);
-			
-				//set assign the cas as wlsa ware house
-				assignWSLACas(childTicket, user, db);
-				
-				//set the ticket owner element to oem
-				TicketDataTransaction tdt = new TicketDataTransaction();
-				tdt.setActionInit(actionInit);
-				tdt.setAttributes(getAttributes());
-				tdt.setDBConnection(dbConn);
-				//String ticketId, String attr, String value, boolean overwrite
-				try {
-					tdt.saveDataAttribute(childTicket.getTicketId(), "attr_ownsTv","OEM", true);
-				} catch (SQLException e) {
-					log.error("could not set owner to wsla and or the cas to wsla",e);
-				}
-				
-				//set ticket to "repair in progress"
-				changeStatus(childTicket.getTicketId(), user.getUserId(), StatusCode.CAS_IN_REPAIR, null, null);
-				
+				ledger = setupRepair(rrvo, user);
 			}else {
-				//status change for harvest
-				ledger = changeStatus(rrvo.getTicketId(), user.getUserId(), StatusCode.HARVEST_APPROVED, null, null);
+				ledger = setupHarvest(rrvo, user);
 			}
 			buildNextStep(ledger.getStatusCode(), null, false);
 		}else {
 			//if anywhere other then wsla make a shipment
-			TicketPartsTransaction tpt = new TicketPartsTransaction();
-			tpt.setActionInit(actionInit);
-			tpt.setDBConnection(dbConn);
-			tpt.setAttributes(getAttributes());
+			TicketPartsTransaction tpt = new TicketPartsTransaction(getDBConnection(), getAttributes());
 			try {
 				tpt.saveShipment(tvo.getTicketId(), true);
 				ledger = changeStatus(tvo.getTicketId(), user.getUserId(), StatusCode.DEFECTIVE_PENDING, LedgerSummary.SHIPMENT_CREATED.summary, null);
@@ -286,67 +249,51 @@ public class RefundReplacementTransaction extends BaseTransactionAction {
 			}
 		}
 	}
-
+	
 	/**
-	 * @param user 
-	 * @param childTicket 
-	 * @param db 
+	 * Setup for a repair of the returned unit.
 	 * 
+	 * @param rrvo
+	 * @param user
+	 * @return
+	 * @throws ActionException
+	 * @throws DatabaseException
 	 */
-	private void assignWSLACas(TicketVO childTicket, UserVO user, DBProcessor db) {
-		TicketAssignmentTransaction tat = new TicketAssignmentTransaction();
-		tat.setActionInit(actionInit);
-		tat.setAttributes(getAttributes());
-		tat.setDBConnection(dbConn);
+	private TicketLedgerVO setupRepair(RefundReplacementVO rrvo, UserVO user) throws ActionException, DatabaseException {
+		// Set appropriate status based on the approval type
+		ApprovalTypes approvalType = EnumUtil.safeValueOf(ApprovalTypes.class, rrvo.getApprovalType());
+		StatusCode status = approvalType == ApprovalTypes.REPLACEMENT_REQUEST ? StatusCode.REPLACEMENT_CONFIRMED : StatusCode.CLOSED;
+		TicketLedgerVO ledger = changeStatus(rrvo.getTicketId(), user.getUserId(), status, null, null);
 		
-		TicketAssignmentVO tAss = new TicketAssignmentVO();
-		tAss.setTicketId(childTicket.getTicketId());
-		tAss.setLocationId(WSLAConstants.DEFAULT_SHIPPING_SRC);
-		tAss.setUserId(user.getUserId());
-		tAss.setTypeCode(TypeCode.CAS);
-		
-		try {
-			tat.getAssignmentData(tAss, db);
-		} catch (Exception e1) {
-			log.error("could not save ticket assigment",e1);
-		}
-		
+		// Clone the ticket to repair the returned unit
+		TicketCloneTransaction tct = new TicketCloneTransaction(getDBConnection(), this.getAttributes());
+		tct.cloneTicketToWSLA(rrvo.getTicketId(), user);
+
+		return ledger;
 	}
 
 	/**
-	 * @param tvo 
-	 * @param tea 
-	 * @param db 
-	 * @param tct 
-	 * @param rrvo 
-	 * @param user 
+	 * Setup for a harvest of the returned unit.
+	 * 
+	 * @param rrvo
+	 * @param user
 	 * @return
+	 * @throws ActionException 
+	 * @throws DatabaseException 
 	 */
-	private TicketVO getCloneTicket(DBProcessor db, TicketEditAction tea, TicketVO tvo, TicketCloneTransaction tct, UserVO user, RefundReplacementVO rrvo) {
+	private TicketLedgerVO setupHarvest(RefundReplacementVO rrvo, UserVO user) throws ActionException, DatabaseException {
+		HarvestApprovalAction haa = new HarvestApprovalAction(getAttributes(), getDBConnection());
+		haa.approveHarvest(rrvo.getTicketId());
 		
-		TicketVO childTicket = new TicketVO();
-		try {
-			childTicket = tct.processTicket(db, tea, tvo.getTicketId());
-			childTicket.setTicketData(tct.processTicketData(db, childTicket, tea));
-			childTicket.setAssignments(tct.processAssignments(db, childTicket, tea));
-			tct.addLedgerEntry(db, user, tvo.getTicketId());
-			
-		} catch (Exception e) {
-			log.error("could not clone ticket",e);
-			putModuleData(rrvo, 0, false, e.getLocalizedMessage(), true);
-		}
+		// Set the harvest approved ledger entry
+		changeStatus(rrvo.getTicketId(), user.getUserId(), StatusCode.HARVEST_APPROVED, LedgerSummary.HARVEST_AFTER_RECEIPT.summary, null);
 		
-		childTicket.setUnitLocation(UnitLocation.WSLA);
-		childTicket.setCreateDate(new Date());
-		try {
-			db.save(childTicket);
-		} catch (Exception e1) {
-			log.error("could not save cloned ticket",e1);
-		}
+		// Set the next status depending on whether this is a refund or a replacement
+		ApprovalTypes approvalType = EnumUtil.safeValueOf(ApprovalTypes.class, rrvo.getApprovalType());
+		StatusCode status = approvalType == ApprovalTypes.REPLACEMENT_REQUEST ? StatusCode.REPLACEMENT_CONFIRMED : StatusCode.CLOSED;
 		
-		log.debug("new id is " + childTicket.getTicketId());
-		
-		return childTicket;
+		// Return the final status change
+		return changeStatus(rrvo.getTicketId(), user.getUserId(), status, null, null);
 	}
 
 	/**
