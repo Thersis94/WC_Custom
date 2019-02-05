@@ -3,6 +3,7 @@ package com.wsla.util.migration;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,6 +28,39 @@ public class WSLAInventoryLocation extends AbsImporter {
 
 	private List<SWLocFileVO> data;
 
+	/**
+	 * These are locations that already exist but didn't align with out matching algorithm.
+	 */
+	private static Map<String, String> staticMappings = new HashMap<>(20); 
+	static {
+		staticMappings.put("ALF", "ALF100");
+		staticMappings.put("BEL", "BEL100");
+		staticMappings.put("EAL", "EAL100");
+		staticMappings.put("EAS", "EAS100");
+		staticMappings.put("EGO", "EGO100");
+		staticMappings.put("ELU", "ELU100");
+		staticMappings.put("ETI", "ETI100");
+		staticMappings.put("EVM", "EVM100");
+		staticMappings.put("RAC", "RAC100");
+		staticMappings.put("ROM", "ROM100");
+		staticMappings.put("SED", "SED100");
+		staticMappings.put("SLR", "SLR100");
+		staticMappings.put("SVT", "SVT100");
+		staticMappings.put("TDG", "TDG100");
+		staticMappings.put("TEL", "TEL100");
+		staticMappings.put("TSM", "TSM110");
+		//these are manually created.  See notes file and run those first!
+		staticMappings.put("020", "WSLA_020");
+		staticMappings.put("030", "WSLA_030");
+		staticMappings.put("031", "WSLA_031");
+		staticMappings.put("SRK", "WSLA_SRK");
+		staticMappings.put("UNI", "WSLA_UNI");
+		staticMappings.put("D11", "WLSA_D11");
+		staticMappings.put("D21", "WSLA_D21");
+		staticMappings.put("D31", "WSLA_D31");
+		staticMappings.put("D41", "WSLA_D41");
+		staticMappings.put("D51", "WSLA_D51");
+	}
 
 	/* (non-Javadoc)
 	 * @see com.wsla.util.migration.AbstractImporter#run()
@@ -35,9 +69,9 @@ public class WSLAInventoryLocation extends AbsImporter {
 	void run() throws Exception {
 		data = readFile(props.getProperty("swLocFile"), SWLocFileVO.class, SHEET_1);
 
-		String sql = StringUtil.join("delete from ", schema, "wsla_provider_location ",
-				"where provider_id='WSLA_PROVIDER'");
-		delete(sql);
+		//String sql = StringUtil.join("delete from ", schema, "wsla_provider_location ",
+		//		"where provider_id='WSLA_PROVIDER'")
+		//delete(sql)
 		// NOTE: We may need to create the provider!
 		// INSERT INTO custom.wsla_provider (provider_id, provider_type_id, provider_nm, create_dt) 
 		//	VALUES('WSLA_PROVIDER', 'WSLA', 'WSLA', current_timestamp)
@@ -62,25 +96,28 @@ public class WSLAInventoryLocation extends AbsImporter {
 			int wsIdx = namePrefix.indexOf(' ');
 			if (wsIdx > -1) namePrefix = namePrefix.substring(0, wsIdx);
 			String idPrefix = vo.getLocationId();
-			String casId;
-//			log.debug("namePrefix=" + namePrefix + ", id=" + idPrefix);
-			if (casLocns.containsKey(namePrefix)) {
-//				log.debug(String.format("matched %s to CAS %s, %s", vo.getLocationId(), namePrefix, casLocns.get(namePrefix)));
-				casId = namePrefix;
-				vo.setLocationName(casLocns.get(namePrefix));
-			} else if (casLocns.containsKey(idPrefix)) {
-//				log.debug(String.format("matched %s to CAS %s, %s", vo.getLocationId(), idPrefix, casLocns.get(idPrefix)));
-				casId = idPrefix;
+			//log.debug("namePrefix=" + namePrefix + ", id=" + idPrefix)
+			if (casLocns.containsKey(idPrefix)) {
+				log.debug(String.format("mapped %s to %s by id - not creating location", vo.getLocationId(), idPrefix));
+				vo.setLocationId(idPrefix);
 				vo.setLocationName(casLocns.get(idPrefix));
+			} else if (casLocns.containsKey(namePrefix)) {
+				log.debug(String.format("mapped %s to %s by name - not creating location", vo.getLocationId(), namePrefix));
+				vo.setLocationId(namePrefix);
+				vo.setLocationName(casLocns.get(namePrefix));
+			} else if (staticMappings.containsKey(idPrefix)) {
+				log.debug(String.format("mapped %s to %s manually - not creating location", vo.getLocationId(), staticMappings.get(idPrefix)));
+				vo.setLocationId(staticMappings.get(idPrefix));
+				vo.setLocationName(casLocns.get(vo.getLocationId())); //use the mapped ID to find the actual location name
 			} else {
-//				log.debug(String.format("WSLA Location? %s", vo.getLocationId()));
-				casId = "";
+				log.debug(String.format("need location %s", vo.getLocationId()));
+				locations.put(vo.getLocationId(), vo);
 			}
-			System.err.println(idPrefix + "\t" + vo.getLocationName() + "\t" + casId);
-			locations.put(vo.getLocationId(), vo);
+			//System.err.println(idPrefix + "\t" + vo.getLocationName() + "\t" + casId)
 		}
 
-		//writeToDB(new ArrayList<>(locations.values()));
+		if (!locations.isEmpty())
+			writeToDB(new ArrayList<>(locations.values()));
 	}
 
 
