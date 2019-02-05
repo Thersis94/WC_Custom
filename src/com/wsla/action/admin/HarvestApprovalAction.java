@@ -1,5 +1,6 @@
 package com.wsla.action.admin;
 
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -19,6 +20,7 @@ import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.wsla.action.ticket.TicketEditAction;
+import com.wsla.action.ticket.transaction.TicketDataTransaction;
 import com.wsla.data.ticket.HarvestApprovalVO;
 import com.wsla.data.ticket.StatusCode;
 import com.wsla.data.ticket.TicketVO;
@@ -113,6 +115,27 @@ public class HarvestApprovalAction extends SBActionAdapter {
 		hpa.prepareHarvest(productSerialId);
 	}
 
+	/**
+	 * Sets up what is required for harvesting a unit. This could occur after a defective
+	 * unit has been received in the refund/replacement process, or they may skip the
+	 * shipment for the defective unit if they already have it.
+	 * 
+	 * @param ticketId
+	 * @throws ActionException 
+	 */
+	public void approveHarvest(String ticketId) throws ActionException {
+		// Create the BOM to be harvested
+		createBOM(null, ticketId);
+		
+		// Set the harvest status attribute
+		TicketDataTransaction tdt = new TicketDataTransaction(getDBConnection(), getAttributes());
+		try {
+			tdt.saveDataAttribute(ticketId, "attr_harvest_status", StatusCode.HARVEST_APPROVED.name(), true);
+		} catch (SQLException e) {
+			throw new ActionException(e);
+		}
+	}
+	
 	/**
 	 * Return a list of products tied to tickets that are status=HarvestPendingApproval.
 	 * In this view we only care about the product, so the OEM can approve or reject the request.

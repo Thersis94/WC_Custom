@@ -33,6 +33,7 @@ import com.wsla.data.ticket.UserVO;
 import com.wsla.data.ticket.TicketAssignmentVO.ProductOwner;
 import com.wsla.data.ticket.TicketAssignmentVO.TypeCode;
 import com.wsla.data.ticket.TicketVO.Standing;
+import com.wsla.data.ticket.TicketVO.UnitLocation;
 
 /****************************************************************************
  * <b>Title</b>: TicketCloneTransaction.java
@@ -146,6 +147,7 @@ public class TicketCloneTransaction extends BaseTransactionAction {
 	public TicketVO cloneTicketToWSLA(String ticketIdText, UserVO user) throws ActionException {
 		// Clone the old ticket to the new ticket
 		TicketVO newTicket = cloneTicket(ticketIdText, user);
+		newTicket.setUnitLocation(UnitLocation.WSLA);
 		
 		// Create a new ticket assignment, setting WSLA as the CAS on the new ticket
 		TicketAssignmentVO assignment = new TicketAssignmentVO();
@@ -156,6 +158,10 @@ public class TicketCloneTransaction extends BaseTransactionAction {
 		assignment.setTypeCode(TypeCode.CAS);
 		
 		try {
+			// Save updated ticket data
+			DBProcessor dbp = new DBProcessor(getDBConnection(), getCustomSchema());
+			dbp.save(newTicket);
+			
 			// Save the new ticket assignment
 			TicketAssignmentTransaction tat = new TicketAssignmentTransaction(getDBConnection(), getAttributes());
 			tat.assign(assignment, user);
