@@ -355,7 +355,7 @@ public class TicketPartsTransaction extends BaseTransactionAction {
 	 * @throws ActionException 
 	 * @throws SQLException 
 	 */
-	private void consumeParts(ActionRequest req) throws ActionException {
+	protected void consumeParts(ActionRequest req) throws ActionException {
 		List<PartVO> partsList = new ArrayList<>();
 		
 		// Build the PartVOs from the submitted data
