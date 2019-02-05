@@ -181,8 +181,7 @@ public class HarvestPartsAction extends SBActionAdapter {
 		
 		//set the ticket status to harvest complete changing the location to decommissioned
 		tta.addLedger(ticketId, user.getUserId(), StatusCode.HARVEST_COMPLETE, LedgerSummary.HARVEST_COMPETE.summary, UnitLocation.DECOMMISSIONED);
-		//close the ticket
-		tta.changeStatus(ticketId, user.getUserId(), StatusCode.CLOSED, null, null);
+
 	}
 
 	/*
