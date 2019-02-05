@@ -1,5 +1,6 @@
 package com.perfectstorm.action;
 
+import com.perfectstorm.action.admin.VenueWidget;
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -58,6 +59,7 @@ public class AjaxControllerFacadeAction extends FacadeActionAdapter {
 	 */
 	private void loadTypes() {
 		actionMap.put(DEFAULT_TYPE, SelectLookupAction.class);
+		actionMap.put(VenueWidget.AJAX_KEY, VenueWidget.class);
 	}
 
 	/*

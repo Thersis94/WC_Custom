@@ -37,6 +37,8 @@ public class TourVO extends BeanDataVO {
 	private String tourId;
 	private String tourManagerId;
 	private String name;
+	private String desc;
+	private int activeFlag;
 	private Date startDate;
 	private Date endDate;
 	private Date createDate;
@@ -104,6 +106,22 @@ public class TourVO extends BeanDataVO {
 	@Column(name="end_dt")
 	public Date getEndDate() {
 		return endDate;
+	}
+
+	/**
+	 * @return the activeFlag
+	 */
+	@Column(name="active_flg")
+	public int getActiveFlag() {
+		return activeFlag;
+	}
+
+	/**
+	 * @return the desc
+	 */
+	@Column(name="tour_desc")
+	public String getDesc() {
+		return desc;
 	}
 
 	/**
@@ -192,6 +210,20 @@ public class TourVO extends BeanDataVO {
 	@BeanSubElement
 	public void addVenue(VenueTourVO venue) {
 		venues.add(venue);
+	}
+
+	/**
+	 * @param activeFlag the activeFlag to set
+	 */
+	public void setActiveFlag(int activeFlag) {
+		this.activeFlag = activeFlag;
+	}
+
+	/**
+	 * @param desc the desc to set
+	 */
+	public void setDesc(String desc) {
+		this.desc = desc;
 	}
 }
 

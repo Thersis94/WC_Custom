@@ -2,7 +2,9 @@ package com.perfectstorm.action;
 
 // JDK 1.8.x
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 // SMT Base Libs
@@ -47,7 +49,7 @@ public class SelectLookupAction extends SBActionAdapter {
 	 */
 	private static Map<String, GenericVO> keyMap = new HashMap<>(16);
 	static {
-		keyMap.put("some-key", new GenericVO("some-method", Boolean.TRUE));
+		keyMap.put("activeFlag", new GenericVO("getYesNoLookup", Boolean.FALSE));
 	}
 
 	/**
@@ -72,8 +74,12 @@ public class SelectLookupAction extends SBActionAdapter {
 	public void retrieve(ActionRequest req) throws ActionException {
 		String listType = req.getStringParameter(SELECT_KEY);
 		GenericVO vo = keyMap.get(listType);
-		if (vo == null)
-			throw new ActionException("List type Not Found in KeyMap");
+		
+		// If the key is not found, throw a json error
+		if (vo == null) {
+			putModuleData(null, 0, false, "List Type Not Found in KeyMap", true);
+			return;
+		}
 
 		try {
 			if (Convert.formatBoolean(vo.getValue())) {
@@ -89,4 +95,16 @@ public class SelectLookupAction extends SBActionAdapter {
 		}
 	}
 
+	/**
+	 * Load a yes no list
+	 * @return
+	 */
+	public List<GenericVO> getYesNoLookup() {
+		List<GenericVO> yesNo = new ArrayList<>();
+
+		yesNo.add(new GenericVO("1","Yes"));
+		yesNo.add(new GenericVO("0","No"));
+
+		return yesNo;
+	}
 }
