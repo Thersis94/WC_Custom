@@ -59,8 +59,12 @@ public class ProductSerialTransaction extends BaseTransactionAction {
 	@Override
 	public void build(ActionRequest req) throws ActionException {
 		try {
-			if (req.hasParameter("isSerialUpdate"))
+			log.debug("????????? started? ");
+			if (req.hasParameter("isSerialUpdate")) {
+				log.debug("???????? in if? ");
 				putModuleData(editProductSerialNumber(req));
+			}
+				
 		} catch (Exception e) {
 			log.error("Unable to update product serial data", e);
 			putModuleData("", 0, false, e.getLocalizedMessage(), true);
@@ -77,7 +81,17 @@ public class ProductSerialTransaction extends BaseTransactionAction {
 	 */
 	public TicketVO editProductSerialNumber(ActionRequest req) throws InvalidDataException, DatabaseException {
 		DBProcessor dbp = new DBProcessor(getDBConnection(), getCustomSchema());
-		UserVO user = (UserVO) getAdminUser(req).getUserExtendedInfo();
+		UserVO user = null;
+		
+		// Get the WSLA User
+		if(req.hasParameter("userId") && req.hasParameter("publicUserForm")) {
+			//coming in from the public user portal the id is on the form.
+			user = new UserVO();
+			user.setUserId(req.getParameter("userId"));
+		}else {
+			//coming in from he secure wsla portal the user object is available
+			user = (UserVO)getAdminUser(req).getUserExtendedInfo();
+		}
 		
 		// Get existing base ticket data
 		TicketVO ticket = new TicketVO(req);
@@ -85,7 +99,7 @@ public class ProductSerialTransaction extends BaseTransactionAction {
 		
 		// Get existing product serial data
 		ProductSerialNumberVO psn = new ProductSerialNumberVO();
-		psn.setProductSerialId(req.getParameter("productSerialId"));
+		psn.setProductSerialId(StringUtil.checkVal(req.getParameter("productSerialId")));
 		dbp.getByPrimaryKey(psn);
 		
 		// Make an appropriate update based on the data. There are actually three use cases here.

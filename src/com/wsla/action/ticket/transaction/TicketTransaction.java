@@ -88,12 +88,12 @@ public class TicketTransaction extends BaseTransactionAction {
 				StatusCode sc;
 				LedgerSummary ls;
 				
-				if(req.getBooleanParameter("warrantyValidFlag")) {
-					saveValidSerialToTicket(ticket);
+				if(!req.getBooleanParameter("warrantyValidFlag")) {
+					saveInvalidSerialToTicket(req, ticket);
 					sc = StatusCode.UNLISTED_SERIAL_NO;
 					ls = LedgerSummary.INVALID_SERIAL_SAVED;
 				}else {
-					saveInvalidSerialToTicket(req, ticket);
+					saveValidSerialToTicket(ticket);
 					sc = StatusCode.USER_CALL_DATA_INCOMPLETE;
 					ls = LedgerSummary.VALID_SERIAL_SAVED;
 				}
