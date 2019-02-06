@@ -59,9 +59,7 @@ public class ProductSerialTransaction extends BaseTransactionAction {
 	@Override
 	public void build(ActionRequest req) throws ActionException {
 		try {
-			log.debug("????????? started? ");
 			if (req.hasParameter("isSerialUpdate")) {
-				log.debug("???????? in if? ");
 				putModuleData(editProductSerialNumber(req));
 			}
 				
