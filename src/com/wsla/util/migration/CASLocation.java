@@ -102,6 +102,7 @@ public class CASLocation extends AbsImporter {
 		vo.setDefaultFlag(1);
 		vo.setLocationId(dataVo.getCasId());
 		vo.setProviderId(dataVo.getCasId());
+		vo.setStatus(dataVo.getStatusEnum());
 		vo.setLocationName(StringUtil.checkVal(dataVo.getCasName(), dataVo.getCasId()));
 		vo.setAddress(dataVo.getAddress());
 		vo.setAddress2(dataVo.getAddress2());
