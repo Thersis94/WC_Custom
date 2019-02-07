@@ -104,13 +104,16 @@ public class VenueWidget extends SBActionAdapter {
 	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
+		log.info("*** Building: " + req.getParameter("venueId"));
 		VenueVO venue = new VenueVO(req);
+		log.info(venue);
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		
 		try {
 			db.save(venue);
 			putModuleData(venue);
 		} catch (Exception e) {
+			log.error("Unable to add venue: " + venue, e);
 			putModuleData(venue, 1, false, e.getLocalizedMessage(), true);
 		}
 	}

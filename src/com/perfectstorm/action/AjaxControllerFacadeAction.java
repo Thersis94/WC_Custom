@@ -89,6 +89,7 @@ public class AjaxControllerFacadeAction extends FacadeActionAdapter {
 	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
+		log.info("Controller");
 		ActionInterface action = loadActionByType(req.getParameter(SELECTOR_KEY, DEFAULT_TYPE));
 		action.build(req);
 	}

@@ -68,7 +68,7 @@ public class VenueVO extends GeocodeLocation {
 	/**
 	 * @return the venueId
 	 */
-	@Column(name="venue_id")
+	@Column(name="venue_id", isPrimaryKey=true)
 	public String getVenueId() {
 		return venueId;
 	}
