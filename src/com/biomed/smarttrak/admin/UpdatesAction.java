@@ -41,7 +41,6 @@ import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
-import com.siliconmtn.util.user.HumanNameIntfc;
 import com.siliconmtn.util.user.NameComparator;
 import com.smt.sitebuilder.action.search.SolrFieldVO.FieldType;
 // WC Core libs
@@ -147,7 +146,7 @@ public class UpdatesAction extends ManagementAction {
 		if (!req.hasParameter("loadData") && !req.hasParameter("loadhistory") && !req.hasParameter(UPDATE_ID) ) return;
 		int count = 0;
 
-		List<Object> data;
+		List<UpdateVO> data;
 		if(req.hasParameter("loadHistory")) {
 			data = getHistory(req.getParameter("historyId"));
 		} else if (req.hasParameter("updateId")) {
@@ -162,7 +161,7 @@ public class UpdatesAction extends ManagementAction {
 			ModuleVO mod = (ModuleVO) attributes.get(Constants.MODULE_DATA);
 			SolrResponseVO resp = (SolrResponseVO)mod.getActionData();
 			count = (int) resp.getTotalResponses();
-			if (count > 0) {
+			if (count > 0 && resp.getResultDocuments().size() > 0) {
 
 				List<Object> params = getIdsFromDocs(resp);
 				
@@ -213,7 +212,7 @@ public class UpdatesAction extends ManagementAction {
 	 * @param docs
 	 * @return
 	 */
-	private List<Object> loadDetails(List<Object> ids) {
+	private List<UpdateVO> loadDetails(List<Object> ids) {
 		String sql = formatDetailQuery(ids.size());
 		log.debug(sql);
 
@@ -233,7 +232,7 @@ public class UpdatesAction extends ManagementAction {
 	private String formatDetailQuery(int size) {
 		StringBuilder sql = new StringBuilder(200);
 		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
-		sql.append("SELECT * FROM ").append(schema).append("BIOMEDGPS_UPDATE up ");
+		sql.append("SELECT *, '").append(getAttribute(Constants.QS_PATH)).append("' as qs_path FROM ").append(schema).append("BIOMEDGPS_UPDATE up ");
 		sql.append("LEFT JOIN ").append(schema).append("BIOMEDGPS_UPDATE_SECTION xr ");
 		sql.append("on up.UPDATE_ID = xr.UPDATE_ID ");
 		sql.append("WHERE up.UPDATE_ID in (").append(DBUtil.preparedStatmentQuestion(size)).append(") ");
@@ -349,14 +348,13 @@ public class UpdatesAction extends ManagementAction {
 	 * @param updates
 	 * @param req
 	 */
-	protected void adjustContentLinks(List<Object> updates, ActionRequest req) {
+	protected void adjustContentLinks(List<UpdateVO> updates, ActionRequest req) {
 		//create link checker util
 		SiteVO site = (SiteVO)req.getAttribute(Constants.SITE_DATA);
 		BiomedLinkCheckerUtil linkUtil = new BiomedLinkCheckerUtil(dbConn, site);
 		
 		//modify appropriate content links for updates
-		for (Object o : updates) {
-			UpdateVO up = (UpdateVO)o;
+		for (UpdateVO up : updates) {
 			up.setMessageTxt(linkUtil.modifySiteLinks(up.getMessageTxt()));
 		}
 	}
@@ -388,7 +386,7 @@ public class UpdatesAction extends ManagementAction {
 	 * @param updates
 	 *TODO change query to "in (1,2,3)" instead of looping outside the query - Zoho SC-232
 	 */
-	private void addProductCompanyData(List<Object> updates) {
+	private void addProductCompanyData(List<UpdateVO> updates) {
 		log.debug("adding company short name and id ");
 
 		int productCount = getProductCount(updates);
@@ -405,8 +403,7 @@ public class UpdatesAction extends ManagementAction {
 		Map<String, GenericVO> companies = new HashMap<>();
 		try (PreparedStatement ps = dbConn.prepareStatement(sb.toString())) {
 			int i = 1;
-			for (Object o : updates) {
-				UpdateVO up = (UpdateVO)o;
+			for (UpdateVO up : updates) {
 				if (StringUtil.isEmpty(up.getProductId())) continue;
 				ps.setString(i++, up.getProductId());
 			}
@@ -428,9 +425,8 @@ public class UpdatesAction extends ManagementAction {
 	 * @param updates
 	 * @param companies
 	 */
-	private void mergeResults(List<Object> updates, Map<String, GenericVO> companies) {
-		for (Object o : updates) {
-			UpdateVO up = (UpdateVO)o;
+	private void mergeResults(List<UpdateVO> updates, Map<String, GenericVO> companies) {
+		for (UpdateVO up : updates) {
 			if (StringUtil.isEmpty(up.getProductId())) continue;
 			GenericVO company = companies.get(up.getProductId());
 			up.setCompanyId((String) company.getKey());
@@ -443,10 +439,9 @@ public class UpdatesAction extends ManagementAction {
 	 * @param updates
 	 * @return
 	 */
-	private int getProductCount(List<Object> updates) {
+	private int getProductCount(List<UpdateVO> updates) {
 		int productCount = 0;
-		for (Object o : updates) {
-			UpdateVO up = (UpdateVO)o;
+		for (UpdateVO up : updates) {
 			if (StringUtil.isEmpty(up.getProductId())) continue;
 			productCount++;
 		}
@@ -485,14 +480,14 @@ public class UpdatesAction extends ManagementAction {
 	 * @param parameter
 	 * @return
 	 */
-	protected List<Object> getHistory(String updateId) {
+	protected List<UpdateVO> getHistory(String updateId) {
 		String sql = formatHistoryRetrieveQuery();
 
 		List<Object> params = new ArrayList<>();
 		if (!StringUtil.isEmpty(updateId)) params.add(updateId);
 
 		DBProcessor db = new DBProcessor(dbConn);
-		List<Object>  updates = db.executeSelect(sql, params, new UpdateVO());
+		List<UpdateVO>  updates = db.executeSelect(sql, params, new UpdateVO());
 		log.debug("loaded " + updates.size() + " updates");
 		return updates;
 	}
@@ -518,9 +513,8 @@ public class UpdatesAction extends ManagementAction {
 	 * loop and decrypt owner names, which came from the profile table
 	 * @param accounts
 	 */
-	@SuppressWarnings("unchecked")
-	protected void decryptNames(List<Object> data) {
-		new NameComparator().decryptNames((List<? extends HumanNameIntfc>)(List<?>)data, (String)getAttribute(Constants.ENCRYPT_KEY));
+	protected void decryptNames(List<UpdateVO> data) {
+		new NameComparator().decryptNames(data, (String)getAttribute(Constants.ENCRYPT_KEY));
 	}
 
 
