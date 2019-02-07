@@ -14,6 +14,8 @@ import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
 import com.siliconmtn.gis.GeocodeLocation;
+import com.siliconmtn.util.EnumUtil;
+import com.siliconmtn.util.StringUtil;
 
 /****************************************************************************
  * <b>Title</b>: ProviderLocationVO.java
@@ -47,9 +49,22 @@ public class ProviderLocationVO extends GeocodeLocation {
 	private Date updateDate;
 
 	private String providerName;
+	private Status status;
 
 	// Bean Sub-Elements
 	private List<AuthorizedServiceProviderVO> authorizedServiceProviders = new ArrayList<>();
+
+	public enum Status {
+		PENDING_CONTACT,
+		EMAIL_SENT,
+		RCVD_QUESTIONNAIRE,
+		REVW_QUESTIONNAIRE,
+		REJECTED,
+		AUTHORIZED,
+		SEND_CONTRACT,
+		AWAITING_CONTRACT,
+		SIGNED_CONTRACT;
+	}
 
 	/**
 	 * 
@@ -267,5 +282,19 @@ public class ProviderLocationVO extends GeocodeLocation {
 	 */
 	public void setLocationDescription(String locationDescription) {
 		this.locationDescription = locationDescription;
+	}
+
+	@Column(name="status_cd")
+	public Status getStatus() {
+		return status;
+	}
+
+	public void setStatus(Status status) {
+		this.status = status;
+	}
+
+	public void setStatus(String status) {
+		if (StringUtil.isEmpty(status)) return;
+		setStatus(EnumUtil.safeValueOf(Status.class, status));
 	}
 }
