@@ -14,7 +14,7 @@ import java.util.Set;
 
 import com.biomed.smarttrak.admin.AbstractTreeAction;
 import com.biomed.smarttrak.admin.SectionHierarchyAction;
-import com.biomed.smarttrak.admin.UpdatesWeeklyReportAction;
+import com.biomed.smarttrak.admin.UpdatesManageReportAction;
 import com.biomed.smarttrak.security.SecurityController;
 import com.biomed.smarttrak.util.BiomedLinkCheckerUtil;
 import com.biomed.smarttrak.vo.UpdateVO;
@@ -371,7 +371,7 @@ public class UpdatesEditionAction extends SimpleActionAdapter {
 		String dateRange = null;
 
 		//determine the date range
-		if (UpdatesWeeklyReportAction.TIME_RANGE_WEEKLY.equalsIgnoreCase(timeRangeCd)) {
+		if (UpdatesManageReportAction.TIME_RANGE_WEEKLY.equalsIgnoreCase(timeRangeCd)) {
 			dateRange = DateUtil.previousWeek(DateFormat.MEDIUM);
 		} else if(dailyRange > 1) {
 
