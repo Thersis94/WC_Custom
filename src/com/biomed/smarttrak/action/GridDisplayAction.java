@@ -328,6 +328,9 @@ public class GridDisplayAction extends SimpleActionAdapter {
 		if (display && Convert.formatBoolean(req.getParameter(LOAD_TABLE))) display = false;
 		GridVO grid = getGridData(gridId, display);
 		
+		if (req.hasParameter("customTitle"))
+			grid.setTitle(req.getParameter("customTitle"));
+		
 		// If this grid has legacy data load that instead.
 		if (!StringUtil.isEmpty(grid.getLegacyId()) && Convert.formatBoolean(req.getParameter(LOAD_TABLE))) 
 			grid = getGridData(grid.getLegacyId(), display);
@@ -377,10 +380,11 @@ public class GridDisplayAction extends SimpleActionAdapter {
 		for(String grid : grids) {
 			String[] vals = grid.split("\\|");
 			Map<String, String> values = new HashMap<>(3);
-			for (String s : vals)log.debug(s);
+			
 			values.put("type", vals[1]);
 			if (vals.length >= 3) values.put("columns", vals[2]);
 			if (vals.length >= 4) values.put("labelType", vals[3]);
+			if (vals.length >= 4) values.put("customTitle", vals[4]);
 			items.put(vals[0], values);
 		}
 
@@ -398,6 +402,8 @@ public class GridDisplayAction extends SimpleActionAdapter {
 			// Figure out which is which and assign to the id
 			String id = grid.getGridId();
 			if (items.get(grid.getGridId()) == null)  id = grid.getSlug();
+			if (!StringUtil.isEmpty(items.get(id).get("customTitle")))
+				grid.setTitle(items.get(id).get("customTitle")); 
 
 			// Parse pout the passed in data and format for calling each chart
 			ChartType ct = ChartType.valueOf(items.get(id).get("type") + "");
