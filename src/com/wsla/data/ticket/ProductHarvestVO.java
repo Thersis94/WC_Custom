@@ -26,6 +26,9 @@ public class ProductHarvestVO extends ProductSerialNumberVO {
 	private int quantity;
 	private String note;
 	private String locationId;
+	
+	// Helper variables
+	private int productSetQuantity;
 
 	/*
 	 * Possible outcomes from parts harvesting.
@@ -85,5 +88,20 @@ public class ProductHarvestVO extends ProductSerialNumberVO {
 
 	public void setLocationId(String locationId) {
 		this.locationId = locationId;
+	}
+
+	/**
+	 * @return the productSetQuantity
+	 */
+	@Column(name="set_qnty_no", isReadOnly=true)
+	public int getProductSetQuantity() {
+		return productSetQuantity;
+	}
+
+	/**
+	 * @param productSetQuantity the productSetQuantity to set
+	 */
+	public void setProductSetQuantity(int productSetQuantity) {
+		this.productSetQuantity = productSetQuantity;
 	}
 }

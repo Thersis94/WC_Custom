@@ -15,6 +15,7 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.GenericVO;
+import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.db.util.DatabaseException;
@@ -430,6 +431,27 @@ public class TicketOverviewAction extends BasePortalAction {
 		log.info("Doing nothing: " + req.getParameter("statusCode"));
 		return new ArrayList<>();
 	}
+	
+	/**
+	 * Returns the ticket id for a given Service Order number
+	 * 
+	 * @param ticketIdText
+	 * @return
+	 * @throws InvalidDataException 
+	 */
+	public String getTicketIdBySONumber(String ticketIdText) throws InvalidDataException {
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 
+		StringBuilder sql = new StringBuilder(63);
+		sql.append(DBUtil.SELECT_FROM_STAR).append(getCustomSchema()).append("wsla_ticket where ticket_no = ? ");
+		
+		List<TicketVO> data = db.executeSelect(sql.toString(), Arrays.asList(ticketIdText), new TicketVO());
+		
+		if (data != null && !data.isEmpty()) {
+			return data.get(0).getTicketId();
+		}else {
+			throw new InvalidDataException("Service order not linked to a ticket");
+		}
+	}
 }
 

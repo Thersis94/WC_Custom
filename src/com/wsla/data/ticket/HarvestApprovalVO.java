@@ -26,6 +26,9 @@ public class HarvestApprovalVO extends BeanDataVO {
 	private TicketVO ticket;
 	private ProductSerialNumberVO product;
 	private String harvestTicketId;
+	
+	// Helper members
+	private String locationName;
 
 	public HarvestApprovalVO() {
 		super();
@@ -72,5 +75,20 @@ public class HarvestApprovalVO extends BeanDataVO {
 	 */
 	public void setHarvestTicketId(String harvestTicketId) {
 		this.harvestTicketId = harvestTicketId;
+	}
+
+	/**
+	 * @return the locationName
+	 */
+	@Column(name="location_nm", isReadOnly=true)
+	public String getLocationName() {
+		return locationName;
+	}
+
+	/**
+	 * @param locationName the locationName to set
+	 */
+	public void setLocationName(String locationName) {
+		this.locationName = locationName;
 	}
 }
