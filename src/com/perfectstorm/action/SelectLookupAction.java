@@ -7,11 +7,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.perfectstorm.action.admin.VenueWidget;
+import com.perfectstorm.data.VenueVO;
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.common.html.BSTableControlVO;
 import com.siliconmtn.data.GenericVO;
+import com.siliconmtn.db.orm.GridDataVO;
 import com.siliconmtn.util.Convert;
 import com.smt.sitebuilder.action.SBActionAdapter;
 
@@ -50,6 +54,7 @@ public class SelectLookupAction extends SBActionAdapter {
 	private static Map<String, GenericVO> keyMap = new HashMap<>(16);
 	static {
 		keyMap.put("activeFlag", new GenericVO("getYesNoLookup", Boolean.FALSE));
+		keyMap.put("venues", new GenericVO("getVenueLookup", Boolean.TRUE));
 	}
 
 	/**
@@ -106,5 +111,23 @@ public class SelectLookupAction extends SBActionAdapter {
 		yesNo.add(new GenericVO("0","No"));
 
 		return yesNo;
+	}
+	
+	/**
+	 * 
+	 * @param req
+	 * @return
+	 */
+	public List<GenericVO> getVenueLookup(ActionRequest req) {
+		
+		VenueWidget vw = new VenueWidget(dbConn, attributes);
+		GridDataVO<VenueVO> data = vw.getVenues(null, new BSTableControlVO(req, VenueVO.class));
+		List<GenericVO> genData = new ArrayList<>();
+		for (VenueVO venue : data.getRowData()) {
+			String desc = venue.getVenueName() + ", " + venue.getFormattedLocation();
+			genData.add(new GenericVO(venue.getVenueId(), desc));
+		}		
+		
+		return genData;
 	}
 }

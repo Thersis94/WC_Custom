@@ -38,6 +38,7 @@ public class VenueVO extends GeocodeLocation {
 	private String venueName;
 	private String venueDescription;
 	private int activeFlag;
+	private int manualGeocodeFlag;
 	private Date createDate;
 	private Date updateDate;
 	
@@ -114,6 +115,14 @@ public class VenueVO extends GeocodeLocation {
 	}
 
 	/**
+	 * @return the manualGeocodeFlag
+	 */
+	@Column(name="manual_geocode_flg")
+	public int getManualGeocodeFlag() {
+		return manualGeocodeFlag;
+	}
+
+	/**
 	 * @return the attributes
 	 */
 	public List<VenueAttributeVO> getAttributes() {
@@ -176,6 +185,13 @@ public class VenueVO extends GeocodeLocation {
 	@BeanSubElement
 	public void addAttribute(VenueAttributeVO attribute) {
 		attributes.add(attribute);
+	}
+
+	/**
+	 * @param manualGeocodeFlag the manualGeocodeFlag to set
+	 */
+	public void setManualGeocodeFlag(int manualGeocodeFlag) {
+		this.manualGeocodeFlag = manualGeocodeFlag;
 	}
 }
 

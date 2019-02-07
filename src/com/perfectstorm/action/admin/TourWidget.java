@@ -33,7 +33,11 @@ import com.smt.sitebuilder.action.SBActionAdapter;
  ****************************************************************************/
 
 public class TourWidget extends SBActionAdapter {
-
+	/**
+	 * Key to access the widget through the controller
+	 */
+	public static final String AJAX_KEY = "tour";
+	
 	/**
 	 * 
 	 */
@@ -68,7 +72,7 @@ public class TourWidget extends SBActionAdapter {
 	public GridDataVO<TourVO> getTours(Integer activeFlag, BSTableControlVO bst) {
 		// Add the params
 		List<Object> vals = new ArrayList<>(); 
-		StringBuilder sql = new StringBuilder(80);
+		StringBuilder sql = new StringBuilder(128);
 		sql.append("select * from ").append(getCustomSchema()).append("ps_tour ");
 		sql.append("where 1=1 ");
 		
@@ -85,8 +89,9 @@ public class TourWidget extends SBActionAdapter {
 			vals.add(activeFlag);
 		}
 		
-		sql.append(DBUtil.ORDER_BY).append(bst.getDBSortColumnName("name"));
-		sql.append(bst.getOrder("asc"));
+		sql.append(DBUtil.ORDER_BY).append(bst.getDBSortColumnName("tour_nm"));
+		sql.append(" ").append(bst.getOrder("asc"));
+		log.debug(sql.length() + "|" + sql);
 		
 		// execute the sql
 		DBProcessor db = new DBProcessor(dbConn);
@@ -106,6 +111,7 @@ public class TourWidget extends SBActionAdapter {
 			db.save(tour);
 			putModuleData(tour);
 		} catch (Exception e) {
+			log.error("Error saving tour: " + tour, e);
 			putModuleData(tour, 1, false, e.getLocalizedMessage(), true);
 		}
 	}

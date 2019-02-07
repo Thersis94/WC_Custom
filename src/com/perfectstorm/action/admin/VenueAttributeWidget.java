@@ -31,7 +31,11 @@ import com.smt.sitebuilder.action.SBActionAdapter;
  ****************************************************************************/
 
 public class VenueAttributeWidget extends SBActionAdapter {
-
+	/**
+	 * Key to access the widget through the controller
+	 */
+	public static final String AJAX_KEY = "venue_attr";
+	
 	/**
 	 * 
 	 */
@@ -53,7 +57,7 @@ public class VenueAttributeWidget extends SBActionAdapter {
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 
-		this.setModuleData(getVenueAttributes(req.getParameter("venue_id")));
+		this.setModuleData(getVenueAttributes(req.getParameter("venueId")));
 	}
 	
 	/**
@@ -67,15 +71,17 @@ public class VenueAttributeWidget extends SBActionAdapter {
 		List<Object> vals = new ArrayList<>(); 
 		vals.add(venueId);
 		
-		StringBuilder sql = new StringBuilder(80);
-		sql.append("select * from ").append(getCustomSchema()).append("ps_attribute a ");
+		StringBuilder sql = new StringBuilder(192);
+		sql.append("select a.attribute_cd, a.attribute_nm, b.venue_attribute_id, value_txt  from ");
+		sql.append(getCustomSchema()).append("ps_attribute a ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(getCustomSchema()).append("ps_venue_attribute_xr b ");
 		sql.append("on a.attribute_cd = b.attribute_cd and venue_id = ? ");
 		sql.append(DBUtil.ORDER_BY).append("attribute_nm ");
+		log.debug(sql.length() + "|" + sql + vals);
 		
 		// execute the sql
 		DBProcessor db = new DBProcessor(dbConn);
-		return db.executeSelect(sql.toString(), vals, new VenueAttributeVO());
+		return db.executeSelect(sql.toString(), vals, new VenueAttributeVO(), "attribute_cd");
 	}
 	
 	/*

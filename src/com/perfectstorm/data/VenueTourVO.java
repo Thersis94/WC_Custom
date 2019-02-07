@@ -67,7 +67,7 @@ public class VenueTourVO extends VenueVO {
 	/**
 	 * @return the venueTourId
 	 */
-	@Column(name="venue_tour_id")
+	@Column(name="venue_tour_id", isPrimaryKey=true)
 	public String getVenueTourId() {
 		return venueTourId;
 	}
@@ -91,7 +91,7 @@ public class VenueTourVO extends VenueVO {
 	/**
 	 * @return the startRetrieve
 	 */
-	@Column(name="start_retrieve_time")
+	@Column(name="start_retrieve_dt")
 	public Date getStartRetrieve() {
 		return startRetrieve;
 	}
@@ -99,7 +99,7 @@ public class VenueTourVO extends VenueVO {
 	/**
 	 * @return the endRetrieve
 	 */
-	@Column(name="end_retrieve_time")
+	@Column(name="end_retrieve_dt")
 	public Date getEndRetrieve() {
 		return endRetrieve;
 	}

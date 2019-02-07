@@ -127,7 +127,7 @@ public class TourVO extends BeanDataVO {
 	/**
 	 * @return the createDate
 	 */
-	@Column(name="create_dt", isInsertOnly=true)
+	@Column(name="create_dt", isInsertOnly=true, isAutoGen=true)
 	public Date getCreateDate() {
 		return createDate;
 	}
@@ -135,7 +135,7 @@ public class TourVO extends BeanDataVO {
 	/**
 	 * @return the updateDate
 	 */
-	@Column(name="update_dt", isUpdateOnly=true)
+	@Column(name="update_dt", isUpdateOnly=true, isAutoGen=true)
 	public Date getUpdateDate() {
 		return updateDate;
 	}

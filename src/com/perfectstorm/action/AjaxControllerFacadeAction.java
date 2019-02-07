@@ -1,6 +1,12 @@
 package com.perfectstorm.action;
 
+// PS Libs
+import com.perfectstorm.action.admin.AttributeAction;
+import com.perfectstorm.action.admin.TourVenueWidget;
+import com.perfectstorm.action.admin.TourWidget;
+import com.perfectstorm.action.admin.VenueAttributeWidget;
 import com.perfectstorm.action.admin.VenueWidget;
+
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -60,6 +66,10 @@ public class AjaxControllerFacadeAction extends FacadeActionAdapter {
 	private void loadTypes() {
 		actionMap.put(DEFAULT_TYPE, SelectLookupAction.class);
 		actionMap.put(VenueWidget.AJAX_KEY, VenueWidget.class);
+		actionMap.put(AttributeAction.AJAX_KEY, AttributeAction.class);
+		actionMap.put(VenueAttributeWidget.AJAX_KEY, VenueAttributeWidget.class);
+		actionMap.put(TourWidget.AJAX_KEY, TourWidget.class);
+		actionMap.put(TourVenueWidget.AJAX_KEY, TourVenueWidget.class);
 	}
 
 	/*
@@ -89,7 +99,6 @@ public class AjaxControllerFacadeAction extends FacadeActionAdapter {
 	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
-		log.info("Controller");
 		ActionInterface action = loadActionByType(req.getParameter(SELECTOR_KEY, DEFAULT_TYPE));
 		action.build(req);
 	}
