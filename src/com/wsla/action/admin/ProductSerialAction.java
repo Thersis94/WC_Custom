@@ -186,12 +186,15 @@ public class ProductSerialAction extends BatchImport {
 	 */
 	public void save(ProductSerialNumberVO vo, ProductWarrantyVO pwvo, int val, String userId) 
 	throws InvalidDataException, DatabaseException {
+		
 		// Save the serial info
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		db.save(vo);
 		
+		pwvo.setProductSerialId(vo.getProductSerialId());
+		
 		// If the warranty info exists, update it
-		if (! StringUtil.isEmpty(pwvo.getProductWarrantyId())) {
+		if (! StringUtil.isEmpty(pwvo.getProductWarrantyId()) || ! StringUtil.isEmpty(vo.getWarrantyId())) {
 			db.save(pwvo);
 		}
 		
@@ -358,8 +361,9 @@ public class ProductSerialAction extends BatchImport {
 		List<Object> vals = new ArrayList<>();
 		vals.add(serialNo.toLowerCase());
 		vals.add(productId);
-		log.debug( sql +"|"+vals);
+
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		db.setGenerateExecutedSQL(log.isDebugEnabled());
 		List<ProductWarrantyVO> lpwvo = db.executeSelect(sql.toString(), vals, new ProductWarrantyVO());
 		
 		if (lpwvo != null && !lpwvo.isEmpty() && lpwvo.get(0) != null)
