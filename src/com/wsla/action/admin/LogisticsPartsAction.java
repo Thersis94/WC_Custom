@@ -307,7 +307,8 @@ public class LogisticsPartsAction extends SBActionAdapter {
 			bta.changeStatus(shipment.getTicketId(), user.getUserId(), StatusCode.HARVEST_APPROVED, LedgerSummary.HARVEST_AFTER_RECEIPT.summary, null);
 		}
 
-		// Add a status change depending on whether another shipment exists or not
+		// Add a status change depending on whether another shipment exists or not.
+		// If this is a replacement request, there will be a pending shipment. Otherwise, this is a refund request.
 		if (hasPending) {
 			ledger = bta.changeStatus(shipment.getTicketId(), user.getUserId(), StatusCode.REPLACEMENT_CONFIRMED, null, null);
 		} else {

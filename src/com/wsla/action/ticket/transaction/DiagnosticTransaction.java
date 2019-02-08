@@ -1,5 +1,6 @@
 package com.wsla.action.ticket.transaction;
 
+import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -10,6 +11,7 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
+import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.wsla.action.admin.LogisticsAction;
 
@@ -18,6 +20,7 @@ import com.wsla.action.ticket.BaseTransactionAction;
 import com.wsla.action.ticket.TicketEditAction;
 import com.wsla.action.ticket.TicketOverviewAction;
 import com.wsla.data.ticket.DiagnosticRunVO;
+import com.wsla.data.ticket.DiagnosticTicketVO;
 import com.wsla.data.ticket.DispositionCode;
 import com.wsla.data.ticket.LedgerSummary;
 import com.wsla.data.ticket.StatusCode;
@@ -88,22 +91,38 @@ public class DiagnosticTransaction extends BaseTransactionAction {
 		UserVO user = (UserVO)getAdminUser(req).getUserExtendedInfo();
 		String ticketId = req.getParameter(TicketEditAction.TICKET_ID);
 		
-		// Add a ledger entry, change the status
-		TicketLedgerVO ledger = changeStatus(ticketId, user.getUserId(), StatusCode.CAS_IN_DIAG, LedgerSummary.RAN_DIAGNOSTIC.summary, null);
-
-		// Build next step
-		Map<String, Object> params = new HashMap<>();
-		params.put("ticketId", ledger.getTicketId());
-		buildNextStep(ledger.getStatusCode(), params, false);
-		
+		// Save the diagnostic run
 		DiagnosticRunVO dr = new DiagnosticRunVO(req);
-		
 		try {
 			TicketOverviewAction toa = new TicketOverviewAction(attributes, dbConn);
 			toa.saveDiagnosticRun(dr);
 		} catch (InvalidDataException e) {
 			throw new DatabaseException(e);
 		}
+		
+		// Check to see if the issue was resolved, add any required ticket status ledger entries if true
+		for (DiagnosticTicketVO diag : dr.getDiagnostics()) {
+			if (Convert.formatBoolean(diag.getIssueResolvedFlag())) {
+				changeStatus(ticketId, user.getUserId(), StatusCode.PROBLEM_RESOLVED, null, null);
+				
+				try {
+					TicketDataTransaction tdt = new TicketDataTransaction(getDBConnection(), getAttributes());
+					tdt.saveDataAttribute(ticketId, "attr_issueResolved", "1", true);
+				} catch (SQLException e) {
+					throw new DatabaseException(e);
+				}
+				
+				break;
+			}
+		}
+
+		// Add a ledger entry, change the status
+		TicketLedgerVO ledger = changeStatus(ticketId, user.getUserId(), StatusCode.CAS_IN_DIAG, LedgerSummary.RAN_DIAGNOSTIC.summary, null);
+		
+		// Build next step
+		Map<String, Object> params = new HashMap<>();
+		params.put("ticketId", ledger.getTicketId());
+		buildNextStep(ledger.getStatusCode(), params, false);
 	}
 	
 	/**

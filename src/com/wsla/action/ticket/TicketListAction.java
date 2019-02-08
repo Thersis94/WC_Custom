@@ -242,6 +242,8 @@ public class TicketListAction extends SimpleActionAdapter {
 		StringBuilder where = new StringBuilder(64);
 		where.append("and (lower(ticket_no) like ? or lower(product_nm) like ? ");
 		where.append("or lower(e.email_address_txt) like ? )"); 
+		where.append("or lower(e.first_nm || ' ' || e.last_nm) like ? ");
+		params.add(bst.getLikeSearch().toLowerCase());
 		params.add(bst.getLikeSearch().toLowerCase());
 		params.add(bst.getLikeSearch().toLowerCase());
 		params.add(bst.getLikeSearch().toLowerCase());
