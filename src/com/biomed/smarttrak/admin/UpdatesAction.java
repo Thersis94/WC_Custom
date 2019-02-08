@@ -570,6 +570,10 @@ public class UpdatesAction extends ManagementAction {
 				ps.addBatch();
 			}
 			ps.executeBatch();
+
+			UpdateIndexer idx = UpdateIndexer.makeInstance(getAttributes());
+			idx.setDBConnection(dbConn);
+			idx.indexItems(ids);
 		} catch (SQLException e) {
 			throw new ActionException(e);
 		}
@@ -588,6 +592,9 @@ public class UpdatesAction extends ManagementAction {
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, updateId);
 			ps.executeUpdate();
+			UpdateIndexer idx = UpdateIndexer.makeInstance(getAttributes());
+			idx.setDBConnection(dbConn);
+			idx.indexItems(updateId);
 		} catch (SQLException e) {
 			throw new ActionException(e);
 		}
