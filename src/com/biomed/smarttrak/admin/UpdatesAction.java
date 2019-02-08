@@ -4,6 +4,8 @@ package com.biomed.smarttrak.admin;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
@@ -534,13 +536,44 @@ public class UpdatesAction extends ManagementAction {
 	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
+		String buildAction = req.getParameter("buildAction");
+
 		if (Convert.formatBoolean(req.getParameter("markReviewed"))) {
 			markReviewed(req.getParameter(UPDATE_ID));
+		} else if ("orderUpdate".equals(buildAction)) {
+			updateOrder(req);
+			// We don't want to send redirects after an order update
+			return;
 		} else {
 			saveRecord(req, false);
 		}
 	}
 
+	/**
+	 * Update the Order.  Set Publish_dt on the update records 
+	 * @param req
+	 * @throws ActionException
+	 */
+	protected void updateOrder(ActionRequest req) throws ActionException {
+		String[] ids = req.getParameterValues("updateId");
+		Instant publishDt = Instant.now();
+
+		StringBuilder sql = new StringBuilder(150);
+		sql.append("UPDATE ").append(customDbSchema);
+		sql.append("BIOMEDGPS_UPDATE SET PUBLISH_DT = ? WHERE UPDATE_ID = ? ");
+
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			for (int i=0; i < ids.length; i++) {
+				publishDt = publishDt.minusMillis(1000);
+				ps.setTimestamp(1, Timestamp.from(publishDt));
+				ps.setString(2, ids[i]);
+				ps.addBatch();
+			}
+			ps.executeBatch();
+		} catch (SQLException e) {
+			throw new ActionException(e);
+		}
+	}
 
 	/**
 	 * Change the supplied update's status code to Reviewed
