@@ -172,12 +172,13 @@ public class MarketAction extends SimpleActionAdapter {
 		
 		StringBuilder sql = new StringBuilder(150);
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
-		sql.append("SELECT xr.*, g.TITLE_NM as ATTRIBUTE_NM FROM ").append(customDb).append("BIOMEDGPS_MARKET_ATTRIBUTE_XR xr ");
+		sql.append("SELECT xr.*, case when xr.value_3_txt is not null then xr.value_3_txt else g.TITLE_NM end as ATTRIBUTE_NM FROM ").append(customDb).append("BIOMEDGPS_MARKET_ATTRIBUTE_XR xr ");
 		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_MARKET_ATTRIBUTE a ");
 		sql.append("ON a.ATTRIBUTE_ID = xr.ATTRIBUTE_ID ");
 		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_GRID g ");
 		sql.append("ON g.GRID_ID = xr.VALUE_1_TXT ");
 		sql.append("WHERE MARKET_ID = ? and a.TYPE_CD = 'GRID' ");
+		sql.append("and status_no is null ");
 		if (excludeMarkets != null) {
 			sql.append("and market_attribute_id not in (");
 			DBUtil.preparedStatmentQuestion(excludeMarkets.length, sql);
