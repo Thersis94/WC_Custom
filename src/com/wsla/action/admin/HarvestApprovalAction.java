@@ -19,11 +19,9 @@ import com.siliconmtn.util.StringUtil;
 // WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.constants.Constants;
-import com.wsla.action.ticket.TicketEditAction;
 import com.wsla.action.ticket.transaction.TicketDataTransaction;
 import com.wsla.data.ticket.HarvestApprovalVO;
 import com.wsla.data.ticket.StatusCode;
-import com.wsla.data.ticket.TicketVO;
 import com.wsla.data.ticket.UserVO;
 
 /****************************************************************************
@@ -78,41 +76,10 @@ public class HarvestApprovalAction extends SBActionAdapter {
 	/*
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.action.ActionRequest)
-	 * TODO Finish this method once underlying components are built - see remarks inline
 	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
-		HarvestApprovalVO vo = new HarvestApprovalVO(req);
-
-		if (StatusCode.HARVEST_REPAIR.equals(vo.getTicket().getStatusCode())) {
-			//if approved for repair, close the ticket, clone it, and update the new one as a task for the CAS warehouse.
-			//make sure there's a historical reference between the newly created ticket and the original.
-		} else {
-			//update ticket status
-
-			//if approved for harvesting, call the parts action so it can create a BOM of parts the Tech should collect & record.
-			if (StatusCode.HARVEST_APPROVED.equals(vo.getTicket().getStatusCode())) {
-				createBOM(req.getParameter("productSerialId"), null);
-			}
-		}
-	}
-	
-	/**
-	 * Calls the parts action so it can create a BOM of parts the Tech
-	 * should collect & record.
-	 * 
-	 * @param productSerialId - set to null if unknown
-	 * @param ticketId - use ticketId when you don't know the productSerialId
-	 */
-	public void createBOM(String productSerialId, String ticketId) {
-		if (productSerialId == null) {
-			TicketEditAction tea = new TicketEditAction(getDBConnection(), getAttributes());
-			TicketVO ticket = tea.getBaseTicket(ticketId);
-			productSerialId = ticket.getProductSerialId();
-		}
-		
-		HarvestPartsAction hpa = new HarvestPartsAction(getAttributes(), getDBConnection());
-		hpa.prepareHarvest(productSerialId);
+		// Nothing to do
 	}
 
 	/**
@@ -124,9 +91,6 @@ public class HarvestApprovalAction extends SBActionAdapter {
 	 * @throws ActionException 
 	 */
 	public void approveHarvest(String ticketId) throws ActionException {
-		// Create the BOM to be harvested
-		createBOM(null, ticketId);
-		
 		// Set the harvest status attribute
 		TicketDataTransaction tdt = new TicketDataTransaction(getDBConnection(), getAttributes());
 		try {

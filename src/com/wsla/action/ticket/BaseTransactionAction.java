@@ -86,14 +86,15 @@ public class BaseTransactionAction extends SBActionAdapter {
 	 * @throws DatabaseException 
 	 */
 	public TicketLedgerVO changeStatus(String ticketId, String userId, StatusCode newStatus, String summary, UnitLocation location) throws DatabaseException {
+		DBProcessor dbp = new DBProcessor(getDBConnection(), getCustomSchema());
 		TicketVO ticket = new TicketVO();
 		ticket.setTicketId(ticketId);
 		
-		// Save the new status
+		// Save the new status & location
 		try {
-			DBProcessor dbp = new DBProcessor(getDBConnection(), getCustomSchema());
 			dbp.getByPrimaryKey(ticket);
 			ticket.setStatusCode(newStatus);
+			ticket.setUnitLocation(location != null ? location : ticket.getUnitLocation());
 			dbp.save(ticket);
 		} catch (InvalidDataException e) {
 			throw new DatabaseException(e);
