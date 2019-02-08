@@ -8,6 +8,9 @@ import java.util.List;
 import java.util.Map;
 
 import com.perfectstorm.action.admin.VenueWidget;
+import com.perfectstorm.common.PSConstants;
+import com.perfectstorm.common.PSConstants.PSRole;
+import com.perfectstorm.common.PSLocales;
 import com.perfectstorm.data.VenueVO;
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
@@ -55,6 +58,10 @@ public class SelectLookupAction extends SBActionAdapter {
 	static {
 		keyMap.put("activeFlag", new GenericVO("getYesNoLookup", Boolean.FALSE));
 		keyMap.put("venues", new GenericVO("getVenueLookup", Boolean.TRUE));
+		keyMap.put("locale", new GenericVO("getLocales", Boolean.FALSE));
+		keyMap.put("role", new GenericVO("getRoles", Boolean.FALSE));
+		keyMap.put("prefix", new GenericVO("getPrefix", Boolean.FALSE));
+		keyMap.put("gender", new GenericVO("getGenders", Boolean.FALSE));
 	}
 
 	/**
@@ -129,5 +136,59 @@ public class SelectLookupAction extends SBActionAdapter {
 		}		
 		
 		return genData;
+	}
+	
+	/**
+	 * Gets the supported locales for the app
+	 * @return
+	 */
+	public List<GenericVO> getLocales() {
+		List<GenericVO> data = new ArrayList<>(8);
+
+		for (PSLocales val : PSLocales.values()) {
+			data.add(new GenericVO(val, val.getDesc()));
+		}
+
+		return data;
+	}
+	
+	/**
+	 * Gets the supported locales for the app
+	 * @return
+	 */
+	public List<GenericVO> getRoles() {
+		List<GenericVO> data = new ArrayList<>(8);
+
+		for (PSRole val : PSConstants.PSRole.values()) {
+			data.add(new GenericVO(val.getRoleId(), val.getRoleName()));
+		}
+
+		return data;
+	}
+	
+	/**
+	 * Retruns a list of user prefixes
+	 * @return
+	 */
+	public List<GenericVO> getPrefix() {
+		List<GenericVO> selectList = new ArrayList<>(8);
+		selectList.add(new GenericVO("Mr.", "Mr."));
+		selectList.add(new GenericVO("Mrs.", "Mrs."));
+		selectList.add(new GenericVO("Ms", "Ms."));
+		selectList.add(new GenericVO("Miss", "Miss"));
+
+		return selectList;
+	}
+	
+	/**
+	 * Gets the supported genders for the app
+	 * @return
+	 */
+	public List<GenericVO> getGenders() {
+		List<GenericVO> data = new ArrayList<>(8);
+		data.add(new GenericVO("F", "Female"));
+		data.add(new GenericVO("M", "Male"));
+
+		return data;
 	}
 }

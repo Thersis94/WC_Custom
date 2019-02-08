@@ -18,13 +18,19 @@ public class PSConstants {
 	 * Defines the roles used by this site
 	 */
 	public enum PSRole {
-		PUBLIC("0"),
-		REGISTERED("10"),
-		ADMIN("100");
+		PATRON("PATRON", "Subscriber"),
+		TOUR("TOUR", "Tour Management"),
+		VENUE("VENUE", "Vendor Management"),
+		ADMIN("100", "Site Administrators");
 		
 		private String roleId;
-		PSRole(String roleId) { this.roleId = roleId; }
+		private String roleName;
+		PSRole(String roleId, String roleName) { 
+			this.roleId = roleId; 
+			this.roleName = roleName;
+		}
 		public String getRoleId() {	return roleId; }
+		public String getRoleName() {	return roleName; }
 	}
 
 	private PSConstants() {

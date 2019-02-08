@@ -3,6 +3,7 @@ package com.perfectstorm.data;
 // JDK 1.8.x
 import java.sql.ResultSet;
 import java.util.Date;
+import java.util.Locale;
 
 // SMT Base Libs
 import com.siliconmtn.action.ActionRequest;
@@ -10,7 +11,9 @@ import com.siliconmtn.data.parser.BeanDataVO;
 import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
+import com.siliconmtn.security.PhoneVO;
 import com.siliconmtn.security.UserDataVO;
+import com.siliconmtn.util.StringUtil;
 
 /****************************************************************************
  * <b>Title</b>: MemberVO.java
@@ -37,13 +40,24 @@ public class MemberVO extends BeanDataVO {
 	private String profileId;
 	private String firstName;
 	private String lastName;
-	private String email;
+	private String emailAddress;
 	private String phoneNumber;
+	private String locale;
 	private Date createDate;
 	private Date updateDate;
 	
 	// Bean SubElements
 	private UserDataVO profile;
+	
+	// Helper Members
+	private String customers;
+	private String roleId;
+	private String profileRoleId;
+	private String authenticationId;
+	private String roleName;
+	private String genderCode;
+	private String prefixName;
+	private String aliasName;
 
 	/**
 	 * 
@@ -57,6 +71,15 @@ public class MemberVO extends BeanDataVO {
 	 */
 	public MemberVO(ActionRequest req) {
 		super(req);
+		
+		// Adds the UserDataVO to the bean
+		setProfile(new UserDataVO(req));
+		getProfile().getLocation().setCassValidated(false);
+
+		//make a special case for workPhone, which isn't supported by UserDataVO natively
+		if (req.hasParameter("workPhone"))
+			profile.addPhone(new PhoneVO(PhoneVO.WORK_PHONE, req.getParameter("phoneNumber"), profile.getCountryCode()));
+
 	}
 
 	/**
@@ -65,7 +88,19 @@ public class MemberVO extends BeanDataVO {
 	public MemberVO(ResultSet rs) {
 		super(rs);
 	}
-
+	
+	/**
+	 * Returns a Java Locale object for the corresponding locale string.  Defaults
+	 * to english and US if not provided
+	 * @return
+	 */
+	public Locale getUserLocale() {
+		if (StringUtil.isEmpty(locale)) locale = "en_US";
+		String language = locale.substring(0, 2);
+		String country = locale.substring(3);
+		return new Locale(language, country);
+	}
+	
 	/**
 	 * @return the memberId
 	 */
@@ -102,8 +137,8 @@ public class MemberVO extends BeanDataVO {
 	 * @return the email
 	 */
 	@Column(name="email_address_txt")
-	public String getEmail() {
-		return email;
+	public String getEmailAddress() {
+		return emailAddress;
 	}
 
 	/**
@@ -112,6 +147,22 @@ public class MemberVO extends BeanDataVO {
 	@Column(name="phone_number_txt")
 	public String getPhoneNumber() {
 		return phoneNumber;
+	}
+
+	/**
+	 * @return the locale
+	 */
+	@Column(name="locale_txt")
+	public String getLocale() {
+		return locale;
+	}
+
+	/**
+	 * @return the customers
+	 */
+	@Column(name="customers_txt", isReadOnly=true)
+	public String getCustomers() {
+		return customers;
 	}
 
 	/**
@@ -128,6 +179,62 @@ public class MemberVO extends BeanDataVO {
 	@Column(name="update_dt", isUpdateOnly=true)
 	public Date getUpdateDate() {
 		return updateDate;
+	}
+
+	/**
+	 * @return the roleId
+	 */
+	@Column(name="role_id", isReadOnly=true)
+	public String getRoleId() {
+		return roleId;
+	}
+
+	/**
+	 * @return the roleName
+	 */
+	@Column(name="role_nm", isReadOnly=true)
+	public String getRoleName() {
+		return roleName;
+	}
+
+	/**
+	 * @return the genderCode
+	 */
+	@Column(name="gender_cd", isReadOnly=true)
+	public String getGenderCode() {
+		return genderCode;
+	}
+
+	/**
+	 * @return the prefixName
+	 */
+	@Column(name="prefix_nm", isReadOnly=true)
+	public String getPrefixName() {
+		return prefixName;
+	}
+
+	/**
+	 * @return the aliasName
+	 */
+	@Column(name="alias_nm", isReadOnly=true)
+	public String getAliasName() {
+		return aliasName;
+	}
+
+	/**
+	 * @return the profileRoleId
+	 */
+	@Column(name="profile_role_id", isReadOnly=true)
+	public String getProfileRoleId() {
+		return profileRoleId;
+	}
+
+	/**
+	 * @return the authenticationId
+	 */
+	@Column(name="authentication_id", isReadOnly=true)
+	public String getAuthenticationId() {
+		return authenticationId;
 	}
 
 	/**
@@ -168,8 +275,8 @@ public class MemberVO extends BeanDataVO {
 	/**
 	 * @param email the email to set
 	 */
-	public void setEmail(String email) {
-		this.email = email;
+	public void setEmailAddress(String emailAddress) {
+		this.emailAddress = emailAddress;
 	}
 
 	/**
@@ -199,6 +306,69 @@ public class MemberVO extends BeanDataVO {
 	@BeanSubElement
 	public void setProfile(UserDataVO profile) {
 		this.profile = profile;
+	}
+
+	/**
+	 * @param locale the locale to set
+	 */
+	public void setLocale(String locale) {
+		this.locale = locale;
+	}
+
+	/**
+	 * @param customers the customers to set
+	 */
+	public void setCustomers(String customers) {
+		this.customers = customers;
+	}
+
+	/**
+	 * @param roleId the roleId to set
+	 */
+	public void setRoleId(String roleId) {
+		this.roleId = roleId;
+	}
+
+	/**
+	 * @param roleName the roleName to set
+	 */
+	public void setRoleName(String roleName) {
+		this.roleName = roleName;
+	}
+
+	/**
+	 * @param profileRoleId the profileRoleId to set
+	 */
+	public void setProfileRoleId(String profileRoleId) {
+		this.profileRoleId = profileRoleId;
+	}
+
+	/**
+	 * @param authenticationId the authenticationId to set
+	 */
+	public void setAuthenticationId(String authenticationId) {
+		this.authenticationId = authenticationId;
+	}
+
+	/**
+	 * @param genderCode the genderCode to set
+	 */
+	public void setGenderCode(String genderCode) {
+		this.genderCode = genderCode;
+	}
+
+	/**
+	 * @param prefixName the prefixName to set
+	 */
+	public void setPrefixName(String prefixName) {
+		this.prefixName = prefixName;
+	}
+
+	/**
+	 * @param aliasName the aliasName to set
+	 */
+	public void setAliasName(String aliasName) {
+		this.aliasName = aliasName;
 	}
 
 }

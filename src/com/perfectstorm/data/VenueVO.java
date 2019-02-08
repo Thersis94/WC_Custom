@@ -35,6 +35,7 @@ public class VenueVO extends GeocodeLocation {
 	
 	// Members
 	private String venueId;
+	private String customerId;
 	private String venueName;
 	private String venueDescription;
 	private int activeFlag;
@@ -123,6 +124,14 @@ public class VenueVO extends GeocodeLocation {
 	}
 
 	/**
+	 * @return the customerId
+	 */
+	@Column(name="customer_id")
+	public String getCustomerId() {
+		return customerId;
+	}
+
+	/**
 	 * @return the attributes
 	 */
 	public List<VenueAttributeVO> getAttributes() {
@@ -192,6 +201,13 @@ public class VenueVO extends GeocodeLocation {
 	 */
 	public void setManualGeocodeFlag(int manualGeocodeFlag) {
 		this.manualGeocodeFlag = manualGeocodeFlag;
+	}
+
+	/**
+	 * @param customerId the customerId to set
+	 */
+	public void setCustomerId(String customerId) {
+		this.customerId = customerId;
 	}
 }
 

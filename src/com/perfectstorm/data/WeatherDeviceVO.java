@@ -35,6 +35,7 @@ public class WeatherDeviceVO extends BeanDataVO {
 	private String name;
 	private String oem;
 	private String serialNumber;
+	private int activeFlag;
 	private Date createDate;
 	private Date updateDate;
 	
@@ -94,7 +95,7 @@ public class WeatherDeviceVO extends BeanDataVO {
 	/**
 	 * @return the createDate
 	 */
-	@Column(name="create_dt", isInsertOnly=true)
+	@Column(name="create_dt", isInsertOnly=true, isAutoGen=true)
 	public Date getCreateDate() {
 		return createDate;
 	}
@@ -105,6 +106,14 @@ public class WeatherDeviceVO extends BeanDataVO {
 	@Column(name="update_dt", isUpdateOnly=true)
 	public Date getUpdateDate() {
 		return updateDate;
+	}
+
+	/**
+	 * @return the activeFlag
+	 */
+	@Column(name="active_flg")
+	public int getActiveFlag() {
+		return activeFlag;
 	}
 
 	/**
@@ -147,6 +156,13 @@ public class WeatherDeviceVO extends BeanDataVO {
 	 */
 	public void setUpdateDate(Date updateDate) {
 		this.updateDate = updateDate;
+	}
+
+	/**
+	 * @param activeFlag the activeFlag to set
+	 */
+	public void setActiveFlag(int activeFlag) {
+		this.activeFlag = activeFlag;
 	}
 }
 

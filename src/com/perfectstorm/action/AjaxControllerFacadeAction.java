@@ -2,10 +2,12 @@ package com.perfectstorm.action;
 
 // PS Libs
 import com.perfectstorm.action.admin.AttributeAction;
+import com.perfectstorm.action.admin.MemberWidget;
 import com.perfectstorm.action.admin.TourVenueWidget;
 import com.perfectstorm.action.admin.TourWidget;
 import com.perfectstorm.action.admin.VenueAttributeWidget;
 import com.perfectstorm.action.admin.VenueWidget;
+import com.perfectstorm.action.admin.WeatherDeviceWidget;
 
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
@@ -70,6 +72,8 @@ public class AjaxControllerFacadeAction extends FacadeActionAdapter {
 		actionMap.put(VenueAttributeWidget.AJAX_KEY, VenueAttributeWidget.class);
 		actionMap.put(TourWidget.AJAX_KEY, TourWidget.class);
 		actionMap.put(TourVenueWidget.AJAX_KEY, TourVenueWidget.class);
+		actionMap.put(WeatherDeviceWidget.AJAX_KEY, WeatherDeviceWidget.class);
+		actionMap.put(MemberWidget.AJAX_KEY, MemberWidget.class);
 	}
 
 	/*

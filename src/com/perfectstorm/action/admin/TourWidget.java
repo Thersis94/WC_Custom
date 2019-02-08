@@ -72,8 +72,13 @@ public class TourWidget extends SBActionAdapter {
 	public GridDataVO<TourVO> getTours(Integer activeFlag, BSTableControlVO bst) {
 		// Add the params
 		List<Object> vals = new ArrayList<>(); 
-		StringBuilder sql = new StringBuilder(128);
-		sql.append("select * from ").append(getCustomSchema()).append("ps_tour ");
+		StringBuilder sql = new StringBuilder(256);
+		sql.append("select * from ").append(getCustomSchema()).append("ps_tour a ");
+		sql.append("left outer join ( ");
+		sql.append("select tour_id, count(*) as venue_no "); 
+		sql.append("from ").append(getCustomSchema()).append("ps_venue_tour_xr ");
+		sql.append("group by tour_id ");
+		sql.append(") as b on a.tour_id = b.tour_id ");
 		sql.append("where 1=1 ");
 		
 		// Add the search filter
@@ -89,7 +94,7 @@ public class TourWidget extends SBActionAdapter {
 			vals.add(activeFlag);
 		}
 		
-		sql.append(DBUtil.ORDER_BY).append(bst.getDBSortColumnName("tour_nm"));
+		sql.append(DBUtil.ORDER_BY).append(bst.getDBSortColumnName("start_dt"));
 		sql.append(" ").append(bst.getOrder("asc"));
 		log.debug(sql.length() + "|" + sql);
 		

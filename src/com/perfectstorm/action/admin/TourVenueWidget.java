@@ -96,23 +96,43 @@ public class TourVenueWidget extends SBActionAdapter {
 	
 	/*
 	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#delete(com.siliconmtn.action.ActionRequest)
+	 */
+	@Override
+	public void delete(ActionRequest req) throws ActionException {
+		VenueTourVO tv = new VenueTourVO(req);
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		try {
+			db.delete(tv);
+		} catch (InvalidDataException | DatabaseException e) {
+			log.error("unable to remove venue from tour", e);
+		}
+	}
+	
+	/*
+	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.action.ActionRequest)
 	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
-		VenueTourVO tv = new VenueTourVO(req);
-		String[] time = req.getParameter("eventTime").split(":");
-		int startDur = req.getIntegerParameter("startDuration", DEFAULT_STORAGE_DURATION);
-		int endDur = req.getIntegerParameter("endDuration", DEFAULT_STORAGE_DURATION);
+		if (req.getBooleanParameter("delAction")) {
+			this.delete(req);
+			return;
+		} else {
 		
-		try {
-			saveTourVenue(tv, time, startDur, endDur);
-			setModuleData(tv);
-		} catch(Exception e) {
-			log.error("Unable to save tour", e);
-			putModuleData(tv, 1, false,e.getLocalizedMessage(), true);
+			VenueTourVO tv = new VenueTourVO(req);
+			String[] time = req.getParameter("eventTime").split(":");
+			int startDur = req.getIntegerParameter("startDuration", DEFAULT_STORAGE_DURATION);
+			int endDur = req.getIntegerParameter("endDuration", DEFAULT_STORAGE_DURATION);
+			
+			try {
+				saveTourVenue(tv, time, startDur, endDur);
+				setModuleData(tv);
+			} catch(Exception e) {
+				log.error("Unable to save tour venue", e);
+				putModuleData(tv, 1, false,e.getLocalizedMessage(), true);
+			}
 		}
-		
 	}
 	
 	/**
@@ -140,7 +160,7 @@ public class TourVenueWidget extends SBActionAdapter {
 
 		// Perform the insert
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
-		db.insert(tv);
+		db.save(tv);
 	}
 }
 

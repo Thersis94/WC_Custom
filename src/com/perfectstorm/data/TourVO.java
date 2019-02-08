@@ -27,7 +27,20 @@ import com.siliconmtn.db.orm.Table;
  ****************************************************************************/
 @Table(name="ps_tour")
 public class TourVO extends BeanDataVO {
-
+	
+	/** 
+	 * Defines the type of tour
+	 */
+	public enum TourType {
+		TOUR ("Multi-Location Tour"),
+		ROUTE ("Route"),
+		EVENT ("Single Event");
+		
+		private String tourName;
+		private TourType(String tourName) {this.tourName = tourName; }
+		public String getTourName() { return this.tourName; }
+	}
+	
 	/**
 	 * 
 	 */
@@ -35,14 +48,16 @@ public class TourVO extends BeanDataVO {
 	
 	// Members
 	private String tourId;
-	private String tourManagerId;
+	private String customerId;
 	private String name;
 	private String desc;
 	private int activeFlag;
+	private long numberVenues;
 	private Date startDate;
 	private Date endDate;
 	private Date createDate;
 	private Date updateDate;
+	private TourType tourTypeCode;
 	
 	// Bean SubElements
 	private List<VenueTourVO> venues = new ArrayList<>();
@@ -74,14 +89,6 @@ public class TourVO extends BeanDataVO {
 	@Column(name="tour_id", isPrimaryKey=true)
 	public String getTourId() {
 		return tourId;
-	}
-
-	/**
-	 * @return the memberId
-	 */
-	@Column(name="tour_manager_id")
-	public String getTourManagerId() {
-		return tourManagerId;
 	}
 
 	/**
@@ -141,17 +148,34 @@ public class TourVO extends BeanDataVO {
 	}
 
 	/**
+	 * @return the tourTypeCode
+	 */
+	@Column(name="tour_type_cd")
+	public TourType getTourTypeCode() {
+		return tourTypeCode;
+	}
+
+	/**
+	 * @return the numberVenues
+	 */
+	@Column(name="venue_no", isReadOnly=true)
+	public long getNumberVenues() {
+		return numberVenues;
+	}
+
+	/**
+	 * @return the customerId
+	 */
+	@Column(name="customer_id")
+	public String getCustomerId() {
+		return customerId;
+	}
+
+	/**
 	 * @param tourId the tourId to set
 	 */
 	public void setTourId(String tourId) {
 		this.tourId = tourId;
-	}
-
-	/**
-	 * @param memberId the memberId to set
-	 */
-	public void setTourManagerId(String tourManagerId) {
-		this.tourManagerId = tourManagerId;
 	}
 
 	/**
@@ -224,6 +248,27 @@ public class TourVO extends BeanDataVO {
 	 */
 	public void setDesc(String desc) {
 		this.desc = desc;
+	}
+
+	/**
+	 * @param tourTypeCode the tourTypeCode to set
+	 */
+	public void setTourTypeCode(TourType tourTypeCode) {
+		this.tourTypeCode = tourTypeCode;
+	}
+
+	/**
+	 * @param numberVenues the numberVenues to set
+	 */
+	public void setNumberVenues(long numberVenues) {
+		this.numberVenues = numberVenues;
+	}
+
+	/**
+	 * @param customerId the customerId to set
+	 */
+	public void setCustomerId(String customerId) {
+		this.customerId = customerId;
 	}
 }
 

@@ -31,7 +31,11 @@ import com.smt.sitebuilder.action.SBActionAdapter;
  ****************************************************************************/
 
 public class WeatherDeviceWidget extends SBActionAdapter {
-
+	/**
+	 * Key to access the widget through the controller
+	 */
+	public static final String AJAX_KEY = "device";
+	
 	/**
 	 * 
 	 */
@@ -90,6 +94,7 @@ public class WeatherDeviceWidget extends SBActionAdapter {
 			db.save(wd);
 			putModuleData(wd);
 		} catch (Exception e) {
+			log.error("unabele to save weather device: " + wd, e);
 			putModuleData(wd, 1, false, e.getLocalizedMessage(), true);
 		}
 	}
