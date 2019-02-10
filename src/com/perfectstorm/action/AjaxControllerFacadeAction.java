@@ -2,6 +2,8 @@ package com.perfectstorm.action;
 
 // PS Libs
 import com.perfectstorm.action.admin.AttributeAction;
+import com.perfectstorm.action.admin.CustomerAction;
+import com.perfectstorm.action.admin.CustomerMemberAction;
 import com.perfectstorm.action.admin.MemberWidget;
 import com.perfectstorm.action.admin.TourVenueWidget;
 import com.perfectstorm.action.admin.TourWidget;
@@ -74,6 +76,8 @@ public class AjaxControllerFacadeAction extends FacadeActionAdapter {
 		actionMap.put(TourVenueWidget.AJAX_KEY, TourVenueWidget.class);
 		actionMap.put(WeatherDeviceWidget.AJAX_KEY, WeatherDeviceWidget.class);
 		actionMap.put(MemberWidget.AJAX_KEY, MemberWidget.class);
+		actionMap.put(CustomerAction.AJAX_KEY, CustomerAction.class);
+		actionMap.put(CustomerMemberAction.AJAX_KEY, CustomerMemberAction.class);
 	}
 
 	/*

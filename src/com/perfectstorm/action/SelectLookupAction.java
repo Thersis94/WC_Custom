@@ -7,10 +7,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.perfectstorm.action.admin.CustomerAction;
+import com.perfectstorm.action.admin.MemberWidget;
 import com.perfectstorm.action.admin.VenueWidget;
 import com.perfectstorm.common.PSConstants;
 import com.perfectstorm.common.PSConstants.PSRole;
 import com.perfectstorm.common.PSLocales;
+import com.perfectstorm.data.CustomerVO;
+import com.perfectstorm.data.CustomerVO.CustomerType;
+import com.perfectstorm.data.MemberVO;
 import com.perfectstorm.data.VenueVO;
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
@@ -62,6 +67,9 @@ public class SelectLookupAction extends SBActionAdapter {
 		keyMap.put("role", new GenericVO("getRoles", Boolean.FALSE));
 		keyMap.put("prefix", new GenericVO("getPrefix", Boolean.FALSE));
 		keyMap.put("gender", new GenericVO("getGenders", Boolean.FALSE));
+		keyMap.put("customer", new GenericVO("getCustomers", Boolean.TRUE));
+		keyMap.put("customerType", new GenericVO("getCustomerType", Boolean.FALSE));
+		keyMap.put("member", new GenericVO("getMembers", Boolean.TRUE));
 	}
 
 	/**
@@ -189,6 +197,66 @@ public class SelectLookupAction extends SBActionAdapter {
 		data.add(new GenericVO("F", "Female"));
 		data.add(new GenericVO("M", "Male"));
 
+		return data;
+	}
+	
+	/**
+	 * Gets the supported Customer Types for the app
+	 * @return
+	 */
+	public List<GenericVO> getCustomerType() {
+		List<GenericVO> data = new ArrayList<>(8);
+
+		for (CustomerType val : CustomerVO.CustomerType.values()) {
+			data.add(new GenericVO(val, val.getCustomerName()));
+		}
+
+		return data;
+	}
+	
+	/**
+	 * Gets a list of customers.  If acReturen is an integer, use that to return 
+	 * a small list for the autocomplete.  Otherwise, get them all
+	 * @param req
+	 * @return
+	 */
+	public List<GenericVO> getCustomers(ActionRequest req) {
+		// Get the data from the action
+		CustomerAction ca = new CustomerAction(getDBConnection(), getAttributes());
+		BSTableControlVO bst = new BSTableControlVO(req);
+		bst.setLimit(req.getIntegerParameter("acReturn", 1000));
+		GridDataVO<CustomerVO> data = ca.getCustomers(bst);
+		
+		// Store the id and name to a generic vo
+		List<GenericVO> customers = new ArrayList<>(data.getTotal());
+		for (CustomerVO cust : data.getRowData()) {
+			customers.add(new GenericVO(cust.getCustomerId(), cust.getCustomerName()));
+		}
+		
+		return customers;
+	}
+	
+	/**
+	 * gets a list for Auto Complete for the member search
+	 * @param req
+	 * @return
+	 */
+	public List<GenericVO> getMembers(ActionRequest req) {
+		// Get the member data
+		MemberWidget mw = new MemberWidget(dbConn, attributes);
+		String customerId = req.getParameter("customerId");
+		BSTableControlVO bst = new BSTableControlVO(req, MemberVO.class);
+		GridDataVO<MemberVO> members = mw.getMemberSimple(customerId, bst);
+		
+		// Convert to a name/value pair and return
+		List<GenericVO> data = new ArrayList<>(10);
+		for(MemberVO mem : members.getRowData()) {
+			StringBuilder val = new StringBuilder(128);
+			val.append(mem.getFirstName()).append(" ").append(mem.getLastName());
+			val.append(" (").append(mem.getEmailAddress()).append(") ");
+			data.add(new GenericVO(mem.getMemberId(), val.toString()));
+		}
+		
 		return data;
 	}
 }

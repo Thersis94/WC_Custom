@@ -5,6 +5,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 // PS Libs
 import com.perfectstorm.data.MemberVO;
@@ -16,6 +17,7 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.common.html.BSTableControlVO;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.orm.GridDataVO;
+import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.security.PhoneVO;
@@ -66,7 +68,18 @@ public class MemberWidget extends SBActionAdapter {
 	public MemberWidget(ActionInitVO actionInit) {
 		super(actionInit);
 	}
-
+	
+	/**
+	 * 
+	 * @param dbConn
+	 * @param attributes
+	 */
+	public MemberWidget(SMTDBConnection dbConn, Map<String, Object> attributes) {
+		super();
+		this.dbConn = dbConn;
+		this.attributes = attributes;
+	}
+	
 	/*
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.action.ActionRequest)
@@ -105,6 +118,36 @@ public class MemberWidget extends SBActionAdapter {
 		log.info(sql.length() + "|" + sql + "|" + vals);
 		
 		DBProcessor db = new DBProcessor(getDBConnection());
+		return db.executeSQLWithCount(sql.toString(), vals, new MemberVO(), bst);
+	}
+	
+	/**
+	 * Performs a fuzzy lookup
+	 * @param customerId
+	 * @param bst
+	 * @return
+	 */
+	public GridDataVO<MemberVO> getMemberSimple(String customerId, BSTableControlVO bst) {
+		StringBuilder sql = new StringBuilder(128);
+		sql.append("select * from ").append(getCustomSchema()).append("ps_member ");
+		sql.append("where member_id not in (");
+		sql.append("select member_id from ").append(getCustomSchema()).append("ps_customer_member_xr ");
+		sql.append("where customer_id = ?) ");
+		sql.append("and (lower(first_nm) like ? or lower(last_nm) like ? ");
+		sql.append("or lower(email_address_txt) like ? or phone_number_txt like ?) ");
+		sql.append("order by last_nm, first_nm ");
+				
+		// Add the params
+		List<Object> vals = new ArrayList<>();
+		vals.add(customerId);
+		vals.add(bst.getLikeSearch().toLowerCase());
+		vals.add(bst.getLikeSearch().toLowerCase());
+		vals.add(bst.getLikeSearch().toLowerCase());
+		vals.add(bst.getLikeSearch().toLowerCase());
+		log.debug(sql.length() + "|" + sql + "|" + vals);
+		
+		// Execute the search
+		DBProcessor db = new DBProcessor(dbConn);
 		return db.executeSQLWithCount(sql.toString(), vals, new MemberVO(), bst);
 	}
 	
