@@ -1450,7 +1450,7 @@ public class ProductManagementAction extends ManagementAction {
 			msg = StringUtil.capitalizePhrase(buildAction) + " failed to complete successfully. Please contact an administrator for assistance";
 		}
 		String productId = req.hasParameter("pkId")? req.getParameter("pkId") : req.getParameter("productId");
-		log.debug(productId+"|"+"Checking!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+		
 		if (!StringUtil.isEmpty(productId)) {
 			String status = req.getParameter("statusNo");
 			if (StringUtil.isEmpty(status))
@@ -1581,7 +1581,7 @@ public class ProductManagementAction extends ManagementAction {
 		props.putAll(getAttributes());
 		BiomedProductIndexer indexer = new BiomedProductIndexer(props);
 		indexer.setDBConnection(dbConn);
-		log.debug(status+"|"+"SOLRING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+		
 		try {
 			if ("D".equals(status) || "A".equals(status)) {
 				if (productId.length() < AdminControllerAction.DOC_ID_MIN_LEN)
