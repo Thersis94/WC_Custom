@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+import com.perfectstorm.data.weather.VenueWeatherStationVO;
 // SMT Base Libs
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.BeanSubElement;
@@ -40,12 +41,14 @@ public class VenueVO extends GeocodeLocation {
 	private String venueDescription;
 	private int activeFlag;
 	private int manualGeocodeFlag;
+	private long numberStation;
 	private Date createDate;
 	private Date updateDate;
 	
 	// Bean SubElements
 	private List<VenueAttributeVO> attributes = new ArrayList<>();
-
+	private List<VenueWeatherStationVO> weatherStations = new ArrayList<>();
+	
 	/**
 	 * 
 	 */
@@ -132,10 +135,25 @@ public class VenueVO extends GeocodeLocation {
 	}
 
 	/**
+	 * @return the numberStation
+	 */
+	@Column(name="station_no", isReadOnly=true)
+	public long getNumberStation() {
+		return numberStation;
+	}
+
+	/**
 	 * @return the attributes
 	 */
 	public List<VenueAttributeVO> getAttributes() {
 		return attributes;
+	}
+
+	/**
+	 * @return the weatherStations
+	 */
+	public List<VenueWeatherStationVO> getWeatherStations() {
+		return weatherStations;
 	}
 
 	/**
@@ -208,6 +226,29 @@ public class VenueVO extends GeocodeLocation {
 	 */
 	public void setCustomerId(String customerId) {
 		this.customerId = customerId;
+	}
+
+	/**
+	 * @param weatherStations the weatherStations to set
+	 */
+	public void setWeatherStations(List<VenueWeatherStationVO> weatherStations) {
+		this.weatherStations = weatherStations;
+	}
+	
+	/**
+	 * 
+	 * @param weatherStation
+	 */
+	@BeanSubElement
+	public void addWeatherStation(VenueWeatherStationVO weatherStation) {
+		weatherStations.add(weatherStation);
+	}
+
+	/**
+	 * @param numberStation the numberStation to set
+	 */
+	public void setNumberStation(long numberStation) {
+		this.numberStation = numberStation;
 	}
 }
 

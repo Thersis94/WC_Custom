@@ -5,7 +5,7 @@ import com.siliconmtn.data.parser.BeanDataVO;
 /****************************************************************************
  * <b>Title</b>: StationExtVO.java
  * <b>Project</b>: WC_Custom
- * <b>Description: </b> //TODO Change Me
+ * <b>Description: </b> Extended data elements int he api feed
  * <b>Copyright:</b> Copyright (c) 2019
  * <b>Company:</b> Silicon Mountain Technologies
  * 

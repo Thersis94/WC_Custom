@@ -31,13 +31,13 @@ public class WeatherStationVO extends BeanDataVO {
 	private static final long serialVersionUID = 2911478488363254820L;
 	
 	// Members
-	private String weatherStationId;
-	private String timezoneId;
-	private String stationCode;
+	private String weatherStationCode;
+	private String timezoneCode;
 	private String stationName;
 	private String city;
 	private String state;
 	private String country;
+	private String zipCode;
 	private int elevation;
 	private int activeFlag;
 	private double latitude;
@@ -69,25 +69,17 @@ public class WeatherStationVO extends BeanDataVO {
 	/**
 	 * @return the weatherStationId
 	 */
-	@Column(name="weather_station_id", isPrimaryKey=true)
-	public String getWeatherStationId() {
-		return weatherStationId;
+	@Column(name="weather_station_cd", isPrimaryKey=true)
+	public String getWeatherStationCode() {
+		return weatherStationCode;
 	}
 
 	/**
 	 * @return the timezoneId
 	 */
-	@Column(name="timezone_id")
-	public String getTimezoneId() {
-		return timezoneId;
-	}
-
-	/**
-	 * @return the stationCode
-	 */
-	@Column(name="station_cd")
-	public String getStationCode() {
-		return stationCode;
+	@Column(name="timezone_cd")
+	public String getTimezoneCode() {
+		return timezoneCode;
 	}
 
 	/**
@@ -171,24 +163,25 @@ public class WeatherStationVO extends BeanDataVO {
 	}
 
 	/**
+	 * @return the zipCode
+	 */
+	@Column(name="zip_cd")
+	public String getZipCode() {
+		return zipCode;
+	}
+
+	/**
 	 * @param weatherStationId the weatherStationId to set
 	 */
-	public void setWeatherStationId(String weatherStationId) {
-		this.weatherStationId = weatherStationId;
+	public void setWeatherStationCode(String weatherStationCode) {
+		this.weatherStationCode = weatherStationCode;
 	}
 
 	/**
 	 * @param timezoneId the timezoneId to set
 	 */
-	public void setTimezoneId(String timezoneId) {
-		this.timezoneId = timezoneId;
-	}
-
-	/**
-	 * @param stationCode the stationCode to set
-	 */
-	public void setStationCode(String stationCode) {
-		this.stationCode = stationCode;
+	public void setTimezoneCode(String timezoneCode) {
+		this.timezoneCode = timezoneCode;
 	}
 
 	/**
@@ -259,6 +252,13 @@ public class WeatherStationVO extends BeanDataVO {
 	 */
 	public void setUpdateDate(Date updateDate) {
 		this.updateDate = updateDate;
+	}
+
+	/**
+	 * @param zipCode the zipCode to set
+	 */
+	public void setZipCode(String zipCode) {
+		this.zipCode = zipCode;
 	}
 
 }
