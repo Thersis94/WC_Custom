@@ -27,6 +27,7 @@ import com.biomed.smarttrak.util.BiomedLinkCheckerUtil;
 import com.biomed.smarttrak.util.SmarttrakSolrUtil;
 import com.biomed.smarttrak.util.SmarttrakTree;
 import com.biomed.smarttrak.util.UpdateIndexer;
+import com.biomed.smarttrak.vo.AccountVO;
 import com.biomed.smarttrak.vo.UpdateVO;
 import com.biomed.smarttrak.vo.UpdateXRVO;
 //SMT base libs
@@ -139,22 +140,32 @@ public class UpdatesAction extends ManagementAction {
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.action.ActionRequest)
 	 */
+	@SuppressWarnings("unchecked")
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		//loadData gets passed on the ajax call.  If we're not loading data simply go to view to render the bootstrap 
 		//table into the view (which will come back for the data).
 		configureCookies(req);
-		
+
 		if (!req.hasParameter("loadData") && !req.hasParameter("loadhistory") && !req.hasParameter(UPDATE_ID) ) return;
 		int count = 0;
 
 		List<UpdateVO> data;
+
+		//when an add/edit form, load list of BiomedGPS Staff for the "Author" drop-down
+		if(req.hasParameter("loadAuthors")) {
+			loadAuthors(req);
+			List<AccountVO> accts = (List<AccountVO>)req.getAttribute(AccountAction.MANAGERS);
+			putModuleData(accts, accts.size(), false);
+			return;
+		}
+
 		if(req.hasParameter("loadHistory")) {
 			data = getHistory(req.getParameter("historyId"));
-		} else if (req.hasParameter("updateId")) {
+		} else if (req.hasParameter(UPDATE_ID)) {
 			// If we have an id just load directly from the database.
 			List<Object> params = new ArrayList<>();
-			params.add(req.getParameter("updateId"));
+			params.add(req.getParameter(UPDATE_ID));
 			data = loadDetails(params);
 		} else {
 			//Get the Filtered Updates according to Request.
@@ -166,7 +177,7 @@ public class UpdatesAction extends ManagementAction {
 			if (count > 0 && resp.getResultDocuments().size() > 0) {
 
 				List<Object> params = getIdsFromDocs(resp);
-				
+
 				data = loadDetails(params);
 				log.debug("DB Count " + data.size());
 			} else {
@@ -181,10 +192,6 @@ public class UpdatesAction extends ManagementAction {
 		addProductCompanyData(data);
 
 		putModuleData(data, count, false);
-
-		//when an add/edit form, load list of BiomedGPS Staff for the "Author" drop-down
-		if (req.hasParameter(UPDATE_ID))
-			loadAuthors(req);
 	}
 
 
@@ -555,7 +562,7 @@ public class UpdatesAction extends ManagementAction {
 	 * @throws ActionException
 	 */
 	protected void updateOrder(ActionRequest req) throws ActionException {
-		String[] ids = req.getParameterValues("updateId");
+		String[] ids = req.getParameterValues(UPDATE_ID);
 		Instant publishDt = Instant.now();
 
 		StringBuilder sql = new StringBuilder(150);
