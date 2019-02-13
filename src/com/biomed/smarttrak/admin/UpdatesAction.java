@@ -239,11 +239,18 @@ public class UpdatesAction extends ManagementAction {
 	 * @return
 	 */
 	private String formatDetailQuery(int size) {
-		StringBuilder sql = new StringBuilder(200);
+		StringBuilder sql = new StringBuilder(500);
 		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
-		sql.append("SELECT *, '").append(getAttribute(Constants.QS_PATH)).append("' as qs_path FROM ").append(schema).append("BIOMEDGPS_UPDATE up ");
+		sql.append("SELECT up.*, xr.*, c.company_nm, m.market_nm, p.product_nm, '");
+		sql.append(getAttribute(Constants.QS_PATH)).append("' as qs_path FROM ").append(schema).append("BIOMEDGPS_UPDATE up ");
 		sql.append("LEFT JOIN ").append(schema).append("BIOMEDGPS_UPDATE_SECTION xr ");
 		sql.append("on up.UPDATE_ID = xr.UPDATE_ID ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("BIOMEDGPS_COMPANY c ");
+		sql.append("on c.company_id = up.company_id ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("BIOMEDGPS_PRODUCT p ");
+		sql.append("on p.product_id = up.product_id ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("BIOMEDGPS_MARKET m ");
+		sql.append("on m.market_id = up.market_id ");
 		sql.append("WHERE up.UPDATE_ID in (").append(DBUtil.preparedStatmentQuestion(size)).append(") ");
 		sql.append("order by publish_dt desc, order_no asc, up.create_dt desc ");
 
