@@ -1,4 +1,4 @@
-package com.perfectstorm.data.weather.detail;
+package com.perfectstorm.data.weather.nws.detail;
 
 // Gson 2.3
 import com.google.gson.Gson;
