@@ -30,9 +30,10 @@ import com.siliconmtn.io.http.SMTHttpConnectionManager;
 
 public class WeatherStationLocationLoader {
 	private Connection conn;
-	private static Logger log = Logger.getLogger(StationLoader.class);
+	private static Logger log = Logger.getLogger(WeatherStationLocationLoader.class);
 	private static final String MQ_KEY = "Y2XUmYMLp5RVoH3mneDVKP119LzqpFuA";
 	private static final String MQ_URL = "http://open.mapquestapi.com/geocoding/v1/reverse?key=%s&location=%f,%f&includeRoadMetadata=true&includeNearestIntersection=true";
+	
 	/**
 	 * 
 	 */
@@ -57,13 +58,21 @@ public class WeatherStationLocationLoader {
 		ll.conn = dc.getConnection();
 		
 		ll.processRecords();
+		
+		log.info("Complete");
 	}
 	
-	
+	/**
+	 * Grabs the records to be updated and geocodes then updates the DB
+	 * @throws SQLException
+	 */
 	public void processRecords() throws SQLException {
 		
-		String sql = "select weather_station_cd, latitude_no, longitude_no from custom.ps_weather_station where city_nm is null and weather_station_cd = 'KFLY'";
-		try (PreparedStatement ps = conn.prepareStatement(sql)) {
+		StringBuilder sql = new StringBuilder(128);
+		sql.append("select weather_station_cd, latitude_no, longitude_no from ");
+		sql.append("custom.ps_weather_station where city_nm is null and zip_cd is null ");
+		sql.append("and weather_station_cd not like 'C%' ");
+		try (PreparedStatement ps = conn.prepareStatement(sql.toString())) {
 			ResultSet rs = ps.executeQuery();
 			
 			while(rs.next()) {
@@ -73,25 +82,50 @@ public class WeatherStationLocationLoader {
 				
 				try {
 					GeocodeLocation loc = geocode(lat, lng);
+					updateStation(id, loc);
 				} catch(Exception e) {
-					log.error("Ubale to retrieve location", e);
+					log.error("Unable to retrieve location: " + id, e);
 				}
 			}
 		}
 	
 	}
 	
+	/**
+	 * Updates the info in the db
+	 * @param id
+	 * @param gl
+	 * @throws SQLException
+	 */
+	public void updateStation(String id, GeocodeLocation gl) throws SQLException {
+		StringBuilder sql = new StringBuilder(128);
+		sql.append("update custom.ps_weather_station set city_nm = ?, zip_cd = ? ");
+		sql.append("where weather_station_cd = ? ");
+		
+		try (PreparedStatement ps = conn.prepareStatement(sql.toString())) {
+			ps.setString(1, gl.getCity());
+			ps.setString(2, gl.getZipCode());
+			ps.setString(3, id);
+			ps.executeUpdate();
+		}
+	}
 	
+	/**
+	 * Performs a reverse geocode on the lat long
+	 * @param lat
+	 * @param lng
+	 * @return
+	 * @throws IOException
+	 */
 	public GeocodeLocation geocode(double lat, double lng) throws IOException {
 		String url = String.format(MQ_URL, MQ_KEY, lat, lng);
-		log.info("URL: " + url);
 		SMTHttpConnectionManager hConn = new SMTHttpConnectionManager();
 		byte[] data = hConn.retrieveData(url);
 		
+		// Parse the response and convert to a GeocodeLocation Object
 		Gson g = new Gson();
-		GeocodeVO results = g.fromJson(new String(data), GeocodeVO.class);
-		log.info(results);
-		return null;
+		GeocodeVO gvo = g.fromJson(new String(data), GeocodeVO.class);
+		return gvo.getGeocodeLocation();
 	}
 
 }

@@ -37,6 +37,7 @@ public class VenueVO extends GeocodeLocation {
 	// Members
 	private String venueId;
 	private String customerId;
+	private String timezone;
 	private String venueName;
 	private String venueDescription;
 	private int activeFlag;
@@ -140,6 +141,14 @@ public class VenueVO extends GeocodeLocation {
 	@Column(name="station_no", isReadOnly=true)
 	public long getNumberStation() {
 		return numberStation;
+	}
+
+	/**
+	 * @return the timezone
+	 */
+	@Column(name="timezone_cd")
+	public String getTimezone() {
+		return timezone;
 	}
 
 	/**
@@ -249,6 +258,13 @@ public class VenueVO extends GeocodeLocation {
 	 */
 	public void setNumberStation(long numberStation) {
 		this.numberStation = numberStation;
+	}
+
+	/**
+	 * @param timezone the timezone to set
+	 */
+	public void setTimezone(String timezone) {
+		this.timezone = timezone;
 	}
 }
 

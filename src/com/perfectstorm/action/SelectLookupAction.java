@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+// PS Imports
 import com.perfectstorm.action.admin.CustomerAction;
 import com.perfectstorm.action.admin.MemberWidget;
 import com.perfectstorm.action.admin.VenueWidget;
@@ -17,14 +18,17 @@ import com.perfectstorm.data.CustomerVO;
 import com.perfectstorm.data.CustomerVO.CustomerType;
 import com.perfectstorm.data.MemberVO;
 import com.perfectstorm.data.VenueVO;
+
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.common.html.BSTableControlVO;
 import com.siliconmtn.data.GenericVO;
+import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.orm.GridDataVO;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
 
 /****************************************************************************
@@ -70,6 +74,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		keyMap.put("customer", new GenericVO("getCustomers", Boolean.TRUE));
 		keyMap.put("customerType", new GenericVO("getCustomerType", Boolean.FALSE));
 		keyMap.put("member", new GenericVO("getMembers", Boolean.TRUE));
+		keyMap.put("timezone", new GenericVO("getTimeZone", Boolean.TRUE));
 	}
 
 	/**
@@ -259,4 +264,35 @@ public class SelectLookupAction extends SBActionAdapter {
 		
 		return data;
 	}
+	
+	
+	/**
+	 * Gets the list of timezone data
+	 * @param req
+	 * @return
+	 */
+	public List<GenericVO> getTimeZone(ActionRequest req) {
+		List<Object> vals = new ArrayList<>();
+		BSTableControlVO bst = new BSTableControlVO(req);
+		StringBuilder sql = new StringBuilder(128);
+		sql.append("select timezone_cd as key, zone_nm as value from ");
+		sql.append(getCustomSchema()).append("timezone where 1=1 ");
+		
+		if (bst.hasSearch()) {
+			sql.append(" and lower(zone_nm) like ? ");
+			vals.add(bst.getLikeSearch().toLowerCase());
+		}
+		
+		if (! StringUtil.isEmpty(req.getParameter("country"))) {
+			sql.append(" and lower(country_cd) like ? ");
+			vals.add(req.getParameter("country").toLowerCase());
+		}
+		
+		sql.append("order by zone_nm");
+		log.debug(sql.length() + "|" + sql);
+		
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		return db.executeSQLWithCount(sql.toString(), vals, new GenericVO(), bst).getRowData();
+	}
+	
 }
