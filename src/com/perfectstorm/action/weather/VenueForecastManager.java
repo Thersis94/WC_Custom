@@ -77,4 +77,11 @@ public class VenueForecastManager {
 	public ForecastVO getExtendedForecast(String timeKey) {
 		return extendedForecast.get(timeKey);
 	}
+	
+	/**
+	 * Refreshes the cached weather forecast data for a given venue
+	 */
+	private void refreshCache() {
+		// TODO: implement method
+	}
 }
