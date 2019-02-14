@@ -29,6 +29,7 @@ public class TemperatureVO extends BeanDataVO {
 	private double apparentTemperature; // degrees (F, C)
 	private double heatIndex; // degrees (F, C)
 	private double windChill; // degrees (F, C)
+	private String trend;
 	
 	
 	public TemperatureVO() {
@@ -144,6 +145,20 @@ public class TemperatureVO extends BeanDataVO {
 	 */
 	public void setWindChill(double windChill) {
 		this.windChill = windChill;
+	}
+
+	/**
+	 * @return the trend
+	 */
+	public String getTrend() {
+		return trend;
+	}
+
+	/**
+	 * @param trend the trend to set
+	 */
+	public void setTrend(String trend) {
+		this.trend = trend;
 	}
 
 }

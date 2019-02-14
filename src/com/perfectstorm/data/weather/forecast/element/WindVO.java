@@ -34,6 +34,8 @@ public class WindVO extends BeanDataVO {
 	private int hurricaneStormWindProbability; // percent
 	private Map<Integer, Boolean> windPotential; // potential by speed (mph)
 	private Map<Integer, Boolean> windGustPotential; // potential by speed (mph)
+	private int speedMin; // knots, mph, kmph, m/s
+	private int speedMax; // knots, mph, kmph, m/s
 	
 	
 	public WindVO() {
@@ -205,6 +207,34 @@ public class WindVO extends BeanDataVO {
 	 */
 	public void setWindGustPotential(Map<Integer, Boolean> windGustPotential) {
 		this.windGustPotential = windGustPotential;
+	}
+
+	/**
+	 * @return the speedMin
+	 */
+	public int getSpeedMin() {
+		return speedMin;
+	}
+
+	/**
+	 * @param speedMin the speedMin to set
+	 */
+	public void setSpeedMin(int speedMin) {
+		this.speedMin = speedMin;
+	}
+
+	/**
+	 * @return the speedMax
+	 */
+	public int getSpeedMax() {
+		return speedMax;
+	}
+
+	/**
+	 * @param speedMax the speedMax to set
+	 */
+	public void setSpeedMax(int speedMax) {
+		this.speedMax = speedMax;
 	}
 
 }

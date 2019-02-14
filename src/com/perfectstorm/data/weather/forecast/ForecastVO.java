@@ -32,6 +32,10 @@ public class ForecastVO extends BeanDataVO {
 	// Base forecast data
 	private Date startDate;
 	private Date endDate;
+	private String forecastName;
+	private boolean isDaytime;
+	private String shortDesc;
+	private String detailedDesc;
 	
 	// Forecast elements
 	private TemperatureVO temperature;
@@ -85,6 +89,62 @@ public class ForecastVO extends BeanDataVO {
 	 */
 	public void setEndDate(Date endDate) {
 		this.endDate = endDate;
+	}
+
+	/**
+	 * @return the forecastName
+	 */
+	public String getForecastName() {
+		return forecastName;
+	}
+
+	/**
+	 * @param forecastName the forecastName to set
+	 */
+	public void setForecastName(String forecastName) {
+		this.forecastName = forecastName;
+	}
+
+	/**
+	 * @return the isDaytime
+	 */
+	public boolean isDaytime() {
+		return isDaytime;
+	}
+
+	/**
+	 * @param isDaytime the isDaytime to set
+	 */
+	public void setDaytime(boolean isDaytime) {
+		this.isDaytime = isDaytime;
+	}
+
+	/**
+	 * @return the shortDesc
+	 */
+	public String getShortDesc() {
+		return shortDesc;
+	}
+
+	/**
+	 * @param shortDesc the shortDesc to set
+	 */
+	public void setShortDesc(String shortDesc) {
+		this.shortDesc = shortDesc;
+	}
+
+	/**
+	 * @return the detailedDesc
+	 */
+	public String getDetailedDesc() {
+		return detailedDesc;
+	}
+
+	/**
+	 * @param detailedDesc the detailedDesc to set
+	 */
+	public void setDetailedDesc(String detailedDesc) {
+		this.detailedDesc = detailedDesc;
 	}
 
 	/**
