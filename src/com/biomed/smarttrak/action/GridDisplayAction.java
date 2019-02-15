@@ -384,7 +384,7 @@ public class GridDisplayAction extends SimpleActionAdapter {
 			values.put("type", vals[1]);
 			if (vals.length >= 3) values.put("columns", vals[2]);
 			if (vals.length >= 4) values.put("labelType", vals[3]);
-			if (vals.length >= 4) values.put("customTitle", vals[4]);
+			if (vals.length >= 5) values.put("customTitle", vals[4]);
 			items.put(vals[0], values);
 		}
 
