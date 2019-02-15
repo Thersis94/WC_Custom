@@ -713,6 +713,7 @@ public class ProductManagementAction extends ManagementAction {
 		Tree t = loadDefaultTree();
 		req.getSession().setAttribute("hierarchyTree", t.preorderList());
 		req.getSession().setAttribute("productName", product.getProductName());
+		req.getSession().setAttribute("shortProductName", product.getShortName());
 		req.getSession().setAttribute("productNameParam", StringEncoder.urlEncode(product.getProductName()));
 
 		String jsonType = req.getParameter("jsonType");
