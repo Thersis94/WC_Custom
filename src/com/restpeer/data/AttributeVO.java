@@ -31,7 +31,9 @@ public class AttributeVO extends BeanDataVO {
 	 * 
 	 */
 	public enum UnitMeasure {
-		MONTHLY("Monthly");
+		MONTHLY("Monthly"),
+		NONE("N/A"),
+		WEEKLY("Weekly");
 		
 		private String uomName;
 		UnitMeasure(String uomName) { 
@@ -58,7 +60,10 @@ public class AttributeVO extends BeanDataVO {
 	private DataType dataType;
 	private UnitMeasure uom;
 	private Date createDate;
-	private Date updateDate;	
+	private Date updateDate;
+	
+	// Member Helpers
+	private String categoryName;
 
 	/**
 	 * 
@@ -162,6 +167,14 @@ public class AttributeVO extends BeanDataVO {
 	}
 
 	/**
+	 * @return the categoryName
+	 */
+	@Column(name="category_nm", isReadOnly=true)
+	public String getCategoryName() {
+		return categoryName;
+	}
+
+	/**
 	 * @return the createDate
 	 */
 	@Column(name="create_dt", isInsertOnly=true, isAutoGen=true)
@@ -259,6 +272,13 @@ public class AttributeVO extends BeanDataVO {
 	 */
 	public void setScheduleFlag(int scheduleFlag) {
 		this.scheduleFlag = scheduleFlag;
+	}
+
+	/**
+	 * @param categoryName the categoryName to set
+	 */
+	public void setCategoryName(String categoryName) {
+		this.categoryName = categoryName;
 	}
 
 }

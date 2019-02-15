@@ -10,7 +10,10 @@ import java.util.Map;
 // PS Imports
 import com.perfectstorm.common.PSConstants;
 import com.perfectstorm.common.PSConstants.PSRole;
-
+import com.restpeer.action.admin.CategoryWidget;
+import com.restpeer.common.RPConstants.DataType;
+import com.restpeer.data.AttributeVO.UnitMeasure;
+import com.restpeer.data.CategoryVO;
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -57,6 +60,9 @@ public class SelectLookupAction extends SBActionAdapter {
 		keyMap.put("role", new GenericVO("getRoles", Boolean.FALSE));
 		keyMap.put("prefix", new GenericVO("getPrefix", Boolean.FALSE));
 		keyMap.put("gender", new GenericVO("getGenders", Boolean.FALSE));
+		keyMap.put("category", new GenericVO("getCategories", Boolean.FALSE));
+		keyMap.put("uom", new GenericVO("getUnitMeasures", Boolean.FALSE));
+		keyMap.put("attrType", new GenericVO("getAttributeTypes", Boolean.FALSE));
 	}
 
 	/**
@@ -152,6 +158,50 @@ public class SelectLookupAction extends SBActionAdapter {
 		data.add(new GenericVO("F", "Female"));
 		data.add(new GenericVO("M", "Male"));
 
+		return data;
+	}
+	
+	/**
+	 * Gets a list of attribute categories
+	 * @return
+	 */
+	public List<GenericVO> getCategories() {
+		List<GenericVO> data = new ArrayList<>(16);
+		CategoryWidget cw = new CategoryWidget(dbConn, attributes);
+		List<CategoryVO> cats = cw.getCategories(); 
+		
+		for (CategoryVO cat : cats) {
+			data.add(new GenericVO(cat.getCategoryCode(), cat.getName()));
+		}
+		
+		return data;
+	}
+	
+	/**
+	 * Creates the list of uom
+	 * @return
+	 */
+	public List<GenericVO> getUnitMeasures() {
+		List<GenericVO> data = new ArrayList<>(16);
+		
+		for (UnitMeasure uom : UnitMeasure.values()) {
+			data.add(new GenericVO(uom, uom.getUomName()));
+		}
+		
+		return data;
+	}
+	
+	/**
+	 * Creates the list of attribute types (list, single, etc ...)
+	 * @return
+	 */
+	public List<GenericVO> getAttributeTypes() {
+		List<GenericVO> data = new ArrayList<>(16);
+		
+		for (DataType dt : DataType.values()) {
+			data.add(new GenericVO(dt, dt.getTypeName()));
+		}
+		
 		return data;
 	}
 }

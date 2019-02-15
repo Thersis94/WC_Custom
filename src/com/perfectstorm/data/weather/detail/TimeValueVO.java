@@ -113,7 +113,7 @@ public class TimeValueVO extends BeanDataVO {
 		if (utcDate == null) return null;
 		TimeZone tz = TimeZone.getTimeZone(timeZone);
 		long offset= tz.getOffset(new Date().getTime()) / 3600000;
-		return  new Date(utcDate.getTime() + offset);
+		return new Date(utcDate.getTime() + offset);
 	}
 	
 	/**

@@ -1,6 +1,7 @@
 package com.restpeer.action.admin;
 
 import java.util.List;
+import java.util.Map;
 
 import com.restpeer.data.CategoryVO;
 // SMT Base Libs
@@ -8,6 +9,7 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.DBProcessor;
+import com.siliconmtn.db.pool.SMTDBConnection;
 import com.smt.sitebuilder.action.SBActionAdapter;
 
 /****************************************************************************
@@ -42,6 +44,15 @@ public class CategoryWidget extends SBActionAdapter {
 	 */
 	public CategoryWidget(ActionInitVO actionInit) {
 		super(actionInit);
+	}
+	
+	/**
+	 * @param actionInit
+	 */
+	public CategoryWidget(SMTDBConnection dbConn, Map<String, Object> attributes) {
+		super();
+		setDBConnection(dbConn);
+		setAttributes(attributes);
 	}
 
 	/*
