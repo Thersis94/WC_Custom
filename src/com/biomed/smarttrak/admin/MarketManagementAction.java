@@ -77,7 +77,7 @@ public class MarketManagementAction extends ManagementAction {
 	public static final String MARKET_ID = "marketId";
 
 	private enum ActionTarget {
-		MARKET, MARKETATTRIBUTE, ATTRIBUTE, SECTION, MARKETGRAPH, MARKETLINK, MARKETATTACH, PREVIEW, ARCHIVE
+		MARKET, MARKETATTRIBUTE, ATTRIBUTE, SECTION, MARKETGRAPH, MARKETLINK, MARKETATTACH, PREVIEW, ARCHIVE, MARKETATTRIBUTEARCHIVEUPDATE
 	}
 	
 	private enum ChangeTarget{ORDER, INDENT}
@@ -171,6 +171,8 @@ public class MarketManagementAction extends ManagementAction {
 				break;
 			case PREVIEW :
 				retrievePreview(req);
+				break;
+			case MARKETATTRIBUTEARCHIVEUPDATE:
 				break;
 		}
 	}
@@ -392,7 +394,7 @@ public class MarketManagementAction extends ManagementAction {
 	protected void retrieveMarkets(ActionRequest req) {
 		List<Object> params = new ArrayList<>();
 		StringBuilder sql = new StringBuilder(300);
-		sql.append("select m.market_nm, m.market_id, m.order_no, m.status_no, m.indent_no, m.update_dt, s.section_nm, s.section_id ");
+		sql.append("select m.market_nm, m.market_id, m.order_no, m.status_no, m.indent_no, m.update_dt, s.section_nm, s.section_id, s.parent_id as section_parent_id ");
 		sql.append("FROM ").append(customDbSchema).append("BIOMEDGPS_MARKET m ");
 		sql.append("LEFT JOIN COUNTRY c on c.COUNTRY_CD = m.REGION_CD ");
 		sql.append(LEFT_OUTER_JOIN).append(customDbSchema).append("BIOMEDGPS_MARKET_SECTION ms ");
@@ -507,6 +509,7 @@ public class MarketManagementAction extends ManagementAction {
 		DBProcessor db = new DBProcessor(dbConn, customDbSchema);
 		market = (MarketVO) db.executeSelect(sql.toString(), params, new MarketVO()).get(0);
 		req.getSession().setAttribute("marketName", market.getMarketName());
+		req.getSession().setAttribute("shortMarketName", market.getShortName());
 		req.getSession().setAttribute("marketNameParam", StringEncoder.urlEncode(market.getMarketName()));
 
 		// Get specifics on market details
@@ -614,18 +617,26 @@ public class MarketManagementAction extends ManagementAction {
 	 */
 	protected List<Object> getMarketAttributes(String marketId, String typeCd) {
 		List<Object> params = new ArrayList<>();
+		params.add(Status.A.name());
 		params.add(marketId);
 		StringBuilder sql = new StringBuilder(300);
-		sql.append("SELECT xr.*, a.*, g.TITLE_NM as GROUP_NM FROM ").append(customDbSchema).append("BIOMEDGPS_MARKET_ATTRIBUTE_XR xr ");
+		sql.append("SELECT xr.*, a.*, g.TITLE_NM as GROUP_NM, ");
+		sql.append("case when arch.market_attribute_group_id is not null then 1 else 0 end as has_archives ");
+		sql.append("FROM ").append(customDbSchema).append("BIOMEDGPS_MARKET_ATTRIBUTE_XR xr ");
 		sql.append(LEFT_OUTER_JOIN).append(customDbSchema).append("BIOMEDGPS_MARKET_ATTRIBUTE a ");
 		sql.append("ON a.ATTRIBUTE_ID = xr.ATTRIBUTE_ID ");
 		sql.append(LEFT_OUTER_JOIN).append(customDbSchema).append("BIOMEDGPS_GRID g ");
 		sql.append("ON g.GRID_ID = xr.VALUE_1_TXT ");
-		sql.append("WHERE MARKET_ID = ? ");
+		sql.append(LEFT_OUTER_JOIN).append(customDbSchema).append("BIOMEDGPS_MARKET_ATTRIBUTE_XR arch ");
+		sql.append("on xr.market_attribute_group_id = arch.market_attribute_group_id ");
+		sql.append("and arch.market_attribute_id != arch.market_attribute_group_id ");
+		sql.append("and arch.status_no = ? ");
+		sql.append("WHERE xr.MARKET_ID = ? ");
 		if (!StringUtil.isEmpty(typeCd)) {
 			sql.append("and a.TYPE_CD = ? ");
 			params.add(typeCd);
 		}
+		sql.append("and xr.market_attribute_id = xr.market_attribute_group_id ");
 		sql.append("ORDER BY xr.ORDER_NO ");
 		log.debug(sql+"|"+marketId+"|"+typeCd);
 
@@ -663,9 +674,33 @@ public class MarketManagementAction extends ManagementAction {
 			case SECTION:
 				saveSections(req);
 				break;
+			case MARKETATTRIBUTEARCHIVEUPDATE:
+				updateArchiveNote(new MarketAttributeVO(req));
+				break;
 			default:break;
 		}
 		return marketId;
+	}
+
+
+	/**
+	 * Update an Archives Revision Text.
+	 * @param attr
+	 * @param db
+	 */
+	private void updateArchiveNote(MarketAttributeVO attr) {
+		StringBuilder sql = new StringBuilder(150);
+		sql.append("update ").append(getCustomSchema()).append("BIOMEDGPS_MARKET_ATTRIBUTE_XR x ");
+		sql.append("set REVISION_NOTE = ?, update_dt = ? where market_attribute_id = ?");
+
+		try(PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, attr.getRevisionNote());
+			ps.setTimestamp(2, Convert.getCurrentTimestamp());
+			ps.setString(3, attr.getMarketAttributeId());
+			ps.executeUpdate();
+		} catch (SQLException e) {
+			log.error("Error Updating Archive Revision Text", e);
+		}
 	}
 
 
@@ -739,12 +774,46 @@ public class MarketManagementAction extends ManagementAction {
 		try {
 			if (StringUtil.isEmpty(attr.getMarketAttributeId())) {
 				attr.setMarketAttributeId(new UUIDGenerator().getUUID());
+				attr.setMarketAttributeGroupId(attr.getMarketAttributeId());
 				db.insert(attr);
 			} else {
+				archiveAttribute(attr.getMarketAttributeId(), db);
+				
 				db.update(attr);
 			}
 		} catch (Exception e) {
 			throw new ActionException(e);
+		}
+	}
+
+
+	/**
+	 * Update the AttributeId of a market attribute and set the archive flag
+	 * to 1 before inserting.
+	 * @param marketAttributeId
+	 * @param db
+	 */
+	private void archiveAttribute(String marketAttributeId, DBProcessor db) {
+		try {
+
+			//Retrieve the existing marketAttribute from the DB.
+			MarketAttributeVO attr = new MarketAttributeVO();
+			attr.setMarketAttributeId(marketAttributeId);
+			db.getByPrimaryKey(attr);
+
+			//Overwrite existing Id with new id.
+			attr.setMarketAttributeId(new UUIDGenerator().getUUID());
+
+			//Clear out the createDt so it's autoGenerated.
+			attr.setCreateDate(null);
+
+			//Ensure ArchiveFlg is set to 1.
+			attr.setStatusNo(Status.A.name());
+
+			//Call insert to generate a copy record.
+			db.insert(attr);
+		} catch (InvalidDataException | DatabaseException e) {
+			log.error("Error Processing Code", e);
 		}
 	}
 

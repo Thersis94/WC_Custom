@@ -18,16 +18,16 @@ import com.siliconmtn.action.ActionRequest;
  * @version 1.0
  * @since Aug 8, 2017
  ****************************************************************************/
-public class UpdatesWeeklyReportDataLoader extends UpdatesEditionDataLoader {
+public class UpdatesManageReportDataLoader extends UpdatesEditionDataLoader {
 
-	public UpdatesWeeklyReportDataLoader() {
+	public UpdatesManageReportDataLoader() {
 		super();
 	}
 
 	/**
 	 * @param init
 	 */
-	public UpdatesWeeklyReportDataLoader(ActionInitVO init) {
+	public UpdatesManageReportDataLoader(ActionInitVO init) {
 		super(init);
 	}
 
@@ -39,7 +39,6 @@ public class UpdatesWeeklyReportDataLoader extends UpdatesEditionDataLoader {
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		req.setParameter("profileId", null);
-		req.setParameter("timeRangeCd", UpdatesWeeklyReportAction.TIME_RANGE_WEEKLY);
 		req.setAttribute(IS_MANAGE_TOOL, true); //attribute - can't be spoofed by the browser
 		super.retrieve(req);
 	}

@@ -4,6 +4,8 @@ package com.biomed.smarttrak.admin;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
@@ -25,6 +27,7 @@ import com.biomed.smarttrak.util.BiomedLinkCheckerUtil;
 import com.biomed.smarttrak.util.SmarttrakSolrUtil;
 import com.biomed.smarttrak.util.SmarttrakTree;
 import com.biomed.smarttrak.util.UpdateIndexer;
+import com.biomed.smarttrak.vo.AccountVO;
 import com.biomed.smarttrak.vo.UpdateVO;
 import com.biomed.smarttrak.vo.UpdateXRVO;
 //SMT base libs
@@ -137,22 +140,32 @@ public class UpdatesAction extends ManagementAction {
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.action.ActionRequest)
 	 */
+	@SuppressWarnings("unchecked")
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		//loadData gets passed on the ajax call.  If we're not loading data simply go to view to render the bootstrap 
 		//table into the view (which will come back for the data).
 		configureCookies(req);
-		
+
 		if (!req.hasParameter("loadData") && !req.hasParameter("loadhistory") && !req.hasParameter(UPDATE_ID) ) return;
 		int count = 0;
 
 		List<UpdateVO> data;
+
+		//when an add/edit form, load list of BiomedGPS Staff for the "Author" drop-down
+		if(req.hasParameter("loadAuthors")) {
+			loadAuthors(req);
+			List<AccountVO> accts = (List<AccountVO>)req.getAttribute(AccountAction.MANAGERS);
+			putModuleData(accts, accts.size(), false);
+			return;
+		}
+
 		if(req.hasParameter("loadHistory")) {
 			data = getHistory(req.getParameter("historyId"));
-		} else if (req.hasParameter("updateId")) {
+		} else if (req.hasParameter(UPDATE_ID)) {
 			// If we have an id just load directly from the database.
 			List<Object> params = new ArrayList<>();
-			params.add(req.getParameter("updateId"));
+			params.add(req.getParameter(UPDATE_ID));
 			data = loadDetails(params);
 		} else {
 			//Get the Filtered Updates according to Request.
@@ -164,7 +177,7 @@ public class UpdatesAction extends ManagementAction {
 			if (count > 0 && resp.getResultDocuments().size() > 0) {
 
 				List<Object> params = getIdsFromDocs(resp);
-				
+
 				data = loadDetails(params);
 				log.debug("DB Count " + data.size());
 			} else {
@@ -179,10 +192,6 @@ public class UpdatesAction extends ManagementAction {
 		addProductCompanyData(data);
 
 		putModuleData(data, count, false);
-
-		//when an add/edit form, load list of BiomedGPS Staff for the "Author" drop-down
-		if (req.hasParameter(UPDATE_ID))
-			loadAuthors(req);
 	}
 
 
@@ -230,11 +239,18 @@ public class UpdatesAction extends ManagementAction {
 	 * @return
 	 */
 	private String formatDetailQuery(int size) {
-		StringBuilder sql = new StringBuilder(200);
+		StringBuilder sql = new StringBuilder(500);
 		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
-		sql.append("SELECT *, '").append(getAttribute(Constants.QS_PATH)).append("' as qs_path FROM ").append(schema).append("BIOMEDGPS_UPDATE up ");
+		sql.append("SELECT up.*, xr.*, c.company_nm, m.market_nm, p.product_nm, '");
+		sql.append(getAttribute(Constants.QS_PATH)).append("' as qs_path FROM ").append(schema).append("BIOMEDGPS_UPDATE up ");
 		sql.append("LEFT JOIN ").append(schema).append("BIOMEDGPS_UPDATE_SECTION xr ");
 		sql.append("on up.UPDATE_ID = xr.UPDATE_ID ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("BIOMEDGPS_COMPANY c ");
+		sql.append("on c.company_id = up.company_id ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("BIOMEDGPS_PRODUCT p ");
+		sql.append("on p.product_id = up.product_id ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("BIOMEDGPS_MARKET m ");
+		sql.append("on m.market_id = up.market_id ");
 		sql.append("WHERE up.UPDATE_ID in (").append(DBUtil.preparedStatmentQuestion(size)).append(") ");
 		sql.append("order by publish_dt desc, order_no asc, up.create_dt desc ");
 
@@ -534,13 +550,48 @@ public class UpdatesAction extends ManagementAction {
 	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
+		String buildAction = req.getParameter("buildAction");
+
 		if (Convert.formatBoolean(req.getParameter("markReviewed"))) {
 			markReviewed(req.getParameter(UPDATE_ID));
+		} else if ("orderUpdate".equals(buildAction)) {
+			updateOrder(req);
+			// We don't want to send redirects after an order update
+			return;
 		} else {
 			saveRecord(req, false);
 		}
 	}
 
+	/**
+	 * Update the Order.  Set Publish_dt on the update records 
+	 * @param req
+	 * @throws ActionException
+	 */
+	protected void updateOrder(ActionRequest req) throws ActionException {
+		String[] ids = req.getParameterValues(UPDATE_ID);
+		Instant publishDt = Instant.now();
+
+		StringBuilder sql = new StringBuilder(150);
+		sql.append("UPDATE ").append(customDbSchema);
+		sql.append("BIOMEDGPS_UPDATE SET PUBLISH_DT = ? WHERE UPDATE_ID = ? ");
+
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			for (int i=0; i < ids.length; i++) {
+				publishDt = publishDt.minusMillis(1000);
+				ps.setTimestamp(1, Timestamp.from(publishDt));
+				ps.setString(2, ids[i]);
+				ps.addBatch();
+			}
+			ps.executeBatch();
+
+			UpdateIndexer idx = UpdateIndexer.makeInstance(getAttributes());
+			idx.setDBConnection(dbConn);
+			idx.indexItems(ids);
+		} catch (SQLException e) {
+			throw new ActionException(e);
+		}
+	}
 
 	/**
 	 * Change the supplied update's status code to Reviewed
@@ -555,6 +606,9 @@ public class UpdatesAction extends ManagementAction {
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, updateId);
 			ps.executeUpdate();
+			UpdateIndexer idx = UpdateIndexer.makeInstance(getAttributes());
+			idx.setDBConnection(dbConn);
+			idx.indexItems(updateId);
 		} catch (SQLException e) {
 			throw new ActionException(e);
 		}
