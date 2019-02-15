@@ -25,6 +25,7 @@ public class WindVO extends BeanDataVO {
 	
 	private int direction; // angle (degrees)
 	private double speed; // knots, mph, kmph, m/s
+	private double speedMax; // knots, mph, kmph, m/s
 	private double gustSpeed; // knots, mph, kmph, m/s
 	private int transportDirection; // angle (degrees)
 	private double transportSpeed; // knots, mph, kmph, m/s
@@ -34,8 +35,6 @@ public class WindVO extends BeanDataVO {
 	private int hurricaneStormWindProbability; // percent
 	private Map<Integer, Boolean> windPotential; // potential by speed (mph)
 	private Map<Integer, Boolean> windGustPotential; // potential by speed (mph)
-	private int speedMin; // knots, mph, kmph, m/s
-	private int speedMax; // knots, mph, kmph, m/s
 	
 	
 	public WindVO() {
@@ -210,30 +209,16 @@ public class WindVO extends BeanDataVO {
 	}
 
 	/**
-	 * @return the speedMin
-	 */
-	public int getSpeedMin() {
-		return speedMin;
-	}
-
-	/**
-	 * @param speedMin the speedMin to set
-	 */
-	public void setSpeedMin(int speedMin) {
-		this.speedMin = speedMin;
-	}
-
-	/**
 	 * @return the speedMax
 	 */
-	public int getSpeedMax() {
+	public double getSpeedMax() {
 		return speedMax;
 	}
 
 	/**
 	 * @param speedMax the speedMax to set
 	 */
-	public void setSpeedMax(int speedMax) {
+	public void setSpeedMax(double speedMax) {
 		this.speedMax = speedMax;
 	}
 

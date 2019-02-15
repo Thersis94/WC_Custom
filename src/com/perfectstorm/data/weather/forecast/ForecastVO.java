@@ -47,6 +47,12 @@ public class ForecastVO extends BeanDataVO {
 	
 
 	public ForecastVO() {
+		temperature = new TemperatureVO();
+		wind = new WindVO();
+		precipitation = new PrecipitationVO();
+		condition = new ConditionVO();
+		hazard = new HazardVO();
+		wave = new WaveVO();
 	}
 
 	/**
