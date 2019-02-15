@@ -1,8 +1,11 @@
 package com.restpeer.action;
 
 // RP Libs
+import com.restpeer.action.admin.ProductWidget;
 import com.restpeer.action.admin.AttributeWidget;
 import com.restpeer.action.admin.CategoryWidget;
+import com.restpeer.action.admin.MemberLocationWidget;
+import com.restpeer.action.admin.MemberWidget;
 
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
@@ -64,7 +67,10 @@ public class AjaxControllerFacadeAction extends FacadeActionAdapter {
 	private void loadTypes() {
 		actionMap.put(DEFAULT_TYPE, SelectLookupAction.class);
 		actionMap.put(CategoryWidget.AJAX_KEY, CategoryWidget.class);
+		actionMap.put(ProductWidget.AJAX_KEY, ProductWidget.class);
 		actionMap.put(AttributeWidget.AJAX_KEY, AttributeWidget.class);
+		actionMap.put(MemberWidget.AJAX_KEY, MemberWidget.class);
+		actionMap.put(MemberLocationWidget.AJAX_KEY, MemberLocationWidget.class);
 	}
 
 	/*

@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.Map;
 
 // RP Libs
-import com.restpeer.data.AttributeVO;
+import com.restpeer.data.MemberVO;
 
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
@@ -16,7 +16,7 @@ import com.siliconmtn.db.pool.SMTDBConnection;
 import com.smt.sitebuilder.action.SBActionAdapter;
 
 /****************************************************************************
- * <b>Title</b>: AttributeWidget.java
+ * <b>Title</b>: MemberWidget.java
  * <b>Project</b>: WC_Custom
  * <b>Description: </b> Manages the categories of attributes for locations
  * <b>Copyright:</b> Copyright (c) 2019
@@ -28,31 +28,31 @@ import com.smt.sitebuilder.action.SBActionAdapter;
  * @updates:
  ****************************************************************************/
 
-public class AttributeWidget extends SBActionAdapter {
+public class MemberWidget extends SBActionAdapter {
 
 	/**
 	 * Json key to access this action
 	 */
-	public static final String AJAX_KEY = "attribute";
+	public static final String AJAX_KEY = "member";
 	
 	/**
 	 * 
 	 */
-	public AttributeWidget() {
+	public MemberWidget() {
 		super();
 	}
 
 	/**
 	 * @param actionInit
 	 */
-	public AttributeWidget(ActionInitVO actionInit) {
+	public MemberWidget(ActionInitVO actionInit) {
 		super(actionInit);
 	}
 	
 	/**
 	 * @param actionInit
 	 */
-	public AttributeWidget(SMTDBConnection dbConn, Map<String, Object> attributes) {
+	public MemberWidget(SMTDBConnection dbConn, Map<String, Object> attributes) {
 		super();
 		setDBConnection(dbConn);
 		setAttributes(attributes);
@@ -71,15 +71,19 @@ public class AttributeWidget extends SBActionAdapter {
 	 * Get a list of categories
 	 * @return
 	 */
-	public List<AttributeVO> getAttributeData() {
+	public List<MemberVO> getAttributeData() {
 		StringBuilder sql = new StringBuilder(128);
-		sql.append("select * from ").append(getCustomSchema()).append("rp_attribute a ");
-		sql.append("inner join ").append(getCustomSchema()).append("rp_category b ");
-		sql.append("on a.category_cd = b.category_cd ");
-		sql.append("order by attribute_nm");
+		sql.append("select a.*, coalesce(b.locations_no, 0) as locations_no from ");
+		sql.append(getCustomSchema()).append("rp_member a ");
+		sql.append("left outer join ( ");
+		sql.append("select member_id, count(*) locations_no ");
+		sql.append("from ").append(getCustomSchema()).append("rp_member_location ");
+		sql.append("group by member_id ");
+		sql.append(") as b on a.member_id = b.member_id ");
+		sql.append("order by member_nm");
 		
 		DBProcessor db = new DBProcessor(getDBConnection());
-		return db.executeSelect(sql.toString(), null, new AttributeVO());
+		return db.executeSelect(sql.toString(), null, new MemberVO());
 	}
 	
 	/*
@@ -88,17 +92,17 @@ public class AttributeWidget extends SBActionAdapter {
 	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
-		AttributeVO attr = new AttributeVO(req);
+		MemberVO member = new MemberVO(req);
+		log.info("********: " + member);
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
-		
+		db.setGenerateExecutedSQL(true);
 		try {
-			if (req.getBooleanParameter("isInsert")) db.insert(attr);
-			else db.update(attr);
-			
-			setModuleData(attr);
+			db.save(member);
+			log.info(db.getExecutedSql());
+			setModuleData(member);
 		} catch (Exception e) {
-			log.error("Unable to add attribute:" + attr, e);
-			putModuleData(attr, 0, false, e.getLocalizedMessage(), true);
+			log.error("Unable to add member:" + member, e);
+			putModuleData(member, 0, false, e.getLocalizedMessage(), true);
 		}
 	}
 }

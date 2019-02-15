@@ -12,8 +12,9 @@ import com.perfectstorm.common.PSConstants;
 import com.perfectstorm.common.PSConstants.PSRole;
 import com.restpeer.action.admin.CategoryWidget;
 import com.restpeer.common.RPConstants.DataType;
-import com.restpeer.data.AttributeVO.UnitMeasure;
+import com.restpeer.data.ProductVO.UnitMeasure;
 import com.restpeer.data.CategoryVO;
+import com.restpeer.data.MemberVO.MemberType;
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -63,6 +64,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		keyMap.put("category", new GenericVO("getCategories", Boolean.FALSE));
 		keyMap.put("uom", new GenericVO("getUnitMeasures", Boolean.FALSE));
 		keyMap.put("attrType", new GenericVO("getAttributeTypes", Boolean.FALSE));
+		keyMap.put("memberType", new GenericVO("getMemberTypes", Boolean.FALSE));
 	}
 
 	/**
@@ -200,6 +202,20 @@ public class SelectLookupAction extends SBActionAdapter {
 		
 		for (DataType dt : DataType.values()) {
 			data.add(new GenericVO(dt, dt.getTypeName()));
+		}
+		
+		return data;
+	}
+	
+	/**
+	 * Creates the list of attribute types (list, single, etc ...)
+	 * @return
+	 */
+	public List<GenericVO> getMemberTypes() {
+		List<GenericVO> data = new ArrayList<>(16);
+		
+		for (MemberType mt : MemberType.values()) {
+			data.add(new GenericVO(mt, mt.getMemberName()));
 		}
 		
 		return data;

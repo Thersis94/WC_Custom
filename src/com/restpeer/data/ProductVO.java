@@ -4,6 +4,9 @@ package com.restpeer.data;
 import java.sql.ResultSet;
 import java.util.Date;
 
+// Rest Peer Libs
+import com.restpeer.common.RPConstants.DataType;
+
 // SMT Base Libs
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.parser.BeanDataVO;
@@ -11,64 +14,100 @@ import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
 
 /****************************************************************************
- * <b>Title</b>: AttributeVO.java
+ * <b>Title</b>: ProductVO.java
  * <b>Project</b>: WC_Custom
- * <b>Description: </b> Stores the attributes
+ * <b>Description: </b> Manages the hierarchy of products
  * <b>Copyright:</b> Copyright (c) 2019
  * <b>Company:</b> Silicon Mountain Technologies
  * 
  * @author James Camire
  * @version 3.0
- * @since Feb 15, 2019
+ * @since Feb 13, 2019
  * @updates:
  ****************************************************************************/
-@Table(name="rp_attribute")
-public class AttributeVO extends BeanDataVO {
-
+@Table(name="rp_product")
+public class ProductVO extends BeanDataVO {
 	/**
 	 * 
 	 */
-	private static final long serialVersionUID = 5465654450192747042L;
+	public enum UnitMeasure {
+		MONTHLY("Monthly"),
+		NONE("N/A"),
+		WEEKLY("Weekly");
+		
+		private String uomName;
+		UnitMeasure(String uomName) { 
+			this.uomName = uomName;
+		}
+
+		public String getUomName() {	return uomName; }
+	}
+	
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -149669378203475527L;
 	
 	// Members
-	private String attributeCode;
+	private String productCode;
+	private String parentCode;
 	private String categoryCode;
 	private String name;
+	private double price;
 	private int activeFlag;
+	private int scheduleFlag;
 	private int orderNumber;
+	private DataType dataType;
+	private UnitMeasure uom;
 	private Date createDate;
 	private Date updateDate;
-
-	// Helpers
-	private String categoryName;
 	
+	// Member Helpers
+	private String categoryName;
+
 	/**
 	 * 
 	 */
-	public AttributeVO() {
+	public ProductVO() {
 		super();
 	}
 
 	/**
 	 * @param req
 	 */
-	public AttributeVO(ActionRequest req) {
+	public ProductVO(ActionRequest req) {
 		super(req);
 	}
 
 	/**
 	 * @param rs
 	 */
-	public AttributeVO(ResultSet rs) {
+	public ProductVO(ResultSet rs) {
 		super(rs);
 	}
 
 	/**
-	 * @return the attributeCode
+	 * @return the productCode
 	 */
-	@Column(name="attribute_cd", isPrimaryKey=true)
-	public String getAttributeCode() {
-		return attributeCode;
+	@Column(name="product_cd", isPrimaryKey=true)
+	public String getProductCode() {
+		return productCode;
+	}
+
+	/**
+	 * @return the parentCode
+	 */
+	@Column(name="parent_cd")
+	public String getParentCode() {
+		return parentCode;
+	}
+
+	/**
+	 * @return the uom
+	 */
+	@Column(name="unit_measure_cd")
+	public UnitMeasure getUom() {
+		return uom;
 	}
 
 	/**
@@ -82,9 +121,17 @@ public class AttributeVO extends BeanDataVO {
 	/**
 	 * @return the name
 	 */
-	@Column(name="attribute_nm")
+	@Column(name="product_nm")
 	public String getName() {
 		return name;
+	}
+
+	/**
+	 * @return the price
+	 */
+	@Column(name="price_no")
+	public double getPrice() {
+		return price;
 	}
 
 	/**
@@ -96,11 +143,35 @@ public class AttributeVO extends BeanDataVO {
 	}
 
 	/**
+	 * @return the scheduleFlag
+	 */
+	@Column(name="schedule_flg")
+	public int getScheduleFlag() {
+		return scheduleFlag;
+	}
+
+	/**
 	 * @return the orderNumber
 	 */
 	@Column(name="order_no")
 	public int getOrderNumber() {
 		return orderNumber;
+	}
+
+	/**
+	 * @return the dataType
+	 */
+	@Column(name="data_type_cd")
+	public DataType getDataType() {
+		return dataType;
+	}
+
+	/**
+	 * @return the categoryName
+	 */
+	@Column(name="category_nm", isReadOnly=true)
+	public String getCategoryName() {
+		return categoryName;
 	}
 
 	/**
@@ -120,18 +191,24 @@ public class AttributeVO extends BeanDataVO {
 	}
 
 	/**
-	 * @return the categoryName
+	 * @param productCode the productCode to set
 	 */
-	@Column(name="category_nm", isReadOnly=true)
-	public String getCategoryName() {
-		return categoryName;
+	public void setProductCode(String productCode) {
+		this.productCode = productCode;
 	}
 
 	/**
-	 * @param attributeCode the attributeCode to set
+	 * @param parentCode the parentCode to set
 	 */
-	public void setAttributeCode(String attributeCode) {
-		this.attributeCode = attributeCode;
+	public void setParentCode(String parentCode) {
+		this.parentCode = parentCode;
+	}
+
+	/**
+	 * @param uom the uom to set
+	 */
+	public void setUom(UnitMeasure uom) {
+		this.uom = uom;
 	}
 
 	/**
@@ -149,6 +226,13 @@ public class AttributeVO extends BeanDataVO {
 	}
 
 	/**
+	 * @param price the price to set
+	 */
+	public void setPrice(double price) {
+		this.price = price;
+	}
+
+	/**
 	 * @param activeFlag the activeFlag to set
 	 */
 	public void setActiveFlag(int activeFlag) {
@@ -163,6 +247,13 @@ public class AttributeVO extends BeanDataVO {
 	}
 
 	/**
+	 * @param dataType the dataType to set
+	 */
+	public void setDataType(DataType dataType) {
+		this.dataType = dataType;
+	}
+
+	/**
 	 * @param createDate the createDate to set
 	 */
 	public void setCreateDate(Date createDate) {
@@ -174,6 +265,13 @@ public class AttributeVO extends BeanDataVO {
 	 */
 	public void setUpdateDate(Date updateDate) {
 		this.updateDate = updateDate;
+	}
+
+	/**
+	 * @param scheduleFlag the scheduleFlag to set
+	 */
+	public void setScheduleFlag(int scheduleFlag) {
+		this.scheduleFlag = scheduleFlag;
 	}
 
 	/**
