@@ -1,4 +1,4 @@
-package com.perfectstorm.data.weather;
+package com.perfectstorm.data;
 
 // JDK 1.8.x
 import java.sql.ResultSet;

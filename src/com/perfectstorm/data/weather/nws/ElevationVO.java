@@ -1,4 +1,4 @@
-package com.perfectstorm.data.weather;
+package com.perfectstorm.data.weather.nws;
 
 import com.siliconmtn.data.parser.BeanDataVO;
 

@@ -1,27 +1,26 @@
-package com.perfectstorm.data.weather;
+package com.perfectstorm.data.weather.nws.extended;
 
 import com.siliconmtn.data.parser.BeanDataVO;
 
 /****************************************************************************
- * <b>Title</b>: StationExtVO.java
+ * <b>Title</b>: ForecastVO.java
  * <b>Project</b>: WC_Custom
- * <b>Description: </b> Extended data elements int he api feed
+ * <b>Description: </b> Data elements for an extended daily forecast.
  * <b>Copyright:</b> Copyright (c) 2019
  * <b>Company:</b> Silicon Mountain Technologies
  * 
- * @author James Camire
+ * @author Tim Johnson
  * @version 3.0
- * @since Feb 6, 2019
+ * @since Feb 11, 2019
  * @updates:
  ****************************************************************************/
 
-public class StationExtVO extends BeanDataVO {
+public class ExtendedForecastVO extends BeanDataVO {
 
 	/**
 	 * 
 	 */
-	private static final long serialVersionUID = -2441124554610768900L;
-	private String id;
+	private static final long serialVersionUID = -9091722028240674656L;
 	private String type;
 	private PropertyVO properties;
 	
@@ -29,16 +28,8 @@ public class StationExtVO extends BeanDataVO {
 	/**
 	 * 
 	 */
-	public StationExtVO() {
+	public ExtendedForecastVO() {
 		super();
-	}
-
-
-	/**
-	 * @return the id
-	 */
-	public String getId() {
-		return id;
 	}
 
 
@@ -51,26 +42,18 @@ public class StationExtVO extends BeanDataVO {
 
 
 	/**
-	 * @return the properties
-	 */
-	public PropertyVO getProperties() {
-		return properties;
-	}
-
-
-	/**
-	 * @param id the id to set
-	 */
-	public void setId(String id) {
-		this.id = id;
-	}
-
-
-	/**
 	 * @param type the type to set
 	 */
 	public void setType(String type) {
 		this.type = type;
+	}
+
+
+	/**
+	 * @return the properties
+	 */
+	public PropertyVO getProperties() {
+		return properties;
 	}
 
 
@@ -80,6 +63,5 @@ public class StationExtVO extends BeanDataVO {
 	public void setProperties(PropertyVO properties) {
 		this.properties = properties;
 	}
-
 }
 
