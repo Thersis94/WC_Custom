@@ -4,7 +4,6 @@ import java.util.Date;
 
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.parser.BeanDataVO;
-import com.siliconmtn.util.Convert;
 
 
 /****************************************************************************
@@ -27,9 +26,8 @@ public class SunTimeVO extends BeanDataVO{
 	private Date sunriseDate;
 	private double longitudeNumber;
 	private double latitudeNumber;
-	private double negitiveNum = Convert.formatDouble("-100.0");
 	private String timeZoneName;
-	private Date SourceDate;
+	private Date sourceDate;
 
 	/**
 	 * 
@@ -130,14 +128,14 @@ public class SunTimeVO extends BeanDataVO{
 	 * @return the sourceDate
 	 */
 	public Date getSourceDate() {
-		return SourceDate;
+		return sourceDate;
 	}
 
 	/**
 	 * @param sourceDate the sourceDate to set
 	 */
 	public void setSourceDate(Date sourceDate) {
-		SourceDate = sourceDate;
+		this.sourceDate = sourceDate;
 	}
 
 }

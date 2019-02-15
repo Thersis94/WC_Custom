@@ -116,6 +116,7 @@ public class SunTimeCalculatorAction extends SBActionAdapter {
 		cal.setTime(stvo.getSourceDate());
 		
 		double latitudeRad = Math.toRadians(stvo.getLatitudeNumber()); 
+		//invert the sign of the long no
 		stvo.setLongitudeNumber(-stvo.getLongitudeNumber());
 		 
 		double julianDate = getJulianDate(cal); 
@@ -145,6 +146,7 @@ public class SunTimeCalculatorAction extends SBActionAdapter {
 		stvo.setSunriseDate(sRiseLocal);
 		stvo.setSunsetDate(sSetLocal);
 		
+		//put return the long no to its starting sign so the vo is representing what was submitted
 		stvo.setLongitudeNumber(-stvo.getLongitudeNumber());
 		
 		return stvo;
@@ -191,8 +193,8 @@ public class SunTimeCalculatorAction extends SBActionAdapter {
 		 final int DAYS_PER_4_YEARS = 1461; 
 		 final int DAYS_PER_5_MONTHS = 153; 
 		 
-		 int J = (int) (julianDate + 0.5); 
-		 int j = J + 32044;  
+		 int jj = (int) (julianDate + 0.5); 
+		 int j = jj + 32044;  
 		 int g = j / DAYS_PER_4000_YEARS; 
 		 int dg = j % DAYS_PER_4000_YEARS; 
 		 int c = ((dg / DAYS_PER_CENTURY + 1) * 3) / 4; 
@@ -208,7 +210,7 @@ public class SunTimeCalculatorAction extends SBActionAdapter {
 		 int month = (m + 2) % 12; 
 		 int day = d + 1; 
 		 // Apply the fraction of the day in the Julian date to the Gregorian date. 
-		 double dayFraction = (julianDate + 0.5) - J; 
+		 double dayFraction = (julianDate + 0.5) - jj; 
 		 int hours = (int) (dayFraction * 24); 
 		 int minutes = (int) ((dayFraction * 24 - hours) * 60d); 
 		 int seconds = (int) ((dayFraction * 24 * 3600 - (hours * 3600 + minutes * 60)) + .5); 
