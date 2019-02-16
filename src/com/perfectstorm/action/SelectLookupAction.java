@@ -25,6 +25,7 @@ import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.common.html.BSTableControlVO;
 import com.siliconmtn.data.GenericVO;
+import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.orm.GridDataVO;
 import com.siliconmtn.util.Convert;
@@ -71,6 +72,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		keyMap.put("role", new GenericVO("getRoles", Boolean.FALSE));
 		keyMap.put("prefix", new GenericVO("getPrefix", Boolean.FALSE));
 		keyMap.put("gender", new GenericVO("getGenders", Boolean.FALSE));
+		keyMap.put("routes", new GenericVO("getRoutes", Boolean.FALSE));
 		keyMap.put("customer", new GenericVO("getCustomers", Boolean.TRUE));
 		keyMap.put("customerType", new GenericVO("getCustomerType", Boolean.FALSE));
 		keyMap.put("member", new GenericVO("getMembers", Boolean.TRUE));
@@ -203,6 +205,22 @@ public class SelectLookupAction extends SBActionAdapter {
 		data.add(new GenericVO("M", "Male"));
 
 		return data;
+	}
+	
+	/**
+	 * gets a global list of all routes
+	 * @return
+	 */
+	public List<GenericVO> getRoutes(){
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		db.setGenerateExecutedSQL(log.isDebugEnabled());
+		List<Object> vals = new ArrayList<>();
+		StringBuilder sql = new StringBuilder(128);
+		sql.append("select tour_id as key, tour_nm as value from ").append(getCustomSchema()).append("ps_tour t ");
+		sql.append(DBUtil.WHERE_CLAUSE).append(" tour_type_cd = 'TOUR' ");
+		sql.append(DBUtil.ORDER_BY).append(" t.tour_nm ");
+		 
+		return db.executeSelect(sql.toString(), vals, new GenericVO());
 	}
 	
 	/**
