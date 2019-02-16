@@ -30,7 +30,7 @@ public class VenueFacadeAction extends FacadeActionAdapter {
 	/**
 	 * Default type if not passed
 	 */
-	public static final String DEFAULT_TYPE = "venue";
+	public static final String DEFAULT_TYPE = "venue_public";
 
 	/**
 	 * Request key utilized to determine widget to call

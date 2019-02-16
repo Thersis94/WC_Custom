@@ -14,6 +14,7 @@ import org.apache.log4j.Logger;
 // Gson 2.3
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.perfectstorm.action.weather.VenueForecastManager;
 import com.perfectstorm.data.weather.forecast.ForecastVO;
 import com.perfectstorm.data.weather.nws.TimeValueVO;
 import com.perfectstorm.data.weather.nws.detail.ForecastDetailVO;
@@ -149,6 +150,9 @@ public class NWSDetailedForecastManager implements ForecastManagerInterface {
 	 * @throws ActionException
 	 */
 	private void populateData(WeatherAttribueVO data, Map<String, ForecastVO> forecast, String elementGetMethod, String dataSetMethod, Class<?> dataSetType) throws ActionException {
+		String[] uom = data.getUom().split(":");
+		String unitOfMeasure = uom.length > 1 ? uom[1] : "";
+		
 		for (TimeValueVO value : data.getValues()) {
 			for (int durHour = 0; durHour < value.getDuration(); durHour++) {
 				LocalDateTime date = value.getUtcDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
@@ -161,15 +165,17 @@ public class NWSDetailedForecastManager implements ForecastManagerInterface {
 				
 				// Dynamically populate the value into the associated VO
 				ForecastVO fvo = forecast.get(day + "_" + hour);
+				fvo.setStartDate(value.getUtcDate());
+				double normalizedValue = VenueForecastManager.normalizeByUnitOfMeasure(value.getValue(), unitOfMeasure);
 				try {
 					Method elementGetter = fvo.getClass().getMethod(elementGetMethod);
 					Object element = elementGetter.invoke(fvo);
 					Method dataSetter = element.getClass().getMethod(dataSetMethod, dataSetType);
 					
 					if (dataSetType == int.class) {
-						dataSetter.invoke(element, (int) Math.round(value.getValue()));
+						dataSetter.invoke(element, (int) Math.round(normalizedValue));
 					} else {
-						dataSetter.invoke(element, value.getValue());
+						dataSetter.invoke(element, normalizedValue);
 					}
 				} catch(Exception e) {
 					throw new ActionException(e);
@@ -232,7 +238,7 @@ public class NWSDetailedForecastManager implements ForecastManagerInterface {
 
 		// Parse the data into an object
 		WeatherDetailVO wvo = g.fromJson(new String(data), WeatherDetailVO.class);
-		log.info("Detail: " + wvo.getProperties().getMaxTemperature());
+		log.info("Detail: " + wvo.getProperties().getTemperature());
 		
 		return wvo;
 	}
