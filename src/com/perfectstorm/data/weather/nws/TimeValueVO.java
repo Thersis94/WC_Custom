@@ -1,4 +1,4 @@
-package com.perfectstorm.data.weather.detail;
+package com.perfectstorm.data.weather.nws;
 
 // JDK 1.8.x
 import java.sql.ResultSet;
@@ -70,7 +70,7 @@ public class TimeValueVO extends BeanDataVO {
 		utcDate = Convert.formatDate("yyyy-MM-dd'T'HH:mm:ss", validTime.substring(0, 19));
 		String[] item = validTime.substring(validTime.indexOf('/') + 1).split("T");
 		int p = Convert.formatInteger(item[0].replaceAll("P", "")) * 24;
-		int t = Convert.formatInteger(item[1].replaceAll("H", ""));
+		int t = item.length > 1 ? Convert.formatInteger(item[1].replaceAll("H", "")) : 0;
 		duration = p + t;
 	}
 

@@ -1,6 +1,7 @@
-package com.perfectstorm.data.weather;
+package com.perfectstorm.data.weather.nws.station;
 
 
+import com.perfectstorm.data.weather.nws.ElevationVO;
 import com.siliconmtn.data.parser.BeanDataVO;
 
 /****************************************************************************

@@ -1,9 +1,9 @@
-package com.perfectstorm.data.weather.detail;
+package com.perfectstorm.data.weather.nws.detail;
 
 // JDK 1.8.x
 import java.sql.ResultSet;
 
-import com.perfectstorm.data.weather.ElevationVO;
+import com.perfectstorm.data.weather.nws.ElevationVO;
 // SMT Base Libs
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.parser.BeanDataVO;
@@ -36,7 +36,7 @@ public class ForecastDetailVO extends BeanDataVO {
 	
 	// Attributes to be parsed
 	private WeatherAttribueVO temperature;
-	private WeatherAttribueVO dewPoint;
+	private WeatherAttribueVO dewpoint;
 	private WeatherAttribueVO maxTemperature;
 	private WeatherAttribueVO minTemperature;
 	private WeatherAttribueVO relativeHumidity;
@@ -123,10 +123,10 @@ public class ForecastDetailVO extends BeanDataVO {
 	}
 
 	/**
-	 * @return the dewPoint
+	 * @return the dewpoint
 	 */
-	public WeatherAttribueVO getDewPoint() {
-		return dewPoint;
+	public WeatherAttribueVO getDewpoint() {
+		return dewpoint;
 	}
 
 	/**
@@ -340,10 +340,10 @@ public class ForecastDetailVO extends BeanDataVO {
 	}
 
 	/**
-	 * @param dewPoint the dewPoint to set
+	 * @param dewpoint the dewpoint to set
 	 */
-	public void setDewPoint(WeatherAttribueVO dewPoint) {
-		this.dewPoint = dewPoint;
+	public void setDewpoint(WeatherAttribueVO dewpoint) {
+		this.dewpoint = dewpoint;
 	}
 
 	/**
