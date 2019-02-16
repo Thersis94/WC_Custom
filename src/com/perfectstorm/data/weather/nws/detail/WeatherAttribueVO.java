@@ -1,9 +1,10 @@
-package com.perfectstorm.data.weather.detail;
+package com.perfectstorm.data.weather.nws.detail;
 
 // JDK 1.8.x
 import java.sql.ResultSet;
 import java.util.List;
 
+import com.perfectstorm.data.weather.nws.TimeValueVO;
 // SMT Base Libs
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.parser.BeanDataVO;

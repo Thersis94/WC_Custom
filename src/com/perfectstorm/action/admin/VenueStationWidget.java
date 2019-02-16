@@ -12,9 +12,9 @@ import com.google.gson.Gson;
 
 // PS Libs
 import com.perfectstorm.data.VenueVO;
-import com.perfectstorm.data.weather.StationExtVO;
-import com.perfectstorm.data.weather.StationVO;
 import com.perfectstorm.data.weather.VenueWeatherStationVO;
+import com.perfectstorm.data.weather.nws.station.StationExtVO;
+import com.perfectstorm.data.weather.nws.station.StationVO;
 import com.siliconmtn.action.ActionException;
 // SMT Base Libs
 import com.siliconmtn.action.ActionInitVO;
