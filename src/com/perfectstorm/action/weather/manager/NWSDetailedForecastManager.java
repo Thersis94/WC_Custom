@@ -228,17 +228,17 @@ public class NWSDetailedForecastManager implements ForecastManagerInterface {
 		// Get the forecast data url associated to this point
 		SMTHttpConnectionManager conn = new SMTHttpConnectionManager();
 		byte[] data = conn.retrieveData(url);
-		log.info("Point URL: " + url);
+		log.debug("Point URL: " + url);
 		
 		// Get the detailed forecast data
 		Gson g = new GsonBuilder().create();
 		WeatherPointVO wpvo = g.fromJson(new String(data), WeatherPointVO.class);
 		data = conn.retrieveData(wpvo.getProperties().getForecastGridData());
-		log.info("Forecast Grid Data URL: " + wpvo.getProperties().getForecastGridData());
+		log.debug("Forecast Grid Data URL: " + wpvo.getProperties().getForecastGridData());
 
 		// Parse the data into an object
 		WeatherDetailVO wvo = g.fromJson(new String(data), WeatherDetailVO.class);
-		log.info("Detail: " + wvo.getProperties().getTemperature());
+		log.debug("Detail: " + wvo.getProperties().getTemperature());
 		
 		return wvo;
 	}

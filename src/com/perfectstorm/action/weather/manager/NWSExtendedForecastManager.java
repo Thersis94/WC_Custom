@@ -107,7 +107,7 @@ public class NWSExtendedForecastManager implements ForecastManagerInterface {
 	 */
 	private ExtendedForecastVO getForecast() throws IOException {
 		String url = String.format(NWS_URL, latitude, longitude);
-		log.info("Extended URL: " + url);
+		log.debug("Extended URL: " + url);
 		
 		// Retrieve the forecast data for the given coordinates
 		SMTHttpConnectionManager httpConn = new SMTHttpConnectionManager();
@@ -117,7 +117,7 @@ public class NWSExtendedForecastManager implements ForecastManagerInterface {
 		// Parse the data into an object
 		Gson gson = new GsonBuilder().setDateFormat("yyyy-MM-dd'T'HH:mm:ssZ").create();
 		ExtendedForecastVO forecast = gson.fromJson(new String(data), ExtendedForecastVO.class);
-		log.info("Extended Detail: " + forecast);
+		log.debug("Extended Detail: " + forecast);
 		
 		return forecast;
 	}
