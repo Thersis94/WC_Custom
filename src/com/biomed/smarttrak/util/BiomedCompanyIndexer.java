@@ -401,7 +401,7 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 		company.addOrganization(ORG_ID);
 		if (1 == rs.getInt("PUBLIC_FLG")) {
 			company.addRole(SecurityController.PUBLIC_ROLE_LEVEL);
-		} else if ("E".equals(rs.getString("STATUS_NO"))) {
+		} else if (!"P".equals(rs.getString("STATUS_NO"))) {
 			company.addRole(AdminControllerAction.STAFF_ROLE_LEVEL);
 		} else {
 			company.addRole(AdminControllerAction.DEFAULT_ROLE_LEVEL); //any logged in ST user can see this.

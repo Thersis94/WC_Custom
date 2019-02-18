@@ -127,7 +127,7 @@ public class AccountAction extends SBActionAdapter {
 		DBProcessor db = new DBProcessor(dbConn, schema);
 		List<Object>  accounts = db.executeSelect(sql, params, new AccountVO());
 		log.debug("loaded " + accounts.size() + " accounts");
-
+log.debug(((AccountVO)accounts.get(0)).getAddress2());
 		//decrypt the owner profiles
 		decryptNames(accounts);
 

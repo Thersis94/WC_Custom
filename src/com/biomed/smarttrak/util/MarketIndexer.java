@@ -254,10 +254,10 @@ public class MarketIndexer  extends SMTAbstractIndex {
 
 		if (1 == rs.getInt("PUBLIC_FLG")) {
 			vo.addRole(SecurityController.PUBLIC_ROLE_LEVEL);
-		} else if ("E".equals(vo.getStatusNo())) { //preview mode, set role for staff or higher only
-			vo.addRole(AdminControllerAction.STAFF_ROLE_LEVEL);
 		} else if ("EU".equals(vo.getRegionCode())) { //EU region markets get a lesser permission level, correlates to a special User Role.
 			vo.addRole(AdminControllerAction.EUREPORT_ROLE_LEVEL);
+		} else if (!"P".equals(vo.getStatusNo())) { //preview mode, set role for staff or higher only
+			vo.addRole(AdminControllerAction.STAFF_ROLE_LEVEL);
 		} else {
 			vo.addRole(AdminControllerAction.DEFAULT_ROLE_LEVEL); //any logged in ST user can see this.
 		}
@@ -289,7 +289,7 @@ public class MarketIndexer  extends SMTAbstractIndex {
 		sql.append("FROM ").append(customDb).append("BIOMEDGPS_MARKET m ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(customDb).append("BIOMEDGPS_MARKET_SECTION ms ON ms.MARKET_ID = m.MARKET_ID ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(customDb).append("BIOMEDGPS_SECTION s ON ms.SECTION_ID = s.SECTION_ID ");
-		sql.append("WHERE m.status_no not in ('A','D') "); //do not push archived or deleted markets to Solr
+		sql.append("WHERE ");
 		addStatementMarks(sql, "m.MARKET_ID", ids);
 		return sql.toString();
 	}
