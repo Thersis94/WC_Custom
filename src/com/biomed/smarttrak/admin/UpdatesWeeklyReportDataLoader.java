@@ -2,6 +2,8 @@ package com.biomed.smarttrak.admin;
 
 import java.util.Calendar;
 import java.util.Date;
+import java.util.Locale;
+import java.util.TimeZone;
 
 import com.biomed.smarttrak.action.UpdatesEditionDataLoader;
 import com.siliconmtn.action.ActionException;
@@ -52,14 +54,14 @@ public class UpdatesWeeklyReportDataLoader extends UpdatesEditionDataLoader {
 	 */
 	@Override
 	protected Date[] makeWeeklyDateRange(Date endDt, int days) {
-		Calendar cal = Calendar.getInstance();
+		Calendar cal = Calendar.getInstance(TimeZone.getTimeZone("GMT-5"), Locale.getDefault());
 		//set the first day to monday
 		cal.setFirstDayOfWeek(Calendar.MONDAY);
 		cal.setTime(endDt);
 		cal.set(Calendar.HOUR_OF_DAY,0);
 		cal.set(Calendar.MINUTE,0);
 		cal.set(Calendar.SECOND,0);
-		
+
 		if (cal.get(Calendar.DAY_OF_WEEK) == Calendar.MONDAY)
 			cal.add(Calendar.DATE, 1);
 
