@@ -569,25 +569,31 @@ public class UpdatesAction extends ManagementAction {
 	 * @throws ActionException
 	 */
 	protected void updateOrder(ActionRequest req) throws ActionException {
-		String[] ids = req.getParameterValues(UPDATE_ID);
-		Instant publishDt = Instant.now();
+		boolean isOlder = req.getBooleanParameter("isOlder");
+		String updateId = req.getParameter("targetId");
+		String refPublishDt = req.getParameter("refPublishDt");
+
+		Calendar refCal = Calendar.getInstance();
+		refCal.setTime(Convert.formatDate(refPublishDt));
+		Instant publishDt = refCal.toInstant();
 
 		StringBuilder sql = new StringBuilder(150);
 		sql.append("UPDATE ").append(customDbSchema);
 		sql.append("BIOMEDGPS_UPDATE SET PUBLISH_DT = ? WHERE UPDATE_ID = ? ");
 
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			for (int i=0; i < ids.length; i++) {
+			if(isOlder) {
 				publishDt = publishDt.minusMillis(1000);
-				ps.setTimestamp(1, Timestamp.from(publishDt));
-				ps.setString(2, ids[i]);
-				ps.addBatch();
+			} else {
+				publishDt = publishDt.plusMillis(1000);
 			}
-			ps.executeBatch();
+			ps.setTimestamp(1, Timestamp.from(publishDt));
+			ps.setString(2, updateId);
+			ps.executeUpdate();
 
 			UpdateIndexer idx = UpdateIndexer.makeInstance(getAttributes());
 			idx.setDBConnection(dbConn);
-			idx.indexItems(ids);
+			idx.indexItems(updateId);
 		} catch (SQLException e) {
 			throw new ActionException(e);
 		}
