@@ -753,6 +753,8 @@ public class MarketManagementAction extends ManagementAction {
 	protected String completeMarketSave(String marketId, ActionRequest req, DBProcessor db) throws ActionException {
 		MarketVO c = new MarketVO(req);
 		boolean isInsert = StringUtil.isEmpty(c.getMarketId());
+		if (StringUtil.isEmpty(c.getMarketName()))
+			c.setMarketName(c.getSectionName() + " - " + c.getRegionCode());
 		saveMarket(c, db);
 		if (isInsert) generateContent(req, c.getMarketId());
 		// Market save also includes the single section associated
