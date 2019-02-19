@@ -95,7 +95,11 @@ public class WSLAStaff extends AbsImporter {
 	 */
 	private String createAuthRecord(String userName) {
 		try {
+			String authId = ul.checkAuth(userName);
+			if (!StringUtil.isEmpty(authId)) return authId;
+
 			return ul.saveAuthRecord(null, userName, RandomAlphaNumeric.generateRandom(6), 1);
+
 		} catch (DatabaseException de) {
 			log.error("could not create auth record for " + userName, de);
 		}
