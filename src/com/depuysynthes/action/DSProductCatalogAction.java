@@ -17,9 +17,8 @@ import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 
 // WC_Custom
-import com.depuysynthes.huddle.solr.HuddleProductCatalogSolrIndex;
 import com.depuysynthes.scripts.DSMediaBinImporterV2;
-
+import com.depuysynthes.solr.ProductCatalogSolrIndex;
 // SMTBaseLibs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -663,7 +662,7 @@ public class DSProductCatalogAction extends SimpleActionAdapter {
 	 * @throws InvalidDataException
 	 */
 	public static List<String> convertFromJSON(String jsonText) throws InvalidDataException {
-		return HuddleProductCatalogSolrIndex.convertFromJSON(jsonText);
+		return ProductCatalogSolrIndex.convertFromJSON(jsonText);
 	}
 
 
