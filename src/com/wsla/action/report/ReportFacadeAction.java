@@ -1,9 +1,10 @@
 package com.wsla.action.report;
 
-import com.siliconmtn.action.ActionException;
 // SMT Base Libs
+import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+
 // WC Libs
 import com.smt.sitebuilder.action.FacadeActionAdapter;
 import com.smt.sitebuilder.common.ModuleVO;
@@ -24,10 +25,16 @@ import com.smt.sitebuilder.common.constants.Constants;
 public class ReportFacadeAction extends FacadeActionAdapter {
 
 	/**
+	 * Request key utilized top determine widget to call
+	 */
+	public static final String SELECTOR_KEY = "reportType";
+	
+	/**
 	 * 
 	 */
 	public ReportFacadeAction() {
 		super();
+		loadTypes();
 	}
 
 	/**
@@ -35,6 +42,15 @@ public class ReportFacadeAction extends FacadeActionAdapter {
 	 */
 	public ReportFacadeAction(ActionInitVO actionInit) {
 		super(actionInit);
+		loadTypes();
+	}
+	
+	/**
+	 * Loads the mapping to the various ajax calls
+	 */
+	private void loadTypes() {
+		actionMap.put(BillableActivityReport.AJAX_KEY, BillableActivityReport.class);
+		actionMap.put(SummaryActivityReport.AJAX_KEY, SummaryActivityReport.class);
 	}
 
 	/*
@@ -43,7 +59,10 @@ public class ReportFacadeAction extends FacadeActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
+		String reportType = req.getStringParameter(SELECTOR_KEY, "");
+		if (reportType.length() == 0 || ! actionMap.containsKey(reportType)) return;
 		
+		loadActionByType(reportType).retrieve(req);
 	}
 	
 	/*

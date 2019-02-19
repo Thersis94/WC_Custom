@@ -62,7 +62,7 @@ public enum StatusCode {
 	DEFECTIVE_PENDING ("Defective Pending Shipment"),
 	DEFECTIVE_SHIPPED ("Defective Shipped"),
 	DEFECTIVE_RCVD ("Defective Received"),
-	DISPOSE_UNIT ("Unit disposed of"),
+	DISPOSE_UNIT ("Unit Disposed Of"),
 	HARVEST_REQ ("Harvest Requested"),
 	HARVEST_DENIED ("Harvest Denied"),
 	HARVEST_DENIED_SHIPPED ("Harvest Denied Shipped"),

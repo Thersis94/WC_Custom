@@ -1,5 +1,6 @@
 package com.wsla.action.admin;
 
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -18,10 +19,9 @@ import com.siliconmtn.util.StringUtil;
 // WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.constants.Constants;
-import com.wsla.action.ticket.TicketEditAction;
+import com.wsla.action.ticket.transaction.TicketDataTransaction;
 import com.wsla.data.ticket.HarvestApprovalVO;
 import com.wsla.data.ticket.StatusCode;
-import com.wsla.data.ticket.TicketVO;
 import com.wsla.data.ticket.UserVO;
 
 /****************************************************************************
@@ -76,43 +76,30 @@ public class HarvestApprovalAction extends SBActionAdapter {
 	/*
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.action.ActionRequest)
-	 * TODO Finish this method once underlying components are built - see remarks inline
 	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
-		HarvestApprovalVO vo = new HarvestApprovalVO(req);
+		// Nothing to do
+	}
 
-		if (StatusCode.HARVEST_REPAIR.equals(vo.getTicket().getStatusCode())) {
-			//if approved for repair, close the ticket, clone it, and update the new one as a task for the CAS warehouse.
-			//make sure there's a historical reference between the newly created ticket and the original.
-		} else {
-			//update ticket status
-
-			//if approved for harvesting, call the parts action so it can create a BOM of parts the Tech should collect & record.
-			if (StatusCode.HARVEST_APPROVED.equals(vo.getTicket().getStatusCode())) {
-				createBOM(req.getParameter("productSerialId"), null);
-			}
+	/**
+	 * Sets up what is required for harvesting a unit. This could occur after a defective
+	 * unit has been received in the refund/replacement process, or they may skip the
+	 * shipment for the defective unit if they already have it.
+	 * 
+	 * @param ticketId
+	 * @throws ActionException 
+	 */
+	public void approveHarvest(String ticketId) throws ActionException {
+		// Set the harvest status attribute
+		TicketDataTransaction tdt = new TicketDataTransaction(getDBConnection(), getAttributes());
+		try {
+			tdt.saveDataAttribute(ticketId, "attr_harvest_status", StatusCode.HARVEST_APPROVED.name(), true);
+		} catch (SQLException e) {
+			throw new ActionException(e);
 		}
 	}
 	
-	/**
-	 * Calls the parts action so it can create a BOM of parts the Tech
-	 * should collect & record.
-	 * 
-	 * @param productSerialId - set to null if unknown
-	 * @param ticketId - use ticketId when you don't know the productSerialId
-	 */
-	public void createBOM(String productSerialId, String ticketId) {
-		if (productSerialId == null) {
-			TicketEditAction tea = new TicketEditAction(getDBConnection(), getAttributes());
-			TicketVO ticket = tea.getBaseTicket(ticketId);
-			productSerialId = ticket.getProductSerialId();
-		}
-		
-		HarvestPartsAction hpa = new HarvestPartsAction(getAttributes(), getDBConnection());
-		hpa.prepareHarvest(productSerialId);
-	}
-
 	/**
 	 * Return a list of products tied to tickets that are status=HarvestPendingApproval.
 	 * In this view we only care about the product, so the OEM can approve or reject the request.

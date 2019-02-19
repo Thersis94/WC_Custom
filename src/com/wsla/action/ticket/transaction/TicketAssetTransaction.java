@@ -172,7 +172,7 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 		fields.add("credit_memo_id");
 		
 		StringBuilder sql = new StringBuilder(93);
-		sql.append("update ").append("wsla_credit_memo set asset_id = ?, refund_amount_no = ?, approved_by_txt = ?, approval_dt = ?  where credit_memo_id = ? ");
+		sql.append("update ").append(getCustomSchema()).append("wsla_credit_memo set asset_id = ?, refund_amount_no = ?, approved_by_txt = ?, approval_dt = ?  where credit_memo_id = ? ");
 		
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		try {
