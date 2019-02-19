@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.wsla.data.provider.ProviderLocationVO;
@@ -31,7 +32,7 @@ public class WSLAInventoryLocation extends AbsImporter {
 	/**
 	 * These are locations that already exist but didn't align with out matching algorithm.
 	 */
-	private static Map<String, String> staticMappings = new HashMap<>(20); 
+	protected static Map<String, String> staticMappings = new HashMap<>(20); 
 	static {
 		staticMappings.put("ALF", "ALF100");
 		staticMappings.put("BEL", "BEL100");
@@ -69,13 +70,29 @@ public class WSLAInventoryLocation extends AbsImporter {
 	void run() throws Exception {
 		data = readFile(props.getProperty("swLocFile"), SWLocFileVO.class, SHEET_1);
 
-		//String sql = StringUtil.join("delete from ", schema, "wsla_provider_location ",
-		//		"where provider_id='WSLA_PROVIDER'")
-		//delete(sql)
-		// NOTE: We may need to create the provider!
-		// INSERT INTO custom.wsla_provider (provider_id, provider_type_id, provider_nm, create_dt) 
-		//	VALUES('WSLA_PROVIDER', 'WSLA', 'WSLA', current_timestamp)
-
+		String sql = StringUtil.join("delete from ", schema, "wsla_provider_location ",
+				"where provider_id='WSLA_PROVIDER'");
+		delete(sql);
+		
+		// We may need to create the provider!
+		DBProcessor dbp = new DBProcessor(dbConn, schema);
+		sql = "INSERT INTO custom.wsla_provider (provider_id, provider_type_id, provider_nm, create_dt) VALUES('WSLA_PROVIDER', 'WSLA', 'WSLA', current_timestamp)";
+		dbp.executeSQLCommand(sql);
+		
+		//Create the default/WSLA locations
+		sql = "INSERT INTO custom.wsla_provider_location (location_id, provider_id, location_nm, active_flg, default_flg, create_dt) VALUES " + 
+				"('WSLA_020', 'WSLA_PROVIDER', 'ALGEBASA - WS LATAM', 1, 0, current_timestamp),\n" + 
+				"('WSLA_030', 'WSLA_PROVIDER', 'SERVICIOS CARYO SA de CV', 1, 1, current_timestamp),\n" + 
+				"('WSLA_031', 'WSLA_PROVIDER', 'CARYO HARVEST - WSLA', 1, 0, current_timestamp),\n" + 
+				"('WSLA_SRK', 'WSLA_PROVIDER', 'SIRAK / HITACHI', 1, 0, current_timestamp),\n" + 
+				"('WSLA_UNI', 'WSLA_PROVIDER', 'UNION COMERCIAL DE GUATEMALA', 1, 0, current_timestamp),\n" + 
+				"('WSLA_D11', 'WSLA_PROVIDER', 'CISER', 0, 0, current_timestamp),\n" + 
+				"('WSLA_D21', 'WSLA_PROVIDER', 'SERVICENTER MONTERREY', 0, 0, current_timestamp),\n" + 
+				"('WSLA_D31', 'WSLA_PROVIDER', 'IMSG SISTEMAS DEL GOLFO', 0, 0, current_timestamp),\n" + 
+				"('WSLA_D41', 'WSLA_PROVIDER', 'REPARACIONES ELECTRONICA', 0, 0, current_timestamp),\n" + 
+				"('WSLA_D51', 'WSLA_PROVIDER', 'SOLUTIONS ELECTRONICS', 0, 0, current_timestamp)";
+		dbp.executeSQLCommand(sql);
+		
 		save();
 	}
 
