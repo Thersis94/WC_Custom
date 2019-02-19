@@ -29,6 +29,7 @@ import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.security.SBUserRole;
 import com.wsla.common.WSLAConstants.WSLARole;
+import com.wsla.data.product.InventoryLedgerVO;
 import com.wsla.data.product.LocationItemMasterVO;
 import com.wsla.data.ticket.UserVO;
 
@@ -108,7 +109,8 @@ public class InventoryAction extends SBActionAdapter {
 				db.delete(vo);
 			} else {
 				String roleId = ((SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA)).getRoleId();
-				saveInventoryRecord(vo, roleId);
+				UserVO user = (UserVO) getAdminUser(req).getUserExtendedInfo();
+				saveInventoryRecord(vo, roleId, user);
 			}
 		} catch (InvalidDataException | DatabaseException e) {
 			log.error("Unable to save location inventory", e);
@@ -118,29 +120,54 @@ public class InventoryAction extends SBActionAdapter {
 	/**
 	 * Saves an inventory record
 	 * @param vo
+	 * @param user 
 	 * @throws DatabaseException 
 	 * @throws InvalidDataException 
 	 */
-	private void saveInventoryRecord(LocationItemMasterVO vo, String roleId) throws InvalidDataException, DatabaseException {
+	private void saveInventoryRecord(LocationItemMasterVO vo, String roleId, UserVO user) throws InvalidDataException, DatabaseException {
 		// CAS can't edit their inventory
 		if (WSLARole.WSLA_SERVICE_CENTER.getRoleId().equals(roleId))
 			return;
 
 		DBProcessor dbp = new DBProcessor(getDBConnection(), getCustomSchema());
 		
+		LocationItemMasterVO original = new LocationItemMasterVO();
+		original.setItemMasterId(vo.getItemMasterId());
+		dbp.getByPrimaryKey(original);
+		
 		// Only Admins can directly edit quantity-on-hand. The UI prevents submission
 		// of a changed value. However, if someone hacks the UI in order to submit
 		// a different value anyway, we are changing it back to the original value here.
 		if (!WSLARole.ADMIN.getRoleId().equals(roleId)) {
-			LocationItemMasterVO original = new LocationItemMasterVO();
-			original.setItemMasterId(vo.getItemMasterId());
-			dbp.getByPrimaryKey(original);
 			vo.setQuantityOnHand(original.getQuantityOnHand());
 		}
+		
+		//use the new and original vo to make a ledger entry
+		saveInventoryLedger(vo, original, user);
+		
 		
 		dbp.save(vo);
 	}
 	
+	/**
+	 * this method can be used to write to the inventory ledger when needed to record 
+	 * @param newLIMvo
+	 * @param oriLIMvo
+	 * @param user
+	 * @throws InvalidDataException
+	 * @throws DatabaseException
+	 */
+	public void saveInventoryLedger(LocationItemMasterVO newLIMvo, LocationItemMasterVO oriLIMvo, UserVO user) throws InvalidDataException, DatabaseException {
+		InventoryLedgerVO ilvo = new InventoryLedgerVO();
+		ilvo.setOffsetNumber(newLIMvo.getQuantityOnHand()-oriLIMvo.getQuantityOnHand());
+		ilvo.setUserId(user.getUserId());
+		ilvo.setItemMasterId(newLIMvo.getItemMasterId());
+		
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		db.save(ilvo);
+		
+	}
+
 	/**
 	 * Return a list of product inventory (counts) at the given provider_location
 	 * @param locationId
