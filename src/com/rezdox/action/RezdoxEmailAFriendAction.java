@@ -108,9 +108,7 @@ public class RezdoxEmailAFriendAction extends EmailFriendAction {
 	 */
 	protected void sendInvitation(ActionRequest req) throws ActionException {
 		InvitationAction ia = new InvitationAction(dbConn, attributes);
-		ia.build(req);
-
-		Map<String, Object> emailData = ia.getEmailData();
+		Map<String, Object> emailData = ia.saveInvite(req);
 		if (!emailData.isEmpty()) {
 			sendEmail(req, emailData);
 		}

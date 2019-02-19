@@ -12,6 +12,7 @@ import com.biomed.smarttrak.vo.UserVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.SiteVO;
@@ -70,13 +71,12 @@ public class AuthorAction extends SimpleActionAdapter {
 		aa.loadManagerList(req, (String)getAttributes().get(Constants.CUSTOM_DB_SCHEMA), loadTitles);
 	}
 
-
 	/**
 	 * Helper method that builds map of User Titles keyed by profileId.
 	 * @return
 	 */
 	@SuppressWarnings("unchecked")
-	protected Map<String, String> loadAuthorTitles() {
+	protected Map<String, String> loadAuthorTitles(String profileId) {
 
 		//Generate ActionRequest for Retrieving Author Data.
 		ActionRequest req = new ActionRequest();
@@ -107,15 +107,17 @@ public class AuthorAction extends SimpleActionAdapter {
 			//Loop over Authors and load Profile Data for them.
 			for(Object o : authors) {
 				AccountVO a = (AccountVO)o;
-				List<Object> authorData = aua.loadAccountUsers(req, a.getOwnerProfileId());
+				if(StringUtil.isEmpty(profileId) || a.getOwnerProfileId().equals(profileId)) {
+					List<UserVO> authorData = aua.loadAccountUsers(req, a.getOwnerProfileId());
 
-				/*
-				 * If authorData is found for the profile, store their title on
-				 * the map.
-				 */
-				if(authorData != null && !authorData.isEmpty()) {
-					UserVO u = (UserVO)authorData.get(0);
-					authorTitles.put(a.getOwnerProfileId(), u.getTitle());
+					/*
+					 * If authorData is found for the profile, store their title on
+					 * the map.
+					 */
+					if(authorData != null && !authorData.isEmpty()) {
+						UserVO u = authorData.get(0);
+						authorTitles.put(a.getOwnerProfileId(), u.getTitle());
+					}
 				}
 			}
 		} catch(Exception e) {

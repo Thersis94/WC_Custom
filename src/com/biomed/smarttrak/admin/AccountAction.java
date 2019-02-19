@@ -20,6 +20,7 @@ import com.biomed.smarttrak.action.AdminControllerAction;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.db.util.DatabaseException;
@@ -269,17 +270,19 @@ public class AccountAction extends SBActionAdapter {
 	 * @return
 	 */
 	protected String formatRetrieveQuery(String accountId, String schema) {
-		StringBuilder sql = new StringBuilder(300);
+		StringBuilder sql = new StringBuilder(600);
 		sql.append("select a.account_id, a.company_id, a.account_nm, a.type_id, a.enterprise_flg, a.complimentary_flg, ");
 		sql.append("a.start_dt, a.expiration_dt, a.owner_profile_id, a.address_txt, ");
 		sql.append("a.address2_txt, a.city_nm, a.state_cd, a.zip_cd, a.country_cd, a.company_url, a.coowner_profile_id, ");
 		sql.append("a.status_no, a.create_dt, a.update_dt, a.fd_auth_flg, a.ga_auth_flg, a.mkt_auth_flg, ");
 		sql.append("a.parent_company_txt, a.corp_phone_txt, a.classification_id, ");
-		sql.append("p.first_nm, p.last_nm, c.company_nm ");
+		sql.append("p.first_nm, p.last_nm, c.company_nm, u.email_address_txt as owner_email_addr ");
 		sql.append("from ").append(schema).append("biomedgps_account a ");
-		sql.append("left outer join profile p on a.owner_profile_id=p.profile_id ");
-		sql.append("left outer join ").append(schema).append("biomedgps_company c on a.company_id=c.company_id ");
-		sql.append("where 1=1 ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append("profile p on a.owner_profile_id=p.profile_id ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("biomedgps_user u ");
+		sql.append("on u.profile_id = a.owner_profile_id and u.account_id = a.account_id ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("biomedgps_company c on a.company_id=c.company_id ");
+		sql.append(DBUtil.WHERE_1_CLAUSE);
 
 		if (accountId != null) {
 			sql.append("and a.account_id=? ");

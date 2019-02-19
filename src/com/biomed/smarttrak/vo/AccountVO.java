@@ -46,6 +46,10 @@ public class AccountVO implements HumanNameIntfc, Serializable {
 	private Date updateDate;
 	private String firstName;
 	private String lastName;
+	private String leadFirstName;
+	private String leadLastName;
+	private String leadEmail;
+
 	private String title;
 	private int fdAuthFlg;
 	private int gaAuthFlg;
@@ -574,5 +578,41 @@ public class AccountVO implements HumanNameIntfc, Serializable {
 	 */
 	public void setEnterpriseFlg(int enterpriseFlg) {
 		this.enterpriseFlg = enterpriseFlg;
+	}
+
+	/*
+	 * @return the leadFirstName
+	 */
+	public String getLeadFirstName() {
+		return leadFirstName;
+	}
+
+	/**
+	 * @return the leadLastName
+	 */
+	public String getLeadLastName() {
+		return leadLastName;
+	}
+
+	/**
+	 * @param leadFirstName the leadFirstName to set.
+	 */
+	public void setLeadFirstName(String leadFirstName) {
+		this.leadFirstName = leadFirstName;
+	}
+
+	/**
+	 * @param leadLastName the leadLastName to set.
+	 */
+	public void setLeadLastName(String leadLastName) {
+		this.leadLastName = leadLastName;
+	}
+
+	public String getLeadEmail() {
+		return leadEmail;
+	}
+
+	public void setLeadEmail(String leadEmail) {
+		this.leadEmail = leadEmail;
 	}
 }

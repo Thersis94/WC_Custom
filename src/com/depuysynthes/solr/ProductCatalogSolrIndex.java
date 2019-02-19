@@ -2,6 +2,7 @@ package com.depuysynthes.solr;
 
 // JDK 1.6.x
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -21,6 +22,8 @@ import com.siliconmtn.commerce.catalog.ProductVO;
 import com.siliconmtn.data.Node;
 import com.siliconmtn.data.Tree;
 import com.siliconmtn.db.pool.SMTDBConnection;
+import com.siliconmtn.exception.InvalidDataException;
+import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 
 // WC Libs
@@ -30,6 +33,9 @@ import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SMTAbstractIndex;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
 import com.smt.sitebuilder.util.solr.SolrActionUtil;
+
+import net.sf.json.JSONArray;
+import net.sf.json.JSONObject;
 
 /****************************************************************************
  * <b>Title</b>: ProductCatalogSolrIndex.java <p/>
@@ -241,5 +247,36 @@ public class ProductCatalogSolrIndex extends SMTAbstractIndex {
 		// Currently nothing makes use of single item inserts with this class.
 		// When products are added to the list of dynamic solr groups the class
 		// will have to be reworked to support this function.
+	}
+
+
+	/**
+	 * converts the JSON object stored in the product attribute into 
+	 * a List<String> assetIds that we can use to lookup in Solr/Mediabin-table/CMS/etc. 
+	 * @param jsonText
+	 * @return List<String> values
+	 * @throws InvalidDataException
+	 */
+	public static List<String> convertFromJSON(String jsonText) throws InvalidDataException {
+		List<String> values = new ArrayList<>();
+		try {
+			JSONArray arr = JSONArray.fromObject(jsonText);
+			for (int x=0; x < arr.size(); x++) {
+				if ("CMS".equals(((JSONObject)arr.get(x)).getString("type"))) {
+					String id = ((JSONObject)arr.get(x)).getString("id");
+					int legacyId = Convert.formatInteger(id);
+					if (legacyId == 0) {
+						values.add(id);
+					} else {
+						values.add("CMS" + id);
+					}
+				} else {
+					values.add(((JSONObject)arr.get(x)).getString("id"));
+				}
+			}
+		} catch (Exception e) {
+			throw new InvalidDataException(e);
+		}
+		return values;
 	}
 }

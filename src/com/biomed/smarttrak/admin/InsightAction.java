@@ -207,7 +207,7 @@ public class InsightAction extends ManagementAction {
 		if (Convert.formatBoolean(req.getParameter("sectionBypass"))) 
 			insightParamsMap.put(Fields.SECTION_BYPASS, "true");
 
-		List<Object> insights = getInsights(insightParamsMap);
+		List<InsightVO> insights = getInsights(insightParamsMap);
 		decryptNames(insights);
 		Long count = getCount(insightParamsMap);
 
@@ -230,10 +230,10 @@ public class InsightAction extends ManagementAction {
 
 		List<Object> params = loadSqlParams(insightParamsMap);
 		DBProcessor db = new DBProcessor(dbConn, customDbSchema);
-		List<Object> insights = db.executeSelect(sql, params, new InsightVO());
+		List<InsightVO> insights = db.executeSelect(sql, params, new InsightVO());
 
 		if (!insights.isEmpty()) {
-			InsightVO ivo = (InsightVO) insights.get(0);
+			InsightVO ivo = insights.get(0);
 			return ivo.getCountNumber();
 		} else {
 			return 0;
@@ -272,7 +272,7 @@ public class InsightAction extends ManagementAction {
 	 * @param dateRange
 	 * @return
 	 */
-	public List<Object> getInsights(String insightId, String statusCd, String typeCd, String dateRange) {
+	public List<InsightVO> getInsights(String insightId, String statusCd, String typeCd, String dateRange) {
 		EnumMap<Fields, String> insightParamsMap = new EnumMap<>(Fields.class);
 		if (!StringUtil.isEmpty(insightId)) insightParamsMap.put(Fields.INSIGHT_ID, insightId );
 		if (!StringUtil.isEmpty(statusCd)) insightParamsMap.put(Fields.STATUS_CD, statusCd);
@@ -291,7 +291,7 @@ public class InsightAction extends ManagementAction {
 	 * @param insightIds
 	 * @return
 	 */
-	public List<Object> loadForSolr(String ...insightIds) {
+	public List<InsightVO> loadForSolr(String ...insightIds) {
 		EnumMap<Fields, String> insightParamsMap = new EnumMap<>(Fields.class);
 		insightParamsMap.put(Fields.STATUS_CD,  InsightVO.InsightStatusCd.P.name());
 		insightParamsMap.put(Fields.ID_BYPASS, "true");
@@ -313,7 +313,7 @@ public class InsightAction extends ManagementAction {
 	 * @param dateRange
 	 * @return
 	 */
-	public List<Object> getInsights(String insightId, String statusCd, String typeCd, String dateRange, boolean idBypass) {
+	public List<InsightVO> getInsights(String insightId, String statusCd, String typeCd, String dateRange, boolean idBypass) {
 		EnumMap<Fields, String> insightParamsMap = new EnumMap<>(Fields.class);
 		if (!StringUtil.isEmpty(insightId)) insightParamsMap.put(Fields.INSIGHT_ID, insightId );
 		if (!StringUtil.isEmpty(statusCd)) insightParamsMap.put(Fields.STATUS_CD, statusCd);
@@ -335,43 +335,49 @@ public class InsightAction extends ManagementAction {
 	 * @param dateRange
 	 * @return
 	 */
-	@SuppressWarnings("unchecked")
-	public List<Object> getInsights(Map<Fields, String> insightParamsMap) {
+	public List<InsightVO> getInsights(Map<Fields, String> insightParamsMap) {
 		
-		boolean tb = insightParamsMap.containsKey(Fields.TITLE_BYPASS) && Convert.formatBoolean(insightParamsMap.get(Fields.TITLE_BYPASS));
+		boolean isTitleBypass = insightParamsMap.containsKey(Fields.TITLE_BYPASS) && Convert.formatBoolean(insightParamsMap.get(Fields.TITLE_BYPASS));
 
 		String sql = formatRetrieveQuery(insightParamsMap, customDbSchema);
 		List<Object> params = loadSqlParams(insightParamsMap);
-		List<Object>  insights = getFromDatabase(params, sql, tb);
+		List<InsightVO> insights = getFromDatabase(params, sql, isTitleBypass);
 
-		new NameComparator().decryptNames((List<? extends HumanNameIntfc>)(List<?>)insights, (String)getAttribute(Constants.ENCRYPT_KEY));
+		new NameComparator().decryptNames(insights, (String)getAttribute(Constants.ENCRYPT_KEY));
 		return insights;
 	}
-	
+
 
 	/**
 	 * Get insights from the database
 	 * @param params
 	 * @param sql
-	 * @param tb
+	 * @param isTitleBypass
 	 * @return
 	 */
-	private List<Object> getFromDatabase(List<Object> params, String sql, boolean tb) {
-
+	private List<InsightVO> getFromDatabase(List<Object> params, String sql, boolean isTitleBypass) {
 		Map<String, String> authorTitles = new HashMap<>();
-		if (!tb){
-			//Load Authors.
-			authorTitles = loadAuthorTitles();
-		}
-
 		DBProcessor db = new DBProcessor(dbConn, customDbSchema);
 
-		List<Object>  insights = db.executeSelect(sql, params, new InsightVO());
+		//Load Insights
+		List<InsightVO>  insights = db.executeSelect(sql, params, new InsightVO());
+
+		//Decrypt Insights
 		decryptNames(insights);
-		for (Object ob : insights) {
-			InsightVO vo = (InsightVO)ob;
+
+		//Load Titles if necessary.
+		if (!isTitleBypass && insights.size() == 1){
+			//Load Single Author if not a multi-retrieve.
+			authorTitles = loadAuthorTitles(insights.get(0).getCreatorProfileId());
+		} else if (!isTitleBypass){
+			//Load All authors.
+			authorTitles = loadAuthorTitles(null);
+		}
+
+		//Match and load other Insight Data.
+		for (InsightVO vo : insights) {
 			vo.setQsPath((String)getAttribute(Constants.QS_PATH));
-			if(!tb && authorTitles.containsKey(vo.getCreatorProfileId())) {
+			if(!isTitleBypass && authorTitles.containsKey(vo.getCreatorProfileId())) {
 				vo.setCreatorTitle(authorTitles.get(vo.getCreatorProfileId()));
 			}
 
@@ -587,9 +593,8 @@ public class InsightAction extends ManagementAction {
 	 * loop and de-crypt owner names, which came from the profile table
 	 * @param accounts
 	 */
-	@SuppressWarnings("unchecked")
-	protected void decryptNames(List<Object> data) {
-		new NameComparator().decryptNames((List<? extends HumanNameIntfc>)(List<?>)data, (String)getAttribute(Constants.ENCRYPT_KEY));
+	protected void decryptNames(List<? extends HumanNameIntfc> data) {
+		new NameComparator().decryptNames(data, (String)getAttribute(Constants.ENCRYPT_KEY));
 	}
 
 	/**
@@ -722,9 +727,9 @@ public class InsightAction extends ManagementAction {
 		AccountUserAction aua = new AccountUserAction(this.actionInit);
 		aua.setDBConnection(dbConn);
 		aua.setAttributes(attributes);
-		List<Object> authors = aua.loadAccountUsers(req, ivo.getCreatorProfileId());
+		List<UserVO> authors = aua.loadAccountUsers(req, ivo.getCreatorProfileId());
 		if(authors != null && !authors.isEmpty()) {
-			ivo.setCreatorTitle(((UserVO) authors.get(0)).getTitle());
+			ivo.setCreatorTitle(authors.get(0).getTitle());
 		}
 	}
 
@@ -734,9 +739,9 @@ public class InsightAction extends ManagementAction {
 	 * @return 
 	 */
 	private InsightVO loadInsight(InsightVO ivo) {
-		List<Object> insights = getInsights(ivo.getInsightId(), null, null, null);
+		List<InsightVO> insights = getInsights(ivo.getInsightId(), null, null, null);
 		if (!insights.isEmpty()) 
-			return (InsightVO) insights.get(0);
+			return insights.get(0);
 
 		return ivo;
 	}
