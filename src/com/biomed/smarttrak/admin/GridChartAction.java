@@ -691,7 +691,7 @@ public class GridChartAction extends SBActionAdapter {
 		if(showArchives) {
 			sql.append("(a.grid_id = a.grid_group_id or a.archive_flg = true) ");
 		} else {
-			sql.append("a.grid_id = a.grid_group_id ");
+			sql.append("a.grid_id = a.grid_group_id and a.archive_flg = false ");
 		}
 		if (search.length() > 0) sql.append("and (upper(title_nm) like ? or upper(subtitle_nm) like ?) ");
 		sql.append("order by ").append(sort).append(" ").append(order);
