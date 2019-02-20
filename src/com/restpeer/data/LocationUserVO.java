@@ -21,7 +21,7 @@ import com.siliconmtn.db.orm.Table;
  * @updates:
  ****************************************************************************/
 @Table(name="rp_location_user_xr")
-public class LocationUserVO extends UserVO {
+public class LocationUserVO extends RPUserVO {
 
 	/**
 	 * 
