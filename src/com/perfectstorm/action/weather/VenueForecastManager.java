@@ -1,7 +1,10 @@
 package com.perfectstorm.action.weather;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.Map;
+
+import org.apache.log4j.Logger;
 
 import com.perfectstorm.action.weather.manager.ForecastManagerFactory;
 import com.perfectstorm.action.weather.manager.ForecastManagerFactory.ForecastManager;
@@ -9,6 +12,7 @@ import com.perfectstorm.action.weather.manager.ForecastManagerInterface;
 import com.perfectstorm.data.VenueVO;
 import com.perfectstorm.data.weather.forecast.ForecastVO;
 import com.siliconmtn.action.ActionException;
+import com.smt.sitebuilder.util.CacheAdministrator;
 
 /****************************************************************************
  * <b>Title:</b> VenueForecastManager.java
@@ -25,6 +29,12 @@ import com.siliconmtn.action.ActionException;
 
 public class VenueForecastManager {
 	
+	private static Logger log = Logger.getLogger(VenueForecastManager.class);
+	
+	private static final String DETAIL_CACHE_KEY_PREFIX = "DETAIL_FORECAST_";
+	private static final String EXTENDED_CACHE_KEY_PREFIX = "EXTENDED_FORECAST_";
+	
+	private String venueId;
 	private double latitude;
 	private double longitude;
 	private Map<String, ForecastVO> detailForecast;
@@ -36,30 +46,12 @@ public class VenueForecastManager {
 	 * @param venueId
 	 * @throws ActionException 
 	 */
-	public VenueForecastManager(VenueVO venue) throws ActionException {
+	public VenueForecastManager(VenueVO venue, Map<String, Object> attributes) throws ActionException {
+		this.venueId = venue.getVenueId();
 		this.latitude = venue.getLatitude();
 		this.longitude = venue.getLongitude();
-
-		ForecastManagerInterface fmi = ForecastManagerFactory.getManager(ForecastManager.NWS_DETAILED, latitude, longitude);
-		detailForecast = fmi.retrieveForecast();
-
-		fmi = ForecastManagerFactory.getManager(ForecastManager.NWS_EXTENDED, latitude, longitude);
-		extendedForecast = fmi.retrieveForecast();
-	}
-	
-	/**
-	 * Main method for testing the API and parser
-	 * 
-	 * @param args
-	 * @throws Exception
-	 */
-	public static void main(String[] args) throws Exception {
-		VenueVO venue = new VenueVO();
-		venue.setVenueId("TEST");
-		venue.setLatitude(39.8595789);
-		venue.setLongitude(-104.9447375);
-		
-		new VenueForecastManager(venue);
+				
+		retrieveForecast(attributes);
 	}
 
 	/**
@@ -123,7 +115,7 @@ public class VenueForecastManager {
 		// Convert based on the submitted unit of measure. If the unit of measure
 		// is not found below, the value is assumed to already be in the expected units.
 		switch (unitOfMeasure) {
-			case "degC": // Convert celsius to farenheit
+			case "degC": // Convert celsius to fahrenheit
 				convertedValue = (origValue * 1.8) + 32;
 				break;
 			case "m": // Convert meters to feet
@@ -136,9 +128,54 @@ public class VenueForecastManager {
 	}
 	
 	/**
-	 * Refreshes the cached weather forecast data for a given venue
+	 * Retrieves the forecast data, from cache if available or from the weather service.
+	 * 
+	 * @param attributes
+	 * @throws ActionException
 	 */
-	private void refreshCache() {
-		// TODO: implement method, account for multi-server
+	@SuppressWarnings("unchecked")
+	private void retrieveForecast(Map<String, Object> attributes) throws ActionException {
+		CacheAdministrator cache = new CacheAdministrator(attributes);
+		
+		detailForecast = (Map<String, ForecastVO>) cache.readObjectFromCache(DETAIL_CACHE_KEY_PREFIX + venueId);
+		extendedForecast = (Map<String, ForecastVO>) cache.readObjectFromCache(EXTENDED_CACHE_KEY_PREFIX + venueId);
+		
+		if (detailForecast == null) {
+			refreshCache(cache, DETAIL_CACHE_KEY_PREFIX);
+		}
+		
+		if (extendedForecast == null) {
+			refreshCache(cache, EXTENDED_CACHE_KEY_PREFIX);
+		}
+	}
+	
+	/**
+	 * Refreshes the cached weather forecast data for a given venue.
+	 * TODO: Account for multiple servers.
+	 * 
+	 * @param cache
+	 * @param type
+	 * @throws ActionException
+	 */
+	private void refreshCache(CacheAdministrator cache, String type) throws ActionException {
+		log.debug("refreshing forecast: " + type);
+
+		ForecastManagerInterface fmi;
+		Map<String, ForecastVO> forecastData = new HashMap<>();
+		
+		switch (type) {
+			case DETAIL_CACHE_KEY_PREFIX:
+				fmi = ForecastManagerFactory.getManager(ForecastManager.NWS_DETAILED, latitude, longitude);
+				detailForecast = forecastData = fmi.retrieveForecast();
+				break;
+			case EXTENDED_CACHE_KEY_PREFIX:
+				fmi = ForecastManagerFactory.getManager(ForecastManager.NWS_EXTENDED, latitude, longitude);
+				extendedForecast = forecastData = fmi.retrieveForecast();
+				break;
+			default:
+		}
+
+		// Weather data should be cached for 24 hours
+		cache.writeToCache(type + venueId, forecastData, 86400);
 	}
 }

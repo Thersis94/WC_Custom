@@ -149,7 +149,7 @@ public class VenueAction extends SimpleActionAdapter {
 		}
 		
 		// Return the forecast data
-		VenueForecastManager vfm = new VenueForecastManager(venue);
+		VenueForecastManager vfm = new VenueForecastManager(venue, getAttributes());
 		return vfm.getDetailForecast(date);
 	}
 }
