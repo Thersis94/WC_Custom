@@ -3,6 +3,7 @@ package com.restpeer.action;
 // RP Libs
 import com.restpeer.action.admin.ProductWidget;
 import com.restpeer.action.admin.UserWidget;
+import com.restpeer.action.account.MemberLocationUserAction;
 import com.restpeer.action.admin.AttributeWidget;
 import com.restpeer.action.admin.CategoryWidget;
 import com.restpeer.action.admin.MemberLocationWidget;
@@ -73,6 +74,7 @@ public class AjaxControllerFacadeAction extends FacadeActionAdapter {
 		actionMap.put(MemberWidget.AJAX_KEY, MemberWidget.class);
 		actionMap.put(MemberLocationWidget.AJAX_KEY, MemberLocationWidget.class);
 		actionMap.put(UserWidget.AJAX_KEY, UserWidget.class);
+		actionMap.put(MemberLocationUserAction.AJAX_KEY, MemberLocationUserAction.class);
 	}
 
 	/*

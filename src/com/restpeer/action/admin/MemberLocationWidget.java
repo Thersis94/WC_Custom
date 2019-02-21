@@ -84,8 +84,10 @@ public class MemberLocationWidget extends SBActionAdapter {
 	 */
 	public List<MemberLocationVO> getLocations(String memberId) {
 		StringBuilder sql = new StringBuilder(96);
-		sql.append("select * from ").append(getCustomSchema()).append("rp_member_location ");
-		sql.append("where member_id = ? ");
+		sql.append("select * from ").append(getCustomSchema()).append("rp_member_location a ");
+		sql.append("inner join ").append(getCustomSchema()).append("rp_member b ");
+		sql.append("on a.member_id = b.member_id ");
+		sql.append("where a.member_id = ? ");
 		sql.append("order by location_nm");
 		log.debug(sql.length() + "|" + sql);
 		

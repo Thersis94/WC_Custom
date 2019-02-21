@@ -31,10 +31,6 @@ public class LocationUserVO extends RPUserVO {
 	// Members
 	private String locationUserId;
 	private String memberLocationId;
-	private String roleId;
-	
-	// Helpers
-	private String roleName;
 	
 	/**
 	 * 
@@ -77,18 +73,11 @@ public class LocationUserVO extends RPUserVO {
 	 * @return the roleId
 	 */
 	@Column(name="role_id")
+	@Override
 	public String getRoleId() {
-		return roleId;
+		return super.getRoleId();
 	}
 
-	/**
-	 * @return the roleName
-	 */
-	@Column(name="role_nm", isReadOnly=true)
-	public String getRoleName() {
-		return roleName;
-	}
-	
 	/**
 	 * @param locationUserId the locationUserId to set
 	 */
@@ -102,20 +91,5 @@ public class LocationUserVO extends RPUserVO {
 	public void setMemberLocationId(String memberLocationId) {
 		this.memberLocationId = memberLocationId;
 	}
-	
-	/**
-	 * @param roleId the roleId to set
-	 */
-	public void setRoleId(String roleId) {
-		this.roleId = roleId;
-	}
-
-	/**
-	 * @param roleName the roleName to set
-	 */
-	public void setRoleName(String roleName) {
-		this.roleName = roleName;
-	}
-
 }
 

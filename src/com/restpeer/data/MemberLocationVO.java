@@ -47,6 +47,9 @@ public class MemberLocationVO extends GeocodeLocation {
 	private List<ProductVO> products = new ArrayList<>();
 	private List<LocationUserVO> users = new ArrayList<>();
 	
+	// Helpers
+	private String memberTypeCode;
+	
 	/**
 	 * 
 	 */
@@ -123,6 +126,14 @@ public class MemberLocationVO extends GeocodeLocation {
 	@Column(name="active_flg")
 	public int getActiveFlag() {
 		return activeFlag;
+	}
+
+	/**
+	 * @return the memberTypeCode
+	 */
+	@Column(name="member_type_cd", isReadOnly=true)
+	public String getMemberTypeCode() {
+		return memberTypeCode;
 	}
 
 	/**
@@ -249,6 +260,13 @@ public class MemberLocationVO extends GeocodeLocation {
 	 */
 	public void setCreateDate(Date createDate) {
 		this.createDate = createDate;
+	}
+
+	/**
+	 * @param memberTypeCode the memberTypeCode to set
+	 */
+	public void setMemberTypeCode(String memberTypeCode) {
+		this.memberTypeCode = memberTypeCode;
 	}
 
 }

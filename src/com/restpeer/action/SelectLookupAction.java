@@ -11,15 +11,19 @@ import java.util.Map;
 import com.perfectstorm.common.PSConstants;
 import com.perfectstorm.common.PSConstants.PSRole;
 import com.restpeer.action.admin.CategoryWidget;
+import com.restpeer.action.admin.UserWidget;
 import com.restpeer.common.RPConstants.DataType;
 import com.restpeer.data.ProductVO.UnitMeasure;
+import com.restpeer.data.RPUserVO;
 import com.restpeer.data.CategoryVO;
 import com.restpeer.data.MemberVO.MemberType;
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.common.html.BSTableControlVO;
 import com.siliconmtn.data.GenericVO;
+import com.siliconmtn.db.orm.GridDataVO;
 import com.siliconmtn.util.Convert;
 import com.smt.sitebuilder.action.SBActionAdapter;
 
@@ -65,6 +69,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		keyMap.put("uom", new GenericVO("getUnitMeasures", Boolean.FALSE));
 		keyMap.put("attrType", new GenericVO("getAttributeTypes", Boolean.FALSE));
 		keyMap.put("memberType", new GenericVO("getMemberTypes", Boolean.FALSE));
+		keyMap.put("users", new GenericVO("getUsers", Boolean.TRUE));
 	}
 
 	/**
@@ -216,6 +221,25 @@ public class SelectLookupAction extends SBActionAdapter {
 		
 		for (MemberType mt : MemberType.values()) {
 			data.add(new GenericVO(mt, mt.getMemberName()));
+		}
+		
+		return data;
+	}
+	
+	/**
+	 * Returns a list of users
+	 * @param req
+	 * @return
+	 */
+	public List<GenericVO> getUsers(ActionRequest req) {
+		List<GenericVO> data = new ArrayList<>(10);
+		BSTableControlVO bst = new BSTableControlVO(req, RPUserVO.class);
+		UserWidget uw = new UserWidget(getDBConnection(), getAttributes());
+		GridDataVO<RPUserVO> users = uw.getUsers(req.getParameter("memberLocationId"), bst);
+		
+		for (RPUserVO user : users.getRowData()) {
+			String name = user.getFirstName() + " " + user.getLastName();
+			data.add(new GenericVO(user.getUserId(), name));
 		}
 		
 		return data;

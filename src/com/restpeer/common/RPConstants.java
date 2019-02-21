@@ -18,8 +18,8 @@ public class RPConstants {
 	 * Defines the roles used by this site
 	 */
 	public enum RPRole {
-		PATRON("MEMBER", "Member"),
-		TOUR("KITCHEN", "Commisary / Kitchen"),
+		MEMBER("MEMBER", "Member"),
+		KITCHEN("KITCHEN", "Commisary / Kitchen"),
 		ADMIN("100", "Site Administrators");
 		
 		private String roleId;
