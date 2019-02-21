@@ -172,7 +172,7 @@ public class MarketAction extends SimpleActionAdapter {
 		
 		StringBuilder sql = new StringBuilder(150);
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
-		sql.append("SELECT xr.*, g.TITLE_NM as ATTRIBUTE_NM FROM ").append(customDb).append("BIOMEDGPS_MARKET_ATTRIBUTE_XR xr ");
+		sql.append("SELECT xr.*, g.TITLE_NM as ATTRIBUTE_NM, g.SHORT_TITLE_NM as GROUP_NM FROM ").append(customDb).append("BIOMEDGPS_MARKET_ATTRIBUTE_XR xr ");
 		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_MARKET_ATTRIBUTE a ");
 		sql.append("ON a.ATTRIBUTE_ID = xr.ATTRIBUTE_ID ");
 		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_GRID g ");
