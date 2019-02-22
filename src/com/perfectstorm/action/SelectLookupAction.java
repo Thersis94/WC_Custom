@@ -77,6 +77,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		keyMap.put("customerType", new GenericVO("getCustomerType", Boolean.FALSE));
 		keyMap.put("member", new GenericVO("getMembers", Boolean.TRUE));
 		keyMap.put("timezone", new GenericVO("getTimeZone", Boolean.TRUE));
+		keyMap.put("radarType", new GenericVO("getRadarTypes", Boolean.FALSE));
 	}
 
 	/**
@@ -311,6 +312,20 @@ public class SelectLookupAction extends SBActionAdapter {
 		
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		return db.executeSQLWithCount(sql.toString(), vals, new GenericVO(), bst).getRowData();
+	}
+	
+	
+	/**
+	 * Gets the list of radar image types
+	 * 
+	 * @return
+	 */
+	public List<GenericVO> getRadarTypes() {
+		String sql = StringUtil.join("select radar_type_cd as key, type_txt as value from ", getCustomSchema(), "ps_radar_type");
+		log.debug(sql);
+		
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		return db.executeSelect(sql, new ArrayList<>(), new GenericVO());
 	}
 	
 }

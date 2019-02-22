@@ -40,6 +40,10 @@ public class VenueTourVO extends VenueVO {
 	private Date endRetrieve;
 	private int orderNumber;
 	
+	// Helpers
+	private String radarTypeCode;
+	private String radarCode;
+	
 	// Bean SubElements
 	private List<TourDeviceVO> devices = new ArrayList<>();
 	
@@ -175,6 +179,34 @@ public class VenueTourVO extends VenueVO {
 	@BeanSubElement
 	public void addDevice(TourDeviceVO device) {
 		devices.add(device);
+	}
+
+	/**
+	 * @return the radarTypeCode
+	 */
+	public String getRadarTypeCode() {
+		return radarTypeCode;
+	}
+
+	/**
+	 * @param radarTypeCode the radarTypeCode to set
+	 */
+	public void setRadarTypeCode(String radarTypeCode) {
+		this.radarTypeCode = radarTypeCode;
+	}
+
+	/**
+	 * @return the radarCode
+	 */
+	public String getRadarCode() {
+		return radarCode;
+	}
+
+	/**
+	 * @param radarCode the radarCode to set
+	 */
+	public void setRadarCode(String radarCode) {
+		this.radarCode = radarCode;
 	}
 }
 

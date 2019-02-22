@@ -2,6 +2,7 @@ package com.perfectstorm.action.venue;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
@@ -18,6 +19,7 @@ import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.security.UserDataVO;
+import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 
 //WC Libs 3.x
@@ -27,6 +29,7 @@ import com.perfectstorm.action.weather.manager.NWSRadarManager;
 // Perfect Storm Libs
 import com.perfectstorm.data.VenueTourVO;
 import com.perfectstorm.data.VenueVO;
+import com.perfectstorm.data.weather.VenueWeatherStationVO;
 import com.perfectstorm.data.weather.forecast.ForecastVO;
 
 /****************************************************************************
@@ -98,8 +101,15 @@ public class VenueAction extends SimpleActionAdapter {
 				String venueId = req.getStringParameter("venueId");
 				Date eventDate = req.getDateParameter("eventDate");
 				putModuleData(getForecast(venueId, eventDate));
-			} else {
+			} else if (isJson && req.hasParameter("refreshRadar")) {
+				VenueTourVO venueTour = new VenueTourVO();
+				venueTour.setRadarTypeCode(req.getStringParameter("radarTypeCode"));
+				venueTour.setRadarCode(req.getStringParameter("radarCode"));
+				addRadarMetaData(venueTour);
+				putModuleData(venueTour);
+			} else if (isJson) {
 				VenueTourVO venueTour = getVenueTour(venueTourId);
+				venueTour.setRadarTypeCode(req.getStringParameter("radarTypeCode"));
 				addRadarMetaData(venueTour);
 				putModuleData(venueTour);
 			}
@@ -119,15 +129,28 @@ public class VenueAction extends SimpleActionAdapter {
 	 */
 	public VenueTourVO getVenueTour(String venueTourId) throws InvalidDataException, DatabaseException {
 		StringBuilder sql = new StringBuilder(200);
-		sql.append(DBUtil.SELECT_FROM_STAR).append(getCustomSchema()).append("ps_venue_tour_xr vt");
+		sql.append("select vt.*, v.*, vws.*, ws.station_nm, ws.radar_flg, ws.radar_cd, ");
+		sql.append("ws.forecast_office_cd, ws.forecast_gridx_no, ws.forecast_gridy_no ");
+		sql.append(DBUtil.FROM_CLAUSE).append(getCustomSchema()).append("ps_venue_tour_xr vt");
 		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("ps_venue v on vt.venue_id = v.venue_id");
+		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("ps_venue_weather_station vws on v.venue_id = vws.venue_id");
+		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("ps_weather_station ws on vws.weather_station_cd = ws.weather_station_cd");
 		sql.append(DBUtil.WHERE_CLAUSE).append("venue_tour_id = ?");
-		log.debug(sql);
+		log.debug(venueTourId + " | " + sql);
 		
 		DBProcessor dbp = new DBProcessor(getDBConnection(), getCustomSchema());
 		List<VenueTourVO> data = dbp.executeSelect(sql.toString(), Arrays.asList(venueTourId), new VenueTourVO());
+		VenueTourVO venueTour = data == null || data.isEmpty() ? new VenueTourVO() : data.get(0);
 		
-		return data == null || data.isEmpty() ? new VenueTourVO() : data.get(0);
+		// Use the first radar code as the default for this venue tour
+		for (VenueWeatherStationVO station : venueTour.getWeatherStations()) {
+			if (!StringUtil.isEmpty(station.getRadarCode())) {
+				venueTour.setRadarCode(station.getRadarCode());
+				break;
+			}
+		}
+		
+		return venueTour;
 	}
 	
 	/**
@@ -137,8 +160,18 @@ public class VenueAction extends SimpleActionAdapter {
 	 * @throws ActionException 
 	 */
 	public void addRadarMetaData(VenueTourVO venueTour) throws ActionException {
+		String radarCode = venueTour.getRadarCode();
+		if (StringUtil.isEmpty(radarCode)) {
+			venueTour.setRadarTime(new ArrayList<>());
+			return;
+		}
+		
+		String radarTypeCode = venueTour.getRadarTypeCode();
+		String url = StringUtil.join("http://radar.weather.gov/ridge/kml/animation/", radarTypeCode, "/", radarCode, "_", radarTypeCode, "_loop.kml");
+		log.debug("retrieving radar meta data from: " + url);
+		
 		NWSRadarManager nrm = new NWSRadarManager();
-		venueTour.setRadarTime(nrm.retrieveData("http://radar.weather.gov/ridge/kml/animation/N1P/FTG_N1P_loop.kml"));
+		venueTour.setRadarTime(nrm.retrieveData(url));
 	}
 	
 	/**
