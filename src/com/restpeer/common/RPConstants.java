@@ -50,4 +50,9 @@ public class RPConstants {
 	private RPConstants() {
 		//don't need a constructor - static class
 	}
+	
+	/**
+	 * Site org ID
+	 */
+	public static final String ORGANIZATON_ID = "REST_PEER";
 }

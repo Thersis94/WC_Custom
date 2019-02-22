@@ -8,23 +8,26 @@ import java.util.List;
 import java.util.Map;
 
 // PS Imports
-import com.perfectstorm.common.PSConstants;
-import com.perfectstorm.common.PSConstants.PSRole;
 import com.restpeer.action.admin.CategoryWidget;
 import com.restpeer.action.admin.UserWidget;
+import com.restpeer.common.RPConstants;
 import com.restpeer.common.RPConstants.DataType;
+import com.restpeer.common.RPConstants.RPRole;
 import com.restpeer.data.ProductVO.UnitMeasure;
 import com.restpeer.data.RPUserVO;
 import com.restpeer.data.CategoryVO;
 import com.restpeer.data.MemberVO.MemberType;
+
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.common.html.BSTableControlVO;
 import com.siliconmtn.data.GenericVO;
+import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.orm.GridDataVO;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
 
 /****************************************************************************
@@ -70,6 +73,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		keyMap.put("attrType", new GenericVO("getAttributeTypes", Boolean.FALSE));
 		keyMap.put("memberType", new GenericVO("getMemberTypes", Boolean.FALSE));
 		keyMap.put("users", new GenericVO("getUsers", Boolean.TRUE));
+		keyMap.put("memberLocations", new GenericVO("getMemberLocations", Boolean.TRUE));
 	}
 
 	/**
@@ -134,8 +138,8 @@ public class SelectLookupAction extends SBActionAdapter {
 	 */
 	public List<GenericVO> getRoles() {
 		List<GenericVO> data = new ArrayList<>(8);
-
-		for (PSRole val : PSConstants.PSRole.values()) {
+		
+		for (RPRole val : RPConstants.RPRole.values()) {
 			data.add(new GenericVO(val.getRoleId(), val.getRoleName()));
 		}
 
@@ -243,5 +247,38 @@ public class SelectLookupAction extends SBActionAdapter {
 		}
 		
 		return data;
+	}
+	
+	/**
+	 * Auto-complete lookup form member locations
+	 * @param req
+	 * @return
+	 */
+	public List<GenericVO> getMemberLocations(ActionRequest req) {
+		List<Object> vals = new ArrayList<>();
+		String memberType = StringUtil.checkVal(req.getParameter("memberType"));
+		
+		StringBuilder sql = new StringBuilder(128);
+		sql.append("select member_location_id as key, member_nm || ' - ' || location_nm as value ");
+		sql.append("from custom.rp_member a  ");
+		sql.append("inner join custom.rp_member_location b "); 
+		sql.append("on a.member_id = b.member_id where 1=1 ");
+		if(! memberType.isEmpty()) {
+			sql.append("and member_type_cd = ? ");
+			vals.add(memberType);
+		}
+		
+		BSTableControlVO bst = new BSTableControlVO(req);
+		if (bst.hasSearch()) {
+			sql.append("and (lower(member_nm) like ? or lower(location_nm) like ?) ");
+			vals.add(bst.getLikeSearch().toLowerCase());
+			vals.add(bst.getLikeSearch().toLowerCase());
+		}
+		
+		sql.append("order by member_nm, location_nm limit 10");
+		log.info(sql.length() + "|" + sql + "|" + vals);		
+		
+		DBProcessor db = new DBProcessor(getDBConnection());
+		return db.executeSelect(sql.toString(), vals, new GenericVO());
 	}
 }

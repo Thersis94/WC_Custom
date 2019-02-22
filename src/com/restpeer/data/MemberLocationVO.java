@@ -49,6 +49,7 @@ public class MemberLocationVO extends GeocodeLocation {
 	
 	// Helpers
 	private String memberTypeCode;
+	private String memberName;
 	
 	/**
 	 * 
@@ -155,6 +156,15 @@ public class MemberLocationVO extends GeocodeLocation {
 	 */
 	public List<LocationUserVO> getUsers() {
 		return users;
+	}
+	
+	/**
+	 * 
+	 * @return
+	 */
+	@Column(name="member_nm", isReadOnly=true)
+	public String getMemberName() {
+		return memberName;
 	}
 
 	/**
@@ -267,6 +277,14 @@ public class MemberLocationVO extends GeocodeLocation {
 	 */
 	public void setMemberTypeCode(String memberTypeCode) {
 		this.memberTypeCode = memberTypeCode;
+	}
+
+	/**
+	 * 
+	 * @param memberName
+	 */
+	public void setMemberName(String memberName) {
+		this.memberName = memberName;
 	}
 
 }

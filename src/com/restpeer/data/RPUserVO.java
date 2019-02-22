@@ -34,6 +34,9 @@ public class RPUserVO extends UserVO {
 	private String driverLicense;
 	private String driverLicensePath;
 
+	// helpers
+	private long memberAssociations;
+	
 	/**
 	 * 
 	 */
@@ -53,6 +56,20 @@ public class RPUserVO extends UserVO {
 	 */
 	public RPUserVO(ResultSet rs) {
 		super(rs);
+	}
+	
+	/**
+	 * @param rs
+	 */
+	public RPUserVO(UserVO user) {
+		super();
+		setUserId(user.getUserId());
+		setFirstName(user.getFirstName());
+		setLastName(user.getLastName());
+		setEmailAddress(user.getEmailAddress());
+		setPhoneNumber(user.getPhoneNumber());
+		setProfileId(user.getProfileId());
+		setProfile(user.getProfile());
 	}
 
 	/*
@@ -80,6 +97,14 @@ public class RPUserVO extends UserVO {
 	}
 
 	/**
+	 * @return the memberAssociations
+	 */
+	@Column(name="member_assoc_no")
+	public long getMemberAssociations() {
+		return memberAssociations;
+	}
+
+	/**
 	 * @param driverLicense the driverLicense to set
 	 */
 	public void setDriverLicense(String driverLicense) {
@@ -91,6 +116,13 @@ public class RPUserVO extends UserVO {
 	 */
 	public void setDriverLicensePath(String driverLicensePath) {
 		this.driverLicensePath = driverLicensePath;
+	}
+
+	/**
+	 * @param memberAssociations the memberAssociations to set
+	 */
+	public void setMemberAssociations(long memberAssociations) {
+		this.memberAssociations = memberAssociations;
 	}
 
 }

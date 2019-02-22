@@ -1,20 +1,29 @@
 package com.restpeer.action.admin;
 
+// JDK 1.8.x
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+// RP Libs
+import com.restpeer.common.RPConstants;
 import com.restpeer.data.RPUserVO;
-import com.siliconmtn.action.ActionException;
+
 // SMT Base Libs
+import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.common.html.BSTableControlVO;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.orm.GridDataVO;
 import com.siliconmtn.db.pool.SMTDBConnection;
+import com.siliconmtn.exception.DatabaseException;
+import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.StringUtil;
+
 // WC Libs
+import com.smt.sitebuilder.action.user.ProfileManager;
+import com.smt.sitebuilder.action.user.ProfileManagerFactory;
 import com.smt.sitebuilder.action.user.UserBaseWidget;
 
 /****************************************************************************
@@ -68,8 +77,28 @@ public class UserWidget extends UserBaseWidget {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		BSTableControlVO bst = new BSTableControlVO(req, RPUserVO.class);
-		setModuleData(getUsers(req.getParameter("memberLocationId"), bst));
+		try {
+			if (req.hasParameter("profileId")) {
+				setModuleData(getUserProfile(req.getParameter("profileId")));
+			} else {
+				BSTableControlVO bst = new BSTableControlVO(req, RPUserVO.class);
+				setModuleData(getUsers(req.getParameter("memberLocationId"), bst));
+			}
+		} catch (Exception e) {
+			setModuleData(null, 0, e.getLocalizedMessage());
+		}
+	}
+	
+	/**
+	 * 
+	 * @param profileId
+	 * @return
+	 * @throws DatabaseException
+	 */
+	public UserDataVO getUserProfile(String profileId) throws DatabaseException {
+		log.info("Getting profile");
+		ProfileManager pm = ProfileManagerFactory.getInstance(attributes);
+		return pm.getProfile(profileId, getDBConnection(), "", RPConstants.ORGANIZATON_ID);
 	}
 	
 	/**
@@ -81,12 +110,18 @@ public class UserWidget extends UserBaseWidget {
 	 */
 	public GridDataVO<RPUserVO> getUsers(String mlid, BSTableControlVO bst) {
 		List<Object> vals = new ArrayList<>();
-		StringBuilder sql = new StringBuilder(196);
-		sql.append("select * from ").append(getCustomSchema()).append("rp_user "); 
+		StringBuilder sql = new StringBuilder(344);
+		sql.append("select a.*, coalesce(user_total, 0) as member_assoc_no from ");
+		sql.append(getCustomSchema()).append("rp_user a "); 
+		sql.append("left outer join ( ");
+		sql.append("select user_id, count(*) as user_total from ");
+		sql.append(getCustomSchema()).append("rp_location_user_xr b ");
+		sql.append("group by user_id ");
+		sql.append(") as b on a.user_id = b.user_id ");
 		sql.append("where 1=1 ");
 		
 		if (! StringUtil.isEmpty(mlid)) {
-			sql.append("and user_id not in ( "); 
+			sql.append("and a.user_id not in ( "); 
 			sql.append("select user_id from ").append(getCustomSchema());
 			sql.append("rp_location_user_xr where member_location_id = ? "); 
 			sql.append(") "); 
@@ -105,7 +140,7 @@ public class UserWidget extends UserBaseWidget {
 		}
 		
 		sql.append("order by ").append(bst.getDBSortColumnName("last_nm"));
-		log.debug(sql.length() + "|" + sql + "|" + vals);
+		log.info(sql.length() + "|" + sql + "|" + vals);
 		
 		DBProcessor db = new DBProcessor(getDBConnection());
 		return db.executeSQLWithCount(sql.toString(), vals, new RPUserVO(), bst);
@@ -119,12 +154,13 @@ public class UserWidget extends UserBaseWidget {
 	public void build(ActionRequest req) throws ActionException {
 		// Call the base class and process the user. Assign to the RP User
 		super.build(req);
-		RPUserVO user = (RPUserVO)this.extUser;
+		log.info("Files: " + req.hasFiles());
+		RPUserVO user = new RPUserVO(this.extUser);
 		user.setDriverLicense(req.getParameter("driverLicense"));
 		user.setDriverLicensePath(req.getParameter("driverLicensePath"));
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		try {
-			if (StringUtil.isEmpty(req.getParameter("userId"))) {
+			if (req.getBooleanParameter("isInsert")) {
 				db.insert(user);
 			} else {
 				db.update(user);
@@ -132,6 +168,7 @@ public class UserWidget extends UserBaseWidget {
 			
 			setModuleData(user);
 		} catch (Exception e) {
+			log.error("Unable to add user: " + user, e);
 			setModuleData(user, 0, e.getLocalizedMessage());
 		}
 	}
