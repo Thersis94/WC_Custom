@@ -28,15 +28,15 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.io.http.SMTHttpConnectionManager;
 
 /****************************************************************************
- * <b>Title</b>: StationLoader.java
+ * <b>Title</b>: NWSRadarManager.java
  * <b>Project</b>: WC_Custom
- * <b>Description: </b> Creates the initial load of the List of weather stations
+ * <b>Description: </b> Retrieves the radar meta data from the NWS
  * <b>Copyright:</b> Copyright (c) 2019
  * <b>Company:</b> Silicon Mountain Technologies
  * 
- * @author James Camire
+ * @author Tim Johnson
  * @version 3.0
- * @since Feb 6, 2019
+ * @since Feb 21, 2019
  * @updates:
  ****************************************************************************/
 
