@@ -23,6 +23,7 @@ import com.smt.sitebuilder.action.SimpleActionAdapter;
 //WC Libs 3.x
 import com.smt.sitebuilder.common.constants.Constants;
 import com.perfectstorm.action.weather.VenueForecastManager;
+import com.perfectstorm.action.weather.manager.NWSRadarManager;
 // Perfect Storm Libs
 import com.perfectstorm.data.VenueTourVO;
 import com.perfectstorm.data.VenueVO;
@@ -98,7 +99,9 @@ public class VenueAction extends SimpleActionAdapter {
 				Date eventDate = req.getDateParameter("eventDate");
 				putModuleData(getForecast(venueId, eventDate));
 			} else {
-				putModuleData(getVenueTour(venueTourId));
+				VenueTourVO venueTour = getVenueTour(venueTourId);
+				addRadarMetaData(venueTour);
+				putModuleData(venueTour);
 			}
 		} catch (DatabaseException | InvalidDataException e) {
 			log.error("Unable to retrieve venue tour event: " + venueTourId, e);
@@ -125,6 +128,17 @@ public class VenueAction extends SimpleActionAdapter {
 		List<VenueTourVO> data = dbp.executeSelect(sql.toString(), Arrays.asList(venueTourId), new VenueTourVO());
 		
 		return data == null || data.isEmpty() ? new VenueTourVO() : data.get(0);
+	}
+	
+	/**
+	 * Adds the radar meta data required by the UI
+	 * 
+	 * @param venueTour
+	 * @throws ActionException 
+	 */
+	public void addRadarMetaData(VenueTourVO venueTour) throws ActionException {
+		NWSRadarManager nrm = new NWSRadarManager();
+		venueTour.setRadarTime(nrm.retrieveData("http://radar.weather.gov/ridge/kml/animation/N1P/FTG_N1P_loop.kml"));
 	}
 	
 	/**

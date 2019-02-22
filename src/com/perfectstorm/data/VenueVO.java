@@ -46,6 +46,9 @@ public class VenueVO extends GeocodeLocation {
 	private Date createDate;
 	private Date updateDate;
 	
+	// Helpers
+	private List<Date> radarTime;
+	
 	// Bean SubElements
 	private List<VenueAttributeVO> attributes = new ArrayList<>();
 	private List<VenueWeatherStationVO> weatherStations = new ArrayList<>();
@@ -265,6 +268,20 @@ public class VenueVO extends GeocodeLocation {
 	 */
 	public void setTimezone(String timezone) {
 		this.timezone = timezone;
+	}
+
+	/**
+	 * @return the radarTime
+	 */
+	public List<Date> getRadarTime() {
+		return radarTime;
+	}
+
+	/**
+	 * @param radarTime the radarTime to set
+	 */
+	public void setRadarTime(List<Date> radarTime) {
+		this.radarTime = radarTime;
 	}
 }
 
