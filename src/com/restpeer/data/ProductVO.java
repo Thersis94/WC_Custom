@@ -52,6 +52,7 @@ public class ProductVO extends BeanDataVO {
 	private String productCode;
 	private String parentCode;
 	private String categoryCode;
+	private String groupCode;
 	private String name;
 	private double price;
 	private int activeFlag;
@@ -64,6 +65,7 @@ public class ProductVO extends BeanDataVO {
 	
 	// Member Helpers
 	private String categoryName;
+	private String parentName;
 
 	/**
 	 * 
@@ -175,6 +177,22 @@ public class ProductVO extends BeanDataVO {
 	}
 
 	/**
+	 * @return the groupCode
+	 */
+	@Column(name="group_cd")
+	public String getGroupCode() {
+		return groupCode;
+	}
+
+	/**
+	 * @return the parentName
+	 */
+	@Column(name="parent_nm", isReadOnly=true)
+	public String getParentName() {
+		return parentName;
+	}
+
+	/**
 	 * @return the createDate
 	 */
 	@Column(name="create_dt", isInsertOnly=true, isAutoGen=true)
@@ -279,6 +297,20 @@ public class ProductVO extends BeanDataVO {
 	 */
 	public void setCategoryName(String categoryName) {
 		this.categoryName = categoryName;
+	}
+
+	/**
+	 * @param groupCode the groupCode to set
+	 */
+	public void setGroupCode(String groupCode) {
+		this.groupCode = groupCode;
+	}
+
+	/**
+	 * @param parentName the parentName to set
+	 */
+	public void setParentName(String parentName) {
+		this.parentName = parentName;
 	}
 
 }

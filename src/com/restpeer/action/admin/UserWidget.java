@@ -5,8 +5,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import com.restpeer.action.account.MemberLocationUserAction;
 // RP Libs
 import com.restpeer.common.RPConstants;
+import com.restpeer.data.LocationUserVO;
 import com.restpeer.data.RPUserVO;
 
 // SMT Base Libs
@@ -18,6 +20,7 @@ import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.orm.GridDataVO;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.exception.DatabaseException;
+import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.StringUtil;
 
@@ -96,7 +99,7 @@ public class UserWidget extends UserBaseWidget {
 	 * @throws DatabaseException
 	 */
 	public UserDataVO getUserProfile(String profileId) throws DatabaseException {
-		log.info("Getting profile");
+		
 		ProfileManager pm = ProfileManagerFactory.getInstance(attributes);
 		return pm.getProfile(profileId, getDBConnection(), "", RPConstants.ORGANIZATON_ID);
 	}
@@ -140,7 +143,7 @@ public class UserWidget extends UserBaseWidget {
 		}
 		
 		sql.append("order by ").append(bst.getDBSortColumnName("last_nm"));
-		log.info(sql.length() + "|" + sql + "|" + vals);
+		log.debug(sql.length() + "|" + sql + "|" + vals);
 		
 		DBProcessor db = new DBProcessor(getDBConnection());
 		return db.executeSQLWithCount(sql.toString(), vals, new RPUserVO(), bst);
@@ -154,7 +157,7 @@ public class UserWidget extends UserBaseWidget {
 	public void build(ActionRequest req) throws ActionException {
 		// Call the base class and process the user. Assign to the RP User
 		super.build(req);
-		log.info("Files: " + req.hasFiles());
+		
 		RPUserVO user = new RPUserVO(this.extUser);
 		user.setDriverLicense(req.getParameter("driverLicense"));
 		user.setDriverLicensePath(req.getParameter("driverLicensePath"));
@@ -162,6 +165,10 @@ public class UserWidget extends UserBaseWidget {
 		try {
 			if (req.getBooleanParameter("isInsert")) {
 				db.insert(user);
+				
+				if (! StringUtil.isEmpty(req.getParameter("memberLocationId"))) {
+					saveRoleInfo(user, req);
+				}
 			} else {
 				db.update(user);
 			}
@@ -170,6 +177,28 @@ public class UserWidget extends UserBaseWidget {
 		} catch (Exception e) {
 			log.error("Unable to add user: " + user, e);
 			setModuleData(user, 0, e.getLocalizedMessage());
+		}
+	}
+	
+	/**
+	 * Assigns a user to the appropriate member location for login permissions
+	 * @param user
+	 * @param req
+	 * @throws ActionException
+	 */
+	public void saveRoleInfo(RPUserVO user, ActionRequest req) throws ActionException {
+		try {
+			log.info("Assigning user to Location");
+			// Assign the data to the location object.  Xref member type to the appropriate role
+			MemberLocationUserAction ua = new MemberLocationUserAction(getDBConnection(), getAttributes());
+			LocationUserVO loc = new LocationUserVO(req);
+			loc.setUserId(user.getUserId());
+			if (StringUtil.isEmpty(loc.getRoleId())) loc.setRoleId(ua.getRoleId(req));
+			
+			// Assign the user to the location
+			ua.save(loc);
+		} catch (InvalidDataException | DatabaseException e) {
+			throw new ActionException("Unable to assign user to member location", e);
 		}
 	}
 }

@@ -3,6 +3,7 @@ package com.restpeer.action.account;
 // JDK 1.8.x
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 // RP Libs
 import com.restpeer.common.RPConstants.RPRole;
@@ -14,6 +15,7 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.DBProcessor;
+import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.util.StringUtil;
@@ -54,6 +56,17 @@ public class MemberLocationUserAction extends SBActionAdapter {
 	 */
 	public MemberLocationUserAction(ActionInitVO actionInit) {
 		super(actionInit);
+	}
+	
+	/**
+	 * 
+	 * @param dbConn
+	 * @param attributes
+	 */
+	public MemberLocationUserAction(SMTDBConnection dbConn, Map<String, Object> attributes) {
+		super();
+		setDBConnection(dbConn);
+		setAttributes(attributes);
 	}
 	
 	/*

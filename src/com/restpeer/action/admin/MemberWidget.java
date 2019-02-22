@@ -92,7 +92,8 @@ public class MemberWidget extends SBActionAdapter {
 		}
 		
 		sql.append("order by member_nm");
-		log.info(sql.length() + "|" + sql + "|" + vals);
+		log.debug(sql.length() + "|" + sql + "|" + vals);
+		
 		DBProcessor db = new DBProcessor(getDBConnection());
 		return db.executeSelect(sql.toString(), vals, new MemberVO());
 	}

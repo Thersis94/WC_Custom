@@ -2,6 +2,7 @@ package com.restpeer.action;
 
 // JDK 1.8.x
 import java.lang.reflect.Method;
+import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -9,6 +10,7 @@ import java.util.Map;
 
 // PS Imports
 import com.restpeer.action.admin.CategoryWidget;
+import com.restpeer.action.admin.ProductWidget;
 import com.restpeer.action.admin.UserWidget;
 import com.restpeer.common.RPConstants;
 import com.restpeer.common.RPConstants.DataType;
@@ -17,7 +19,7 @@ import com.restpeer.data.ProductVO.UnitMeasure;
 import com.restpeer.data.RPUserVO;
 import com.restpeer.data.CategoryVO;
 import com.restpeer.data.MemberVO.MemberType;
-
+import com.restpeer.data.ProductVO;
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -74,6 +76,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		keyMap.put("memberType", new GenericVO("getMemberTypes", Boolean.FALSE));
 		keyMap.put("users", new GenericVO("getUsers", Boolean.TRUE));
 		keyMap.put("memberLocations", new GenericVO("getMemberLocations", Boolean.TRUE));
+		keyMap.put("locationProducts", new GenericVO("getLocationProducts", Boolean.TRUE));
 	}
 
 	/**
@@ -280,5 +283,26 @@ public class SelectLookupAction extends SBActionAdapter {
 		
 		DBProcessor db = new DBProcessor(getDBConnection());
 		return db.executeSelect(sql.toString(), vals, new GenericVO());
+	}
+	
+	/**
+	 * Gets the list of products in a hierarchy.  If the product is a high level cat,
+	 * the product code is null
+	 * @param req
+	 * @return
+	 */
+	public List<GenericVO> getLocationProducts(ActionRequest req) {
+		List<GenericVO> data = new ArrayList<>(10);
+		
+		ProductWidget pw = new ProductWidget(getDBConnection(), getAttributes());
+		List<ProductVO> products = pw.getProducts(null, true);
+		for (ProductVO pvo : products) {
+			NumberFormat formatter = NumberFormat.getCurrencyInstance();
+			String name = pvo.getName() + " - " + formatter.format(pvo.getPrice());
+			if (StringUtil.isEmpty(pvo.getParentCode())) data.add(new GenericVO(null, pvo.getName()));
+			else data.add(new GenericVO(pvo.getProductCode(), name));
+		}
+		
+		return data;
 	}
 }

@@ -3,6 +3,7 @@ package com.restpeer.action.admin;
 // JDK 1.8.x
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 // RP Libs
 import com.restpeer.data.ProductVO;
@@ -12,6 +13,7 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.DBProcessor;
+import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.util.StringUtil;
 
@@ -52,13 +54,24 @@ public class ProductWidget extends SBActionAdapter {
 		super(actionInit);
 	}
 
+	/**
+	 * 
+	 * @param dbConn
+	 * @param attributes
+	 */
+	public ProductWidget(SMTDBConnection dbConn, Map<String, Object> attributes) {
+		super();
+		setDBConnection(dbConn);
+		setAttributes(attributes);
+	}
+	
 	/*
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.action.ActionRequest)
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		putModuleData(getProducts(req.getParameter("parentCode")));
+		putModuleData(getProducts(req.getParameter("parentCode"), false));
 	}
 	
 	/**
@@ -66,7 +79,7 @@ public class ProductWidget extends SBActionAdapter {
 	 * @param parentCode
 	 * @return
 	 */
-	public List<ProductVO> getProducts(String parentCode) {
+	public List<ProductVO> getProducts(String parentCode,boolean all) {
 		StringBuilder sql = new StringBuilder(164);
 		sql.append("select * from ").append(getCustomSchema()).append("rp_product a ");
 		sql.append("left outer join ").append(getCustomSchema()).append("rp_category b ");
@@ -74,14 +87,15 @@ public class ProductWidget extends SBActionAdapter {
 		sql.append("where 1=1 ");
 		
 		List<Object> vals = new ArrayList<>();
-		if (!StringUtil.isEmpty(parentCode)) {
+		if (!all && !StringUtil.isEmpty(parentCode)) {
 			sql.append("and parent_cd = ? ");
 			vals.add(parentCode);
-		} else {
+		} else if (! all) {
 			sql.append("and parent_cd is null ");
 		}
 		
-		sql.append("order by order_no, a.category_cd, product_nm");
+		if (all) sql.append("order by group_cd, parent_cd desc, product_nm ");
+		else sql.append("order by order_no, a.category_cd, product_nm");
 		log.debug(sql.length() + "|" + sql);
 		
 		// Execute and return the data
