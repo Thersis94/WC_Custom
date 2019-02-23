@@ -30,9 +30,18 @@ public class AttributeVO extends BeanDataVO {
 	 */
 	private static final long serialVersionUID = 5465654450192747042L;
 	
+	public enum GroupCode {
+		BUSINESS("Business Data"),
+		KITCHEN_INFO("Kitchen Info");
+		
+		private String codeName;
+		private GroupCode(String codeName) { this.codeName = codeName; }
+		public String getCodeName() { return codeName; }
+	}
+	
 	// Members
 	private String attributeCode;
-	private String categoryCode;
+	private String groupCode;
 	private String name;
 	private int activeFlag;
 	private int orderNumber;
@@ -74,9 +83,9 @@ public class AttributeVO extends BeanDataVO {
 	/**
 	 * @return the categoryCode
 	 */
-	@Column(name="category_cd")
-	public String getCategoryCode() {
-		return categoryCode;
+	@Column(name="group_cd")
+	public String getGroupCode() {
+		return groupCode;
 	}
 
 	/**
@@ -137,8 +146,8 @@ public class AttributeVO extends BeanDataVO {
 	/**
 	 * @param categoryCode the categoryCode to set
 	 */
-	public void setCategoryCode(String categoryCode) {
-		this.categoryCode = categoryCode;
+	public void setGroupCode(String groupCode) {
+		this.groupCode = groupCode;
 	}
 
 	/**

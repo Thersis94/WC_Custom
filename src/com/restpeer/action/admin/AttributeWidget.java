@@ -74,8 +74,6 @@ public class AttributeWidget extends SBActionAdapter {
 	public List<AttributeVO> getAttributeData() {
 		StringBuilder sql = new StringBuilder(128);
 		sql.append("select * from ").append(getCustomSchema()).append("rp_attribute a ");
-		sql.append("inner join ").append(getCustomSchema()).append("rp_category b ");
-		sql.append("on a.category_cd = b.category_cd ");
 		sql.append("order by attribute_nm");
 		
 		DBProcessor db = new DBProcessor(getDBConnection());

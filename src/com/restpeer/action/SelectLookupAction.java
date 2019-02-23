@@ -17,6 +17,7 @@ import com.restpeer.common.RPConstants.DataType;
 import com.restpeer.common.RPConstants.RPRole;
 import com.restpeer.data.ProductVO.UnitMeasure;
 import com.restpeer.data.RPUserVO;
+import com.restpeer.data.AttributeVO.GroupCode;
 import com.restpeer.data.CategoryVO;
 import com.restpeer.data.MemberVO.MemberType;
 import com.restpeer.data.ProductVO;
@@ -73,6 +74,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		keyMap.put("category", new GenericVO("getCategories", Boolean.FALSE));
 		keyMap.put("uom", new GenericVO("getUnitMeasures", Boolean.FALSE));
 		keyMap.put("attrType", new GenericVO("getAttributeTypes", Boolean.FALSE));
+		keyMap.put("attrGroup", new GenericVO("getAttributeGroups", Boolean.FALSE));
 		keyMap.put("memberType", new GenericVO("getMemberTypes", Boolean.FALSE));
 		keyMap.put("users", new GenericVO("getUsers", Boolean.TRUE));
 		keyMap.put("memberLocations", new GenericVO("getMemberLocations", Boolean.TRUE));
@@ -219,6 +221,19 @@ public class SelectLookupAction extends SBActionAdapter {
 		return data;
 	}
 	
+	/**
+	 * Creates the list of attribute groups 
+	 * @return
+	 */
+	public List<GenericVO> getAttributeGroups() {
+		List<GenericVO> data = new ArrayList<>(16);
+		
+		for (GroupCode gc : GroupCode.values()) {
+			data.add(new GenericVO(gc, gc.getCodeName()));
+		}
+		
+		return data;
+	}
 	/**
 	 * Creates the list of attribute types (list, single, etc ...)
 	 * @return
