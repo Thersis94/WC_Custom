@@ -145,7 +145,6 @@ public class MemberLocationWidget extends SBActionAdapter {
 		
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		try {
-			log.info(loc);
 			db.save(loc);
 		} catch (Exception e) {
 			throw new DatabaseException("Unable to save member location", e);

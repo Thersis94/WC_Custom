@@ -88,7 +88,7 @@ public class LocationAttributeWidget extends SBActionAdapter {
 		sql.append("on a.attribute_cd = b.attribute_cd and member_location_id = ? ");
 		sql.append("where a.group_cd = ? and active_flg = 1 ");
 		sql.append("order by attribute_nm ");
-		log.info(sql.length() + "|" + sql + "|" + mlid + "|" + groupCode);
+		log.debug(sql.length() + "|" + sql + "|" + mlid + "|" + groupCode);
 		
 		// Loop the data and add to the map
 		Map<String,Object> resData  = new LinkedHashMap<>(24);
@@ -99,7 +99,6 @@ public class LocationAttributeWidget extends SBActionAdapter {
 			ps.setString(2, groupCode);
 			try (ResultSet rs = ps.executeQuery()) {
 				while(rs.next()) {
-					log.info("Value: " + rs.getString(2));
 					if (all) allData.add(new LocationAttributeVO(rs));
 					else data.put(rs.getString(1), StringUtil.checkVal(rs.getString(2)));
 				}

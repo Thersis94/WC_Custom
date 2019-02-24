@@ -16,6 +16,8 @@ import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
+import com.smt.sitebuilder.common.constants.Constants;
+import com.smt.sitebuilder.security.SBUserRole;
 
 /****************************************************************************
  * <b>Title</b>: MemberWidget.java
@@ -66,7 +68,14 @@ public class MemberWidget extends SBActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		setModuleData(getAttributeData(req.getParameter("memberId")));
+		if (req.getBooleanParameter("fullList")) {
+			String roleId = ((SBUserRole)req.getSession().getAttribute(Constants.ROLE_DATA)).getRoleId();
+			String memberType = req.getParameter("memberType");
+			String userId = "";// Add this when the login module is added
+			setModuleData(getMembers(userId, roleId, memberType));
+		} else {
+			setModuleData(getAttributeData(req.getParameter("memberId")));
+		}
 	}
 	
 	/**
@@ -93,6 +102,39 @@ public class MemberWidget extends SBActionAdapter {
 		
 		sql.append("order by member_nm");
 		log.debug(sql.length() + "|" + sql + "|" + vals);
+		
+		DBProcessor db = new DBProcessor(getDBConnection());
+		return db.executeSelect(sql.toString(), vals, new MemberVO());
+	}
+	
+	/**
+	 * Gets a list of members based upon the user and role 
+	 * @param userId
+	 * @param roleId
+	 * @param memberType
+	 * @return
+	 */
+	public List<MemberVO> getMembers(String userId, String roleId, String memberType) {
+		List<Object> vals = new ArrayList<>();
+		StringBuilder sql = new StringBuilder(128);
+		sql.append("select * from ").append(getCustomSchema()).append("rp_member ");
+		sql.append("where 1 = 1 ");
+		if (! StringUtil.isEmpty(memberType)) {
+			sql.append("and member_type_cd = ? ");
+			vals.add(memberType);
+		}
+		
+		if (! "100".equals(roleId)) {
+			sql.append("and member_id in (");
+			sql.append("select member_id from ").append(getCustomSchema()).append("rp_member_location a ");
+			sql.append("inner join ").append(getCustomSchema()).append("rp_location_user_xr b ");
+			sql.append("on a.member_location_id = b.member_location_id ");
+			sql.append("where user_id = ? )");
+			vals.add(userId);
+		}
+		
+		sql.append("order by member_nm");
+		log.debug(sql.length() + "|" + sql + vals);
 		
 		DBProcessor db = new DBProcessor(getDBConnection());
 		return db.executeSelect(sql.toString(), vals, new MemberVO());

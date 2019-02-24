@@ -10,6 +10,7 @@ import java.util.Map;
 
 // PS Imports
 import com.restpeer.action.admin.CategoryWidget;
+import com.restpeer.action.admin.MemberWidget;
 import com.restpeer.action.admin.ProductWidget;
 import com.restpeer.action.admin.UserWidget;
 import com.restpeer.common.RPConstants;
@@ -19,6 +20,7 @@ import com.restpeer.data.ProductVO.UnitMeasure;
 import com.restpeer.data.RPUserVO;
 import com.restpeer.data.AttributeVO.GroupCode;
 import com.restpeer.data.CategoryVO;
+import com.restpeer.data.MemberVO;
 import com.restpeer.data.MemberVO.MemberType;
 import com.restpeer.data.ProductVO;
 // SMT Base Libs
@@ -32,6 +34,8 @@ import com.siliconmtn.db.orm.GridDataVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
+import com.smt.sitebuilder.common.constants.Constants;
+import com.smt.sitebuilder.security.SBUserRole;
 
 /****************************************************************************
  * <b>Title</b>: SelectLookupAction.java
@@ -75,10 +79,11 @@ public class SelectLookupAction extends SBActionAdapter {
 		keyMap.put("uom", new GenericVO("getUnitMeasures", Boolean.FALSE));
 		keyMap.put("attrType", new GenericVO("getAttributeTypes", Boolean.FALSE));
 		keyMap.put("attrGroup", new GenericVO("getAttributeGroups", Boolean.FALSE));
+		keyMap.put("members", new GenericVO("getMembers", Boolean.TRUE));
 		keyMap.put("memberType", new GenericVO("getMemberTypes", Boolean.FALSE));
-		keyMap.put("users", new GenericVO("getUsers", Boolean.TRUE));
 		keyMap.put("memberLocations", new GenericVO("getMemberLocations", Boolean.TRUE));
 		keyMap.put("locationProducts", new GenericVO("getLocationProducts", Boolean.TRUE));
+		keyMap.put("users", new GenericVO("getUsers", Boolean.TRUE));
 	}
 
 	/**
@@ -234,6 +239,27 @@ public class SelectLookupAction extends SBActionAdapter {
 		
 		return data;
 	}
+	/**
+	 * Creates the list of attribute types (list, single, etc ...)
+	 * @return
+	 */
+	public List<GenericVO> getMembers(ActionRequest req) {
+		List<GenericVO> data = new ArrayList<>(16);
+		
+		String roleId = ((SBUserRole)req.getSession().getAttribute(Constants.ROLE_DATA)).getRoleId();
+		String memberType = req.getParameter("memberType");
+		String userId = "";// Add this when the login module is added
+		
+		MemberWidget mw = new MemberWidget(getDBConnection(), getAttributes());
+		List<MemberVO> members = mw.getMembers(userId, roleId, memberType);
+		
+		for (MemberVO mvo : members) {
+			data.add(new GenericVO(mvo.getMemberId(), mvo.getName()));
+		}
+		
+		return data;
+	}
+	
 	/**
 	 * Creates the list of attribute types (list, single, etc ...)
 	 * @return

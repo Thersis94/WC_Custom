@@ -1,7 +1,9 @@
 package com.restpeer.action.account;
 
 //SMT Base Libs
+import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
+import com.siliconmtn.action.ActionRequest;
 
 // WC Libs
 import com.smt.sitebuilder.action.SimpleActionAdapter;
@@ -32,6 +34,16 @@ public class AccountWidget extends SimpleActionAdapter {
 	 */
 	public AccountWidget(ActionInitVO arg0) {
 		super(arg0);
+	}
+	
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.action.ActionRequest)
+	 */
+	@Override
+	public void retrieve(ActionRequest req) throws ActionException {
+		log.info("Getting member");
+		
 	}
 
 }
