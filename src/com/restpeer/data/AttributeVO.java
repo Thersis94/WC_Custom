@@ -31,6 +31,7 @@ public class AttributeVO extends BeanDataVO {
 	private static final long serialVersionUID = 5465654450192747042L;
 	
 	public enum GroupCode {
+		ADD_ONS("Facility Add Ons"),
 		BUSINESS("Business Data"),
 		KITCHEN_INFO("Kitchen Info");
 		

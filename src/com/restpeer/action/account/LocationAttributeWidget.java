@@ -147,7 +147,6 @@ public class LocationAttributeWidget extends SBActionAdapter {
 		try {
 			DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 			db.insert(lavo);
-			log.info("Inserted: " + lavo);
 		} catch (Exception e) {
 			log.error("Failed", e);
 			throw new SQLException("Unable to toggle active flag for amenties", e);

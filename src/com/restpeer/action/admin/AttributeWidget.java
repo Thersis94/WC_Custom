@@ -1,5 +1,6 @@
 package com.restpeer.action.admin;
 
+import java.util.ArrayList;
 // JDK 1.8.x
 import java.util.List;
 import java.util.Map;
@@ -13,6 +14,7 @@ import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.pool.SMTDBConnection;
+import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
 
 /****************************************************************************
@@ -64,20 +66,26 @@ public class AttributeWidget extends SBActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		setModuleData(getAttributeData());
+		setModuleData(getAttributeData(req.getParameter("groupCode")));
 	}
 	
 	/**
 	 * Get a list of categories
 	 * @return
 	 */
-	public List<AttributeVO> getAttributeData() {
+	public List<AttributeVO> getAttributeData(String gc) {
+		List<Object> vals = new ArrayList<>();
 		StringBuilder sql = new StringBuilder(128);
-		sql.append("select * from ").append(getCustomSchema()).append("rp_attribute a ");
+		sql.append("select * from ").append(getCustomSchema());
+		sql.append("rp_attribute where 1=1 ");
+		if (! StringUtil.isEmpty(gc)) {
+			sql.append("and group_cd = ? ");
+			vals.add(gc);
+		}
 		sql.append("order by attribute_nm");
 		
 		DBProcessor db = new DBProcessor(getDBConnection());
-		return db.executeSelect(sql.toString(), null, new AttributeVO());
+		return db.executeSelect(sql.toString(), vals, new AttributeVO());
 	}
 	
 	/*

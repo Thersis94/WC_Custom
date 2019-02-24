@@ -4,6 +4,7 @@ package com.restpeer.action;
 import java.lang.reflect.Method;
 import java.text.NumberFormat;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -237,6 +238,7 @@ public class SelectLookupAction extends SBActionAdapter {
 			data.add(new GenericVO(gc, gc.getCodeName()));
 		}
 		
+		Collections.sort(data, (a, b) -> ((String)a.getValue()).compareTo((String)b.getValue()));
 		return data;
 	}
 	/**

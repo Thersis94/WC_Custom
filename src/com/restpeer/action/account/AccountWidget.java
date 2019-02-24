@@ -42,7 +42,7 @@ public class AccountWidget extends SimpleActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		log.info("Getting member");
+		log.debug("Getting member");
 		
 	}
 
