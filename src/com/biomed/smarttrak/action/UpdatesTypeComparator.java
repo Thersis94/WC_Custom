@@ -3,7 +3,6 @@ package com.biomed.smarttrak.action;
 import java.util.Comparator;
 
 import com.biomed.smarttrak.vo.UpdateVO;
-import com.siliconmtn.util.StringUtil;
 
 /****************************************************************************
  * <b>Title:</b> UpdatesTypeComparator.java<br/>
@@ -36,10 +35,6 @@ public class UpdatesTypeComparator implements Comparator<UpdateVO> {
 		if (val != 0) return val;
 
 		//Same type and order - compare by date - newest first.
-		val = o2.getPublishDate().compareTo(o1.getPublishDate());
-		if (val != 0) return val;
-
-		//If all else the same compare titles
-		return StringUtil.checkVal(o1.getTitle()).compareTo(StringUtil.checkVal(o2.getTitle()));
+		return Integer.valueOf(o2.getPublishDate().compareTo(o1.getPublishDate()));
 	}
 }

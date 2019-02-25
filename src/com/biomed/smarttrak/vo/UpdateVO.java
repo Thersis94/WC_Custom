@@ -4,6 +4,7 @@ import java.io.Serializable;
 import java.sql.ResultSet;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 
@@ -146,7 +147,7 @@ public class UpdateVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc
 		twitterTxt = req.getParameter("twitterTxt");
 		tweetFlg = Convert.formatInteger(Convert.formatBoolean(req.getParameter("tweetFlg")));
 		statusCd = req.getParameter("statusCd");
-		setPublishDate(Convert.formatDate(req.getParameter("publishDt")));
+		setPublishDate(calcPublishDt(Convert.formatDate(req.getParameter("publishDt"))));
 		orderNo = Convert.formatInteger(req.getParameter("orderNo"));
 		emailFlg = Convert.formatInteger(req.getParameter("emailFlg"), 1);
 		announcementType = Convert.formatInteger(req.getParameter("announcementType"), 0);
@@ -155,6 +156,29 @@ public class UpdateVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc
 			for (String sec : arr)
 				sections.add(new UpdateXRVO(updateId, sec));
 		}
+	}
+
+	/**
+	 * Determine if Time needs Adjusted on the PublishDate.
+	 * @param reqDate
+	 * @return
+	 */
+	public Date calcPublishDt(Date reqDate) {
+		Calendar p = Calendar.getInstance();
+		Calendar now = Calendar.getInstance();
+		p.setTime(reqDate);
+
+		boolean isSameDay = p.get(Calendar.DAY_OF_YEAR) == now.get(Calendar.DAY_OF_YEAR);
+		boolean zeroTime = p.get(Calendar.HOUR) == 0 && p.get(Calendar.MINUTE) == 0 && p.get(Calendar.SECOND) == 0;
+
+		if(isSameDay && zeroTime) {
+			log.debug("New Date");
+			p.add(Calendar.HOUR, now.get(Calendar.HOUR));
+			p.add(Calendar.MINUTE, now.get(Calendar.MINUTE));
+			p.add(Calendar.SECOND, now.get(Calendar.SECOND));
+			p.set(Calendar.AM_PM, now.get(Calendar.AM_PM));
+		}
+		return p.getTime();
 	}
 
 	@Override
