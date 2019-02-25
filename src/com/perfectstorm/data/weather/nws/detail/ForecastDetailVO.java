@@ -61,6 +61,7 @@ public class ForecastDetailVO extends BeanDataVO {
 	private WeatherAttribueVO twentyFootWindDirection;
 	private WeatherAttribueVO probabilityOfTropicalStormWinds;
 	private WeatherAttribueVO probabilityOfHurricaneWinds;
+	private WeatherAttribueVO lightningActivityLevel;
 
 	
 	// VO Members
@@ -519,6 +520,20 @@ public class ForecastDetailVO extends BeanDataVO {
 	 */
 	public void setElevation(ElevationVO elevation) {
 		this.elevation = elevation;
+	}
+
+	/**
+	 * @return the lightningActivityLevel
+	 */
+	public WeatherAttribueVO getLightningActivityLevel() {
+		return lightningActivityLevel;
+	}
+
+	/**
+	 * @param lightningActivityLevel the lightningActivityLevel to set
+	 */
+	public void setLightningActivityLevel(WeatherAttribueVO lightningActivityLevel) {
+		this.lightningActivityLevel = lightningActivityLevel;
 	}
 }
 

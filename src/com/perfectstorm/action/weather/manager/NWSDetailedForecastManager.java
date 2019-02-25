@@ -25,6 +25,7 @@ import com.siliconmtn.action.ActionException;
 
 // SMT Base Libs
 import com.siliconmtn.io.http.SMTHttpConnectionManager;
+import com.siliconmtn.util.StringUtil;
 
 /****************************************************************************
  * <b>Title</b>: NWSDetailedForecastManager.java
@@ -135,6 +136,7 @@ public class NWSDetailedForecastManager implements ForecastManagerInterface {
 		populateData(nwsForecast.getTwentyFootWindDirection(), forecast, GET_WIND, "setTwentyFootDirection", int.class);
 		populateData(nwsForecast.getProbabilityOfTropicalStormWinds(), forecast, GET_WIND, "setTropicalStormWindProbability", int.class);
 		populateData(nwsForecast.getProbabilityOfHurricaneWinds(), forecast, GET_WIND, "setHurricaneStormWindProbability", int.class);
+		populateData(nwsForecast.getLightningActivityLevel(), forecast, GET_CONDITION, "setLightningActivityLevel", int.class);
 		
 		return forecast;
 	}
@@ -150,8 +152,11 @@ public class NWSDetailedForecastManager implements ForecastManagerInterface {
 	 * @throws ActionException
 	 */
 	private void populateData(WeatherAttribueVO data, Map<String, ForecastVO> forecast, String elementGetMethod, String dataSetMethod, Class<?> dataSetType) throws ActionException {
-		String[] uom = data.getUom().split(":");
-		String unitOfMeasure = uom.length > 1 ? uom[1] : "";
+		String unitOfMeasure = "";
+		if (!StringUtil.isEmpty(data.getUom())) {
+			String[] uom = data.getUom().split(":");
+			unitOfMeasure = uom.length > 1 ? uom[1] : "";
+		}
 		
 		for (TimeValueVO value : data.getValues()) {
 			for (int durHour = 0; durHour < value.getDuration(); durHour++) {
