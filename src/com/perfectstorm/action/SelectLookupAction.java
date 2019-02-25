@@ -3,6 +3,7 @@ package com.perfectstorm.action;
 // JDK 1.8.x
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -72,7 +73,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		keyMap.put("role", new GenericVO("getRoles", Boolean.FALSE));
 		keyMap.put("prefix", new GenericVO("getPrefix", Boolean.FALSE));
 		keyMap.put("gender", new GenericVO("getGenders", Boolean.FALSE));
-		keyMap.put("routes", new GenericVO("getRoutes", Boolean.FALSE));
+		keyMap.put("routes", new GenericVO("getRoutes", Boolean.TRUE));
 		keyMap.put("customer", new GenericVO("getCustomers", Boolean.TRUE));
 		keyMap.put("customerType", new GenericVO("getCustomerType", Boolean.FALSE));
 		keyMap.put("member", new GenericVO("getMembers", Boolean.TRUE));
@@ -212,16 +213,15 @@ public class SelectLookupAction extends SBActionAdapter {
 	 * gets a global list of all routes
 	 * @return
 	 */
-	public List<GenericVO> getRoutes(){
-		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
-		db.setGenerateExecutedSQL(log.isDebugEnabled());
-		List<Object> vals = new ArrayList<>();
+	public List<GenericVO> getRoutes(ActionRequest req){
 		StringBuilder sql = new StringBuilder(128);
 		sql.append("select tour_id as key, tour_nm as value from ").append(getCustomSchema()).append("ps_tour t ");
-		sql.append(DBUtil.WHERE_CLAUSE).append(" tour_type_cd = 'TOUR' ");
+		sql.append(DBUtil.WHERE_CLAUSE).append(" tour_type_cd = ? ");
 		sql.append(DBUtil.ORDER_BY).append(" t.tour_nm ");
 		 
-		return db.executeSelect(sql.toString(), vals, new GenericVO());
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		db.setGenerateExecutedSQL(log.isDebugEnabled());
+		return db.executeSelect(sql.toString(), Arrays.asList(req.getStringParameter("tourTypeCode")), new GenericVO());
 	}
 	
 	/**

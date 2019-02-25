@@ -105,12 +105,20 @@ public class VenueAction extends SimpleActionAdapter {
 				VenueTourVO venueTour = new VenueTourVO();
 				venueTour.setRadarTypeCode(req.getStringParameter("radarTypeCode"));
 				venueTour.setRadarCode(req.getStringParameter("radarCode"));
-				addRadarMetaData(venueTour);
+				try {
+					addRadarMetaData(venueTour);
+				} catch (Exception e) {
+					log.error("Unable to get radar data", e);
+				}
 				putModuleData(venueTour);
 			} else if (isJson) {
 				VenueTourVO venueTour = getVenueTour(venueTourId);
 				venueTour.setRadarTypeCode(req.getStringParameter("radarTypeCode"));
-				addRadarMetaData(venueTour);
+				try {
+					addRadarMetaData(venueTour);
+				} catch (Exception e) {
+					log.error("Unable to get radar data", e);
+				}
 				putModuleData(venueTour);
 			}
 		} catch (DatabaseException | InvalidDataException e) {
