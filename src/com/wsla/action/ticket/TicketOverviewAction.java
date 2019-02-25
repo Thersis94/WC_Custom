@@ -33,6 +33,7 @@ import com.smt.sitebuilder.common.constants.Constants;
 
 // WSLA Libs
 import com.wsla.action.BasePortalAction;
+import com.wsla.action.ticket.transaction.TicketAssetTransaction;
 import com.wsla.common.WSLAConstants;
 import com.wsla.data.product.ProductSerialNumberVO;
 import com.wsla.data.ticket.DiagnosticRunVO;
@@ -111,6 +112,20 @@ public class TicketOverviewAction extends BasePortalAction {
 				ticket = createTicket(req);
 			} else {
 				ticket = saveTicketCall(req);
+				
+				TicketAssetTransaction tat = new  TicketAssetTransaction();
+				tat.setActionInit(actionInit);
+				tat.setAttributes(getAttributes());
+				tat.setDBConnection(getDBConnection());
+				
+				ProductOwner owner = tat.getProductOwnerType(ticket.getTicketId());
+				
+				if (owner == ProductOwner.RETAILER) {
+					UserDataVO profile = (UserDataVO)req.getSession().getAttribute(Constants.USER_DATA);
+					UserVO user = (UserVO)profile.getUserExtendedInfo();
+					tat.addLedger(ticket.getTicketId(), user.getUserId(), ticket.getStatusCode(), LedgerSummary.RETAIL_OWNED_ASSET_NOT_REQUIRED.summary, null);
+					tat.finalizeApproval(req, true, true);
+				}
 			}
 			
 			// Return the populated ticket
@@ -223,6 +238,9 @@ public class TicketOverviewAction extends BasePortalAction {
 		if (OEM_NOT_SUPPORTED.equals(ticket.getOemId())) {
 			ticket.setStatusCode(StatusCode.CLOSED);
 		}
+		
+		log.debug("save incoming 800 number " + req.getStringParameter("attr_phoneNumberText")) ;
+		ticket.setPhoneNumber(StringUtil.checkVal(req.getStringParameter("attr_phoneNumberText")));
 		
 		// Save ticket core info
 		saveCoreTicket(ticket);

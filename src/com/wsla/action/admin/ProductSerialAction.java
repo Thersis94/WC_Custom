@@ -83,6 +83,7 @@ public class ProductSerialAction extends BatchImport {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
+		log.debug("pro serial action retreve called");
 		String productId = req.getParameter(REQ_PRODUCT_ID);
 
 		if (!StringUtil.isEmpty(productId) && req.hasParameter("serialNo")) {
@@ -100,7 +101,38 @@ public class ProductSerialAction extends BatchImport {
 				
 				ticket = tea.getBaseTicket(req.getStringParameter("ticketId"));
 			}	
+			
+			//if its not found and the owner is retail trust them generate a new approved product serial vo 
+			//  that is already approved
+			if(req.hasParameter("isRetailOwner") && pwvo != null && StringUtil.isEmpty(pwvo.getProductWarrantyId())) {
+				DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+				db.setGenerateExecutedSQL(log.isDebugEnabled());
+				
+				ProductSerialNumberVO pvo = new ProductSerialNumberVO();
+				pvo.setProductId(productId);
+				pvo.setSerialNumber(req.getParameter("serialNo"));
+				pvo.setValidatedFlag(1);
+				pvo.setDisposeFlag(0);
+				try {
+					//save the new product serial record
+					db.save(pvo);
+					
+					Calendar expireDate = Calendar.getInstance();
+					expireDate.add( Calendar.YEAR, 10 );
+					pwvo.setProductSerialId(pvo.getProductSerialId());
+					pwvo.setRequireApprovalFlag(0);
+					pwvo.setDisposeFlag(0);
+					pwvo.setExpirationDate(expireDate.getTime());
+					pwvo.setWarrantyId(WSLAConstants.RETAIL_WARRANTY);
+					
+					//save the new product warranty record.
+					db.save(pwvo);
+				} catch (Exception e) {
+					log.error("could not save new retailer product warranty vo",e);
+				}
 
+			}
+			
 			// Add the elements in a GVO to the response
 			putModuleData(new GenericVO(pwvo, ticket));
 			
