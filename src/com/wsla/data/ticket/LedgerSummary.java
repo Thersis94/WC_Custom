@@ -43,7 +43,8 @@ public enum LedgerSummary {
 	ASSET_APPROVED ("User assets were approved"),
 	REPAIR_TYPE ("Unit Repair Type"),
 	HARVEST_AFTER_RECEIPT ("This unit is ready for harvesting"),
-	REPAIR_AFTER_RECEIPT ("A new ticket has been opened to repair the unit");
+	REPAIR_AFTER_RECEIPT ("A new ticket has been opened to repair the unit"), 
+	RETAIL_OWNED_ASSET_NOT_REQUIRED ("This ticket is retail owned and does not require a photo of the pop or sn");
 	
 	public final String summary;
 	LedgerSummary(String summary) { this.summary = summary; }
