@@ -164,6 +164,10 @@ public class UpdateVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc
 	 * @return
 	 */
 	public Date calcPublishDt(Date reqDate) {
+		if(reqDate == null) {
+			return null;
+		}
+
 		Calendar p = Calendar.getInstance();
 		Calendar now = Calendar.getInstance();
 		p.setTime(reqDate);
