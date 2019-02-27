@@ -104,7 +104,7 @@ public class ProductSerialAction extends BatchImport {
 			
 			//if its not found and the owner is retail trust them generate a new approved product serial vo 
 			//  that is already approved
-			if(req.hasParameter("isRetailOwner") && pwvo != null && StringUtil.isEmpty(pwvo.getProductWarrantyId())) {
+			if(req.getBooleanParameter("isRetailOwner") && pwvo != null && StringUtil.isEmpty(pwvo.getProductWarrantyId())) {
 				DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 				db.setGenerateExecutedSQL(log.isDebugEnabled());
 				

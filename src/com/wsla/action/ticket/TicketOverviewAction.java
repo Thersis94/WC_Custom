@@ -119,12 +119,17 @@ public class TicketOverviewAction extends BasePortalAction {
 				tat.setDBConnection(getDBConnection());
 				
 				ProductOwner owner = tat.getProductOwnerType(ticket.getTicketId());
+				UserDataVO profile = (UserDataVO)req.getSession().getAttribute(Constants.USER_DATA);
+				UserVO user = (UserVO)profile.getUserExtendedInfo();
 				
 				if (owner == ProductOwner.RETAILER) {
-					UserDataVO profile = (UserDataVO)req.getSession().getAttribute(Constants.USER_DATA);
-					UserVO user = (UserVO)profile.getUserExtendedInfo();
+					
 					tat.addLedger(ticket.getTicketId(), user.getUserId(), ticket.getStatusCode(), LedgerSummary.RETAIL_OWNED_ASSET_NOT_REQUIRED.summary, null);
 					tat.finalizeApproval(req, true, true);
+				}
+				
+				if(req.hasParameter("attr_unitRepairCode")) {
+					tat.addLedger(ticket.getTicketId(), user.getUserId(), ticket.getStatusCode(), LedgerSummary.RESOLVED_DURING_CALL.summary, null);
 				}
 			}
 			
