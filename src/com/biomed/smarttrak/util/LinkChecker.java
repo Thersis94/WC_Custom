@@ -57,7 +57,11 @@ public class LinkChecker extends CommandLineUtil {
 	 * This enum is what we iterate when the script runs.
 	 */
 	enum Table {
-		COMPANY_ATTR_XR(COMPANIES,"select company_id, value_txt, company_attribute_id from custom.BIOMEDGPS_COMPANY_ATTRIBUTE_XR where company_id = '236'");
+		COMPANY_ATTR_XR(COMPANIES,"select company_id, value_txt, company_attribute_id from custom.BIOMEDGPS_COMPANY_ATTRIBUTE_XR"),
+		PROD_ATTR_XR(PRODUCTS,"select product_id, value_txt, product_attribute_id from custom.BIOMEDGPS_PRODUCT_ATTRIBUTE_XR"),
+		MKRT_ATTR_XR(MARKETS,"select market_id, value_txt, market_attribute_id from custom.BIOMEDGPS_MARKET_ATTRIBUTE_XR"),
+		ANALYSIS_ABS(ANALYSIS,"select insight_id, abstract_txt, 'Abstract' from custom.BIOMEDGPS_INSIGHT"),
+		ANALYSIS_MAIN(ANALYSIS,"select insight_id, content_txt, 'Article' from custom.BIOMEDGPS_INSIGHT");
 
 		String selectSql;
 		String section;
@@ -227,28 +231,20 @@ public class LinkChecker extends CommandLineUtil {
 		Pattern pat = Pattern.compile(HREF_EXP, Pattern.CASE_INSENSITIVE);
 		Matcher m = pat.matcher(vo.getHtml());
 		String  u;
-		log.info(vo.getHtml());
 		while (m.find()) {
 			++found;
 			u = m.group(3);
 			//remove html encoding
 			if (!StringUtil.isEmpty(u) && u.length() > 4)
 				u = encoder.decodeValue(u);
-			log.info("Found link " + u);
 
 			//omit empty, page anchors ("#"), and recently tested (regardless of outcome)
 			boolean isRecent = recentlyChecked.contains(StringUtil.checkVal(u).replaceAll("http(s)?://", ""));
-			log.info(isRecent);
 			if (StringUtil.isEmpty(u) || u.length() < 2 || isRecent) {
 				if (isRecent) 
 					++skipped;
 				continue;
 			}
-			System.out.println("");
-			System.out.println("");
-			System.out.println("");
-			System.out.println("");
-			System.out.println("");
 			urls.add(LinkVO.makeForUrl(vo.getSection(), vo.getObjectId(), u, vo.getContentId()));
 		}
 	}
@@ -270,11 +266,8 @@ public class LinkChecker extends CommandLineUtil {
 			}
 			//if it failed, add it to the report email - 200=success, 3xx=redirects (okay)
 			//429 is not a failure necessarily, it's a request rate limit.
-			log.info(vo.getOutcome());
-			if (vo.getOutcome() != 429 && vo.getOutcome() > 403) {
-				log.info("Adding link!");
+			if (vo.getOutcome() != 429 && vo.getOutcome() > 403)
 				linksFailed.add(vo);
-			}
 		}
 	}
 
@@ -403,7 +396,6 @@ public class LinkChecker extends CommandLineUtil {
 		try {
 			HttpURLConnection conn = setupConnection("HEAD", url);
 			conn.connect();
-			conn.addRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.95 Safari/537.11");
 			vo.setOutcome(conn.getResponseCode());
 
 			if (isRedirect(vo.getOutcome())) {
@@ -434,7 +426,6 @@ public class LinkChecker extends CommandLineUtil {
 	protected void httpGetTest(LinkVO vo, URL url) throws IOException {
 		log.debug("GET " + vo.getUrl());
 		HttpURLConnection conn = setupConnection("GET", url);
-		conn.addRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.95 Safari/537.11");
 		conn.connect();
 		vo.setOutcome(conn.getResponseCode());
 
