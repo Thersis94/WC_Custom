@@ -294,7 +294,6 @@ public class InsightAction extends ManagementAction {
 	 */
 	public List<InsightVO> loadForSolr(String ...insightIds) {
 		EnumMap<Fields, String> insightParamsMap = new EnumMap<>(Fields.class);
-		insightParamsMap.put(Fields.STATUS_CD,  InsightVO.InsightStatusCd.P.name());
 		insightParamsMap.put(Fields.ID_BYPASS, "true");
 
 		String sql = formatSolrRetrieveQuery(insightIds.length, customDbSchema, insightParamsMap);
@@ -544,11 +543,11 @@ public class InsightAction extends ManagementAction {
 	 * @param numIds
 	 */
 	private static void generateSolrWhereClauseOfQuery(StringBuilder sql, int numIds) {
-		sql.append("where ");
 		if (numIds > 0) {
+			sql.append("where ");
 			sql.append("a.insight_id in (");
 			DBUtil.preparedStatmentQuestion(numIds, sql);
-			sql.append(") and ");
+			sql.append(") ");
 		}
 	}
 

@@ -289,7 +289,7 @@ public class MarketIndexer  extends SMTAbstractIndex {
 		sql.append("FROM ").append(customDb).append("BIOMEDGPS_MARKET m ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(customDb).append("BIOMEDGPS_MARKET_SECTION ms ON ms.MARKET_ID = m.MARKET_ID ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(customDb).append("BIOMEDGPS_SECTION s ON ms.SECTION_ID = s.SECTION_ID ");
-		sql.append("WHERE ");
+		sql.append("WHERE 1=1 ");
 		addStatementMarks(sql, "m.MARKET_ID", ids);
 		return sql.toString();
 	}

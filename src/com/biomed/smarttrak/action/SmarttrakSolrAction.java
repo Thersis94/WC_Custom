@@ -55,6 +55,9 @@ public class SmarttrakSolrAction extends SolrAction {
 			}
 			
 			newFq[newFq.length-1] = "role:[0 TO 25]";
+			req.setParameter("fq", newFq, true);
+			
+			req.setParameter("customParam", "fq|role:[0 TO 25]");
 		}
 		super.retrieve(req);
 	}
