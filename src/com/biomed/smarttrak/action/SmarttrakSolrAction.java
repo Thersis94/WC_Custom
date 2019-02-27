@@ -2,7 +2,6 @@ package com.biomed.smarttrak.action;
 
 import com.biomed.smarttrak.action.AdminControllerAction.Section;
 import com.biomed.smarttrak.security.SmarttrakRoleVO;
-import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.StringUtil;
@@ -36,12 +35,6 @@ public class SmarttrakSolrAction extends SolrAction {
 	 */
 	public SmarttrakSolrAction(ActionInitVO actionInit) {
 		super(actionInit);
-	}
-	
-	
-	@Override
-	public void retrieve(ActionRequest req) throws ActionException {
-		super.retrieve(req);
 	}
 
 	

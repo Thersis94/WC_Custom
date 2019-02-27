@@ -27,7 +27,7 @@ public class AdminSiteSearchAction extends BiomedSiteSearchAction {
 	
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		prepAttributeIds(req);
+		prepAttributeIds();
 		// On initial load for non updates move the filter query to filter term to 
 		// preserve proper faceting and ensure that only published items are loaded
 		if (Convert.formatBoolean(req.getParameter("newLoad")) && !"indexType:BIOMED_UPDATE".equals(req.getParameter("fq"))) {
@@ -45,7 +45,7 @@ public class AdminSiteSearchAction extends BiomedSiteSearchAction {
 	 * @param req
 	 * @throws ActionException
 	 */
-	private void prepAttributeIds(ActionRequest req) throws ActionException {
+	private void prepAttributeIds() throws ActionException {
 		ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
 		String actionId = mod.getIntroText();
 		String sql = "select attrib1_txt, attrib2_txt from sb_action where action_id = ?";
