@@ -7,15 +7,34 @@ import java.sql.SQLException;
 import com.biomed.smarttrak.action.BiomedSiteSearchAction;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.util.Convert;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
+
+/****************************************************************************
+ * <b>Title</b>: AdminSiteSearchAction.java <p/>
+ * <b>Project</b>: WC Custom <p/>
+ * <b>Description: </b> Wrapper for admin site searches
+ * <p/>
+ * <b>Copyright:</b> Copyright (c) 2019<p/>
+ * <b>Company:</b> Silicon Mountain Technologies<p/>
+ * @author Eric Damschroder
+ * @since Feb 27, 2019
+ * @updates:
+ ****************************************************************************/
 
 public class AdminSiteSearchAction extends BiomedSiteSearchAction {
 	
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		prepAttributeIds(req);
-		req.setParameter("adminSearch", "true");
+		// On initial load for non updates move the filter query to filter term to 
+		// preserve proper faceting and ensure that only published items are loaded
+		if (Convert.formatBoolean(req.getParameter("newLoad")) && !"indexType:BIOMED_UPDATE".equals(req.getParameter("fq"))) {
+			req.setParameter("ft", req.getParameter("fq"));
+			req.setParameter("fq", "status_s:P");
+		}
+		req.setParameter("fieldOverride", "role");
 		super.retrieve(req);
 	}
 	

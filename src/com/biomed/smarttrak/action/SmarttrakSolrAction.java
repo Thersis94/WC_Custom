@@ -5,7 +5,6 @@ import com.biomed.smarttrak.security.SmarttrakRoleVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
-import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.search.SolrAction;
 import com.smt.sitebuilder.action.search.SolrActionVO;
@@ -42,23 +41,6 @@ public class SmarttrakSolrAction extends SolrAction {
 	
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		// Unless specified otherwise do not show any documents higher than a registered user role.
-		if (!Convert.formatBoolean(req.getParameter("adminSearch"))) {
-			String[] currFq = req.getParameterValues("fq");
-			String[] newFq;
-			if (currFq == null) {
-				newFq = new String[1];
-			} else {
-				newFq = new String[currFq.length + 1];
-				for (int i=0; i < currFq.length; i++)
-					newFq[i] = currFq[i];
-			}
-			
-			newFq[newFq.length-1] = "role:[0 TO 25]";
-			req.setParameter("fq", newFq, true);
-			
-			req.setParameter("customParam", "fq|role:[0 TO 25]");
-		}
 		super.retrieve(req);
 	}
 
