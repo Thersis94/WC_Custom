@@ -658,23 +658,34 @@ public class UpdatesAction extends ManagementAction {
 			pDate.add(Calendar.SECOND, now.get(Calendar.SECOND));
 			pDate.set(Calendar.AM_PM, now.get(Calendar.AM_PM));
 		} else {
-			StringBuilder sql = new StringBuilder(100);
-			sql.append("select max(publish_dt) from ").append(getCustomSchema()).append("biomedgps_update where date_trunc('day', publish_dt) = ?");
-			try(PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-				ps.setObject(1, reqDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDate());
-				ResultSet rs = ps.executeQuery();
-				if(rs.next()) {
-					Timestamp maxDate = rs.getTimestamp(1);
-					if(maxDate != null) {
-						pDate.setTime(maxDate);
-						pDate.add(Calendar.MINUTE, 1);
-					}
-				}
-			} catch (SQLException e) {
-				log.error("Error Processing Code", e);
+			Timestamp latestDbPubDt = loadLatestPubDate(reqDate);
+			if(latestDbPubDt != null) {
+				pDate.setTime(latestDbPubDt);
+				pDate.add(Calendar.MINUTE, 1);
 			}
 		}
 		return pDate.getTime();
+	}
+
+	/**
+	 * Load latest publishDate Timestamp for a given reqDate.
+	 * @param pDate
+	 * @return
+	 */
+	private Timestamp loadLatestPubDate(Date reqDate) {
+		StringBuilder sql = new StringBuilder(100);
+		sql.append("select max(publish_dt) from ").append(getCustomSchema()).append("biomedgps_update where date_trunc('day', publish_dt) = ?");
+		try(PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setObject(1, reqDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDate());
+			ResultSet rs = ps.executeQuery();
+			if(rs.next()) {
+				return rs.getTimestamp(1);
+			}
+		} catch (SQLException e) {
+			log.error("Error Processing Code", e);
+		}
+
+		return null;
 	}
 
 	/**
