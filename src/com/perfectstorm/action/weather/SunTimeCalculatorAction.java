@@ -3,6 +3,7 @@ package com.perfectstorm.action.weather;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
+import java.util.Map;
 import java.util.TimeZone;
 //WC custom
 import com.perfectstorm.data.weather.SunTimeVO;
@@ -10,6 +11,7 @@ import com.perfectstorm.data.weather.SunTimeVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.exception.InvalidDataException;
 //
 import com.smt.sitebuilder.action.SBActionAdapter;
@@ -75,7 +77,18 @@ public class SunTimeCalculatorAction extends SBActionAdapter {
 		super(actionInit);
 	}
 
-
+	/**
+	 * 
+	 * @param attributes
+	 * @param dbConn
+	 */
+	public SunTimeCalculatorAction(Map<String, Object> attributes, SMTDBConnection dbConn ) {
+		super();
+		
+		this.attributes = attributes;
+		this.dbConn = dbConn;
+	}
+	
 	/*
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.action.ActionRequest)
@@ -110,7 +123,7 @@ public class SunTimeCalculatorAction extends SBActionAdapter {
 	 * @return
 	 * @throws InvalidDataException 
 	 */
-	private SunTimeVO calculateSunTimes(SunTimeVO stvo) throws InvalidDataException {
+	public SunTimeVO calculateSunTimes(SunTimeVO stvo) throws InvalidDataException {
 		
 		Calendar cal = new GregorianCalendar();
 		cal.setTime(stvo.getSourceDate());

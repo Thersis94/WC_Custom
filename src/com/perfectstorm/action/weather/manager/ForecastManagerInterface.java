@@ -2,6 +2,7 @@ package com.perfectstorm.action.weather.manager;
 
 import java.util.Map;
 
+import com.perfectstorm.data.weather.WeatherStationVO;
 import com.perfectstorm.data.weather.forecast.ForecastVO;
 import com.siliconmtn.action.ActionException;
 
@@ -29,7 +30,17 @@ public interface ForecastManagerInterface {
 	
 	/**
 	 * Sets the coordinates to retrieve the weather data from.
+	 * 
+	 * @param latitude
+	 * @param longitude
 	 */
 	public abstract void setCoordinates(double latitude, double longitude);
+	
+	/**
+	 * Sets a weather station to retrieve weather data from.
+	 * 
+	 * @param station
+	 */
+	public abstract void setWeatherStation(WeatherStationVO station);
 	
 }
