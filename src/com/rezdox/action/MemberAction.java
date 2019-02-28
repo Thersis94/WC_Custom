@@ -58,7 +58,7 @@ import com.smt.sitebuilder.security.UserLogin;
 public class MemberAction extends SimpleActionAdapter {
 
 	public static final String REQ_MEMBER_ID = "memberId";
-
+	public static final String REQ_PROFILE_ID = "profileId";
 
 	public MemberAction() {
 		super();
