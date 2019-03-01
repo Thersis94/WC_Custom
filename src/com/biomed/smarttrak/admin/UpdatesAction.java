@@ -309,6 +309,15 @@ public class UpdatesAction extends ManagementAction {
 			HttpServletResponse res = (HttpServletResponse) req.getAttribute(GlobalConfig.HTTP_RESPONSE);
 			end = Convert.formatDate(Convert.convertTimeZoneOffset(Calendar.getInstance().getTime(), "EST5EDT"), Convert.DATE_SLASH_PATTERN); //today
 			CookieUtil.add(res, COOK_UPD_END_DT, end, "/", -1);
+		} else if (end != "") {
+
+			//If we have a specified date, ensure that we've offset time to midnight.
+			Calendar cal = Calendar.getInstance();
+			cal.setTime(Convert.formatDate(end));
+			cal.set(Calendar.HOUR, 23);
+			cal.set(Calendar.MINUTE, 59);
+			cal.set(Calendar.SECOND, 59);
+			end = Convert.formatDate(cal.getTime(), Convert.DATE_TIME_DASH_PATTERN);
 		}
 		req.setParameter(COOK_UPD_START_DT, start);
 		req.setParameter(COOK_UPD_END_DT, end);
