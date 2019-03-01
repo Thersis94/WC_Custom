@@ -18,6 +18,7 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.biomed.smarttrak.action.AdminControllerAction.Status;
 import com.biomed.smarttrak.vo.LinkVO;
 import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.util.CommandLineUtil;
@@ -57,11 +58,11 @@ public class LinkChecker extends CommandLineUtil {
 	 * This enum is what we iterate when the script runs.
 	 */
 	enum Table {
-		COMPANY_ATTR_XR(COMPANIES,"select company_id, value_txt, company_attribute_id from custom.BIOMEDGPS_COMPANY_ATTRIBUTE_XR"),
-		PROD_ATTR_XR(PRODUCTS,"select product_id, value_txt, product_attribute_id from custom.BIOMEDGPS_PRODUCT_ATTRIBUTE_XR"),
-		MKRT_ATTR_XR(MARKETS,"select market_id, value_txt, market_attribute_id from custom.BIOMEDGPS_MARKET_ATTRIBUTE_XR"),
-		ANALYSIS_ABS(ANALYSIS,"select insight_id, abstract_txt, 'Abstract' from custom.BIOMEDGPS_INSIGHT"),
-		ANALYSIS_MAIN(ANALYSIS,"select insight_id, content_txt, 'Article' from custom.BIOMEDGPS_INSIGHT");
+		COMPANY_ATTR_XR(COMPANIES,"select company_id, value_txt, company_attribute_id from custom.BIOMEDGPS_COMPANY_ATTRIBUTE_XR where status_no = ?"),
+		PROD_ATTR_XR(PRODUCTS,"select product_id, value_txt, product_attribute_id from custom.BIOMEDGPS_PRODUCT_ATTRIBUTE_XR where status_no = ?"),
+		MKRT_ATTR_XR(MARKETS,"select market_id, value_txt, market_attribute_id from custom.BIOMEDGPS_MARKET_ATTRIBUTE_XR where status_no = ?"),
+		ANALYSIS_ABS(ANALYSIS,"select insight_id, abstract_txt, 'Abstract' from custom.BIOMEDGPS_INSIGHT where status_cd = ?"),
+		ANALYSIS_MAIN(ANALYSIS,"select insight_id, content_txt, 'Article' from custom.BIOMEDGPS_INSIGHT where status_cd = ?");
 
 		String selectSql;
 		String section;
@@ -197,6 +198,7 @@ public class LinkChecker extends CommandLineUtil {
 	protected List<LinkVO> readRecords(Table t) {
 		List<LinkVO> records = new ArrayList<>();
 		try (PreparedStatement ps = dbConn.prepareStatement(t.getSelectSql())) {
+			ps.setString(1, Status.P.toString());
 			ResultSet rs = ps.executeQuery();
 			while (rs.next())
 				records.add(new LinkVO(t.getSection(), rs.getString(1), rs.getString(2), rs.getString(3)));
@@ -377,6 +379,8 @@ public class LinkChecker extends CommandLineUtil {
 			
 		if (isRedirect(vo.getOutcome()) && !StringUtil.isEmpty(vo.getRedirectUrl())) {
 			log.debug("got redirected to: " + vo.getRedirectUrl());
+			if (StringUtil.isEmpty(vo.getOriginalUrl()))
+				vo.setOriginalUrl(vo.getUrl());
 			vo.setUrl(vo.getRedirectUrl());
 			vo.setRedirectUrl(null); //flush this or we're in a continuous loop
 			vo.setOutcome(0);
@@ -520,7 +524,7 @@ public class LinkChecker extends CommandLineUtil {
 				ps.setString(4, PRODUCTS.equals(vo.getSection()) ? vo.getObjectId() : null);
 				ps.setString(5, ANALYSIS.equals(vo.getSection()) ? vo.getObjectId() : null);
 				ps.setString(6, UPDATES.equals(vo.getSection()) ? vo.getObjectId() : null);
-				ps.setString(7,  vo.getUrl());
+				ps.setString(7,  StringUtil.isEmpty(vo.getOriginalUrl())? vo.getUrl() : vo.getOriginalUrl());
 				ps.setTimestamp(8, Convert.formatTimestamp(vo.getLastChecked()));
 				ps.setInt(9, vo.getOutcome());
 				ps.setString(10, vo.getContentId());
@@ -622,7 +626,9 @@ public class LinkChecker extends CommandLineUtil {
 	 */
 	private void throttleRequests(String url) {
 		String domain = StringUtil.stripProtocol(url);
-		domain = domain.substring(0, domain.indexOf('/'));
+		
+		if (domain.contains("/"))
+			domain = domain.substring(0, domain.indexOf('/'));
 
 		Long lastAccessTime = accessTimes.get(domain);
 		if (lastAccessTime == null) lastAccessTime = Long.valueOf(0);
