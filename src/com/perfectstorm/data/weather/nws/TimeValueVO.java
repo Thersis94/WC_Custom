@@ -2,6 +2,7 @@ package com.perfectstorm.data.weather.nws;
 
 // JDK 1.8.x
 import java.sql.ResultSet;
+import java.time.Duration;
 import java.util.Date;
 import java.util.TimeZone;
 
@@ -66,12 +67,12 @@ public class TimeValueVO extends BeanDataVO {
 	public void updateData() {
 		if (StringUtil.isEmpty(validTime) || validTime.length()< 20) return;
 		
-		// Set the UTC as a date and the duration of the Time Value
+		// Set the UTC as a date
 		utcDate = Convert.formatDate("yyyy-MM-dd'T'HH:mm:ss", validTime.substring(0, 19));
-		String[] item = validTime.substring(validTime.indexOf('/') + 1).split("T");
-		int p = Convert.formatInteger(item[0].replaceAll("P", "")) * 24;
-		int t = item.length > 1 ? Convert.formatInteger(item[1].replaceAll("H", "")) : 0;
-		duration = p + t;
+		
+		// Set the duration of the Time Value
+		Duration validDuration = Duration.parse(validTime.substring(validTime.indexOf('/') + 1));
+		duration = (int) validDuration.toHours();
 	}
 
 	/**

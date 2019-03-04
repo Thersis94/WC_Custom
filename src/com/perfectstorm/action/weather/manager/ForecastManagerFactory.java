@@ -2,6 +2,7 @@ package com.perfectstorm.action.weather.manager;
 
 import java.lang.reflect.Constructor;
 
+import com.perfectstorm.data.weather.WeatherStationVO;
 import com.siliconmtn.action.ActionException;
 
 /****************************************************************************
@@ -59,6 +60,31 @@ public class ForecastManagerFactory {
 		
 		// Set the coordinates on the forecast manager
 		fmi.setCoordinates(latitude, longitude);
+
+		return fmi;
+	}
+
+	/**
+	 * Gets the specified weather forecast manager using the specified weather station.
+	 * 
+	 * @param manager
+	 * @param station
+	 * @return
+	 * @throws ActionException 
+	 */
+	public static ForecastManagerInterface getManager(ForecastManager manager, WeatherStationVO station) throws ActionException {
+		// Get the specified forecast manager
+		ForecastManagerInterface fmi;
+		try {
+			Class<?> cls = manager.getCls();
+			Constructor<?> constructor = cls.getConstructor();
+			fmi = (ForecastManagerInterface) constructor.newInstance();
+		} catch (Exception e) {
+			throw new ActionException("Could not instantiate forecast manager class.", e);
+		}
+		
+		// Set the specified weather station on the forecast manager
+		fmi.setWeatherStation(station);
 
 		return fmi;
 	}

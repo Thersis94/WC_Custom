@@ -3,6 +3,7 @@ package com.perfectstorm.action.admin;
 // JDK 1.8.x
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 
 import org.apache.commons.lang3.time.DateUtils;
@@ -69,7 +70,8 @@ public class TourVenueWidget extends SBActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		this.setModuleData(getTourVenues(req.getParameter("tourId")));
+		boolean showPast = req.hasParameter("showPast") ? req.getBooleanParameter("showPast") : true;
+		this.setModuleData(getTourVenues(req.getParameter("tourId"), showPast));
 	}
 	
 	/**
@@ -78,7 +80,7 @@ public class TourVenueWidget extends SBActionAdapter {
 	 * @param activeFlag
 	 * @return
 	 */
-	public List<VenueTourVO> getTourVenues(String tourId) {
+	public List<VenueTourVO> getTourVenues(String tourId, boolean showPast) {
 		// Add the params
 		List<Object> vals = new ArrayList<>(); 
 		
@@ -95,11 +97,17 @@ public class TourVenueWidget extends SBActionAdapter {
 			sql.append(DBUtil.WHERE_CLAUSE).append("c.tour_type_cd = ? ");
 			vals.add(TourType.EVENT.name());
 		} else {
-			sql.append("where tour_id = ? ");
+			sql.append("where a.tour_id = ? ");
 			vals.add(tourId);
 		}
 		
-		sql.append(DBUtil.ORDER_BY).append("event_dt asc");
+		// Add the filter designation whether to show past events
+		if (!showPast) {
+			sql.append("and a.event_dt >= ? ");
+			vals.add(new Date());
+		}
+		
+		sql.append(DBUtil.ORDER_BY).append("a.event_dt asc");
 		
 		// execute the sql
 		DBProcessor db = new DBProcessor(dbConn);
