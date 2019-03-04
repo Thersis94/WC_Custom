@@ -3,11 +3,13 @@ package com.perfectstorm.action.admin;
 // JDK 1.8.x
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 
 import org.apache.commons.lang3.time.DateUtils;
 
 // PS Libs
+import com.perfectstorm.data.TourVO.TourType;
 import com.perfectstorm.data.VenueTourVO;
 
 // SMT Base Libs
@@ -19,6 +21,7 @@ import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.StringUtil;
 // WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
 
@@ -67,7 +70,8 @@ public class TourVenueWidget extends SBActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		this.setModuleData(getTourVenues(req.getParameter("tourId")));
+		boolean showPast = req.hasParameter("showPast") ? req.getBooleanParameter("showPast") : true;
+		this.setModuleData(getTourVenues(req.getParameter("tourId"), showPast));
 	}
 	
 	/**
@@ -76,18 +80,34 @@ public class TourVenueWidget extends SBActionAdapter {
 	 * @param activeFlag
 	 * @return
 	 */
-	public List<VenueTourVO> getTourVenues(String tourId) {
+	public List<VenueTourVO> getTourVenues(String tourId, boolean showPast) {
 		// Add the params
 		List<Object> vals = new ArrayList<>(); 
-		vals.add(tourId);
 		
 		// Build the SQL
 		StringBuilder sql = new StringBuilder(80);
 		sql.append("select * from ").append(getCustomSchema()).append("ps_venue_tour_xr a ");
 		sql.append("inner join ").append(getCustomSchema()).append("ps_venue b ");
 		sql.append("on a.venue_id = b.venue_id ");
-		sql.append("where tour_id = ? ");
-		sql.append(DBUtil.ORDER_BY).append("event_dt asc");
+		
+		// If no tourId was passed, we are searching for events
+		if (StringUtil.isEmpty(tourId)) {
+			sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("ps_tour c ");
+			sql.append("on a.tour_id = c.tour_id ");
+			sql.append(DBUtil.WHERE_CLAUSE).append("c.tour_type_cd = ? ");
+			vals.add(TourType.EVENT.name());
+		} else {
+			sql.append("where a.tour_id = ? ");
+			vals.add(tourId);
+		}
+		
+		// Add the filter designation whether to show past events
+		if (!showPast) {
+			sql.append("and a.event_dt >= ? ");
+			vals.add(new Date());
+		}
+		
+		sql.append(DBUtil.ORDER_BY).append("a.event_dt asc");
 		
 		// execute the sql
 		DBProcessor db = new DBProcessor(dbConn);

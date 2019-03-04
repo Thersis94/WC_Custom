@@ -2,9 +2,7 @@ package com.perfectstorm.action.weather.manager;
 
 //JDK 1.8.x
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.text.DateFormat;
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -13,7 +11,6 @@ import java.util.TimeZone;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
 
 import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Logger;
@@ -21,7 +18,6 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
-import org.xml.sax.SAXException;
 
 //SMT Base Libs
 import com.siliconmtn.action.ActionException;
@@ -42,6 +38,7 @@ import com.siliconmtn.io.http.SMTHttpConnectionManager;
 
 public class NWSRadarManager {
 	private static Logger log = Logger.getLogger(NWSRadarManager.class);
+	private static final String RADAR_METADATA_URL = "https://radar.weather.gov/ridge/kml/animation/%s/%s_%s_loop.kml";
 	
 	/**
 	 * 
@@ -56,24 +53,27 @@ public class NWSRadarManager {
 	public static void main(String[] args) throws Exception {
 		BasicConfigurator.configure();
 		NWSRadarManager radar = new NWSRadarManager();
-		List<Date> times = radar.retrieveData("http://radar.weather.gov/ridge/kml/animation/N1P/FTG_N1P_loop.kml");
+		List<Date> times = radar.retrieveData("FTG", "N1P");
 		log.info(times);
 	}
 	
 	/**
 	 * Retrieves the times in UTC for each radar image.
 	 * 
+	 * @param radarCode
+	 * @param radarTypeCode
 	 * @return
-	 * @throws ActionException 
-	 * @throws SAXException
-	 * @throws IOException
-	 * @throws ParserConfigurationException
-	 * @throws ParseException 
+	 * @throws ActionException
 	 */
-	public List<Date> retrieveData(String url) throws ActionException {
-		List<Date> times = new ArrayList<>();
+	public List<Date> retrieveData(String radarCode, String radarTypeCode) throws ActionException {
+		String url = String.format(RADAR_METADATA_URL, radarTypeCode, radarCode, radarTypeCode);
+		
+		// Ensures we are getting the latest data
 		String path = url + "?rand=" + System.currentTimeMillis();
+		log.debug("retrieving radar meta data from: " + path);
 
+		// Retrieve the data
+		List<Date> times = new ArrayList<>();
 		try {
 			SMTHttpConnectionManager conn = new SMTHttpConnectionManager();
 			byte[] data = conn.retrieveData(path);
@@ -99,9 +99,6 @@ public class NWSRadarManager {
 					DateFormat utcFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
 					utcFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
 					times.add(utcFormat.parse(startDate));
-					
-					// This will output in the system time zone
-					log.info(utcFormat.parse(startDate));
 				}
 			}
 		} catch(Exception e) {

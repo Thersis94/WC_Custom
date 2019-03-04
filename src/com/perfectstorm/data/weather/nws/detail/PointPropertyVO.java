@@ -24,6 +24,8 @@ public class PointPropertyVO extends BeanDataVO {
 	private String forecast;
 	private String forecastHourly;
 	private String forecastGridData;
+	private String radarStation;
+	private String cwa;
 
 	public PointPropertyVO() {
 		super();
@@ -99,6 +101,32 @@ public class PointPropertyVO extends BeanDataVO {
 		this.forecastGridData = forecastGridData;
 	}
 
+	/**
+	 * @return the radarStation
+	 */
+	public String getRadarStation() {
+		return radarStation;
+	}
 
+	/**
+	 * @param radarStation the radarStation to set
+	 */
+	public void setRadarStation(String radarStation) {
+		this.radarStation = radarStation;
+	}
+
+	/**
+	 * @return the cwa
+	 */
+	public String getCwa() {
+		return cwa;
+	}
+
+	/**
+	 * @param cwa the cwa to set
+	 */
+	public void setCwa(String cwa) {
+		this.cwa = cwa;
+	}
 }
 
