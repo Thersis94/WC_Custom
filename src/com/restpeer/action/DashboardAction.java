@@ -85,7 +85,7 @@ public class DashboardAction extends SimpleActionAdapter {
 		
 		sql.append(CHART_SELECT);
 		sql.append("to_char(b.create_dt, 'Mon') as label_nm, "); 
-		sql.append("cast(count(*) as varchar(10)) as value, 'Active Locations' as serie_nm, ");
+		sql.append("cast(count(*) as varchar(10)) as value, 'New Locations' as serie_nm, ");
 		sql.append("Extract(month from b.create_dt) as month_num, ");
 		sql.append("Extract(year from b.create_dt) as year_num ");
 		sql.append(DBUtil.FROM_CLAUSE).append(getCustomSchema()).append("rp_member a ");
@@ -94,7 +94,6 @@ public class DashboardAction extends SimpleActionAdapter {
 		sql.append("where member_type_cd = 'KITCHEN' ");
 		sql.append("and b.create_dt > now() - interval '");
 		sql.append(numMonths).append(" month' ");
-		sql.append("and a.active_flg = 1 ");
 		sql.append("group by label_nm, year_num, month_num "); 
 		sql.append("order by year_num, month_num, serie_nm ");
 		log.debug(sql.length() + ":" + sql + vals);

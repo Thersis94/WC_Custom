@@ -117,10 +117,6 @@ public class NWSExtendedForecastManager implements ForecastManagerInterface {
 	 * @throws IOException
 	 */
 	private ExtendedForecastVO getForecast() throws IOException {
-<<<<<<< HEAD
-		String url = String.format(NWS_URL, latitude, longitude);
-		log.debug("Extended URL: " + url);
-=======
 		String url;
 		
 		if (station == null) {
@@ -129,7 +125,6 @@ public class NWSExtendedForecastManager implements ForecastManagerInterface {
 			url = String.format(NWS_GRIDPOINT_FORECAST_URL, station.getForecastOfficeCode(), station.getForecastGridXNo(), station.getForecastGridYNo());
 		}
 		log.info("Extended Forecast URL: " + url);
->>>>>>> 7a5f114ca82f35caeeaac7fa8c82d3274919d9fb
 		
 		// Retrieve the forecast data for the given coordinates
 		SMTHttpConnectionManager httpConn = new SMTHttpConnectionManager();
@@ -138,14 +133,6 @@ public class NWSExtendedForecastManager implements ForecastManagerInterface {
 		
 		// Parse the data into an object
 		Gson gson = new GsonBuilder().setDateFormat("yyyy-MM-dd'T'HH:mm:ssZ").create();
-<<<<<<< HEAD
-		ExtendedForecastVO forecast = gson.fromJson(new String(data), ExtendedForecastVO.class);
-		log.debug("Extended Detail: " + forecast);
-		
-		return forecast;
-=======
 		return gson.fromJson(new String(data), ExtendedForecastVO.class);
->>>>>>> 7a5f114ca82f35caeeaac7fa8c82d3274919d9fb
 	}
 }
-
