@@ -5,7 +5,6 @@ import java.lang.reflect.Method;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -16,7 +15,6 @@ import org.apache.log4j.Logger;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.perfectstorm.action.weather.VenueForecastManager;
-import com.perfectstorm.data.weather.WeatherStationVO;
 import com.perfectstorm.data.weather.forecast.ForecastVO;
 import com.perfectstorm.data.weather.nws.TimeValueVO;
 import com.perfectstorm.data.weather.nws.detail.ForecastDetailVO;
@@ -27,7 +25,6 @@ import com.siliconmtn.action.ActionException;
 
 // SMT Base Libs
 import com.siliconmtn.io.http.SMTHttpConnectionManager;
-import com.siliconmtn.util.StringUtil;
 
 /****************************************************************************
  * <b>Title</b>: NWSDetailedForecastManager.java
@@ -44,8 +41,7 @@ import com.siliconmtn.util.StringUtil;
 
 public class NWSDetailedForecastManager implements ForecastManagerInterface {
 	private static Logger log = Logger.getLogger(NWSDetailedForecastManager.class);
-	private static final String NWS_POINT_URL = "https://api.weather.gov/points/%f,%f";
-	private static final String NWS_GRID_DATA_URL = "https://api.weather.gov/gridpoints/%s/%d,%d";
+	private static final String NWS_URL = "https://api.weather.gov/points/%f,%f";
 	
 	private static final String GET_TEMPERATURE = "getTemperature";
 	private static final String GET_WIND = "getWind";
@@ -55,7 +51,6 @@ public class NWSDetailedForecastManager implements ForecastManagerInterface {
 
 	private double latitude;
 	private double longitude;
-	private WeatherStationVO station = null;
 
 	public NWSDetailedForecastManager() {
 		super();
@@ -140,7 +135,6 @@ public class NWSDetailedForecastManager implements ForecastManagerInterface {
 		populateData(nwsForecast.getTwentyFootWindDirection(), forecast, GET_WIND, "setTwentyFootDirection", int.class);
 		populateData(nwsForecast.getProbabilityOfTropicalStormWinds(), forecast, GET_WIND, "setTropicalStormWindProbability", int.class);
 		populateData(nwsForecast.getProbabilityOfHurricaneWinds(), forecast, GET_WIND, "setHurricaneStormWindProbability", int.class);
-		populateData(nwsForecast.getLightningActivityLevel(), forecast, GET_CONDITION, "setLightningActivityLevel", int.class);
 		
 		return forecast;
 	}
@@ -156,11 +150,8 @@ public class NWSDetailedForecastManager implements ForecastManagerInterface {
 	 * @throws ActionException
 	 */
 	private void populateData(WeatherAttribueVO data, Map<String, ForecastVO> forecast, String elementGetMethod, String dataSetMethod, Class<?> dataSetType) throws ActionException {
-		String unitOfMeasure = "";
-		if (!StringUtil.isEmpty(data.getUom())) {
-			String[] uom = data.getUom().split(":");
-			unitOfMeasure = uom.length > 1 ? uom[1] : "";
-		}
+		String[] uom = data.getUom().split(":");
+		String unitOfMeasure = uom.length > 1 ? uom[1] : "";
 		
 		for (TimeValueVO value : data.getValues()) {
 			for (int durHour = 0; durHour < value.getDuration(); durHour++) {
@@ -174,7 +165,7 @@ public class NWSDetailedForecastManager implements ForecastManagerInterface {
 				
 				// Dynamically populate the value into the associated VO
 				ForecastVO fvo = forecast.get(day + "_" + hour);
-				fvo.setStartDate(Date.from(date.plusHours(durHour).atZone(ZoneId.systemDefault()).toInstant()));
+				fvo.setStartDate(value.getUtcDate());
 				double normalizedValue = VenueForecastManager.normalizeByUnitOfMeasure(value.getValue(), unitOfMeasure);
 				try {
 					Method elementGetter = fvo.getClass().getMethod(elementGetMethod);
@@ -224,14 +215,6 @@ public class NWSDetailedForecastManager implements ForecastManagerInterface {
 		this.latitude = latitude;
 		this.longitude = longitude;
 	}
-
-	/* (non-Javadoc)
-	 * @see com.perfectstorm.action.weather.manager.ForecastManagerInterface#setWeatherStation(com.perfectstorm.data.weather.WeatherStationVO)
-	 */
-	@Override
-	public void setWeatherStation(WeatherStationVO station) {
-		this.station = station;
-	}
 	
 	/**
 	 * Retrieve the extended forecast data from the NWS.
@@ -240,26 +223,24 @@ public class NWSDetailedForecastManager implements ForecastManagerInterface {
 	 * @throws IOException
 	 */
 	private WeatherDetailVO getForecast() throws IOException {
-		Gson gson = new GsonBuilder().create();
-		SMTHttpConnectionManager conn = new SMTHttpConnectionManager();
-		String gridDataUrl;
+		String url = String.format(NWS_URL, latitude, longitude);
 		
-		if (station == null) {
-			// Get the forecast grid data url associated to this coordinate (point)
-			String pointUrl = String.format(NWS_POINT_URL, latitude, longitude);
-			byte[] pointData = conn.retrieveData(pointUrl);
-			WeatherPointVO wpvo = gson.fromJson(new String(pointData), WeatherPointVO.class);
-			gridDataUrl = wpvo.getProperties().getForecastGridData();
-		} else {
-			gridDataUrl = String.format(NWS_GRID_DATA_URL, station.getForecastOfficeCode(), station.getForecastGridXNo(), station.getForecastGridYNo());
-		}
+		// Get the forecast data url associated to this point
+		SMTHttpConnectionManager conn = new SMTHttpConnectionManager();
+		byte[] data = conn.retrieveData(url);
+		log.info("Point URL: " + url);
 		
 		// Get the detailed forecast data
-		byte[] gridData = conn.retrieveData(gridDataUrl);
-		log.info("Forecast Grid Data URL: " + gridDataUrl);
+		Gson g = new GsonBuilder().create();
+		WeatherPointVO wpvo = g.fromJson(new String(data), WeatherPointVO.class);
+		data = conn.retrieveData(wpvo.getProperties().getForecastGridData());
+		log.info("Forecast Grid Data URL: " + wpvo.getProperties().getForecastGridData());
 
 		// Parse the data into an object
-		return gson.fromJson(new String(gridData), WeatherDetailVO.class);
+		WeatherDetailVO wvo = g.fromJson(new String(data), WeatherDetailVO.class);
+		log.info("Detail: " + wvo.getProperties().getTemperature());
+		
+		return wvo;
 	}
 
 }

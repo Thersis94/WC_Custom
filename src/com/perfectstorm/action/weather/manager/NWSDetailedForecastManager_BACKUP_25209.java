@@ -242,6 +242,22 @@ public class NWSDetailedForecastManager implements ForecastManagerInterface {
 	private WeatherDetailVO getForecast() throws IOException {
 		Gson gson = new GsonBuilder().create();
 		SMTHttpConnectionManager conn = new SMTHttpConnectionManager();
+<<<<<<< HEAD
+		byte[] data = conn.retrieveData(url);
+		log.debug("Point URL: " + url);
+		
+		// Get the detailed forecast data
+		Gson g = new GsonBuilder().create();
+		WeatherPointVO wpvo = g.fromJson(new String(data), WeatherPointVO.class);
+		data = conn.retrieveData(wpvo.getProperties().getForecastGridData());
+		log.debug("Forecast Grid Data URL: " + wpvo.getProperties().getForecastGridData());
+
+		// Parse the data into an object
+		WeatherDetailVO wvo = g.fromJson(new String(data), WeatherDetailVO.class);
+		log.debug("Detail: " + wvo.getProperties().getTemperature());
+		
+		return wvo;
+=======
 		String gridDataUrl;
 		
 		if (station == null) {
@@ -260,7 +276,7 @@ public class NWSDetailedForecastManager implements ForecastManagerInterface {
 
 		// Parse the data into an object
 		return gson.fromJson(new String(gridData), WeatherDetailVO.class);
+>>>>>>> 7a5f114ca82f35caeeaac7fa8c82d3274919d9fb
 	}
-
 }
 

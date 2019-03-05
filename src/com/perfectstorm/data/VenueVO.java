@@ -13,6 +13,7 @@ import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
 import com.siliconmtn.gis.GeocodeLocation;
+import com.siliconmtn.util.StringUtil;
 
 /****************************************************************************
  * <b>Title</b>: VenueVO.java
@@ -43,8 +44,16 @@ public class VenueVO extends GeocodeLocation {
 	private int activeFlag;
 	private int manualGeocodeFlag;
 	private long numberStation;
+	private String observationStationCode;
+	private String radarStationCode;
+	private String forecastOfficeCode;
+	private int forecastGridXNo;
+	private int forecastGridYNo;
 	private Date createDate;
 	private Date updateDate;
+	
+	// Helpers
+	private List<Date> radarTime;
 	
 	// Bean SubElements
 	private List<VenueAttributeVO> attributes = new ArrayList<>();
@@ -62,6 +71,7 @@ public class VenueVO extends GeocodeLocation {
 	 */
 	public VenueVO(ActionRequest req) {
 		this.populateData(req);
+		setObservationStationCode(StringUtil.checkVal(getObservationStationCode(), null));
 	}
 
 	/**
@@ -265,6 +275,95 @@ public class VenueVO extends GeocodeLocation {
 	 */
 	public void setTimezone(String timezone) {
 		this.timezone = timezone;
+	}
+
+	/**
+	 * @return the radarTime
+	 */
+	public List<Date> getRadarTime() {
+		return radarTime;
+	}
+
+	/**
+	 * @param radarTime the radarTime to set
+	 */
+	public void setRadarTime(List<Date> radarTime) {
+		this.radarTime = radarTime;
+	}
+
+	/**
+	 * @return the observationStationCode
+	 */
+	@Column(name="observation_station_cd")
+	public String getObservationStationCode() {
+		return observationStationCode;
+	}
+
+	/**
+	 * @param observationStationCode the observationStationCode to set
+	 */
+	public void setObservationStationCode(String observationStationCode) {
+		this.observationStationCode = observationStationCode;
+	}
+
+	/**
+	 * @return the radarStationCode
+	 */
+	@Column(name="radar_station_cd")
+	public String getRadarStationCode() {
+		return radarStationCode;
+	}
+
+	/**
+	 * @param radarStationCode the radarStationCode to set
+	 */
+	public void setRadarStationCode(String radarStationCode) {
+		this.radarStationCode = radarStationCode;
+	}
+
+	/**
+	 * @return the forecastOfficeCode
+	 */
+	@Column(name="forecast_office_cd")
+	public String getForecastOfficeCode() {
+		return forecastOfficeCode;
+	}
+
+	/**
+	 * @param forecastOfficeCode the forecastOfficeCode to set
+	 */
+	public void setForecastOfficeCode(String forecastOfficeCode) {
+		this.forecastOfficeCode = forecastOfficeCode;
+	}
+
+	/**
+	 * @return the forecastGridXNo
+	 */
+	@Column(name="forecast_gridx_no")
+	public int getForecastGridXNo() {
+		return forecastGridXNo;
+	}
+
+	/**
+	 * @param forecastGridXNo the forecastGridXNo to set
+	 */
+	public void setForecastGridXNo(int forecastGridXNo) {
+		this.forecastGridXNo = forecastGridXNo;
+	}
+
+	/**
+	 * @return the forecastGridYNo
+	 */
+	@Column(name="forecast_gridy_no")
+	public int getForecastGridYNo() {
+		return forecastGridYNo;
+	}
+
+	/**
+	 * @param forecastGridYNo the forecastGridYNo to set
+	 */
+	public void setForecastGridYNo(int forecastGridYNo) {
+		this.forecastGridYNo = forecastGridYNo;
 	}
 }
 
