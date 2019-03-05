@@ -22,6 +22,8 @@ public class TemperatureVO extends BeanDataVO {
 
 	private static final long serialVersionUID = 2399000651829957648L;
 	
+	public static final String TEMPERATURE = "temperature";
+	
 	private double temperature; // degrees (F, C)
 	private double dewPoint; // degrees (F, C)
 	private double maxTemperature; // degrees (F, C)

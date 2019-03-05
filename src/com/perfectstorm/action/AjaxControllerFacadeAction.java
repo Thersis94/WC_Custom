@@ -8,6 +8,7 @@ import com.perfectstorm.action.admin.MemberWidget;
 import com.perfectstorm.action.admin.TourVenueWidget;
 import com.perfectstorm.action.admin.TourWidget;
 import com.perfectstorm.action.admin.VenueAttributeWidget;
+import com.perfectstorm.action.admin.VenueTourAttributeWidget;
 import com.perfectstorm.action.admin.VenueWidget;
 import com.perfectstorm.action.admin.WeatherDeviceWidget;
 import com.perfectstorm.action.venue.VenueAction;
@@ -79,6 +80,7 @@ public class AjaxControllerFacadeAction extends FacadeActionAdapter {
 		actionMap.put(CustomerAction.AJAX_KEY, CustomerAction.class);
 		actionMap.put(CustomerMemberAction.AJAX_KEY, CustomerMemberAction.class);
 		actionMap.put(VenueAction.AJAX_KEY, VenueAction.class);
+		actionMap.put(VenueTourAttributeWidget.AJAX_KEY, VenueTourAttributeWidget.class);
 	}
 
 	/*
