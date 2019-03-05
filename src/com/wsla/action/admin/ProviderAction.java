@@ -42,7 +42,6 @@ import com.wsla.data.provider.ProviderVO;
  * @since Sep 19, 2018
  * @updates:
  ****************************************************************************/
-
 public class ProviderAction extends BatchImport {
 	
 	public static final String REQ_PROVIDER_ID = "providerId";

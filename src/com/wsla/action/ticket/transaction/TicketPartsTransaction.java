@@ -97,10 +97,10 @@ public class TicketPartsTransaction extends BaseTransactionAction {
 			if (req.hasParameter("isApproved")) {
 				setApproval(req);
 			} else if (req.hasParameter("consumeParts")) {
-				//******* Add a ledger entry for the Repair Type
+				// Add a ledger entry for the Repair Type
 				addLedgerForRepairType(req);
-				//addRepairCode(req.getParameter(WSLAConstants.TICKET_ID), req.getParameter("attr_unitRepairCode")); 
-				//consumeParts(req);
+				addRepairCode(req.getParameter(WSLAConstants.TICKET_ID), req.getParameter("attr_unitRepairCode")); 
+				consumeParts(req);
 			} else {
 				submitForApproval(req);
 			}
@@ -113,14 +113,15 @@ public class TicketPartsTransaction extends BaseTransactionAction {
 	/**
 	 * 
 	 * @param req
+	 * @throws DatabaseException 
 	 */
-	public void addLedgerForRepairType(ActionRequest req) {
+	public void addLedgerForRepairType(ActionRequest req) throws DatabaseException {
 		UserVO user = (UserVO) getAdminUser(req).getUserExtendedInfo();
 		TicketLedgerVO l = new TicketLedgerVO(req);
 		l.setSummary(LedgerSummary.REPAIR_TYPE.summary + ": " + l.getBillableActivityCode());
 		l.setDispositionBy(user.getUserId());
-		
-		// Call base transaction
+		l.setBillableAmtNo(0.00);
+		addLedger(l);
 	}
 
 	/**
@@ -355,7 +356,7 @@ public class TicketPartsTransaction extends BaseTransactionAction {
 	 * @throws ActionException 
 	 * @throws SQLException 
 	 */
-	private void consumeParts(ActionRequest req) throws ActionException {
+	protected void consumeParts(ActionRequest req) throws ActionException {
 		List<PartVO> partsList = new ArrayList<>();
 		
 		// Build the PartVOs from the submitted data

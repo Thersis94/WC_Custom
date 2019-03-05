@@ -6,6 +6,7 @@ import java.sql.PreparedStatement;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -153,5 +154,18 @@ public abstract class AbsImporter {
 		} catch (Exception e) {
 			throw e;
 		}
+	}
+
+
+	/**
+	 * Turn the properties file into a Map
+	 * @return
+	 */
+	protected Map<String, Object> getAttributes() {
+		Map<String, Object> attrs = new HashMap<>(props.size());
+		for (Object key : props.keySet())
+			attrs.put(key.toString(), props.get(key));
+		
+		return attrs;
 	}
 }

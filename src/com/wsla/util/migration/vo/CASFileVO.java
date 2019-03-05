@@ -5,6 +5,8 @@ import java.util.Date;
 import com.siliconmtn.annotations.Importable;
 import com.siliconmtn.util.StringUtil;
 
+import com.wsla.data.provider.ProviderLocationVO.Status;
+
 /****************************************************************************
  * <p><b>Title:</b> CASFileVO.java</p>
  * <p><b>Description:</b> models DM-CAS.xlsx provided by Steve</p>
@@ -67,6 +69,22 @@ public class CASFileVO {
 	public String getStatus() {
 		return status;
 	}
+
+	public Status getStatusEnum() {
+		switch (StringUtil.checkVal(status).toUpperCase().trim()) {
+			default:
+			case "1. WS-PENDCONTINI": return Status.PENDING_CONTACT; 
+			case "2. WS-ENVEMLINI": return Status.EMAIL_SENT;
+			case "3. WS-RECIBQUES": return Status.RCVD_QUESTIONNAIRE;
+			case "4. WS -REVISQUES": return Status.REVW_QUESTIONNAIRE;
+			case "5. WS-NOAUTOCAS": return Status.REJECTED;
+			case "6. WS-SI AUTOCAS": return Status.AUTHORIZED;
+			case "7. WS-ENVCONTRAT": return Status.SEND_CONTRACT;
+			case "8. WS-PENDCONTRAT": return Status.AWAITING_CONTRACT;
+			case "9. WS-CONTRATFIRM": return Status.SIGNED_CONTRACT;
+		}
+	}
+
 	public String getCertifications() {
 		return certifications;
 	}

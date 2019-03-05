@@ -43,10 +43,10 @@ public class ProductVO extends BeanDataVO {
 	private String firmware;
 	private Date discontinuedDate;
 	private Date supportEndDate;
-	private int warrantyDays;
 	private int setFlag;
 	private int activeFlag;
 	private int validatedFlag;
+	private int serialCount;
 	private double msrpCostNo;
 	private Date createDate;
 	private Date updateDate;
@@ -140,15 +140,7 @@ public class ProductVO extends BeanDataVO {
 	public Date getSupportEndDate() {
 		return supportEndDate;
 	}
-
-	/**
-	 * @return the warrantyDays
-	 */
-	@Column(name="warranty_days_no")
-	public int getWarrantyDays() {
-		return warrantyDays;
-	}
-
+	
 	/**
 	 * @return the setFlag
 	 */
@@ -171,6 +163,14 @@ public class ProductVO extends BeanDataVO {
 	@Column(name="update_dt", isUpdateOnly=true, isAutoGen=true)
 	public Date getUpdateDate() {
 		return updateDate;
+	}
+
+	/**
+	 * @return the serialCount
+	 */
+	@Column(name="serial_count_no")
+	public int getSerialCount() {
+		return serialCount;
 	}
 
 	/**
@@ -238,14 +238,6 @@ public class ProductVO extends BeanDataVO {
 	@Importable(name="Aux. SKU")
 	public void setSecCustomerProductId(String secCustomerProductId) {
 		this.secCustomerProductId = secCustomerProductId;
-	}
-
-	/**
-	 * @param warrantyDays the warrantyDays to set
-	 */
-	@Importable(name="Warranty (Days, from date of purchase)", type=DataType.INT)
-	public void setWarrantyDays(int warrantyDays) {
-		this.warrantyDays = warrantyDays;
 	}
 
 	/**
@@ -370,5 +362,12 @@ public class ProductVO extends BeanDataVO {
 	 */
 	public void setValidatedFlag(int validatedFlag) {
 		this.validatedFlag = validatedFlag;
+	}
+
+	/**
+	 * @param serialCount the serialCount to set
+	 */
+	public void setSerialCount(int serialCount) {
+		this.serialCount = serialCount;
 	}
 }
