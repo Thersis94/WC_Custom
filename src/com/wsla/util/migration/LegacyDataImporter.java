@@ -32,19 +32,27 @@ public class LegacyDataImporter extends CommandLineUtil {
 //		importers.add(ProductSerial.class.getName()); //deps: Product
 //		importers.add(ProductSet.class.getName()); //deps: ProductSerial
 //		importers.add(RetailProvider.class.getName());
+
 		//TODO RetailLocation - all the Wal-Marts, Home Depots, etc.
-//		importers.add(WSLAInventoryLocation.class.getName()); //deps: RetailProvider
-//		importers.add(ClosedInventory.class.getName()); //deps: ProductSerial, CASLocation
+		//importers.add(RetailLocation.class.getName()); //walmarts in MX
+
+//		importers.add(WSLAInventoryLocation.class.getName()); //deps: RetailProvider, CASLocation
+//		importers.add(WSLAStaff.class.getName()); //WSLA Staff, WSLA's default provider location
+//		importers.add(LocationInventory.class.getName()); //deps: InventoryLocation, Product
+
+//		importers.add(SOHeader.class.getName());
+//		importers.add(SOLineItems.class.getName());
+//		importers.add(SOExtendedData.class.getName());
 		/*
 		 * TODO:
 			Ticket
-			TicketComment
-			TicketAssignment
-			TicketSchedule?
+			TicketComment // N/A
+			TicketAssignment // N/A
+			TicketSchedule? // N/A
 			Diagnostic (what needs to be preloaded - extracts from tickets?)
 			TicketDiagnostic
 			Attribute (also extracts?)
-			TicketAttribute?
+			TicketAttribute? XDD file
 		 */
 	}
 

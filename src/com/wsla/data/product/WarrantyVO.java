@@ -9,6 +9,7 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.parser.BeanDataVO;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
+import com.siliconmtn.util.EnumUtil;
 import com.siliconmtn.util.StringUtil;
 import com.wsla.action.admin.WarrantyAction.ServiceTypeCode;
 
@@ -156,9 +157,8 @@ public class WarrantyVO extends BeanDataVO {
 	 * @param warrantyType the warrantyType to set
 	 */
 	public void setWarrantyType(String strWarrantyType) {
-		if (StringUtil.checkVal(strWarrantyType).isEmpty()) return;
-
-		this.warrantyType = WarrantyType.valueOf(strWarrantyType);
+		if (StringUtil.isEmpty(strWarrantyType)) return;
+		setWarrantyType(EnumUtil.safeValueOf(WarrantyType.class, strWarrantyType));
 	}
 
 	/**

@@ -4,6 +4,7 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.parser.BeanDataMapper;
 import com.siliconmtn.data.parser.BeanDataVO;
 import com.siliconmtn.db.orm.BeanSubElement;
+import com.siliconmtn.db.orm.Column;
 import com.wsla.data.product.ProductSerialNumberVO;
 
 /****************************************************************************
@@ -24,6 +25,10 @@ public class HarvestApprovalVO extends BeanDataVO {
 
 	private TicketVO ticket;
 	private ProductSerialNumberVO product;
+	private String harvestTicketId;
+	
+	// Helper members
+	private String locationName;
 
 	public HarvestApprovalVO() {
 		super();
@@ -54,5 +59,36 @@ public class HarvestApprovalVO extends BeanDataVO {
 	@BeanSubElement
 	public void setTicket(TicketVO ticket) {
 		this.ticket = ticket;
+	}
+
+	/**
+	 * added this getters and setters for compatibility with db processors selects
+	 * @return the harvestTicketId
+	 */
+	@Column(name="ticket_id", isPrimaryKey=true)
+	public String getHarvestTicketId() {
+		return harvestTicketId;
+	}
+
+	/**
+	 * @param harvestTicketId the harvestTicketId to set
+	 */
+	public void setHarvestTicketId(String harvestTicketId) {
+		this.harvestTicketId = harvestTicketId;
+	}
+
+	/**
+	 * @return the locationName
+	 */
+	@Column(name="location_nm", isReadOnly=true)
+	public String getLocationName() {
+		return locationName;
+	}
+
+	/**
+	 * @param locationName the locationName to set
+	 */
+	public void setLocationName(String locationName) {
+		this.locationName = locationName;
 	}
 }

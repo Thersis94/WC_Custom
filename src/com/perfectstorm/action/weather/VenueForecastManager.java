@@ -10,6 +10,7 @@ import com.perfectstorm.action.weather.manager.ForecastManagerFactory;
 import com.perfectstorm.action.weather.manager.ForecastManagerFactory.ForecastManager;
 import com.perfectstorm.action.weather.manager.ForecastManagerInterface;
 import com.perfectstorm.data.VenueVO;
+import com.perfectstorm.data.weather.WeatherStationVO;
 import com.perfectstorm.data.weather.forecast.ForecastVO;
 import com.siliconmtn.action.ActionException;
 import com.smt.sitebuilder.util.CacheAdministrator;
@@ -34,9 +35,7 @@ public class VenueForecastManager {
 	private static final String DETAIL_CACHE_KEY_PREFIX = "DETAIL_FORECAST_";
 	private static final String EXTENDED_CACHE_KEY_PREFIX = "EXTENDED_FORECAST_";
 	
-	private String venueId;
-	private double latitude;
-	private double longitude;
+	private VenueVO venue;
 	private Map<String, ForecastVO> detailForecast;
 	private Map<String, ForecastVO> extendedForecast;
 	
@@ -47,10 +46,7 @@ public class VenueForecastManager {
 	 * @throws ActionException 
 	 */
 	public VenueForecastManager(VenueVO venue, Map<String, Object> attributes) throws ActionException {
-		this.venueId = venue.getVenueId();
-		this.latitude = venue.getLatitude();
-		this.longitude = venue.getLongitude();
-				
+		this.venue = venue;
 		retrieveForecast(attributes);
 	}
 
@@ -137,8 +133,8 @@ public class VenueForecastManager {
 	private void retrieveForecast(Map<String, Object> attributes) throws ActionException {
 		CacheAdministrator cache = new CacheAdministrator(attributes);
 		
-		detailForecast = (Map<String, ForecastVO>) cache.readObjectFromCache(DETAIL_CACHE_KEY_PREFIX + venueId);
-		extendedForecast = (Map<String, ForecastVO>) cache.readObjectFromCache(EXTENDED_CACHE_KEY_PREFIX + venueId);
+		detailForecast = (Map<String, ForecastVO>) cache.readObjectFromCache(DETAIL_CACHE_KEY_PREFIX + venue.getVenueId());
+		extendedForecast = (Map<String, ForecastVO>) cache.readObjectFromCache(EXTENDED_CACHE_KEY_PREFIX + venue.getVenueId());
 		
 		if (detailForecast == null) {
 			refreshCache(cache, DETAIL_CACHE_KEY_PREFIX);
@@ -159,23 +155,28 @@ public class VenueForecastManager {
 	 */
 	private void refreshCache(CacheAdministrator cache, String type) throws ActionException {
 		log.debug("refreshing forecast: " + type);
-
+		
+		if (venue.getWeatherStations().isEmpty()) {
+			throw new ActionException("can't get weather data without a weather station");
+		}
+		
 		ForecastManagerInterface fmi;
 		Map<String, ForecastVO> forecastData = new HashMap<>();
+		WeatherStationVO station = venue.getWeatherStations().get(0);
 		
 		switch (type) {
 			case DETAIL_CACHE_KEY_PREFIX:
-				fmi = ForecastManagerFactory.getManager(ForecastManager.NWS_DETAILED, latitude, longitude);
+				fmi = ForecastManagerFactory.getManager(ForecastManager.NWS_DETAILED, station);
 				detailForecast = forecastData = fmi.retrieveForecast();
 				break;
 			case EXTENDED_CACHE_KEY_PREFIX:
-				fmi = ForecastManagerFactory.getManager(ForecastManager.NWS_EXTENDED, latitude, longitude);
+				fmi = ForecastManagerFactory.getManager(ForecastManager.NWS_EXTENDED, station);
 				extendedForecast = forecastData = fmi.retrieveForecast();
 				break;
 			default:
 		}
 
 		// Weather data should be cached for 24 hours
-		cache.writeToCache(type + venueId, forecastData, 86400);
+		cache.writeToCache(type + venue.getVenueId(), forecastData, 86400);
 	}
 }

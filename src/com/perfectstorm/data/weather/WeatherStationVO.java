@@ -42,6 +42,11 @@ public class WeatherStationVO extends BeanDataVO {
 	private int activeFlag;
 	private double latitude;
 	private double longitude;
+	private int radarFlag;
+	private String radarCode;
+	private String forecastOfficeCode;
+	private int forecastGridXNo;
+	private int forecastGridYNo;
 	private Date createDate;
 	private Date updateDate;
 	
@@ -259,6 +264,81 @@ public class WeatherStationVO extends BeanDataVO {
 	 */
 	public void setZipCode(String zipCode) {
 		this.zipCode = zipCode;
+	}
+
+	/**
+	 * @return the radarFlag
+	 */
+	@Column(name="radar_flg")
+	public int getRadarFlag() {
+		return radarFlag;
+	}
+
+	/**
+	 * @param radarFlag the radarFlag to set
+	 */
+	public void setRadarFlag(int radarFlag) {
+		this.radarFlag = radarFlag;
+	}
+
+	/**
+	 * @return the radarCode
+	 */
+	@Column(name="radar_cd")
+	public String getRadarCode() {
+		return radarCode;
+	}
+
+	/**
+	 * @param radarCode the radarCode to set
+	 */
+	public void setRadarCode(String radarCode) {
+		this.radarCode = radarCode;
+	}
+
+	/**
+	 * @return the forecastOfficeCode
+	 */
+	@Column(name="forecast_office_cd")
+	public String getForecastOfficeCode() {
+		return forecastOfficeCode;
+	}
+
+	/**
+	 * @param forecastOfficeCode the forecastOfficeCode to set
+	 */
+	public void setForecastOfficeCode(String forecastOfficeCode) {
+		this.forecastOfficeCode = forecastOfficeCode;
+	}
+
+	/**
+	 * @return the forecastGridXNo
+	 */
+	@Column(name="forecast_gridx_no")
+	public int getForecastGridXNo() {
+		return forecastGridXNo;
+	}
+
+	/**
+	 * @param forecastGridXNo the forecastGridXNo to set
+	 */
+	public void setForecastGridXNo(int forecastGridXNo) {
+		this.forecastGridXNo = forecastGridXNo;
+	}
+
+	/**
+	 * @return the forecastGridYNo
+	 */
+	@Column(name="forecast_gridy_no")
+	public int getForecastGridYNo() {
+		return forecastGridYNo;
+	}
+
+	/**
+	 * @param forecastGridYNo the forecastGridYNo to set
+	 */
+	public void setForecastGridYNo(int forecastGridYNo) {
+		this.forecastGridYNo = forecastGridYNo;
 	}
 
 }
