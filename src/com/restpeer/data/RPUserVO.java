@@ -7,6 +7,7 @@ import java.sql.ResultSet;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
+import com.siliconmtn.util.PhoneNumberFormat;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.user.UserVO;
 
@@ -36,6 +37,7 @@ public class RPUserVO extends UserVO {
 
 	// helpers
 	private long memberAssociations;
+	private String formattedPhoneNumber;
 	
 	/**
 	 * 
@@ -105,6 +107,25 @@ public class RPUserVO extends UserVO {
 	}
 
 	/**
+	 * @return the formattedPhoneNumber
+	 */
+	public String getFormattedPhoneNumber() {
+		return formattedPhoneNumber;
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.user.UserVO#setPhoneNumber(java.lang.String)
+	 */
+	@Override
+	public void setPhoneNumber(String phoneNumber) {
+		super.setPhoneNumber(phoneNumber);
+		
+		PhoneNumberFormat pnf = new PhoneNumberFormat(getPhoneNumber(), PhoneNumberFormat.INTERNATIONAL_FORMAT);
+		formattedPhoneNumber = pnf.getFormattedNumber();
+	}
+	
+	/**
 	 * @param driverLicense the driverLicense to set
 	 */
 	public void setDriverLicense(String driverLicense) {
@@ -123,6 +144,13 @@ public class RPUserVO extends UserVO {
 	 */
 	public void setMemberAssociations(long memberAssociations) {
 		this.memberAssociations = memberAssociations;
+	}
+
+	/**
+	 * @param formattedPhoneNumber the formattedPhoneNumber to set
+	 */
+	public void setFormattedPhoneNumber(String formattedPhoneNumber) {
+		this.formattedPhoneNumber = formattedPhoneNumber;
 	}
 
 }
