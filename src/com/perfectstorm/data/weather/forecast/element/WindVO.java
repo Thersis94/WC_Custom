@@ -1,6 +1,7 @@
 package com.perfectstorm.data.weather.forecast.element;
 
 import java.sql.ResultSet;
+import java.util.HashMap;
 import java.util.Map;
 
 import com.siliconmtn.action.ActionRequest;
@@ -23,6 +24,19 @@ public class WindVO extends BeanDataVO {
 
 	private static final long serialVersionUID = -156342374154881806L;
 	
+	// Keys for the data map
+	private static final String WIND_DIRECTION = "direction";
+	private static final String WIND_SPEED = "speed";
+	private static final String SPEED_MAX = "speedMax";
+	private static final String GUST_SPEED = "gustSpeed";
+	private static final String TRANSPORT_DIRECTION = "transportDirection";
+	private static final String TRANSPORT_SPEED = "transportSpeed";
+	private static final String TWENTY_FOOT_DIRECTION = "twentyFootDirection";
+	private static final String TWENTY_FOOT_SPEED = "twentyFootSpeed";
+	private static final String TROPICAL_STORM_WIND_PROBABILITY = "tropicalStormWindProbability";
+	private static final String HURRICANE_STORM_WIND_PROBABILITY = "hurricaneStormWindProbability";
+	
+	// Members
 	private int direction; // angle (degrees)
 	private double speed; // knots, mph, kmph, m/s
 	private double speedMax; // knots, mph, kmph, m/s
@@ -52,6 +66,26 @@ public class WindVO extends BeanDataVO {
 	 */
 	public WindVO(ResultSet rs) {
 		super(rs);
+	}
+	
+	/**
+	 * Gets a map of all values
+	 * @return
+	 */
+	public Map<String, Integer> getDataMap() {
+		Map<String, Integer> dataMap = new HashMap<>();
+		dataMap.put(WIND_DIRECTION, direction);
+		dataMap.put(WIND_SPEED, (int) Math.round(speed));
+		dataMap.put(SPEED_MAX, (int) Math.round(speedMax));
+		dataMap.put(GUST_SPEED, (int) Math.round(gustSpeed));
+		dataMap.put(TRANSPORT_DIRECTION, transportDirection);
+		dataMap.put(TRANSPORT_SPEED, (int) Math.round(transportSpeed));
+		dataMap.put(TWENTY_FOOT_DIRECTION, twentyFootDirection);
+		dataMap.put(TWENTY_FOOT_SPEED, (int) Math.round(twentyFootSpeed));
+		dataMap.put(TROPICAL_STORM_WIND_PROBABILITY, tropicalStormWindProbability);
+		dataMap.put(HURRICANE_STORM_WIND_PROBABILITY, hurricaneStormWindProbability);
+		
+		return dataMap;
 	}
 
 	/**

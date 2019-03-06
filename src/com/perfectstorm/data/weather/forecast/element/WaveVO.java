@@ -1,6 +1,8 @@
 package com.perfectstorm.data.weather.forecast.element;
 
 import java.sql.ResultSet;
+import java.util.HashMap;
+import java.util.Map;
 
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.parser.BeanDataVO;
@@ -42,4 +44,11 @@ public class WaveVO extends BeanDataVO {
 		super(rs);
 	}
 
+	/**
+	 * Gets a map of all values
+	 * @return
+	 */
+	public Map<String, Integer> getDataMap() {
+		return new HashMap<>();
+	}
 }
