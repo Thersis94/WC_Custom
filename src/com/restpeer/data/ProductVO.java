@@ -57,6 +57,7 @@ public class ProductVO extends BeanDataVO {
 	private double price;
 	private int activeFlag;
 	private int scheduleFlag;
+	private int hoursWeek;
 	private int orderNumber;
 	private DataType dataType;
 	private UnitMeasure uom;
@@ -193,6 +194,14 @@ public class ProductVO extends BeanDataVO {
 	}
 
 	/**
+	 * @return the hoursWeek
+	 */
+	@Column(name="hours_week_no")
+	public int getHoursWeek() {
+		return hoursWeek;
+	}
+
+	/**
 	 * @return the createDate
 	 */
 	@Column(name="create_dt", isInsertOnly=true, isAutoGen=true)
@@ -311,6 +320,13 @@ public class ProductVO extends BeanDataVO {
 	 */
 	public void setParentName(String parentName) {
 		this.parentName = parentName;
+	}
+
+	/**
+	 * @param hoursWeek the hoursWeek to set
+	 */
+	public void setHoursWeek(int hoursWeek) {
+		this.hoursWeek = hoursWeek;
 	}
 
 }
