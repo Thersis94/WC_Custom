@@ -3,6 +3,7 @@ package com.perfectstorm.action.admin;
 // JDK 1.8.x
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 // PS Libs
 import com.perfectstorm.data.AttributeVO.AttributeType;
@@ -14,7 +15,7 @@ import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
-
+import com.siliconmtn.db.pool.SMTDBConnection;
 // WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
 
@@ -49,6 +50,18 @@ public class VenueTourAttributeWidget extends SBActionAdapter {
 	 */
 	public VenueTourAttributeWidget(ActionInitVO actionInit) {
 		super(actionInit);
+	}
+
+	/**
+	 * 
+	 * @param attributes
+	 * @param dbConn
+	 */
+	public VenueTourAttributeWidget(Map<String, Object> attributes, SMTDBConnection dbConn ) {
+		super();
+		
+		this.attributes = attributes;
+		this.dbConn = dbConn;
 	}
 
 	/*

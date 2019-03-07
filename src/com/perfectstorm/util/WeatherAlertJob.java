@@ -12,13 +12,22 @@ import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
 import org.quartz.utils.DBConnectionManager;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.perfectstorm.action.admin.VenueTourAttributeWidget;
 import com.perfectstorm.action.venue.VenueAction;
+import com.perfectstorm.action.weather.ForecastAlertAction;
+import com.perfectstorm.data.VenueTourAttributeVO;
 import com.perfectstorm.data.VenueTourVO;
+import com.perfectstorm.data.weather.forecast.ForecastAlertVO;
+import com.perfectstorm.data.weather.forecast.VenueTourForecastVO;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.pool.SMTDBConnection;
+import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
-import com.siliconmtn.util.StringUtil;
+import com.siliconmtn.http.websocket.WebSocketSessionManager;
+import com.siliconmtn.util.UUIDGenerator;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.scheduler.AbstractSMTJob;
 
@@ -38,11 +47,6 @@ import com.smt.sitebuilder.scheduler.AbstractSMTJob;
 
 public class WeatherAlertJob extends AbstractSMTJob {
 	
-	/**
-	 * Field for the database schema name
-	 */
-	public static final String DB_SCHEMA = "DB_SCHEMA";
-	
 	private Map<String, Object> attributes;
 	private SMTDBConnection dbConnection;
 
@@ -57,18 +61,16 @@ public class WeatherAlertJob extends AbstractSMTJob {
 	@Override
 	public void execute(JobExecutionContext ctx) throws JobExecutionException {
 		super.execute(ctx);
-		log.debug("starting weather alert job");
 		
 		JobDataMap jobAttributes = ctx.getMergedJobDataMap();
 		String message = null;
 		boolean success = true;
 		
-		// Get the Job Instance Values
-		String schema = StringUtil.checkVal(jobAttributes.getString(DB_SCHEMA));
-		
-		// Set the required attributes since this is out-of-band
+		// Transpose the attributes, since this is out-of-band
 		attributes = new HashMap<>();
-		attributes.put(Constants.CUSTOM_DB_SCHEMA, schema + '.');
+		for (String key : jobAttributes.getKeys()) {
+			attributes.put(key, jobAttributes.get(key));
+		}
 		
 		// Get the db connection
 		try (Connection dbConn = DBConnectionManager.getInstance().getConnection("quartzDS")) {
@@ -77,20 +79,20 @@ public class WeatherAlertJob extends AbstractSMTJob {
 			// Get all tour venues requiring weather alerts
 			List<VenueTourVO> venueTours = getVenueTours();
 			for (VenueTourVO venueTour : venueTours) {
-				log.debug("handling weather alerts for: " + venueTour.getVenueTourId());
-				
 				// Get latest forecast data
 				VenueAction va = new VenueAction(attributes, dbConnection);
 				venueTour = va.getVenueTour(venueTour.getVenueTourId());
 				venueTour.setCurrentConditions(va.getForecast(venueTour, null));
 				
+				// Save the forecast data to the db, since we are in the "recording" period
+				String forecastId = saveCurrentConditions(venueTour);
+				
 				// Get thresholds for the tour venue
+				VenueTourAttributeWidget vta = new VenueTourAttributeWidget(attributes, dbConnection);
+				List<VenueTourAttributeVO> thresholds = vta.getVenueTourAttributes(venueTour.getVenueTourId());
 				
 				// Scan forecast data for thresholds that are exceeded
-					// Send push notifications
-					// Send SMS notifications
-				
-				// Save the forecast data to the db, along with the alerts they generated
+				checkThresholds(venueTour, thresholds, forecastId);
 			}
 			
 		} catch (Exception e) {
@@ -104,6 +106,79 @@ public class WeatherAlertJob extends AbstractSMTJob {
 		} catch (InvalidDataException e) {
 			log.error("Unable to finalize job");
 		}
+	}
+	
+	/**
+	 * Checks if weather thresholds have been exceeded in the forecast data
+	 * and sends notifications if so.
+	 * 
+	 * @param venueTour
+	 * @param thresholds
+	 * @param forecastId
+	 */
+	private void checkThresholds(VenueTourVO venueTour, List<VenueTourAttributeVO> thresholds, String forecastId) {
+		boolean hasAlerts = false;
+		Map<String, Integer> forecastData = venueTour.getCurrentConditions().getDataMap();
+
+		// Scan the forecast data for thresholds that are exceeded
+		for (VenueTourAttributeVO threshold : thresholds) {
+			if (forecastData.get(threshold.getAttributeCode()) >= threshold.getValue()) {
+				hasAlerts = true;
+				
+				// Save the alert
+				saveAlert(forecastData, threshold, forecastId);
+				
+				// TODO: Send SMS message for this alert
+			}
+		}
+		
+		// Send push notification to the browser via websockets
+		if (hasAlerts) {
+			WebSocketSessionManager wsm = WebSocketSessionManager.getInstance();
+			wsm.broadcast(venueTour.getVenueTourId(), "updateAlerts");
+		}
+	}
+	
+	/**
+	 * Creates and saves a forecast alert
+	 * 
+	 * @param venueTour
+	 * @param threshold
+	 * @param forecastId
+	 */
+	private void saveAlert(Map<String, Integer> forecastData, VenueTourAttributeVO threshold, String forecastId) {
+		ForecastAlertVO alert = new ForecastAlertVO();
+		alert.setVenueTourForecastId(forecastId);
+		alert.setAttributeCode(threshold.getAttributeCode());
+		alert.setValue(forecastData.get(threshold.getAttributeCode()));
+		alert.setNewFlag(1);
+		
+		ForecastAlertAction fa = new ForecastAlertAction(attributes, dbConnection);
+		fa.saveAlert(alert);
+	}
+	
+	/**
+	 * Saves the current weather conditions
+	 * 
+	 * @param venueTour
+	 * @return
+	 */
+	private String saveCurrentConditions(VenueTourVO venueTour) {
+		String schema = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
+		DBProcessor dbp = new DBProcessor(dbConnection, schema);
+		Gson gson = new GsonBuilder().create();
+		
+		VenueTourForecastVO forecast = new VenueTourForecastVO();
+		forecast.setVenueTourForecastId(new UUIDGenerator().getUUID());
+		forecast.setVenueTourId(venueTour.getVenueTourId());
+		forecast.setForecastText(gson.toJson(venueTour.getCurrentConditions()));
+		try {
+			dbp.insert(forecast);
+		} catch (InvalidDataException | DatabaseException e) {
+			log.error("Error saving forecast conditions", e);
+		}
+		
+		return forecast.getVenueTourForecastId();
 	}
 	
 	/**
