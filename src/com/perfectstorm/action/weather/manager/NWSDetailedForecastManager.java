@@ -141,6 +141,7 @@ public class NWSDetailedForecastManager implements ForecastManagerInterface {
 		populateData(nwsForecast.getProbabilityOfTropicalStormWinds(), forecast, GET_WIND, "setTropicalStormWindProbability", int.class);
 		populateData(nwsForecast.getProbabilityOfHurricaneWinds(), forecast, GET_WIND, "setHurricaneStormWindProbability", int.class);
 		populateData(nwsForecast.getLightningActivityLevel(), forecast, GET_CONDITION, "setLightningActivityLevel", int.class);
+		populateData(nwsForecast.getProbabilityOfThunder(), forecast, GET_CONDITION, "setThunderProbability", int.class);
 		
 		return forecast;
 	}
