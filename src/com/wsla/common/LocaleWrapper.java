@@ -3,8 +3,12 @@ package com.wsla.common;
 // JDK 1.8.x
 import java.util.Locale;
 
+import com.siliconmtn.action.ActionRequest;
 // SMT Base Libs
 import com.siliconmtn.data.parser.BeanDataVO;
+import com.siliconmtn.security.UserDataVO;
+import com.smt.sitebuilder.common.constants.Constants;
+import com.wsla.data.ticket.UserVO;
 
 /****************************************************************************
  * <b>Title</b>: LocaleWrapper.java
@@ -45,6 +49,16 @@ public class LocaleWrapper extends BeanDataVO {
 	 */
 	public LocaleWrapper(WSLALocales wslaLocale) {
 		this(wslaLocale.name());
+	}
+	
+	/**
+	 * Gets the user data form the session and sets the locale
+	 * @param req
+	 */
+	public LocaleWrapper(ActionRequest req) {
+		UserDataVO profile = (UserDataVO)req.getSession().getAttribute(Constants.USER_DATA);
+		UserVO user = (UserVO)profile.getUserExtendedInfo();
+		locale = user.getUserLocale();
 	}
 	
 	/**

@@ -30,7 +30,6 @@ public class CASLocation extends AbsImporter {
 
 	private static final String[] WSLA_CAS_IDS = new String[]{ "000000","000001","000002" };
 	private List<CASFileVO> data;
-	private Map<String, Object> config = new HashMap<>(); //geocoder wants a Map, not a Properties object
 	
 
 	/* (non-Javadoc)
@@ -38,9 +37,6 @@ public class CASLocation extends AbsImporter {
 	 */
 	@Override
 	void run() throws Exception {
-		for (String name : props.stringPropertyNames())
-			    config.put(name, props.getProperty(name));
-		
 		data = readFile(props.getProperty("casFile"), CASFileVO.class, SHEET_1);
 
 		String sql = StringUtil.join("delete from ", schema, "wsla_provider_location ",
@@ -119,19 +115,19 @@ public class CASLocation extends AbsImporter {
 		vo.setActiveFlag(dataVo.getActive());
 
 		//review flg - set to 1 if status isn't rejected, authorized, or signed contract
-		//TODO need to bring status over for CAS Locations
+		vo.setStatus(dataVo.getStatusEnum());
 		if (!"5. WS-NOAUTOCAS".equalsIgnoreCase(dataVo.getStatus()) 
 				&& !"6. WS-SI AUTOCAS".equalsIgnoreCase(dataVo.getStatus()) 
 				&&  !"9. WS-CONTRATFIRM".equalsIgnoreCase(dataVo.getStatus()))
 			vo.setReviewFlag(1);
 
 		//perform geocode on active locations only
-//		if (vo.getActiveFlag() == 1 && vo.getReviewFlag() == 0) {
+		if (vo.getActiveFlag() == 1) {
 			geocode(vo);
-//		} else {
-//			vo.setState(StringUtil.truncate(dataVo.getState(), 5));
-//			vo.setZipCode(dataVo.getZip());
-//		}
+		} else {
+			vo.setState(StringUtil.truncate(dataVo.getState(), 5));
+			vo.setZipCode(dataVo.getZip());
+		}
 
 		vo.setCreateDate(dataVo.getUpdateDate());
 		return vo;
@@ -140,11 +136,12 @@ public class CASLocation extends AbsImporter {
 
 	/**
 	 * Call the geocoder to process this address
+	 * Note: reused by RetailLocation, possibily other offspring
 	 * @param vo
 	 */
-	private void geocode(ProviderLocationVO vo) {
+	protected void geocode(ProviderLocationVO vo) {
 		LocationManager lm = new LocationManager(vo);
-		GeocodeLocation gl = lm.geocode(config, Boolean.FALSE, Boolean.FALSE);
+		GeocodeLocation gl = lm.geocode(getAttributes(), Boolean.FALSE, Boolean.FALSE);
 		//any geocode not matched to address level gets flagged for manual review
 		if (!gl.isSuccessfulGeocode(MatchCode.address))
 			vo.setReviewFlag(1);
