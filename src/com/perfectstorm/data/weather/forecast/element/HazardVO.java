@@ -1,6 +1,8 @@
 package com.perfectstorm.data.weather.forecast.element;
 
 import java.sql.ResultSet;
+import java.util.HashMap;
+import java.util.Map;
 
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.parser.BeanDataVO;
@@ -22,6 +24,18 @@ public class HazardVO extends BeanDataVO {
 
 	private static final long serialVersionUID = -5369165099976669875L;
 	
+	// Keys for the data map
+	public static final String MIXING_HEIGHT = "mixingHeight";
+	public static final String HAINES = "hainesIndex";
+	public static final String DISPERSION = "dispersionIndex";
+	public static final String GRASSLAND_FIRE_DANGER = "grasslandFireDangerIndex";
+	public static final String DAVIS_STABILITY = "davisStabilityIndex";
+	public static final String ATMOSPHERIC_DISPERSION = "atmosphericDispersionIndex";
+	public static final String LOW_VISIBILITY_OCCURENCE_RISK = "lowVisibilityOccurenceRiskIndex";
+	public static final String STABILITY = "stabilityIndex";
+	public static final String RED_FLAG_THREAT = "redFlagThreatIndex";
+	
+	// Members
 	private double mixingHeight; // distance (ft, m)
 	private int hainesIndex; // index - no unit of measure
 	private int dispersionIndex; // index - no unit of measure
@@ -48,6 +62,25 @@ public class HazardVO extends BeanDataVO {
 	 */
 	public HazardVO(ResultSet rs) {
 		super(rs);
+	}
+	
+	/**
+	 * Gets a map of all values
+	 * @return
+	 */
+	public Map<String, Integer> getDataMap() {
+		Map<String, Integer> dataMap = new HashMap<>();
+		dataMap.put(MIXING_HEIGHT, (int) Math.round(mixingHeight));
+		dataMap.put(HAINES, hainesIndex);
+		dataMap.put(DISPERSION, dispersionIndex);
+		dataMap.put(GRASSLAND_FIRE_DANGER, grasslandFireDangerIndex);
+		dataMap.put(DAVIS_STABILITY, davisStabilityIndex);
+		dataMap.put(ATMOSPHERIC_DISPERSION, atmosphericDispersionIndex);
+		dataMap.put(LOW_VISIBILITY_OCCURENCE_RISK, lowVisibilityOccurenceRiskIndex);
+		dataMap.put(STABILITY, stabilityIndex);
+		dataMap.put(RED_FLAG_THREAT, redFlagThreatIndex);
+		
+		return dataMap;
 	}
 
 	/**

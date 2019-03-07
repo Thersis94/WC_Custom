@@ -121,8 +121,10 @@ public class VenueAction extends SimpleActionAdapter {
 		VenueTourVO venueTour = getVenueTour(venueTourId);
 		
 		// Get the radar metadata
-		venueTour.setRadarTypeCode(radarTypeCode);
-		addRadarMetaData(venueTour);
+		if (!StringUtil.isEmpty(radarTypeCode)) {
+			venueTour.setRadarTypeCode(radarTypeCode);
+			addRadarMetaData(venueTour);
+		}
 		
 		// Add the forecast data
 		venueTour.setEventForecast(getForecast(venueTour, venueTour.getEventDate()));

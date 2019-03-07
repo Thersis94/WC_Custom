@@ -29,10 +29,30 @@ public class AttributeVO extends BeanDataVO {
 	 * 
 	 */
 	private static final long serialVersionUID = -1078133238271341507L;
+	
+	/**
+	 * Enum for the attributeTypeCode.
+	 */
+	public enum AttributeType {
+		VENUE("Venue Attribute"),
+		THRESHOLD("Tour Venue Threshold");
+		
+		private String typeName;
+		
+		private AttributeType(String typeName) {
+			this.typeName = typeName;
+		}
+		
+		public String getTypeName() {
+			return typeName;
+		}
+	}
 
 	// Members
 	private String attributeCode;
 	private String name;
+	private AttributeType attributeType;
+	private int defaultValueNo;
 	private Date createDate;
 	
 	/**
@@ -99,6 +119,36 @@ public class AttributeVO extends BeanDataVO {
 	 */
 	public void setCreateDate(Date createDate) {
 		this.createDate = createDate;
+	}
+
+	/**
+	 * @return the attributeType
+	 */
+	@Column(name="attribute_type_cd")
+	public AttributeType getAttributeType() {
+		return attributeType;
+	}
+
+	/**
+	 * @param attributeType the attributeType to set
+	 */
+	public void setAttributeType(AttributeType attributeType) {
+		this.attributeType = attributeType;
+	}
+
+	/**
+	 * @return the defaultValueNo
+	 */
+	@Column(name="default_value_no")
+	public int getDefaultValueNo() {
+		return defaultValueNo;
+	}
+
+	/**
+	 * @param defaultValueNo the defaultValueNo to set
+	 */
+	public void setDefaultValueNo(int defaultValueNo) {
+		this.defaultValueNo = defaultValueNo;
 	}
 
 }

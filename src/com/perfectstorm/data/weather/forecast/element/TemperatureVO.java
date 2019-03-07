@@ -1,6 +1,8 @@
 package com.perfectstorm.data.weather.forecast.element;
 
 import java.sql.ResultSet;
+import java.util.HashMap;
+import java.util.Map;
 
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.parser.BeanDataVO;
@@ -22,6 +24,16 @@ public class TemperatureVO extends BeanDataVO {
 
 	private static final long serialVersionUID = 2399000651829957648L;
 	
+	// Keys for the data map
+	public static final String TEMP = "temperature";
+	public static final String DEW_POINT = "dewPoint";
+	public static final String MAX_TEMP = "maxTemperature";
+	public static final String MIN_TEMP = "minTemperature";
+	public static final String APPARENT_TEMP = "apparentTemperature";
+	public static final String HEAT_INDEX = "heatIndex";
+	public static final String WIND_CHILL = "windChill";
+	
+	// Members
 	private double temperature; // degrees (F, C)
 	private double dewPoint; // degrees (F, C)
 	private double maxTemperature; // degrees (F, C)
@@ -47,6 +59,23 @@ public class TemperatureVO extends BeanDataVO {
 	 */
 	public TemperatureVO(ResultSet rs) {
 		super(rs);
+	}
+	
+	/**
+	 * Gets a map of all values
+	 * @return
+	 */
+	public Map<String, Integer> getDataMap() {
+		Map<String, Integer> dataMap = new HashMap<>();
+		dataMap.put(TEMP, (int) Math.round(temperature));
+		dataMap.put(DEW_POINT, (int) Math.round(dewPoint));
+		dataMap.put(MAX_TEMP, (int) Math.round(maxTemperature));
+		dataMap.put(MIN_TEMP, (int) Math.round(minTemperature));
+		dataMap.put(APPARENT_TEMP, (int) Math.round(apparentTemperature));
+		dataMap.put(HEAT_INDEX, (int) Math.round(heatIndex));
+		dataMap.put(WIND_CHILL, (int) Math.round(windChill));
+		
+		return dataMap;
 	}
 
 	/**
