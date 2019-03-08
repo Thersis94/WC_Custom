@@ -1,7 +1,9 @@
 package com.perfectstorm.action.venue;
 
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -100,7 +102,7 @@ public class VenueAction extends SimpleActionAdapter {
 				putModuleData(getForecast(venueTour, req.getDateParameter("eventDate")));
 
 			} else if (isJson && req.hasParameter("refreshRadar")) {
-				putModuleData(getRadarMetaData(req.getParameter("radarCode"), req.getParameter("radarTypeCode")));
+				putModuleData(getRadarMetaData(req.getParameter("radarCode"), req.getParameter("radarTypeCode"), req.getParameter("venueTourId")));
 
 			} else if (isJson) {
 				putModuleData(getFullVenueTour(venueTourId, req.getParameter("radarTypeCode")));
@@ -175,13 +177,23 @@ public class VenueAction extends SimpleActionAdapter {
 		}
 
 		// Retrieve the radar metadata
+		List<Date> radarTimes;
 		try {
 			NWSRadarManager nrm = new NWSRadarManager();
-			venueTour.setRadarTime(nrm.retrieveData(radarCode, radarTypeCode));
+			radarTimes = nrm.retrieveData(radarCode, radarTypeCode);
 		} catch (ActionException e) {
 			log.error("unable to get radar meta data", e);
-			venueTour.setRadarTime(new ArrayList<>());
+			radarTimes = new ArrayList<>();
 		}
+		
+		// Adjust to the local venue time
+		List<Date> adjustedTimes = new ArrayList<>();
+		for (Date radarTime : radarTimes) {
+			LocalDateTime adjustedDate = radarTime.toInstant().atZone(ZoneId.of(venueTour.getTimezone())).toLocalDateTime();
+			adjustedTimes.add(java.sql.Timestamp.valueOf(adjustedDate));
+		}
+		
+		venueTour.setRadarTime(adjustedTimes);
 	}
 
 	/**
@@ -191,8 +203,8 @@ public class VenueAction extends SimpleActionAdapter {
 	 * @param radarTypeCode
 	 * @return
 	 */
-	public VenueTourVO getRadarMetaData(String radarCode, String radarTypeCode) {
-		VenueTourVO venueTour = new VenueTourVO();
+	public VenueTourVO getRadarMetaData(String radarCode, String radarTypeCode, String venueTourId) {
+		VenueTourVO venueTour = getVenueTour(venueTourId);
 		venueTour.setRadarCode(radarCode);
 		venueTour.setRadarTypeCode(radarTypeCode);
 		addRadarMetaData(venueTour);
@@ -208,7 +220,10 @@ public class VenueAction extends SimpleActionAdapter {
 	 * @return
 	 */
 	public ForecastVO getForecast(VenueTourVO venueTour, Date eventDate) {
-		LocalDateTime now = LocalDateTime.now();
+		ZoneOffset zoneOffset = OffsetDateTime.now(ZoneId.of(venueTour.getTimezone())).getOffset();
+		int offsetHours = (zoneOffset.getTotalSeconds() / 3600) * -1;
+		
+		LocalDateTime now = new Date().toInstant().atZone(ZoneId.of(venueTour.getTimezone())).toLocalDateTime();
 		LocalDateTime date = eventDate == null ? now : eventDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
 		
 		// If this event is in the past, get the historical info
@@ -217,9 +232,9 @@ public class VenueAction extends SimpleActionAdapter {
 		}
 		
 		try {
-			// Return the forecast data
+			// Return the forecast data which is indexed by utc date/time
 			VenueForecastManager vfm = new VenueForecastManager(venueTour, getAttributes());
-			return vfm.getDetailForecast(date);
+			return vfm.getDetailForecast(date.plusHours(offsetHours));
 		} catch (ActionException e) {
 			log.error("unable to retrieve forecast", e);
 			return new ForecastVO();
@@ -236,8 +251,8 @@ public class VenueAction extends SimpleActionAdapter {
 	public ForecastVO getHistoricalForecast(VenueTourVO venueTour, Date eventDate) {
 		StringBuilder sql = new StringBuilder(150);
 		sql.append(DBUtil.SELECT_FROM_STAR).append(getCustomSchema()).append("ps_venue_tour_forecast vtf ");
-		sql.append(DBUtil.WHERE_CLAUSE).append("venue_tour_id = ? and create_dt >= ? ");
-		sql.append(DBUtil.ORDER_BY).append("create_dt ");
+		sql.append(DBUtil.WHERE_CLAUSE).append("venue_tour_id = ? and venue_dt >= ? ");
+		sql.append(DBUtil.ORDER_BY).append("venue_dt ");
 		sql.append(DBUtil.TABLE_LIMIT).append(" 1 ");
 		log.debug(sql);
 		

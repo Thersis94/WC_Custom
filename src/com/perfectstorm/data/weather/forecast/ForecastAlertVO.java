@@ -1,6 +1,7 @@
 package com.perfectstorm.data.weather.forecast;
 
 import java.sql.ResultSet;
+import java.util.Date;
 
 import com.perfectstorm.data.AttributeVO;
 import com.siliconmtn.action.ActionRequest;
@@ -29,6 +30,7 @@ public class ForecastAlertVO extends AttributeVO {
 	private String venueTourForecastId;
 	private int value;
 	private int newFlag;
+	private Date venueDate;
 	
 	public ForecastAlertVO() {
 		super();
@@ -106,6 +108,21 @@ public class ForecastAlertVO extends AttributeVO {
 	 */
 	public void setNewFlag(int newFlag) {
 		this.newFlag = newFlag;
+	}
+
+	/**
+	 * @return the venueDate
+	 */
+	@Column(name="venue_dt")
+	public Date getVenueDate() {
+		return venueDate;
+	}
+
+	/**
+	 * @param venueDate the venueDate to set
+	 */
+	public void setVenueDate(Date venueDate) {
+		this.venueDate = venueDate;
 	}
 
 }

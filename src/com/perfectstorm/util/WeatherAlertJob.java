@@ -1,6 +1,8 @@
 package com.perfectstorm.util;
 
 import java.sql.Connection;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -135,7 +137,7 @@ public class WeatherAlertJob extends AbstractSMTJob {
 				alertCount++;
 				
 				// Save the alert
-				saveAlert(forecastData, threshold, forecastId);
+				saveAlert(forecastData, threshold, forecastId, venueTour.getTimezone());
 				
 				// Build onto the SMS message for this alert
 				buildSmsMessage(smsMessage, alertCount, forecastData, threshold);
@@ -157,13 +159,18 @@ public class WeatherAlertJob extends AbstractSMTJob {
 	 * @param venueTour
 	 * @param threshold
 	 * @param forecastId
+	 * @param timezone
 	 */
-	private void saveAlert(Map<String, Integer> forecastData, VenueTourAttributeVO threshold, String forecastId) {
+	private void saveAlert(Map<String, Integer> forecastData, VenueTourAttributeVO threshold, String forecastId, String timezone) {
 		ForecastAlertVO alert = new ForecastAlertVO();
 		alert.setVenueTourForecastId(forecastId);
 		alert.setAttributeCode(threshold.getAttributeCode());
 		alert.setValue(forecastData.get(threshold.getAttributeCode()));
 		alert.setNewFlag(1);
+		
+		// Record the current time at the venue this alert was generated
+		LocalDateTime venueDateTime = new Date().toInstant().atZone(ZoneId.of(timezone)).toLocalDateTime();
+		alert.setVenueDate(java.sql.Timestamp.valueOf(venueDateTime));
 		
 		ForecastAlertAction fa = new ForecastAlertAction(attributes, dbConnection);
 		fa.saveAlert(alert);
@@ -274,6 +281,11 @@ public class WeatherAlertJob extends AbstractSMTJob {
 		forecast.setVenueTourForecastId(new UUIDGenerator().getUUID());
 		forecast.setVenueTourId(venueTour.getVenueTourId());
 		forecast.setForecastText(gson.toJson(venueTour.getCurrentConditions()));
+		
+		// Record the current time at the venue for this forecast record
+		LocalDateTime venueDateTime = new Date().toInstant().atZone(ZoneId.of(venueTour.getTimezone())).toLocalDateTime();
+		forecast.setVenueDate(java.sql.Timestamp.valueOf(venueDateTime));
+		
 		try {
 			dbp.insert(forecast);
 		} catch (InvalidDataException | DatabaseException e) {
