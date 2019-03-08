@@ -44,21 +44,20 @@ import com.perfectstorm.data.weather.forecast.VenueTourForecastVO;
  * @since Feb 15, 2019
  * @updates:
  ****************************************************************************/
-
 public class VenueAction extends SimpleActionAdapter {
-	
+
 	/**
 	 * Key for the Facade / Ajax Controller to utilize when calling this class
 	 */
 	public static final String AJAX_KEY = "venue_public";
-	
+
 	/**
 	 * 
 	 */
 	public VenueAction() {
 		super();
 	}
-	
+
 	/**
 	 * 
 	 * @param attributes
@@ -66,7 +65,6 @@ public class VenueAction extends SimpleActionAdapter {
 	 */
 	public VenueAction(Map<String, Object> attributes, SMTDBConnection dbConn ) {
 		super();
-		
 		this.attributes = attributes;
 		this.dbConn = dbConn;
 	}
@@ -84,8 +82,9 @@ public class VenueAction extends SimpleActionAdapter {
 	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
+		//unused
 	}
-	
+
 	/*
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.action.ActionRequest)
@@ -94,7 +93,7 @@ public class VenueAction extends SimpleActionAdapter {
 	public void retrieve(ActionRequest req) throws ActionException {
 		String venueTourId = req.getParameter("venueTourId");
 		boolean isJson = req.getBooleanParameter("json");
-		
+
 		try {
 			if (isJson && req.hasParameter("getForecast")) {
 				VenueTourVO venueTour = getVenueTour(req.getParameter("venueTourId"));
@@ -111,7 +110,7 @@ public class VenueAction extends SimpleActionAdapter {
 			this.putModuleData("", 0, false, e.getLocalizedMessage(), true);
 		}
 	}
-	
+
 	/**
 	 * Gets the specified event with its forecast data and radar metadata.
 	 * 
@@ -121,24 +120,24 @@ public class VenueAction extends SimpleActionAdapter {
 	 */
 	public VenueTourVO getFullVenueTour(String venueTourId, String radarTypeCode) {
 		VenueTourVO venueTour = getVenueTour(venueTourId);
-		
+
 		// Get the radar metadata
 		if (!StringUtil.isEmpty(radarTypeCode)) {
 			venueTour.setRadarTypeCode(radarTypeCode);
 			addRadarMetaData(venueTour);
 		}
-		
+
 		// Add the forecast data
 		venueTour.setEventForecast(getForecast(venueTour, venueTour.getEventDate()));
 		venueTour.setCurrentConditions(getForecast(venueTour, null));
-		
+
 		// Add the sun time data
 		venueTour.setEventSunTime(getSunTime(venueTour, venueTour.getEventDate()));
 		venueTour.setCurrentSunTime(getSunTime(venueTour, null));
-		
+
 		return venueTour;
 	}
-	
+
 	/**
 	 * Gets the specified event.
 	 * 
@@ -153,13 +152,13 @@ public class VenueAction extends SimpleActionAdapter {
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(getCustomSchema()).append("ps_weather_station ws on v.radar_station_cd = ws.weather_station_cd");
 		sql.append(DBUtil.WHERE_CLAUSE).append("venue_tour_id = ?");
 		log.debug(venueTourId + " | " + sql);
-		
+
 		DBProcessor dbp = new DBProcessor(getDBConnection(), getCustomSchema());
 		List<VenueTourVO> data = dbp.executeSelect(sql.toString(), Arrays.asList(venueTourId), new VenueTourVO());
-		
+
 		return data == null || data.isEmpty() ? new VenueTourVO() : data.get(0);
 	}
-	
+
 	/**
 	 * Adds the radar meta data required by the UI.
 	 * 
@@ -174,7 +173,7 @@ public class VenueAction extends SimpleActionAdapter {
 			venueTour.setRadarTime(new ArrayList<>());
 			return;
 		}
-		
+
 		// Retrieve the radar metadata
 		try {
 			NWSRadarManager nrm = new NWSRadarManager();
@@ -184,7 +183,7 @@ public class VenueAction extends SimpleActionAdapter {
 			venueTour.setRadarTime(new ArrayList<>());
 		}
 	}
-	
+
 	/**
 	 * Retrieves updated radar meta data only.
 	 * 
@@ -197,10 +196,10 @@ public class VenueAction extends SimpleActionAdapter {
 		venueTour.setRadarCode(radarCode);
 		venueTour.setRadarTypeCode(radarTypeCode);
 		addRadarMetaData(venueTour);
-		
+
 		return venueTour;
 	}
-	
+
 	/**
 	 * Gets the forecast for the venue and the requested date.
 	 * 
@@ -258,7 +257,7 @@ public class VenueAction extends SimpleActionAdapter {
 		Gson gson = new GsonBuilder().create();
 		return gson.fromJson(data.get(0).getForecastText(), ForecastVO.class);
 	}
-	
+
 	/**
 	 * Gets the sunrise and sunset for the venue.
 	 * 
@@ -273,7 +272,7 @@ public class VenueAction extends SimpleActionAdapter {
 		sunTime.setLongitudeNumber(venue.getLongitude());
 		sunTime.setSourceDate(eventDate == null ? new Date() : eventDate);
 		sunTime.setTimeZoneName(venue.getTimezone());
-		
+
 		try {
 			return stc.calculateSunTimes(sunTime);
 		} catch (InvalidDataException e) {
