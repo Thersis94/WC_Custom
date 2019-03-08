@@ -12,6 +12,7 @@ import com.siliconmtn.data.parser.BeanDataVO;
 import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
+import com.siliconmtn.util.StringUtil;
 
 /****************************************************************************
  * <b>Title</b>: TourVO.java
@@ -77,6 +78,7 @@ public class TourVO extends BeanDataVO {
 	 */
 	public TourVO(ActionRequest req) {
 		super(req);
+		setCustomerId(StringUtil.checkVal(getCustomerId(), null));
 	}
 
 	/**

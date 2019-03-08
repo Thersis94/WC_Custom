@@ -73,6 +73,7 @@ public class VenueVO extends GeocodeLocation {
 	public VenueVO(ActionRequest req) {
 		this.populateData(req);
 		setObservationStationCode(StringUtil.checkVal(getObservationStationCode(), null));
+		setCustomerId(StringUtil.checkVal(getCustomerId(), null));
 	}
 
 	/**
