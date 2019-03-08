@@ -95,7 +95,7 @@ public class ProductWidget extends SBActionAdapter {
 		}
 		
 		if (all) sql.append("order by group_cd, parent_cd desc, product_nm ");
-		else sql.append("order by order_no, a.category_cd, product_nm");
+		else sql.append("order by order_no, hours_week_no, price_no, product_nm, a.category_cd");
 		log.debug(sql.length() + "|" + sql);
 		
 		// Execute and return the data
