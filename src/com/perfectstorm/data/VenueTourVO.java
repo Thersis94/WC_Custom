@@ -16,7 +16,6 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
-import com.siliconmtn.util.StringUtil;
 
 /****************************************************************************
  * <b>Title</b>: TourVO.java

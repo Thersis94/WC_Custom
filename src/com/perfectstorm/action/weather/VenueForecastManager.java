@@ -140,14 +140,12 @@ public class VenueForecastManager {
 		if (fullDetail == null || fullDetail.getHoursSinceForecast() > 1) {
 			refreshCache(cache, DETAIL_CACHE_KEY_PREFIX);
 		} else {
-			log.debug("hours since: " + fullDetail.getHoursSinceForecast());
 			detailForecast = fullDetail.getFullForecast();
 		}
 		
 		if (fullExtended == null || fullExtended.getHoursSinceForecast() > 1) {
 			refreshCache(cache, EXTENDED_CACHE_KEY_PREFIX);
 		} else {
-			log.debug("hours since: " + fullExtended.getHoursSinceForecast());
 			extendedForecast = fullExtended.getFullForecast();
 		}
 	}

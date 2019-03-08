@@ -2,6 +2,8 @@ package com.perfectstorm.data;
 
 // JDK 1.8.x
 import java.sql.ResultSet;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -55,6 +57,7 @@ public class VenueVO extends GeocodeLocation {
 	// Helpers
 	private List<Date> radarTime;
 	private String customerName;
+	private Date currentVenueDate;
 	
 	// Bean SubElements
 	private List<VenueAttributeVO> attributes = new ArrayList<>();
@@ -277,6 +280,9 @@ public class VenueVO extends GeocodeLocation {
 	 */
 	public void setTimezone(String timezone) {
 		this.timezone = timezone;
+		
+		LocalDateTime venueDateTime = new Date().toInstant().atZone(ZoneId.of(timezone)).toLocalDateTime();
+		setCurrentVenueDate(java.sql.Timestamp.valueOf(venueDateTime));
 	}
 
 	/**
@@ -381,6 +387,20 @@ public class VenueVO extends GeocodeLocation {
 	 */
 	public void setCustomerName(String customerName) {
 		this.customerName = customerName;
+	}
+
+	/**
+	 * @return the currentVenueDate
+	 */
+	public Date getCurrentVenueDate() {
+		return currentVenueDate;
+	}
+
+	/**
+	 * @param currentVenueDate the currentVenueDate to set
+	 */
+	public void setCurrentVenueDate(Date currentVenueDate) {
+		this.currentVenueDate = currentVenueDate;
 	}
 }
 
