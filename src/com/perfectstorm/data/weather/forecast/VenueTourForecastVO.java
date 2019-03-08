@@ -31,6 +31,7 @@ public class VenueTourForecastVO extends BeanDataVO {
 	private String venueTourId;
 	private String forecastText;
 	private Date createDate;
+	private Date venueDate;
 
 	public VenueTourForecastVO() {
 		super();
@@ -108,6 +109,21 @@ public class VenueTourForecastVO extends BeanDataVO {
 	 */
 	public void setCreateDate(Date createDate) {
 		this.createDate = createDate;
+	}
+
+	/**
+	 * @return the venueDate
+	 */
+	@Column(name="venue_dt")
+	public Date getVenueDate() {
+		return venueDate;
+	}
+
+	/**
+	 * @param venueDate the venueDate to set
+	 */
+	public void setVenueDate(Date venueDate) {
+		this.venueDate = venueDate;
 	}
 
 }

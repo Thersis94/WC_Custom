@@ -281,6 +281,11 @@ public class WeatherAlertJob extends AbstractSMTJob {
 		forecast.setVenueTourForecastId(new UUIDGenerator().getUUID());
 		forecast.setVenueTourId(venueTour.getVenueTourId());
 		forecast.setForecastText(gson.toJson(venueTour.getCurrentConditions()));
+		
+		// Record the current time at the venue for this forecast record
+		LocalDateTime venueDateTime = new Date().toInstant().atZone(ZoneId.of(venueTour.getTimezone())).toLocalDateTime();
+		forecast.setVenueDate(java.sql.Timestamp.valueOf(venueDateTime));
+		
 		try {
 			dbp.insert(forecast);
 		} catch (InvalidDataException | DatabaseException e) {

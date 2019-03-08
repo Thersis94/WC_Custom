@@ -252,8 +252,8 @@ public class VenueAction extends SimpleActionAdapter {
 	public ForecastVO getHistoricalForecast(VenueTourVO venueTour, Date eventDate) {
 		StringBuilder sql = new StringBuilder(150);
 		sql.append(DBUtil.SELECT_FROM_STAR).append(getCustomSchema()).append("ps_venue_tour_forecast vtf ");
-		sql.append(DBUtil.WHERE_CLAUSE).append("venue_tour_id = ? and create_dt >= ? ");
-		sql.append(DBUtil.ORDER_BY).append("create_dt ");
+		sql.append(DBUtil.WHERE_CLAUSE).append("venue_tour_id = ? and venue_dt >= ? ");
+		sql.append(DBUtil.ORDER_BY).append("venue_dt ");
 		sql.append(DBUtil.TABLE_LIMIT).append(" 1 ");
 		log.debug(sql);
 		
