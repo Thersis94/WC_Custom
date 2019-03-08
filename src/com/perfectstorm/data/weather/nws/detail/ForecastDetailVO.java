@@ -62,6 +62,7 @@ public class ForecastDetailVO extends BeanDataVO {
 	private WeatherAttribueVO probabilityOfTropicalStormWinds;
 	private WeatherAttribueVO probabilityOfHurricaneWinds;
 	private WeatherAttribueVO lightningActivityLevel;
+	private WeatherAttribueVO probabilityOfThunder;
 
 	
 	// VO Members
@@ -534,6 +535,20 @@ public class ForecastDetailVO extends BeanDataVO {
 	 */
 	public void setLightningActivityLevel(WeatherAttribueVO lightningActivityLevel) {
 		this.lightningActivityLevel = lightningActivityLevel;
+	}
+
+	/**
+	 * @return the probabilityOfThunder
+	 */
+	public WeatherAttribueVO getProbabilityOfThunder() {
+		return probabilityOfThunder;
+	}
+
+	/**
+	 * @param probabilityOfThunder the probabilityOfThunder to set
+	 */
+	public void setProbabilityOfThunder(WeatherAttribueVO probabilityOfThunder) {
+		this.probabilityOfThunder = probabilityOfThunder;
 	}
 }
 

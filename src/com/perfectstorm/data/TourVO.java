@@ -59,6 +59,9 @@ public class TourVO extends BeanDataVO {
 	private Date updateDate;
 	private TourType tourTypeCode;
 	
+	// Helpers
+	private String customerName;
+	
 	// Bean SubElements
 	private List<VenueTourVO> venues = new ArrayList<>();
 	
@@ -269,6 +272,21 @@ public class TourVO extends BeanDataVO {
 	 */
 	public void setCustomerId(String customerId) {
 		this.customerId = customerId;
+	}
+
+	/**
+	 * @return the customerName
+	 */
+	@Column(name="customer_nm", isReadOnly=true)
+	public String getCustomerName() {
+		return customerName;
+	}
+
+	/**
+	 * @param customerName the customerName to set
+	 */
+	public void setCustomerName(String customerName) {
+		this.customerName = customerName;
 	}
 }
 
