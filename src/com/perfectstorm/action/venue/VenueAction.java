@@ -19,7 +19,8 @@ import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
-
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 //WC Libs 3.x
 import com.perfectstorm.action.weather.SunTimeCalculatorAction;
 import com.perfectstorm.action.weather.VenueForecastManager;
@@ -29,6 +30,7 @@ import com.perfectstorm.data.VenueTourVO;
 import com.perfectstorm.data.VenueVO;
 import com.perfectstorm.data.weather.SunTimeVO;
 import com.perfectstorm.data.weather.forecast.ForecastVO;
+import com.perfectstorm.data.weather.forecast.VenueTourForecastVO;
 
 /****************************************************************************
  * <b>Title</b>: VenueAction.java
@@ -206,8 +208,14 @@ public class VenueAction extends SimpleActionAdapter {
 	 * @return
 	 */
 	public ForecastVO getForecast(VenueTourVO venueTour, Date eventDate) {
-		LocalDateTime date = eventDate == null ? LocalDateTime.now() : eventDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
-
+		LocalDateTime now = LocalDateTime.now();
+		LocalDateTime date = eventDate == null ? now : eventDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
+		
+		// If this event is in the past, get the historical info
+		if (date.isBefore(now)) {
+			return getHistoricalForecast(venueTour, eventDate);
+		}
+		
 		try {
 			// Return the forecast data
 			VenueForecastManager vfm = new VenueForecastManager(venueTour, getAttributes());
@@ -216,7 +224,38 @@ public class VenueAction extends SimpleActionAdapter {
 			log.error("unable to retrieve forecast", e);
 			return new ForecastVO();
 		}
-
+	}
+	
+	/**
+	 * Gets a historical forecast for a tour venue
+	 * 
+	 * @param venueTour
+	 * @param eventDate
+	 * @return
+	 */
+	public ForecastVO getHistoricalForecast(VenueTourVO venueTour, Date eventDate) {
+		StringBuilder sql = new StringBuilder(150);
+		sql.append(DBUtil.SELECT_FROM_STAR).append(getCustomSchema()).append("ps_venue_tour_forecast vtf ");
+		sql.append(DBUtil.WHERE_CLAUSE).append("venue_tour_id = ? and create_dt >= ? ");
+		sql.append(DBUtil.ORDER_BY).append("create_dt ");
+		sql.append(DBUtil.TABLE_LIMIT).append(" 1 ");
+		log.debug(sql);
+		
+		// Set the parameters
+		List<Object> params = new ArrayList<>();
+		params.add(venueTour.getVenueTourId());
+		params.add(eventDate);
+		
+		// Get the record
+		DBProcessor dbp = new DBProcessor(getDBConnection(), getCustomSchema());
+		List<VenueTourForecastVO> data = dbp.executeSelect(sql.toString(), params, new VenueTourForecastVO());
+		
+		if (data.isEmpty())
+			return new ForecastVO();
+		
+		// Re-create the object from the JSON data
+		Gson gson = new GsonBuilder().create();
+		return gson.fromJson(data.get(0).getForecastText(), ForecastVO.class);
 	}
 
 	/**

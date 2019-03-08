@@ -54,6 +54,7 @@ public class VenueVO extends GeocodeLocation {
 	
 	// Helpers
 	private List<Date> radarTime;
+	private String customerName;
 	
 	// Bean SubElements
 	private List<VenueAttributeVO> attributes = new ArrayList<>();
@@ -72,6 +73,7 @@ public class VenueVO extends GeocodeLocation {
 	public VenueVO(ActionRequest req) {
 		this.populateData(req);
 		setObservationStationCode(StringUtil.checkVal(getObservationStationCode(), null));
+		setCustomerId(StringUtil.checkVal(getCustomerId(), null));
 	}
 
 	/**
@@ -364,6 +366,21 @@ public class VenueVO extends GeocodeLocation {
 	 */
 	public void setForecastGridYNo(int forecastGridYNo) {
 		this.forecastGridYNo = forecastGridYNo;
+	}
+
+	/**
+	 * @return the customerName
+	 */
+	@Column(name="customer_nm", isReadOnly=true)
+	public String getCustomerName() {
+		return customerName;
+	}
+
+	/**
+	 * @param customerName the customerName to set
+	 */
+	public void setCustomerName(String customerName) {
+		this.customerName = customerName;
 	}
 }
 

@@ -1,6 +1,7 @@
 package com.perfectstorm.util;
 
 import java.sql.Connection;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
@@ -17,6 +18,8 @@ import com.google.gson.GsonBuilder;
 import com.perfectstorm.action.admin.VenueTourAttributeWidget;
 import com.perfectstorm.action.venue.VenueAction;
 import com.perfectstorm.action.weather.ForecastAlertAction;
+import com.perfectstorm.data.CustomerVO.CustomerType;
+import com.perfectstorm.data.MemberVO;
 import com.perfectstorm.data.VenueTourAttributeVO;
 import com.perfectstorm.data.VenueTourVO;
 import com.perfectstorm.data.weather.forecast.ForecastAlertVO;
@@ -26,10 +29,13 @@ import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
+import com.siliconmtn.exception.MailException;
 import com.siliconmtn.http.websocket.WebSocketSessionManager;
+import com.siliconmtn.io.mail.SMSMessageVO;
 import com.siliconmtn.util.UUIDGenerator;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.scheduler.AbstractSMTJob;
+import com.smt.sitebuilder.util.MessageSender;
 
 /****************************************************************************
  * <b>Title:</b> WeatherAlertJob.java
@@ -117,25 +123,31 @@ public class WeatherAlertJob extends AbstractSMTJob {
 	 * @param forecastId
 	 */
 	private void checkThresholds(VenueTourVO venueTour, List<VenueTourAttributeVO> thresholds, String forecastId) {
-		boolean hasAlerts = false;
+		int alertCount = 0;
 		Map<String, Integer> forecastData = venueTour.getCurrentConditions().getDataMap();
+		
+		StringBuilder smsMessage = new StringBuilder(100);
+		smsMessage.append(venueTour.getVenueName() + " - ");
 
 		// Scan the forecast data for thresholds that are exceeded
 		for (VenueTourAttributeVO threshold : thresholds) {
 			if (forecastData.get(threshold.getAttributeCode()) >= threshold.getValue()) {
-				hasAlerts = true;
+				alertCount++;
 				
 				// Save the alert
 				saveAlert(forecastData, threshold, forecastId);
 				
-				// TODO: Send SMS message for this alert
+				// Build onto the SMS message for this alert
+				buildSmsMessage(smsMessage, alertCount, forecastData, threshold);
 			}
 		}
 		
-		// Send push notification to the browser via websockets
-		if (hasAlerts) {
+		// Send push notification to the browser via websockets and SMS messages
+		if (alertCount > 0) {
 			WebSocketSessionManager wsm = WebSocketSessionManager.getInstance();
 			wsm.broadcast(venueTour.getVenueTourId(), "updateAlerts");
+			
+			sendSmsAlerts(smsMessage.toString(), venueTour);
 		}
 	}
 	
@@ -155,6 +167,96 @@ public class WeatherAlertJob extends AbstractSMTJob {
 		
 		ForecastAlertAction fa = new ForecastAlertAction(attributes, dbConnection);
 		fa.saveAlert(alert);
+	}
+	
+	/**
+	 * Builds onto a weather alert SMS message to be sent with all alerts for a tour venue
+	 * 
+	 * @param smsMessage
+	 * @param alertCount
+	 * @param forecastData
+	 * @param threshold
+	 */
+	private void buildSmsMessage(StringBuilder smsMessage, int alertCount, Map<String, Integer> forecastData, VenueTourAttributeVO threshold) {
+		smsMessage.append(alertCount > 1 ? ", " : "");
+		smsMessage.append(threshold.getName()).append(": ");
+		smsMessage.append(forecastData.get(threshold.getAttributeCode()));
+	}
+	
+	/**
+	 * Sends SMS alerts to notify all interested parties that
+	 * a weather threshold was exceeded.
+	 * 
+	 * @param message
+	 */
+	private void sendSmsAlerts(String message, VenueTourVO venueTour) {
+		String schema = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
+		StringBuilder sql = new StringBuilder(700);
+		
+		// Perfect Storm Members
+		sql.append(DBUtil.SELECT_CLAUSE).append("m.*");
+		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("ps_customer c");
+		sql.append(DBUtil.INNER_JOIN).append(schema).append("ps_customer_member_xr cm on c.customer_id = cm.customer_id");
+		sql.append(DBUtil.INNER_JOIN).append(schema).append("ps_member m on cm.member_id = m.member_id");
+		sql.append(DBUtil.WHERE_CLAUSE).append("c.customer_type_cd = ? ");
+		
+		// Venue Members
+		sql.append(DBUtil.UNION);
+		sql.append(DBUtil.SELECT_CLAUSE).append("m.*");
+		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("ps_venue v ");
+		sql.append(DBUtil.INNER_JOIN).append(schema).append("ps_customer c on v.customer_id = c.customer_id ");
+		sql.append(DBUtil.INNER_JOIN).append(schema).append("ps_customer_member_xr cm on c.customer_id = cm.customer_id ");
+		sql.append(DBUtil.INNER_JOIN).append(schema).append("ps_member m on cm.member_id = m.member_id ");
+		sql.append(DBUtil.WHERE_CLAUSE).append("v.venue_id = ? ");
+		
+		// Tour Members
+		sql.append(DBUtil.UNION);
+		sql.append(DBUtil.SELECT_CLAUSE).append("m.*");
+		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("ps_tour t ");
+		sql.append(DBUtil.INNER_JOIN).append(schema).append("ps_customer c on t.customer_id = c.customer_id ");
+		sql.append(DBUtil.INNER_JOIN).append(schema).append("ps_customer_member_xr cm on c.customer_id = cm.customer_id ");
+		sql.append(DBUtil.INNER_JOIN).append(schema).append("ps_member m on cm.member_id = m.member_id ");
+		sql.append(DBUtil.WHERE_CLAUSE).append("t.tour_id = ? ");
+		log.debug(sql);
+		
+		// Add the parameters
+		List<Object> params = new ArrayList<>();
+		params.add(CustomerType.PS.name());
+		params.add(venueTour.getVenueId());
+		params.add(venueTour.getTourId());
+		
+		// Get the interested members
+		DBProcessor dbp = new DBProcessor(dbConnection);
+		List<MemberVO> members = dbp.executeSelect(sql.toString(), params, new MemberVO());
+		
+		// Send the alerts to the members
+		for (MemberVO member: members) {
+			sendSmsMessage(message, member.getPhoneNumber());
+		}
+	}
+	
+	/**
+	 * Sends a single SMS alert
+	 * 
+	 * @param message
+	 * @param phoneNumber
+	 */
+	private void sendSmsMessage(String message, String phoneNumber) {
+		log.debug("Sending SMS to: " + phoneNumber);
+		
+		try {
+			SMSMessageVO sms = new SMSMessageVO();
+			sms.addRecipient(phoneNumber);
+			sms.setBody(message);
+
+			MessageSender ms = new MessageSender(attributes, dbConnection);
+			ms.sendMessage(sms);
+			if (sms.getErrorString() != null) {
+				throw new MailException(sms.getErrorString());
+			}
+		} catch (InvalidDataException | MailException e) {
+			log.error("could not send weather alert sms", e);
+		}
 	}
 	
 	/**
