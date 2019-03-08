@@ -73,12 +73,13 @@ public class TourWidget extends SBActionAdapter {
 		// Add the params
 		List<Object> vals = new ArrayList<>(); 
 		StringBuilder sql = new StringBuilder(256);
-		sql.append("select * from ").append(getCustomSchema()).append("ps_tour a ");
+		sql.append("select a.*, b.*, c.customer_nm from ").append(getCustomSchema()).append("ps_tour a ");
 		sql.append("left outer join ( ");
 		sql.append("select tour_id, count(*) as venue_no "); 
 		sql.append("from ").append(getCustomSchema()).append("ps_venue_tour_xr ");
 		sql.append("group by tour_id ");
 		sql.append(") as b on a.tour_id = b.tour_id ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(getCustomSchema()).append("ps_customer c on a.customer_id = c.customer_id ");
 		sql.append("where 1=1 ");
 		
 		// Add the search filter

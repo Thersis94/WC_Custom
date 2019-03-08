@@ -18,7 +18,7 @@ import com.siliconmtn.db.orm.GridDataVO;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
-
+import com.siliconmtn.util.StringUtil;
 // WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
 
@@ -73,14 +73,14 @@ public class CustomerAction extends SBActionAdapter {
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		BSTableControlVO bst = new BSTableControlVO(req, CustomerVO.class);
-		setModuleData(getCustomers(bst));
+		setModuleData(getCustomers(bst, null));
 	}
 	
 	/**
 	 * Gets the attributes
 	 * @return
 	 */
-	public GridDataVO<CustomerVO> getCustomers(BSTableControlVO bst) {
+	public GridDataVO<CustomerVO> getCustomers(BSTableControlVO bst, String customerType) {
 		List<Object> vals = new ArrayList<>();
 		
 		StringBuilder sql = new StringBuilder(128);
@@ -89,6 +89,11 @@ public class CustomerAction extends SBActionAdapter {
 		if (bst.hasSearch()) {
 			sql.append("and lower(customer_nm) like ? ");
 			vals.add(bst.getLikeSearch().toLowerCase());
+		}
+		
+		if (!StringUtil.isEmpty(customerType)) {
+			sql.append("and customer_type_cd = ? ");
+			vals.add(customerType);
 		}
 		
 		sql.append("order by ").append(bst.getDBSortColumnName("customer_nm"));
