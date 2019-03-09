@@ -27,6 +27,7 @@ import com.siliconmtn.action.ActionException;
 
 // SMT Base Libs
 import com.siliconmtn.io.http.SMTHttpConnectionManager;
+import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 
 /****************************************************************************
@@ -108,7 +109,7 @@ public class NWSDetailedForecastManager implements ForecastManagerInterface {
 	 * @throws ActionException 
 	 */
 	private Map<String, ForecastVO> processData(WeatherDetailVO detail) throws ActionException {
-		Map<String, ForecastVO> forecast = createForecastSkeleton();
+		Map<String, ForecastVO> forecast = createForecastSkeleton(detail.getProperties().getValidTimes());
 		
 		// Map the NWS data to our normalized beans.
 		ForecastDetailVO nwsForecast = detail.getProperties();
@@ -199,15 +200,16 @@ public class NWSDetailedForecastManager implements ForecastManagerInterface {
 	 * 
 	 * @return
 	 */
-	private Map<String, ForecastVO> createForecastSkeleton() {
+	private Map<String, ForecastVO> createForecastSkeleton(String validTime) {
 		Map<String, ForecastVO> skeleton = new HashMap<>();
+		Date startDate = Convert.formatDate("yyyy-MM-dd'T'HH:mm:ss", validTime.substring(0, 19));
 		
-		LocalDate today = LocalDate.now();
+		LocalDate today = startDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
 		int monthDay = today.getDayOfMonth();
 		int monthLen = today.lengthOfMonth();
 		
-		// The forecast will span nine days, with data recorded hour by hour
-		for (int day = 0; day < 9; day++) {
+		// The forecast will span ten days, with data recorded hour by hour
+		for (int day = 0; day < 10; day++) {
 			for (int hour = 0; hour < 24; hour++) {
 				ForecastVO fvo = new ForecastVO();
 				skeleton.put(monthDay + "_" + hour, fvo);

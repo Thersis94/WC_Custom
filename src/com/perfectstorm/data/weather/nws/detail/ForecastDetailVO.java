@@ -33,6 +33,7 @@ public class ForecastDetailVO extends BeanDataVO {
 	private String gridX;
 	private String gridY;
 	private String forecastOffice;
+	private String validTimes;
 	
 	// Attributes to be parsed
 	private WeatherAttribueVO temperature;
@@ -549,6 +550,20 @@ public class ForecastDetailVO extends BeanDataVO {
 	 */
 	public void setProbabilityOfThunder(WeatherAttribueVO probabilityOfThunder) {
 		this.probabilityOfThunder = probabilityOfThunder;
+	}
+
+	/**
+	 * @return the validTimes
+	 */
+	public String getValidTimes() {
+		return validTimes;
+	}
+
+	/**
+	 * @param validTimes the validTimes to set
+	 */
+	public void setValidTimes(String validTimes) {
+		this.validTimes = validTimes;
 	}
 }
 
