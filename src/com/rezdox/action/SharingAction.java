@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.rezdox.action.BusinessAction.BusinessStatus;
 //WC Custom
 import com.rezdox.action.RezDoxNotifier.Message;
 import com.rezdox.action.RezDoxUtils.EmailSlug;
@@ -112,10 +113,48 @@ public class SharingAction extends SimpleActionAdapter {
 	public void build(ActionRequest req) throws ActionException {
 		if (req.hasParameter("revoke")) {
 			deshareResource(req);
+			downgradeUserRole(req);
 		} else {
 			shareResource(req);
 			verifyUserRole(req);
 			notifyReciever(req);
+		}
+	}
+
+
+	/**
+	 * When revoking a shared resource, downgrade the user from hybrid to residencial 
+	 * if they no longer have any shared businesses.
+	 * @param req
+	 */
+	private void downgradeUserRole(ActionRequest req) {
+		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
+		String profileId = req.getParameter(MemberAction.REQ_PROFILE_ID);
+		String memberId = req.getParameter(MemberAction.REQ_MEMBER_ID);
+		String downgradedRoleId = null;
+		SubscriptionAction sa = new SubscriptionAction(getDBConnection(), getAttributes());
+		try {
+			int count = 0;
+			if (req.hasParameter(BusinessAction.REQ_BUSINESS_ID)) {
+				downgradedRoleId = RezDoxUtils.REZDOX_RESIDENCE_ROLE; //from hybrid to residence - if they have no more buisnesses
+				count = sa.getBusinessUsage(memberId, BusinessStatus.ACTIVE.getStatus(), BusinessStatus.PENDING.getStatus(), BusinessStatus.SHARED.getStatus());
+			} else {
+				downgradedRoleId = RezDoxUtils.REZDOX_BUSINESS_ROLE; //from hybrid to business - if they have no more residences
+				count = sa.getResidenceUsage(memberId, ResidenceAction.STATUS_ACTIVE, ResidenceAction.STATUS_SHARED);
+			}
+
+			if (count == 0) {
+				ProfileRoleManager prm = new ProfileRoleManager();
+				//don't change a role that isn't specifically in the hybrid state
+				SBUserRole role = prm.getRole(profileId, StringUtil.checkVal(site.getAliasPathParentId(), site.getSiteId()), RezDoxUtils.REZDOX_RES_BUS_ROLE, null, dbConn);
+				if (!StringUtil.isEmpty(role.getProfileRoleId())) {
+					role.setRoleId(downgradedRoleId);
+					prm.addRole(role, dbConn);
+				}
+			}
+
+		} catch (DatabaseException e) {
+			log.error(e.getMessage(), e);
 		}
 	}
 
@@ -127,7 +166,7 @@ public class SharingAction extends SimpleActionAdapter {
 	 */
 	private void verifyUserRole(ActionRequest req) {
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
-		String profileId = req.getParameter("profileId");
+		String profileId = req.getParameter(MemberAction.REQ_PROFILE_ID);
 		String requiredRoleId = req.hasParameter(BusinessAction.REQ_BUSINESS_ID) ? 
 				RezDoxUtils.REZDOX_BUSINESS_ROLE : RezDoxUtils.REZDOX_RESIDENCE_ROLE;
 
@@ -222,21 +261,22 @@ public class SharingAction extends SimpleActionAdapter {
 		String resourceId = isBusiness ? req.getParameter(BusinessAction.REQ_BUSINESS_ID) : req.getParameter(ResidenceAction.RESIDENCE_ID);
 		String schema = getCustomSchema();
 		StringBuilder sql = new StringBuilder(150);
-		sql.append("select m.member_id, m.first_nm, m.last_nm, m.email_address_txt, ");
+		sql.append("select m.member_id, m.profile_id, m.first_nm, m.last_nm, m.email_address_txt, ");
 		sql.append("m.profile_pic_pth, pa.city_nm, pa.state_cd ");
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("REZDOX_MEMBER m ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append("PROFILE_ADDRESS pa on m.profile_id=pa.profile_id ");
 		if (isBusiness) {
-			sql.insert(7, "bm.business_member_xr_id as profile_id, 1 as status_flg, ");
+			sql.insert(7, "bm.business_member_xr_id as register_submittal_id, 1 as status_flg, ");
 			sql.append(DBUtil.INNER_JOIN).append(schema).append("REZDOX_BUSINESS_MEMBER_XR bm on m.member_id=bm.member_id ");
 			sql.append("and bm.status_flg=2 and bm.business_id=? ");
 		} else {
-			sql.insert(7, "rm.residence_member_xr_id as profile_id, 2 as status_flg, ");
+			sql.insert(7, "rm.residence_member_xr_id as register_submittal_id, 2 as status_flg, ");
 			sql.append(DBUtil.INNER_JOIN).append(schema).append("REZDOX_RESIDENCE_MEMBER_XR rm on m.member_id=rm.member_id ");
 			sql.append("and rm.status_flg=2 and rm.residence_id=? ");
 		}
 		sql.append("where m.email_address_txt is not null ");
 		sql.append("order by m.last_nm, m.first_nm");
+		log.debug(sql);
 
 		DBProcessor db = new DBProcessor(getDBConnection(), schema);
 		return db.executeSelect(sql.toString(), Arrays.asList(resourceId), new MemberVO());
@@ -282,7 +322,7 @@ public class SharingAction extends SimpleActionAdapter {
 			return; //quit before things get ugly.  This should never happen though.
 
 		List<EmailRecipientVO> rcpts = new ArrayList<>();
-		rcpts.add(new EmailRecipientVO(req.getParameter("profileId"), req.getParameter("emailAddress"), EmailRecipientVO.TO));
+		rcpts.add(new EmailRecipientVO(req.getParameter(MemberAction.REQ_PROFILE_ID), req.getParameter("emailAddress"), EmailRecipientVO.TO));
 
 		EmailCampaignBuilderUtil emailer = new EmailCampaignBuilderUtil(getDBConnection(), getAttributes());
 		EmailSlug slug = isBusiness ? EmailSlug.BUSINESS_SHARED : EmailSlug.RESIDENCE_SHARED;

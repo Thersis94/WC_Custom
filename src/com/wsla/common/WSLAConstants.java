@@ -68,6 +68,10 @@ public class WSLAConstants {
 			return roleId;
 		}
 	}
+	/**
+	 * Warranty id used for all retail owned equipment over all of wsla
+	 */
+	public static final String RETAIL_WARRANTY = "RETAILER_OWNED_DEVICE";
 	
 	/**
 	 * "References" email header suffix for tickets, to denote where the

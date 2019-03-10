@@ -146,7 +146,6 @@ public class UpdateVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc
 		twitterTxt = req.getParameter("twitterTxt");
 		tweetFlg = Convert.formatInteger(Convert.formatBoolean(req.getParameter("tweetFlg")));
 		statusCd = req.getParameter("statusCd");
-		setPublishDate(Convert.formatDate(req.getParameter("publishDt")));
 		orderNo = Convert.formatInteger(req.getParameter("orderNo"));
 		emailFlg = Convert.formatInteger(req.getParameter("emailFlg"), 1);
 		announcementType = Convert.formatInteger(req.getParameter("announcementType"), 0);
