@@ -200,11 +200,13 @@ public class ProductExplorer extends SBActionAdapter {
 		boolean isRedirect = !StringUtil.isEmpty(cookieVal);
 
 		//Check if we need to append Cookie Value to the redirect request.
-		if(isRedirect) {
+		if(isRedirect && !url.contains("json")) {
 			SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 			url = buildRedirectPath(url, cookieVal, SecurityController.isManageTool(site));
 			CookieUtil.remove(req, PE_STATE_COOKIE);
 			super.sendRedirect(url, null, req);
+		} else {
+			isRedirect = false;
 		}
 
 		return isRedirect;

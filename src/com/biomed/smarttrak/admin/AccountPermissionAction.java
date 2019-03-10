@@ -50,14 +50,25 @@ public class AccountPermissionAction extends AbstractTreeAction {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
+		SmarttrakTree t = getAccountPermissionTree(req);
+
+		//Return if tree couldn't be retrieved.  Probably improper request.
+		if(t == null) {
+			return;
+		}
+
+		//Else set Tree in moduleData.
+		putModuleData(t);
+	}
+
+	public SmarttrakTree getAccountPermissionTree(ActionRequest req) {
 		AccountAction.loadAccount(req, dbConn, getAttributes());
 
 		//accountId is required for this action
 		String accountId = req.hasParameter(ACCOUNT_ID) ? req.getParameter(ACCOUNT_ID) : null;
-		if (accountId == null) return;
+		if (accountId == null) return null;
 
-		SmarttrakTree t = loadTree(MASTER_ROOT, PermissionVO.class, accountId);
-		putModuleData(t);
+		return loadTree(MASTER_ROOT, PermissionVO.class, accountId);
 	}
 
 

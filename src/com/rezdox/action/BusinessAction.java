@@ -421,6 +421,7 @@ public class BusinessAction extends SBActionAdapter {
 
 		} else if (req.hasParameter("savePhoto")) {
 			savePhoto(req);
+			
 		} else {
 			try {				
 				putModuleData(saveBusiness(req), 1, false);
@@ -430,10 +431,21 @@ public class BusinessAction extends SBActionAdapter {
 			}
 		}
 
+		processNotifications(req, site, notifyAdmin);
+	}
+
+
+	/**
+	 * process notifications and/or emails after saving a business (build method above)
+	 * @param req
+	 * @param notifyAdmin
+	 * @param site
+	 */
+	private void processNotifications(ActionRequest req, SiteVO site, boolean notifyAdmin) {
+		BusinessVO business = new BusinessVO(req);
 		//notify the admin if a new business got created - it requires approval
 		if (notifyAdmin) {
 			//repopulate the VO when what the form handler repositioned for us
-			business = new BusinessVO(req);
 			EmailCampaignBuilderUtil emailer = new EmailCampaignBuilderUtil(getDBConnection(), getAttributes());
 			List<EmailRecipientVO> rcpts = new ArrayList<>();
 			rcpts.add(new EmailRecipientVO(null, site.getAdminEmail(), EmailRecipientVO.TO));
@@ -451,7 +463,32 @@ public class BusinessAction extends SBActionAdapter {
 			data.put("email", business.getEmailAddressText());
 
 			emailer.sendMessage(data, rcpts, RezDoxUtils.EmailSlug.BUSINESS_PENDING.name());
+
+		} else {
+			//if not a new business, and files were uploaded (ads or images), notify connected members of the change
+			boolean hasNewAdFile = Convert.formatBoolean(req.getAttribute("adFileUploaded"));
+			boolean hasNewVideoUrl = !StringUtil.checkVal(req.getAttribute("newYoutubeAdUrl"), "~|~").equals(req.getParameter("oldYoutubeAdUrl"));
+			log.debug(String.format("adFileUploaded=%s - hasNewYoutubeUrl=%s", hasNewAdFile, hasNewVideoUrl));
+
+			if (hasNewAdFile || hasNewVideoUrl)
+				notifyNewPromo(site, business);
 		}
+	}
+
+
+	/**
+	 * Ask the notifier to post a message to connected members that a new ad/promotion is available
+	 * @param site
+	 * @param business
+	 */
+	private void notifyNewPromo(SiteVO site, BusinessVO business) {
+		String bizUrl = StringUtil.join(RezDoxUtils.BUSINESS_STOREFRONT_PATH, "?storeFront=1&businessId=", business.getBusinessId());
+
+		Map<String, Object> params = new HashMap<>();
+		params.put("companyName", business.getBusinessName());
+		params.put("storefrontUrl", bizUrl);
+		RezDoxNotifier notifyUtil = new RezDoxNotifier(site, getDBConnection(), getCustomSchema());
+		notifyUtil.notifyConnectedMembers(business, Message.NEW_BUS_PROMOTION, params, null);
 	}
 
 

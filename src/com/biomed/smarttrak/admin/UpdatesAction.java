@@ -4,9 +4,12 @@ package com.biomed.smarttrak.admin;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -42,10 +45,9 @@ import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.user.HumanNameIntfc;
 import com.siliconmtn.util.user.NameComparator;
-
+import com.smt.sitebuilder.action.search.SolrFieldVO.FieldType;
 // WC Core libs
 import com.smt.sitebuilder.action.search.SolrResponseVO;
-import com.smt.sitebuilder.action.search.SolrFieldVO.FieldType;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.SiteVO;
@@ -307,8 +309,17 @@ public class UpdatesAction extends ManagementAction {
 		String end = CookieUtil.getValue(COOK_UPD_END_DT, req.getCookies());
 		if (end == null) {
 			HttpServletResponse res = (HttpServletResponse) req.getAttribute(GlobalConfig.HTTP_RESPONSE);
-			end = Convert.formatDate(Calendar.getInstance().getTime(), Convert.DATE_SLASH_PATTERN); //today
+			end = Convert.formatDate(Convert.convertTimeZoneOffset(Calendar.getInstance().getTime(), "EST5EDT"), Convert.DATE_SLASH_PATTERN); //today
 			CookieUtil.add(res, COOK_UPD_END_DT, end, "/", -1);
+		} else if (end != "") {
+
+			//If we have a specified date, ensure that we've offset time to midnight.
+			Calendar cal = Calendar.getInstance();
+			cal.setTime(Convert.formatDate(end));
+			cal.set(Calendar.HOUR, 23);
+			cal.set(Calendar.MINUTE, 59);
+			cal.set(Calendar.SECOND, 59);
+			end = Convert.formatDate(cal.getTime(), Convert.DATE_TIME_DASH_PATTERN);
 		}
 		req.setParameter(COOK_UPD_START_DT, start);
 		req.setParameter(COOK_UPD_END_DT, end);
@@ -579,7 +590,6 @@ public class UpdatesAction extends ManagementAction {
 	protected void saveRecord(ActionRequest req, boolean isDelete) throws ActionException {
 		DBProcessor db = new DBProcessor(dbConn, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		UpdateVO u = new UpdateVO(req);
-
 		//Set the redirect URL if applicable
 		setRedirectUrl(req);
 
@@ -598,6 +608,15 @@ public class UpdatesAction extends ManagementAction {
 			} else {
 				filterText(u);
 
+				//Set Converted Date for Create or Update Date depending on action being performed.
+				if(StringUtil.isEmpty(u.getUpdateId())) {
+					u.setCreateDt(Convert.convertTimeZoneOffset(new Date(), "EST5EDT"));
+				} else {
+					u.setUpdateDt(Convert.convertTimeZoneOffset(new Date(), "EST5EDT"));
+				}
+
+				u.setPublishDate(calcPublishDt(Convert.formatDate(req.getParameter("publishDt"))));
+
 				db.save(u);
 
 				fixPkids(u);
@@ -614,7 +633,70 @@ public class UpdatesAction extends ManagementAction {
 			throw new ActionException(e);
 		}
 	}
-	
+
+	/**
+	 * Determine if Time needs Adjusted on the PublishDate.
+	 * @param reqDate
+	 * @return
+	 */
+	public Date calcPublishDt(Date reqDate) {
+		if(reqDate == null) {
+			return null;
+		}
+
+		Calendar pDate = Calendar.getInstance();
+		Calendar now = Calendar.getInstance();
+		pDate.setTime(reqDate);
+
+		boolean isSameDay = pDate.get(Calendar.DAY_OF_YEAR) == now.get(Calendar.DAY_OF_YEAR);
+		boolean zeroTime = pDate.get(Calendar.HOUR) == 0 && pDate.get(Calendar.MINUTE) == 0 && pDate.get(Calendar.SECOND) == 0;
+
+		/**
+		 * If the publishDate is the same as today and we don't have a time set,
+		 * Set current time on the pDate Calendar.  If this is a future update,
+		 * Look for the max date in the database, adjust by 1 minute later and
+		 * set pDate with that value.
+		 *
+		 * Ensures that ordering is maintained using publish_dt as the rule
+		 * moving forward.
+		 */
+		if(isSameDay && zeroTime) {
+			log.debug("New Date");
+			pDate.add(Calendar.HOUR, now.get(Calendar.HOUR));
+			pDate.add(Calendar.MINUTE, now.get(Calendar.MINUTE));
+			pDate.add(Calendar.SECOND, now.get(Calendar.SECOND));
+			pDate.set(Calendar.AM_PM, now.get(Calendar.AM_PM));
+		} else {
+			Timestamp latestDbPubDt = loadLatestPubDate(reqDate);
+			if(latestDbPubDt != null) {
+				pDate.setTime(latestDbPubDt);
+				pDate.add(Calendar.MINUTE, 1);
+			}
+		}
+		return pDate.getTime();
+	}
+
+	/**
+	 * Load latest publishDate Timestamp for a given reqDate.
+	 * @param pDate
+	 * @return
+	 */
+	private Timestamp loadLatestPubDate(Date reqDate) {
+		StringBuilder sql = new StringBuilder(100);
+		sql.append("select max(publish_dt) from ").append(getCustomSchema()).append("biomedgps_update where date_trunc('day', publish_dt) = ?");
+		try(PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setObject(1, reqDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDate());
+			ResultSet rs = ps.executeQuery();
+			if(rs.next()) {
+				return rs.getTimestamp(1);
+			}
+		} catch (SQLException e) {
+			log.error("Error Processing Code", e);
+		}
+
+		return null;
+	}
+
 	/**
 	* The form data used for this update can come from several places. Either the updates tool, 
  	* from the updates review tool, or from the updates home page. If it has come from the review tool 

@@ -13,18 +13,25 @@ import com.biomed.smarttrak.action.AdminControllerAction.Section;
 import com.biomed.smarttrak.action.AdminControllerAction.Status;
 import com.biomed.smarttrak.action.AdminControllerAction;
 import com.biomed.smarttrak.action.CompanyAction;
+import com.biomed.smarttrak.security.SmarttrakRoleVO;
 import com.biomed.smarttrak.util.BiomedCompanyIndexer;
+import com.biomed.smarttrak.util.BiomedProductIndexer;
+import com.biomed.smarttrak.util.ManagementActionUtil;
 import com.biomed.smarttrak.vo.AllianceVO;
 import com.biomed.smarttrak.vo.CompanyAttributeTypeVO;
 import com.biomed.smarttrak.vo.CompanyAttributeVO;
 import com.biomed.smarttrak.vo.CompanyVO;
 import com.biomed.smarttrak.vo.LocationVO;
+import com.biomed.smarttrak.vo.ProductAllianceVO;
 import com.biomed.smarttrak.vo.SectionVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.Node;
 import com.siliconmtn.data.Tree;
+import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
+import com.siliconmtn.db.util.DatabaseException;
+import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -52,7 +59,7 @@ public class CompanyManagementAction extends ManagementAction {
 
 
 	private enum ActionType {
-		COMPANY, LOCATION, ALLIANCE, COMPANYATTRIBUTE, COMPANYATTACH, COMPANYLINK, ATTRIBUTE, PREVIEW
+		COMPANY, LOCATION, ALLIANCE, COMPANYATTRIBUTE, COMPANYATTACH, COMPANYLINK, ATTRIBUTE, PREVIEW, COMPANYATTRIBUTEARCHIVE, COMPANYATTRIBUTEARCHIVEUPDATE
 	}
 
 
@@ -93,16 +100,16 @@ public class CompanyManagementAction extends ManagementAction {
 	private enum ContentType {
 		OVERVIEW("Company Overview", 1),
 		GPS_OVERVIEW("Overview", 1),
-		FUNDING("Funding", 2),
-		OUTLOOK("Revenues & Financial Outlook", 3),
-		COMMENTARY("Recent Commentary", 4),
-		LEGAL("Legal Issues", 5),
-		REGULATORY("Regulatory Issues", 6),
-		TECHNOLOGY("Technology Platform", 1),
-		PRODUCTS("Products", 2),
-		ALLIANCES("Strategic Alliances", 3),
-		INTELLECT("Intellectual Property", 4),
-		SALES("Sales & Distribution", 5);
+		FUNDING("Funding", 5),
+		OUTLOOK("Revenues & Financial Outlook", 10),
+		COMMENTARY("Recent Commentary", 15),
+		LEGAL("Legal Issues", 100),
+		REGULATORY("Regulatory Issues", 100),
+		TECHNOLOGY("Technology Platform", 20),
+		PRODUCTS("Products", 25),
+		ALLIANCES("Strategic Alliances", 35),
+		INTELLECT("Intellectual Property", 30),
+		SALES("Sales & Distribution", 100);
 
 		private String contentName;
 		private int order;
@@ -163,6 +170,9 @@ public class CompanyManagementAction extends ManagementAction {
 			case ATTRIBUTE:
 				attributeRetrieve(req);
 				break;
+			case COMPANYATTRIBUTEARCHIVE:
+				retrieveArchives(req);
+				break;
 			case COMPANYATTRIBUTE:
 			case COMPANYLINK:
 			case COMPANYATTACH:
@@ -180,7 +190,57 @@ public class CompanyManagementAction extends ManagementAction {
 			case PREVIEW:
 				retrievePreview(req);
 				break;
+			default:
+				break;
 		}
+	}
+
+
+	/**
+	 * Load Company Attribute Archive records.
+	 * @param req
+	 * @throws ActionException 
+	 */
+	private void retrieveArchives(ActionRequest req) throws ActionException {
+		String attributeType = req.getParameter("attributeTypeCd");
+		String companyAttributeGroupId = req.getParameter("companyAttributeGroupId");
+		List<Object> params = new ArrayList<>();
+
+		StringBuilder sql = new StringBuilder(150);
+		sql.append(DBUtil.SELECT_FROM_STAR);
+		sql.append(customDbSchema).append("BIOMEDGPS_COMPANY_ATTRIBUTE_XR xr ");
+		sql.append(LEFT_OUTER_JOIN).append(customDbSchema).append("BIOMEDGPS_COMPANY_ATTRIBUTE a ");
+		sql.append("on a.ATTRIBUTE_ID = xr.ATTRIBUTE_ID ");
+		sql.append(DBUtil.WHERE_1_CLAUSE);
+		if (!StringUtil.isEmpty(attributeType)) {
+			sql.append("and TYPE_NM = ? ");
+			params.add(attributeType);
+		}
+		sql.append("and xr.company_attribute_group_id = ? and xr.company_attribute_id != ?");
+		sql.append("ORDER BY xr.create_dt desc ");
+		params.add(companyAttributeGroupId);
+		params.add(companyAttributeGroupId);
+
+		log.debug(sql+"|"+companyAttributeGroupId+"|"+attributeType);
+		DBProcessor db = new DBProcessor(dbConn);
+
+		// DBProcessor returns a list of objects that need to be individually cast to attributes
+		List<Object> results = db.executeSelect(sql.toString(), params, new CompanyAttributeVO());
+		Tree t = buildAttributeTree();
+
+		for (Object o : results) {
+			CompanyAttributeVO c = (CompanyAttributeVO)o;
+			Node n = t.findNode(c.getAttributeId());
+			String[] split = n.getFullPath().split(Tree.DEFAULT_DELIMITER);
+			if ("LINK".equals(c.getAttributeTypeName()) ||
+					"ATTACH".equals(c.getAttributeTypeName())) {
+				c.setGroupName(StringUtil.capitalizePhrase(c.getAttributeName()));
+			} else if (split.length >= 1) {
+				c.setGroupName(split[0]);
+			}
+		}
+
+		putModuleData(results, results.size(), false);
 	}
 
 
@@ -315,7 +375,7 @@ public class CompanyManagementAction extends ManagementAction {
 	 */
 	protected void retrieveAlliance(String allianceId) {
 		StringBuilder sql = new StringBuilder(100);
-		sql.append("SELECT * FROM ").append(customDbSchema).append("BIOMEDGPS_COMPANY_ALLIANCE_XR ");
+		sql.append(DBUtil.SELECT_FROM_STAR).append(customDbSchema).append("BIOMEDGPS_COMPANY_ALLIANCE_XR ");
 		sql.append("WHERE COMPANY_ALLIANCE_XR_ID = ? ");
 
 		List<Object> params = new ArrayList<>();
@@ -333,7 +393,7 @@ public class CompanyManagementAction extends ManagementAction {
 	protected void retrieveAttributes(ActionRequest req) {
 		StringBuilder sql = new StringBuilder(100);
 		List<Object> params = new ArrayList<>();
-		sql.append("SELECT * FROM ").append(customDbSchema).append("BIOMEDGPS_COMPANY_ATTRIBUTE ");
+		sql.append(DBUtil.SELECT_FROM_STAR).append(customDbSchema).append("BIOMEDGPS_COMPANY_ATTRIBUTE ");
 		if (req.hasParameter("searchData")) {
 			sql.append("WHERE lower(ATTRIBUTE_NM) like ? ");
 			params.add("%" + req.getParameter("searchData").toLowerCase() + "%");
@@ -374,7 +434,7 @@ public class CompanyManagementAction extends ManagementAction {
 	 */
 	protected void retrieveCompanyAttribute(ActionRequest req) {
 		StringBuilder sql = new StringBuilder(100);
-		sql.append("SELECT * FROM ").append(customDbSchema).append("BIOMEDGPS_COMPANY_ATTRIBUTE ");
+		sql.append(DBUtil.SELECT_FROM_STAR).append(customDbSchema).append("BIOMEDGPS_COMPANY_ATTRIBUTE ");
 		sql.append("WHERE ATTRIBUTE_ID = ? ");
 
 		List<Object> params = new ArrayList<>();
@@ -393,7 +453,7 @@ public class CompanyManagementAction extends ManagementAction {
 	 */
 	protected void retrieveAttribute(ActionRequest req) {
 		StringBuilder sql = new StringBuilder(100);
-		sql.append("SELECT * FROM ").append(customDbSchema).append("BIOMEDGPS_COMPANY_ATTRIBUTE_XR xr ");
+		sql.append(DBUtil.SELECT_FROM_STAR).append(customDbSchema).append("BIOMEDGPS_COMPANY_ATTRIBUTE_XR xr ");
 		sql.append(LEFT_OUTER_JOIN).append(customDbSchema).append("BIOMEDGPS_COMPANY_ATTRIBUTE a ");
 		sql.append("ON a.ATTRIBUTE_ID = xr.ATTRIBUTE_ID ");
 		sql.append("WHERE COMPANY_ATTRIBUTE_ID = ? ");
@@ -414,7 +474,7 @@ public class CompanyManagementAction extends ManagementAction {
 	 */
 	protected void retrieveLocation(String locationId) {
 		StringBuilder sql = new StringBuilder(100);
-		sql.append("SELECT * FROM ").append(customDbSchema).append("BIOMEDGPS_COMPANY_LOCATION ");
+		sql.append(DBUtil.SELECT_FROM_STAR).append(customDbSchema).append("BIOMEDGPS_COMPANY_LOCATION ");
 		sql.append("WHERE LOCATION_ID = ? ");
 
 		List<Object> params = new ArrayList<>();
@@ -446,9 +506,9 @@ public class CompanyManagementAction extends ManagementAction {
 		}
 
 		// If the request has search terms on it add them here
-		if (req.hasParameter("search")) {
+		if (req.hasParameter(DBUtil.TABLE_SEARCH)) {
 			sql.append("and lower(COMPANY_NM) like ?");
-			params.add("%" + req.getParameter("search").toLowerCase() + "%");
+			params.add("%" + req.getParameter(DBUtil.TABLE_SEARCH).toLowerCase() + "%");
 		}
 
 		// If this is a request for the dashboard an author id will be provided
@@ -462,20 +522,20 @@ public class CompanyManagementAction extends ManagementAction {
 		SortField s = SortField.getFromString(req.getParameter("sort"));
 
 		sql.append("ORDER BY ").append(s.getDbField());
-		sql.append(" ").append(req.hasParameter("order")? req.getParameter("order"):"asc").append(" ");
+		sql.append(" ").append(req.hasParameter(DBUtil.TABLE_ORDER)? req.getParameter(DBUtil.TABLE_ORDER):DBUtil.SortDirection.ASC.name()).append(" ");
 
-		int limit  = Convert.formatInteger(req.getParameter("limit"));
+		int limit  = Convert.formatInteger(req.getParameter(DBUtil.TABLE_LIMIT));
 		if (limit != 0) {
 			sql.append("LIMIT ? OFFSET ? ");
-			params.add(Convert.formatInteger(req.getParameter("limit")));
-			params.add(Convert.formatInteger(req.getParameter("offset")));
+			params.add(Convert.formatInteger(req.getParameter(DBUtil.TABLE_LIMIT)));
+			params.add(Convert.formatInteger(req.getParameter(DBUtil.TABLE_OFFSET)));
 		}
 		log.debug(sql);
 
 		DBProcessor db = new DBProcessor(dbConn);
 		List<Object> companies = db.executeSelect(sql.toString(), params, new CompanyVO());
 
-		super.putModuleData(companies, getCompanyCount(req.getParameter("search"), !req.hasParameter("inactive"), req.getParameter("authorId")), false);
+		super.putModuleData(companies, getCompanyCount(req.getParameter(DBUtil.TABLE_SEARCH), !req.hasParameter("inactive"), req.getParameter("authorId")), false);
 	}
 
 
@@ -524,12 +584,12 @@ public class CompanyManagementAction extends ManagementAction {
 	protected void retrieveCompany(String companyId, ActionRequest req) throws ActionException {
 		CompanyVO company;
 		StringBuilder sql = new StringBuilder(100);
-		sql.append("SELECT * FROM ").append(customDbSchema).append("BIOMEDGPS_COMPANY WHERE COMPANY_ID=?");
+		sql.append(DBUtil.SELECT_FROM_STAR).append(customDbSchema).append("BIOMEDGPS_COMPANY WHERE COMPANY_ID=?");
 
 		List<Object> params = new ArrayList<>();
 		params.add(companyId);
 		DBProcessor db = new DBProcessor(dbConn);
-		company = (CompanyVO) db.executeSelect(sql.toString(), params, new CompanyVO()).get(0);
+		company = db.executeSelect(sql.toString(), params, new CompanyVO()).get(0);
 
 		if (req.getSession().getAttribute("hierarchyTree") == null) {
 			Tree t = loadDefaultTree();
@@ -561,17 +621,27 @@ public class CompanyManagementAction extends ManagementAction {
 	 */
 	protected void addAttributes(CompanyVO company, String attributeType) throws ActionException {
 		List<Object> params = new ArrayList<>();
+		params.add(Status.A.name());
 		params.add(company.getCompanyId());
-		StringBuilder sql = new StringBuilder(150);
-		sql.append("SELECT * FROM ").append(customDbSchema).append("BIOMEDGPS_COMPANY_ATTRIBUTE_XR xr ");
+
+		StringBuilder sql = new StringBuilder(1400);
+		sql.append(DBUtil.SELECT_CLAUSE).append("xr.*, a.*, ");
+		sql.append("case when arch.company_attribute_group_id is not null then 1 else 0 end as has_archives ");
+		sql.append(DBUtil.FROM_CLAUSE).append(customDbSchema).append("BIOMEDGPS_COMPANY_ATTRIBUTE_XR xr ");
 		sql.append(LEFT_OUTER_JOIN).append(customDbSchema).append("BIOMEDGPS_COMPANY_ATTRIBUTE a ");
 		sql.append("on a.ATTRIBUTE_ID = xr.ATTRIBUTE_ID ");
-		sql.append("WHERE COMPANY_ID = ? ");
+		sql.append(LEFT_OUTER_JOIN).append(customDbSchema).append("BIOMEDGPS_COMPANY_ATTRIBUTE_XR arch ");
+		sql.append("on xr.company_attribute_group_id = arch.company_attribute_group_id ");
+		sql.append("and arch.company_attribute_id != arch.company_attribute_group_id ");
+		sql.append("and arch.status_no = ? ").append(DBUtil.WHERE_CLAUSE);
+		sql.append("xr.COMPANY_ID = ? ");
 		if (!StringUtil.isEmpty(attributeType)) {
 			sql.append("and TYPE_NM = ? ");
 			params.add(attributeType);
 		}
-		sql.append("ORDER BY a.DISPLAY_ORDER_NO, xr.ORDER_NO ");
+		sql.append("and xr.company_attribute_id = xr.company_attribute_group_id ");
+		sql.append("ORDER BY a.DISPLAY_ORDER_NO, xr.ORDER_NO, XR.TITLE_TXT ");
+
 		log.debug(sql+"|"+company.getCompanyId()+"|"+attributeType);
 		DBProcessor db = new DBProcessor(dbConn);
 
@@ -661,7 +731,7 @@ public class CompanyManagementAction extends ManagementAction {
 	 */
 	protected void addLocations(CompanyVO company) {
 		StringBuilder sql = new StringBuilder(150);
-		sql.append("SELECT * FROM ").append(customDbSchema).append("BIOMEDGPS_COMPANY_LOCATION ");
+		sql.append(DBUtil.SELECT_FROM_STAR).append(customDbSchema).append("BIOMEDGPS_COMPANY_LOCATION ");
 		sql.append("WHERE COMPANY_ID = ? ");
 		log.debug(sql+"|"+company.getCompanyId());
 		List<Object> params = new ArrayList<>();
@@ -682,7 +752,7 @@ public class CompanyManagementAction extends ManagementAction {
 	 */
 	protected void addAlliances(CompanyVO company) {
 		StringBuilder sql = new StringBuilder(400);
-		sql.append("SELECT * FROM ").append(customDbSchema).append("BIOMEDGPS_COMPANY_ALLIANCE_XR cax ");
+		sql.append(DBUtil.SELECT_FROM_STAR).append(customDbSchema).append("BIOMEDGPS_COMPANY_ALLIANCE_XR cax ");
 		sql.append(LEFT_OUTER_JOIN).append(customDbSchema).append("BIOMEDGPS_ALLIANCE_TYPE at ");
 		sql.append("ON cax.ALLIANCE_TYPE_ID = at.ALLIANCE_TYPE_ID ");
 		sql.append(LEFT_OUTER_JOIN).append(customDbSchema).append("BIOMEDGPS_COMPANY c ");
@@ -727,6 +797,8 @@ public class CompanyManagementAction extends ManagementAction {
 			case ALLIANCE:
 				AllianceVO a = new AllianceVO(req);
 				saveAlliance(a, db);
+				if (Convert.formatBoolean(req.getParameter("addProductsFlg")))
+					addAllianceProducts(a, db);
 				break;
 			case COMPANYATTRIBUTE:
 			case COMPANYLINK:
@@ -738,8 +810,84 @@ public class CompanyManagementAction extends ManagementAction {
 				CompanyAttributeTypeVO t = new CompanyAttributeTypeVO(req);
 				saveAttributeType(t, db, Convert.formatBoolean(req.getParameter("insert")));
 				break;
+			case COMPANYATTRIBUTEARCHIVEUPDATE:
+				attr = new CompanyAttributeVO(req);
+				updateArchiveNote(attr);
+				break;
 			default:break;
 		}
+	}
+
+
+	/**
+	 * Update an Archives Revision Text.
+	 * @param attr
+	 * @param db
+	 */
+	private void updateArchiveNote(CompanyAttributeVO attr) {
+		StringBuilder sql = new StringBuilder(150);
+		sql.append("update ").append(getCustomSchema()).append("BIOMEDGPS_COMPANY_ATTRIBUTE_XR x ");
+		sql.append("set REVISION_NOTE = ?, update_dt = ? where company_attribute_id = ?");
+
+		try(PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, attr.getRevisionNote());
+			ps.setTimestamp(2, Convert.getCurrentTimestamp());
+			ps.setString(3, attr.getCompanyAttributeId());
+			ps.executeUpdate();
+		} catch (SQLException e) {
+			log.error("Error Updating Archive Revision Text", e);
+		}
+	}
+
+
+	/**
+	 * Add new alliance to all of a company's product 
+	 * that do not already have an alliance with that company
+	 * @param a
+	 * @param db
+	 * @throws ActionException
+	 */
+	private void addAllianceProducts(AllianceVO a, DBProcessor db) throws ActionException {
+		Properties props = new Properties();
+		props.putAll(getAttributes());
+		BiomedProductIndexer indexer = new BiomedProductIndexer(props);
+		indexer.setDBConnection(dbConn);
+		StringBuilder sql = new StringBuilder(200);
+		sql.append("select p.product_id from ").append(customDbSchema).append("biomedgps_product p ");
+		sql.append(LEFT_OUTER_JOIN).append(customDbSchema).append("biomedgps_product_alliance_xr pa ");
+		sql.append("on p.product_id = pa.product_id and pa.company_id = ? ");
+		sql.append("where p.company_id = ? and pa.company_id is null ");
+		log.debug(sql+"|"+a.getAllyId()+"|"+a.getCompanyId());
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, a.getAllyId());
+			ps.setString(2, a.getCompanyId());
+			
+			ResultSet rs = ps.executeQuery();
+			while (rs.next()) {
+				String productId = rs.getString("product_id");
+				db.save(buildProductAlliance(a, productId));
+				indexer.indexItems(productId);
+			}
+			
+		} catch (Exception e) {
+			throw new ActionException(e);
+		}
+	}
+
+
+	/**
+	 * Create a full product alliance vo from the supplied id and vo.
+	 * @param a
+	 * @param productId
+	 * @return
+	 */
+	private ProductAllianceVO buildProductAlliance(AllianceVO a, String productId) {
+		ProductAllianceVO pa = new ProductAllianceVO();
+		pa.setProductId(productId);
+		pa.setAllianceTypeId(a.getAllianceTypeId());
+		pa.setAllyId(a.getAllyId());
+		pa.setReferenceText("");
+		return pa;
 	}
 
 
@@ -759,21 +907,22 @@ public class CompanyManagementAction extends ManagementAction {
 		StringBuilder sql = new StringBuilder(275);
 		sql.append(INSERT_INTO).append(customDbSchema);
 		sql.append("BIOMEDGPS_COMPANY_ATTRIBUTE_XR(COMPANY_ATTRIBUTE_ID, ATTRIBUTE_ID,  ");
-		sql.append("COMPANY_ID, TITLE_TXT, ORDER_NO, STATUS_NO, CREATE_DT) ");
-		sql.append("VALUES(?,?,?,?,?,?,?)");
+		sql.append("COMPANY_ID, TITLE_TXT, ORDER_NO, STATUS_NO, COMPANY_ATTRIBUTE_GROUP_ID, CREATE_DT) ");
+		sql.append("VALUES(?,?,?,?,?,?,?,?)");
 		log.debug(sql);
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			for (String contentName : contentList) {
 				ContentType type = ContentType.getFromString(contentName);
 				if (type == null) continue;
-
-				ps.setString(1, new UUIDGenerator().getUUID());
+				String companyAttributeId = new UUIDGenerator().getUUID(); 
+				ps.setString(1, companyAttributeId);
 				ps.setString(2, attributeId);
 				ps.setString(3, companyId);
 				ps.setString(4, type.getContentName());
 				ps.setInt(5, type.getOrder());
 				ps.setString(6, Status.P.toString());
-				ps.setTimestamp(7, Convert.getCurrentTimestamp());
+				ps.setString(7, companyAttributeId);
+				ps.setTimestamp(8, Convert.getCurrentTimestamp());
 				ps.addBatch();
 			}
 
@@ -844,15 +993,53 @@ public class CompanyManagementAction extends ManagementAction {
 	 * @throws ActionException
 	 */
 	protected void saveAttribute(CompanyAttributeVO attr, DBProcessor db) throws ActionException {
+		attr.calulateOrderNo();
 		try {
 			if (StringUtil.isEmpty(attr.getCompanyAttributeId())) {
 				attr.setCompanyAttributeId(new UUIDGenerator().getUUID());
+				attr.setCompanyAttributeGroupId(attr.getCompanyAttributeId());
 				db.insert(attr);
 			} else {
+
+				//Clone Existing Attribute Values
+				archiveAttribute(attr.getCompanyAttributeId(), db);
+
+				//Update with New Values.
 				db.update(attr);
 			}
 		} catch (Exception e) {
 			throw new ActionException(e);
+		}
+	}
+
+
+	/**
+	 * Update the AttributeId of a company attribute and set the archive flag
+	 * to 1 before inserting.
+	 * @param companyAttributeId
+	 * @param db
+	 */
+	private void archiveAttribute(String companyAttributeId, DBProcessor db) {
+		try {
+
+			//Retrieve the existing CompanyAttribute from the DB.
+			CompanyAttributeVO attr = new CompanyAttributeVO();
+			attr.setCompanyAttributeId(companyAttributeId);
+			db.getByPrimaryKey(attr);
+
+			//Overwrite existing Id with new id.
+			attr.setCompanyAttributeId(new UUIDGenerator().getUUID());
+
+			//Clear out the createDt so it's autoGenerated.
+			attr.setCreateDate(null);
+
+			//Ensure ArchiveFlg is set to 1.
+			attr.setStatusNo(Status.A.name());
+
+			//Call insert to generate a copy record.
+			db.insert(attr);
+		} catch (InvalidDataException | DatabaseException e) {
+			log.error("Error Processing Code", e);
 		}
 	}
 
@@ -995,11 +1182,16 @@ public class CompanyManagementAction extends ManagementAction {
 					AllianceVO a = new AllianceVO(req);
 					db.delete(a);
 					break;
+				case COMPANYATTRIBUTEARCHIVE:
+					CompanyAttributeVO arch = new CompanyAttributeVO(req);
+					db.delete(arch);
+					break;
 				case COMPANYATTRIBUTE:
 				case COMPANYLINK:
 				case COMPANYATTACH:
 					CompanyAttributeVO attr = new CompanyAttributeVO(req);
 					db.delete(attr);
+					flushArchives(attr.getCompanyAttributeId());
 					break;
 				case ATTRIBUTE:
 					CompanyAttributeTypeVO t = new CompanyAttributeTypeVO(req);
@@ -1009,6 +1201,23 @@ public class CompanyManagementAction extends ManagementAction {
 			}
 		} catch (Exception e) {
 			throw new ActionException(e);
+		}
+	}
+
+
+	/**
+	 * Flush out Archived Attribute Records related to given companyAttributeId.
+	 * @param companyAttributeId - I'd we're flushing.
+	 * @throws SQLException 
+	 */
+	private void flushArchives(String companyAttributeId) throws SQLException {
+		StringBuilder sql = new StringBuilder(150);
+		sql.append(DBUtil.DELETE_CLAUSE).append(DBUtil.FROM_CLAUSE);
+		sql.append(getCustomSchema()).append("BIOMEDGPS_COMPANY_ATTRIBUTE_XR ");
+		sql.append(DBUtil.WHERE_CLAUSE).append("company_attribute_group_id = ?");
+		try(PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, companyAttributeId);
+			ps.executeUpdate();
 		}
 	}
 
@@ -1060,6 +1269,8 @@ public class CompanyManagementAction extends ManagementAction {
 				generateContent(req, req.getParameter(COMPANY_ID), req.getParameter("attributeId"));
 				// Content generation is called via ajax so no redirect is needed
 				return;
+			} else if("bulkLinkUpdate".equals(buildAction)) {
+				new ManagementActionUtil(dbConn, attributes).bulkUpdateAttributeLinks(req);
 			}
 		} catch (Exception e) {
 			log.error("Error attempting to build: ", e);

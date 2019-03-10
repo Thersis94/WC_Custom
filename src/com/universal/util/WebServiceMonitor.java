@@ -29,7 +29,7 @@ import com.siliconmtn.io.mail.MessageVO;
 import com.siliconmtn.security.StringEncrypter;
 import com.siliconmtn.util.CommandLineUtil;
 import com.siliconmtn.util.StringUtil;
-
+import com.siliconmtn.util.XMLUtil;
 // WebCrescendo
 import com.smt.sitebuilder.util.MessageSender;
 
@@ -136,7 +136,7 @@ public class WebServiceMonitor extends CommandLineUtil {
         log.info("Monitoring HTTPS");
         log.info("---> url: " + url);
         StringBuilder s = new StringBuilder(300);
-        s.append("xml=").append("<?xml version=\"1.0\" encoding=\"utf-8\" ?>").append("<MemberRequest>");
+        s.append(BASE_XML_HEADER).append("<MemberRequest>");
         s.append("<Email>").append(SMT_USER).append("</Email>");
         s.append("<Password>").append(SMT_PWD).append("</Password>");
         s.append("</MemberRequest>");
@@ -206,12 +206,14 @@ public class WebServiceMonitor extends CommandLineUtil {
             errMsg.append(ise.getMessage());
             log.error((errMsg + ise.getMessage()));
         }
+        
         if (isError) {
             sendErrorNotification(url, params, data, errMsg, callType);
             log.error("Monitoring failed, sent notification.");
             return;
         }
         log.debug(("xml response data: " + new String(data)));
+        
         try {
             retrieveElement(data, elem);
             log.info("---> Success");
@@ -236,13 +238,27 @@ public class WebServiceMonitor extends CommandLineUtil {
         ByteArrayInputStream bais = new ByteArrayInputStream(data);
         try {
             Document doc = new SAXReader().read((InputStream)bais);
-            if (doc.getRootElement().getName().equalsIgnoreCase("error") || elemName.equalsIgnoreCase("root")) {
-                return doc.getRootElement();
+            Element root = doc.getRootElement();
+
+            if (root.getName().equalsIgnoreCase("error")) {
+            	StringBuilder errMsg = new StringBuilder(100);
+            	errMsg.append(XMLUtil.checkVal(root.element("ErrorCode")));
+            	errMsg.append("|");
+            	errMsg.append(XMLUtil.checkVal(root.element("ErrorMessage")));
+            	log.info("Webservice is available but returned an Error element: " + errMsg);
+                return root;
+
+            } else if (root.getName().equalsIgnoreCase("root")) {
+            	return root;
+
             }
-            return doc.getRootElement().element(elemName);
+
+            return root.element(elemName);
+
         }
+
         catch (Exception e) {
-            log.error(("Error reading XML data for element: " + elemName), (Throwable)e);
+            log.error(("Error reading XML data or error returned in webservice response: " + elemName), (Throwable)e);
             throw new DocumentException(e.getMessage());
         }
     }
@@ -297,6 +313,7 @@ public class WebServiceMonitor extends CommandLineUtil {
      */
     private void sendErrorNotification(String apiUrl, Map<String,Object> params, 
     		byte[] xmlResponse, StringBuilder errMsg, String callType) {
+    	log.debug("Sending error notification.");
         String toNotify = StringUtil.checkVal((String)props.getProperty("usaWebServiceNotify"), (String)null);
         if (toNotify == null) {
             return;

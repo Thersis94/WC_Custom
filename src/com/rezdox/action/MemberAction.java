@@ -58,7 +58,7 @@ import com.smt.sitebuilder.security.UserLogin;
 public class MemberAction extends SimpleActionAdapter {
 
 	public static final String REQ_MEMBER_ID = "memberId";
-
+	public static final String REQ_PROFILE_ID = "profileId";
 
 	public MemberAction() {
 		super();
@@ -249,7 +249,7 @@ public class MemberAction extends SimpleActionAdapter {
 	 */
 	private void performLogin(UserDataVO user, SiteVO site, ActionRequest req) throws ActionException {
 		try {
-			SecurityController sc = new SecurityController(site.getLoginModule(), site.getRoleModule(), getAttributes());
+			SecurityController sc = new SecurityController(site.getLoginModules(), site.getRoleModule(), getAttributes());
 			sc.authorizeUser(user, req, site, dbConn);
 		} catch (Exception e) {
 			throw new ActionException("could not auto-login user after registration", e);
