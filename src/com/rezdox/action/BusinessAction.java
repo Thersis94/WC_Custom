@@ -364,24 +364,25 @@ public class BusinessAction extends SBActionAdapter {
 				return;
 		}
 
+		String memberId = RezDoxUtils.getMemberId(req);
+		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
+		SubscriptionAction sa = new SubscriptionAction(dbConn, attributes);
+
 		// Edit the business data
 		if (req.hasParameter(REQ_BUSINESS_INFO)) {
 			saveForm(req);
 
-			SubscriptionAction sa = new SubscriptionAction(dbConn, attributes);
-
-			int count = sa.getBusinessUsage(RezDoxUtils.getMemberId(req));
+			int count = sa.getUsageQty(memberId, Group.BU); //counts active or pending businesses
 			if (newBusiness && count == 1) {
-				SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 				try {
-					req.setSession(changeMemebersRole(req, site));
+					req.setSession(changeMemebersRole(req, false));
 
 					// This is the user's first business, give a reward to anyone that might have invited them
 					InvitationAction ia = new InvitationAction(dbConn, attributes);
 					ia.applyInviterRewards(req, RezDoxUtils.REWARD_BUSINESS_INVITE);
 
 					//Send First Business Notifications.
-					sendFirstBusinessNotifications(site, RezDoxUtils.getMemberId(req));
+					sendFirstBusinessNotifications(site, memberId);
 
 				} catch (DatabaseException e) {
 					log.error("could not update member vo", e);
@@ -391,20 +392,36 @@ public class BusinessAction extends SBActionAdapter {
 
 		} else if (req.hasParameter("deleteBusiness")) {
 			String msg = (String) getAttribute(AdminConstants.KEY_SUCCESS_MESSAGE);
+			PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
+			String url = page.getFullPath();
+
 			try {
 				new DBProcessor(dbConn, getCustomSchema()).delete(business);
 			} catch (Exception e) {
-				log.error("could not delete buisness", e);
+				log.error("could not delete business", e);
 				msg = (String) getAttribute(AdminConstants.KEY_ERROR_MESSAGE);
 			}
 			//remove the connections cookie so it rebuilds after the redirect
 			CookieUtil.remove(req, ConnectionAction.CONNECTION_COOKIE);
 
-			PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
-			sendRedirect(page.getFullPath(), msg, req);
+			//downgrade this user's account if they just deleted their only business (and are currently Hybrid role)
+			//first get a count of any businesses this user can see.  Only if it's zero do we want to downgrade.
+			int count = sa.getBusinessUsage(memberId, BusinessStatus.ACTIVE.getStatus(), BusinessStatus.PENDING.getStatus(), BusinessStatus.SHARED.getStatus());
+			SBUserRole role = ((SBUserRole)req.getSession().getAttribute(Constants.ROLE_DATA));
+			if (count == 0 && RezDoxUtils.REZDOX_RES_BUS_ROLE.equals(role.getRoleId())) {
+				try {
+					req.setSession(changeMemebersRole(req, true));
+					url = RezDoxUtils.MEMBER_ROOT_PATH; //redir to dashboard, they can no longer see the businesses page.
+				} catch (DatabaseException de) {
+					log.error("could not downgrade user account", de);
+				}
+			}
+
+			sendRedirect(url, msg, req);
 
 		} else if (req.hasParameter("savePhoto")) {
 			savePhoto(req);
+			
 		} else {
 			try {				
 				putModuleData(saveBusiness(req), 1, false);
@@ -414,12 +431,22 @@ public class BusinessAction extends SBActionAdapter {
 			}
 		}
 
+		processNotifications(req, site, notifyAdmin);
+	}
+
+
+	/**
+	 * process notifications and/or emails after saving a business (build method above)
+	 * @param req
+	 * @param notifyAdmin
+	 * @param site
+	 */
+	private void processNotifications(ActionRequest req, SiteVO site, boolean notifyAdmin) {
+		BusinessVO business = new BusinessVO(req);
 		//notify the admin if a new business got created - it requires approval
 		if (notifyAdmin) {
 			//repopulate the VO when what the form handler repositioned for us
-			business = new BusinessVO(req);
 			EmailCampaignBuilderUtil emailer = new EmailCampaignBuilderUtil(getDBConnection(), getAttributes());
-			SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 			List<EmailRecipientVO> rcpts = new ArrayList<>();
 			rcpts.add(new EmailRecipientVO(null, site.getAdminEmail(), EmailRecipientVO.TO));
 			Map<String, Object> data = new HashMap<>();
@@ -436,8 +463,34 @@ public class BusinessAction extends SBActionAdapter {
 			data.put("email", business.getEmailAddressText());
 
 			emailer.sendMessage(data, rcpts, RezDoxUtils.EmailSlug.BUSINESS_PENDING.name());
+
+		} else {
+			//if not a new business, and files were uploaded (ads or images), notify connected members of the change
+			boolean hasNewAdFile = Convert.formatBoolean(req.getAttribute("adFileUploaded"));
+			boolean hasNewVideoUrl = !StringUtil.checkVal(req.getAttribute("newYoutubeAdUrl"), "~|~").equals(req.getParameter("oldYoutubeAdUrl"));
+			log.debug(String.format("adFileUploaded=%s - hasNewYoutubeUrl=%s", hasNewAdFile, hasNewVideoUrl));
+
+			if (hasNewAdFile || hasNewVideoUrl)
+				notifyNewPromo(site, business);
 		}
 	}
+
+
+	/**
+	 * Ask the notifier to post a message to connected members that a new ad/promotion is available
+	 * @param site
+	 * @param business
+	 */
+	private void notifyNewPromo(SiteVO site, BusinessVO business) {
+		String bizUrl = StringUtil.join(RezDoxUtils.BUSINESS_STOREFRONT_PATH, "?storeFront=1&businessId=", business.getBusinessId());
+
+		Map<String, Object> params = new HashMap<>();
+		params.put("companyName", business.getBusinessName());
+		params.put("storefrontUrl", bizUrl);
+		RezDoxNotifier notifyUtil = new RezDoxNotifier(site, getDBConnection(), getCustomSchema());
+		notifyUtil.notifyConnectedMembers(business, Message.NEW_BUS_PROMOTION, params, null);
+	}
+
 
 	/**
 	 * load a list of photos tied to this treasure box item
@@ -473,11 +526,11 @@ public class BusinessAction extends SBActionAdapter {
 	 * @return
 	 * @throws DatabaseException 
 	 */
-	private SMTSession changeMemebersRole(ActionRequest req, SiteVO site) throws DatabaseException {
+	private SMTSession changeMemebersRole(ActionRequest req, boolean isHybridDowngrade) throws DatabaseException {
 		ProfileRoleManager prm = new ProfileRoleManager();
 		SMTSession session = req.getSession();
 		MemberVO member = (MemberVO) session.getAttribute(Constants.USER_DATA);
-		log.debug("change role for site and member " + site.getSiteId()+"|"+ member.getProfileId());
+		log.debug("change role for site and member " + RezDoxUtils.MAIN_SITE_ID +"|"+ member.getProfileId());
 
 		SBUserRole role = ((SBUserRole)session.getAttribute(Constants.ROLE_DATA));
 
@@ -486,20 +539,26 @@ public class BusinessAction extends SBActionAdapter {
 		String newRoleName = RezDoxUtils.REZDOX_BUSINESS_ROLE_NAME;
 		int newRoleLevel = RezDoxUtils.REZDOX_BUSINESS_ROLE_LEVEL;
 
-		// Upgrade from Residence to Residence/Business Combo
-		if (RezDoxUtils.REZDOX_RESIDENCE_ROLE.equals(role.getRoleId())) {
+		//downgrade from hybrid to residence - they have no more businesses
+		if (isHybridDowngrade) {
+			newRoleId = RezDoxUtils.REZDOX_RESIDENCE_ROLE;
+			newRoleName = RezDoxUtils.REZDOX_RESIDENCE_ROLE_NAME;
+			newRoleLevel = RezDoxUtils.REZDOX_RESIDENCE_ROLE_LEVEL;
+
+			// Upgrade from Residence to Residence/Business Combo
+		} else if (RezDoxUtils.REZDOX_RESIDENCE_ROLE.equals(role.getRoleId())) {
 			newRoleId = RezDoxUtils.REZDOX_RES_BUS_ROLE;
 			newRoleName = RezDoxUtils.REZDOX_RES_BUS_ROLE_NAME;
 			newRoleLevel = RezDoxUtils.REZDOX_RES_BUS_ROLE_LEVEL;
 		}
 
 		prm.removeRole(role.getProfileRoleId(), dbConn);
-		prm.addRole(member.getProfileId(), site.getSiteId(), newRoleId, SecurityController.STATUS_ACTIVE, dbConn);
+		prm.addRole(member.getProfileId(), RezDoxUtils.MAIN_SITE_ID, newRoleId, SecurityController.STATUS_ACTIVE, dbConn);
 		role.setRoleId(newRoleId);
 		role.setRoleLevel(newRoleLevel); 
 		role.setRoleName(newRoleName);
 
-		role.setProfileRoleId(prm.checkRole(member.getProfileId(),  site.getSiteId(), dbConn));
+		role.setProfileRoleId(prm.checkRole(member.getProfileId(),  RezDoxUtils.MAIN_SITE_ID, dbConn));
 		session.setAttribute(Constants.ROLE_DATA, role);				
 		return session;
 	}

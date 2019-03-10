@@ -404,7 +404,7 @@ public class AccountReportVO extends AbstractSBReportVO {
 		sb.append(OPEN_TD).append(Type.getFromId(typeId).getLabel()).append(CLOSE_TD);
 		sb.append(OPEN_TD).append(acctCnt).append(CLOSE_TD).append(OPEN_TD).append(activeCnt).append(CLOSE_TD);
 		sb.append(OPEN_TD).append(extraCnt).append(CLOSE_TD).append(OPEN_TD).append(compCnt).append(CLOSE_TD);
-		sb.append(OPEN_TD).append(updateCnt).append(CLOSE_TD).append(OPEN_TD).append(acctCnt+extraCnt+compCnt+updateCnt).append("</td></tr>");
+		sb.append(OPEN_TD).append(updateCnt).append(CLOSE_TD).append(OPEN_TD).append(activeCnt+extraCnt+compCnt+updateCnt).append("</td></tr>");
 		addCount(counts, ACTIVE_CNT, activeCnt);
 		addCount(counts, EXTRA_CNT, extraCnt);
 		addCount(counts, COMP_CNT, compCnt);

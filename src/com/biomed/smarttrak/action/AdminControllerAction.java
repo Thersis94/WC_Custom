@@ -17,6 +17,7 @@ import com.biomed.smarttrak.admin.AuditLogAction;
 import com.biomed.smarttrak.admin.CRMAction;
 import com.biomed.smarttrak.admin.CompanyManagementAction;
 import com.biomed.smarttrak.admin.DashboardAction;
+import com.biomed.smarttrak.admin.DuplicateItemCheckerAction;
 import com.biomed.smarttrak.admin.EditorsDeskAction;
 import com.biomed.smarttrak.admin.FeaturedInsightsAction;
 import com.biomed.smarttrak.admin.FinancialDashHierarchyAction;
@@ -44,6 +45,7 @@ import com.biomed.smarttrak.admin.report.EmailReportAction;
 import com.biomed.smarttrak.fd.FinancialDashAdminAction;
 import com.biomed.smarttrak.fd.FinancialDashFootnoteAdminAction;
 import com.biomed.smarttrak.fd.FinancialDashScenarioAction;
+import com.siliconmtn.action.ActionControllerFactoryImpl;
 //SMT base libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -201,7 +203,7 @@ public class AdminControllerAction extends SimpleActionAdapter {
 	 * populates the action map when the static constructor is called.  This will make our map live once in the JVM
 	 */
 	static {
-		ACTIONS = new HashMap<>(39);
+		ACTIONS = new HashMap<>(40);
 		ACTIONS.put("tickets", ZohoIntegrationAction.class);
 		ACTIONS.put("hierarchy", SectionHierarchyAction.class);
 		ACTIONS.put("agap", GapAnalysisAdminAction.class);
@@ -242,6 +244,7 @@ public class AdminControllerAction extends SimpleActionAdapter {
 		ACTIONS.put("dashboard", DashboardAction.class);
 		ACTIONS.put("smartSearch", SmartSearchAction.class);
 		ACTIONS.put("feature", FeaturedInsightsAction.class);
+		ACTIONS.put("dupCheck", DuplicateItemCheckerAction.class);
 		ACTIONS.put(DEFAULT_ACTION, com.biomed.smarttrak.action.UpdatesAction.class);
 	}
 
@@ -311,21 +314,10 @@ public class AdminControllerAction extends SimpleActionAdapter {
 	 * @throws ActionException
 	 */
 	protected ActionInterface loadAction(String actionType) throws ActionException {
-		Class<?> c = ACTIONS.get(actionType);
+		Class<? extends ActionInterface> c = ACTIONS.get(actionType);
 		if (c == null) 
 			throw new ActionException("unknown action type:" + actionType);
-
-		//instantiate the action & return it - pass attributes & dbConn
-		try {
-			ActionInterface action = (ActionInterface) c.newInstance();
-			action.setActionInit(actionInit);
-			action.setDBConnection(dbConn);
-			action.setAttributes(getAttributes());
-			action.setActionInit(actionInit);
-			return action;
-		} catch (InstantiationException | IllegalAccessException e) {
-			throw new ActionException("Problem Instantiating type: " + actionType);
-		}
+		return ActionControllerFactoryImpl.loadAction(c, this);
 	}
 
 

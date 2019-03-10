@@ -249,7 +249,7 @@ public class FinancialDashImportAction extends FinancialDashBaseAction {
 		if (isCompany) {
 			sql.append("order by company_nm, s1.section_nm, region_cd, year_no");
 		} else {
-			sql.append("order by s1.section_nm, s1.section_id, c.company_nm, region_cd, year_no");
+			sql.append("order by s1.section_nm, s1.section_id, c.company_nm, CASE r.REGION_CD WHEN 'US' THEN 1 WHEN 'EU' THEN 2 ELSE 3 END, year_no");
 		}
 		
 		return sql.toString();		

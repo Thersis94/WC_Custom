@@ -5,9 +5,11 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.text.DateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 
 import com.biomed.smarttrak.admin.AbstractTreeAction;
@@ -327,7 +329,7 @@ public class UpdatesEditionAction extends SimpleActionAdapter {
 	protected void adjustContentLinks(List<UpdateVO> updates, ActionRequest req) {
 		if(!req.hasParameter("modifyLinks")) return; //only perform modification if requested
 		
-		SiteVO siteData = (SiteVO)getAttribute(Constants.SITE_DATA);
+		SiteVO siteData = (SiteVO)req.getAttribute(Constants.SITE_DATA);
 		BiomedLinkCheckerUtil linkUtil = new BiomedLinkCheckerUtil(dbConn, siteData);
 		
 		//update the appropriate links
@@ -360,12 +362,27 @@ public class UpdatesEditionAction extends SimpleActionAdapter {
 		//leave the data alone if set by another action (UpdatesScheduledAction)
 		if (req.getAttribute("dateRange") != null) return;
 
+		int dailyRange = req.getIntegerParameter("dailyRange", 1);
+
+		//Protect Date Range.
+		dailyRange = Math.min(Math.max(dailyRange, -7), 7);
+
 		String timeRangeCd = StringUtil.checkVal(req.getParameter("timeRangeCd"));
 		String dateRange = null;
 
 		//determine the date range
 		if (UpdatesWeeklyReportAction.TIME_RANGE_WEEKLY.equalsIgnoreCase(timeRangeCd)) {
 			dateRange = DateUtil.previousWeek(DateFormat.MEDIUM);
+		} else if(dailyRange > 1) {
+
+			//If not a single Date, build start to end and get Date Range.
+			Calendar cl = Calendar.getInstance(Locale.getDefault());
+			cl.add(Calendar.DATE, dailyRange * -1);
+
+			Calendar cl2 = Calendar.getInstance(Locale.getDefault());
+			cl.add(Calendar.DATE, -1);
+
+			dateRange = DateUtil.getDateRangeText(cl.getTime(), cl2.getTime(), DateFormat.MEDIUM);
 		} else {
 			dateRange = DateUtil.getDate(-1, DateFormat.MEDIUM);
 		}

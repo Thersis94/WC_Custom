@@ -138,7 +138,7 @@ public class GridDisplayAction extends SimpleActionAdapter {
 
 		// Process the data
 		if (grids != null && grids.length > 0) {
-			putModuleData(loadAllGrids(grids, full, stacked, pt, Convert.formatBoolean(req.getParameter(LOAD_TABLE))));
+			putModuleData(loadAllGrids(grids, full, stacked, pt));
 		} else {
 			GridVO grid = loadSingleGrid(gridId, req);
 			
@@ -215,7 +215,8 @@ public class GridDisplayAction extends SimpleActionAdapter {
 			List<String> names = new ArrayList<>();
 			String serie = getSerie(gDetail, series);
 			for (int i=0; i<grid.getSeries().length; i++) {
-				if (!columns.isEmpty() && !columns.contains(i+1)) continue;
+				if (!columns.isEmpty() && !columns.contains(i+1) ||
+						grid.getSeries()[i] == null) continue;
 				String name = grid.getSeries()[i];
 				if (names.contains(name))
 					name = findNewName(names, name);
@@ -244,9 +245,15 @@ public class GridDisplayAction extends SimpleActionAdapter {
 			if (names.contains(name))
 				name = findNewName(names, name);
 			names.add(name);
+			List<String> series = new ArrayList<>();
 			for (int i=0; i<grid.getSeries().length; i++) {
-				if (!columns.isEmpty() && !columns.contains(i+1)) continue;
-				addDetail(gDetail, data, i, grid, grid.getSeries()[i], name);
+				if (!columns.isEmpty() && !columns.contains(i+1)
+						|| grid.getSeries()[i] == null) continue;
+				String serie = grid.getSeries()[i];
+				if (series.contains(serie))
+					serie = findNewName(series, serie);
+				series.add(serie);
+				addDetail(gDetail, data, i, grid, serie, name);
 			}
 		}
 		
@@ -293,13 +300,19 @@ public class GridDisplayAction extends SimpleActionAdapter {
 	 * @param stacked
 	 */
 	private void addDetail(GridDetailVO gDetail, List<SMTChartDetailVO> data, int i, GridVO grid, String serie, String name) {
+		String value;
 		if (i>=gDetail.getValues().length || (StringUtil.isEmpty(grid.getSeries()[i]) 
-				&& StringUtil.isEmpty(gDetail.getValues()[i]))) return;
+				&& StringUtil.isEmpty(gDetail.getValues()[i]))) {
+			value = "";
+		} else {
+			value = gDetail.getValues()[i];
+		}
+		
 		SMTChartDetailVO cDetail = new SMTChartDetailVO();
 		cDetail.setLabel(name);
 		cDetail.setSerie(serie);
 		cDetail.setOrder(gDetail.getOrder());
-		cDetail.setValue(gDetail.getValues()[i]);
+		cDetail.setValue(value);
 		data.add(cDetail);
 	}
 
@@ -355,7 +368,7 @@ public class GridDisplayAction extends SimpleActionAdapter {
 	 * @param pt
 	 * @return
 	 */
-	public Map<String, SMTChartIntfc> loadAllGrids(String[] grids, boolean full, boolean stacked, ProviderType pt, boolean loadTable) {
+	public Map<String, SMTChartIntfc> loadAllGrids(String[] grids, boolean full, boolean stacked, ProviderType pt) {
 		Map<String, SMTChartIntfc> data = new HashMap<>(24);
 		String schema = getAttribute(Constants.CUSTOM_DB_SCHEMA) + "";
 
@@ -390,6 +403,7 @@ public class GridDisplayAction extends SimpleActionAdapter {
 			ChartType ct = ChartType.valueOf(items.get(id).get("type") + "");
 			String columns = StringUtil.checkVal(items.get(id).get("columns"));
 			int labelType = Convert.formatInteger(items.get(id).get("labelType"));
+			boolean loadTable = ct == ChartType.TABLE;
 
 			if (!loadTable) {
 				pruneColumns(grid);

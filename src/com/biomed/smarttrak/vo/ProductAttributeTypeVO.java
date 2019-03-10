@@ -43,6 +43,7 @@ public class ProductAttributeTypeVO {
 	}
 	
 	public ProductAttributeTypeVO (ActionRequest req) {
+		this();
 		setData(req);
 	}
 	

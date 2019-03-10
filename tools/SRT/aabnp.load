@@ -1,4 +1,4 @@
 load database
-	from mssql://sa:sqll0gin@10.0.20.213:1433/aabnp
+	from mssql://sa:sqll0gin@192.168.1.13:1433/aabnp
 	into postgresql://raptor:sqll0gin@streetfighter/webcrescendo_dpy
 including only table names like 'tbl_pt_sales_roster' in schema 'dbo';

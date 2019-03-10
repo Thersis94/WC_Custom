@@ -85,7 +85,7 @@ public class GridExcelManager {
 			}
 
 			// Add the rows of data
-			addDataRows(details, workbook, sheet, ctr, numberCols);
+			addDataRows(details, workbook, sheet, ctr, numberCols, grid.getSeriesTxtFlg());
 
 			// resize all of the columns
 			for (int i=0; i < numberCols; i++) sheet.autoSizeColumn(i);
@@ -111,8 +111,9 @@ public class GridExcelManager {
 	 * @param sheet
 	 * @param ctr
 	 * @param numberCols
+	 * @param seriesTxtFlg 
 	 */
-	private void addDataRows(List<GridDetailVO> details, HSSFWorkbook workbook, HSSFSheet sheet, int ctr, int numberCols) {
+	private void addDataRows(List<GridDetailVO> details, HSSFWorkbook workbook, HSSFSheet sheet, int ctr, int numberCols, int[] seriesTxtFlg) {
 		Row row;
 		Cell cell;
 		for (GridDetailVO detail : details ) {
@@ -127,7 +128,7 @@ public class GridExcelManager {
 			//set data values
 			for (int i=0; i < (numberCols); i++) {
 				cell = row.createCell(i + 1);
-				addCellValue(workbook, cell, detail, detail.getValues()[i]);	
+				addCellValue(workbook, cell, detail, detail.getValues()[i], Convert.formatBoolean(seriesTxtFlg[i]));	
 			}
 		}
 	}
@@ -137,9 +138,10 @@ public class GridExcelManager {
 	 * @param value
 	 * @param cell
 	 * @param detail
+	 * @param isText 
 	 * @return
 	 */
-	private void addCellValue(HSSFWorkbook workbook, Cell cell, GridDetailVO detail, String value) {
+	private void addCellValue(HSSFWorkbook workbook, Cell cell, GridDetailVO detail, String value, Boolean isText) {
 		boolean neg = false;
 		if (Convert.formatDouble(value) < 0) neg = true;
 		if (neg) log.info("Val: " + detail.getDetailType() + "|" + value + "|" + Convert.formatDouble(value));
@@ -148,7 +150,7 @@ public class GridExcelManager {
 		String detailType = StringUtil.isEmpty(detail.getDetailType()) ? RowStyle.DATA.toString() : detail.getDetailType();
 		//remove any non-relevant characters(currency symbols, commas, percents, etc.) If empty, not a number value
 		String numericValue = StringUtil.checkVal(value).replaceAll("[^\\d\\.]","");
-		if(!StringUtil.isEmpty(numericValue) && !RowStyle.HEADING.equals(RowStyle.valueOf(detailType)) && (value.replace(",", "").length() - numericValue.length()) < 4) {
+		if(!isText && !StringUtil.isEmpty(numericValue) && !RowStyle.HEADING.equals(RowStyle.valueOf(detailType)) && (value.replace(",", "").length() - numericValue.length()) < 4) {
 			boolean isPercent = setNumericValue(StringUtil.checkVal(value), numericValue, cell);
 
 			//determine if a currency symbol is present
@@ -190,9 +192,10 @@ public class GridExcelManager {
  	   
  	   cell.setCellValue(numberVal);
  	   cell.setCellType(Cell.CELL_TYPE_NUMERIC);
+ 	   
  	   return isPercent;
 	}
-
+	
 
 	public void addHeadingLabel(HSSFWorkbook workbook, HSSFSheet sheet, int numColumns, String name) {
 		Row row = sheet.createRow(0);

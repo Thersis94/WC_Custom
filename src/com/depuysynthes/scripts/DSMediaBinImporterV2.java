@@ -43,6 +43,7 @@ import com.depuysynthes.action.MediaBinLinkAction;
 import com.depuysynthes.scripts.MediaBinDeltaVO.State;
 import com.depuysynthes.solr.MediaBinSolrIndex;
 import com.siliconmtn.db.DBUtil;
+import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.io.http.SMTHttpConnectionManager;
 import com.siliconmtn.io.mail.EmailMessageVO;
 import com.siliconmtn.io.mail.MailHandlerFactory;
@@ -86,6 +87,11 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 	 * Delimiterd used in the EXP file to tokenize multiple values stuffed into a single meta-data field
 	 */
 	public static final String TOKENIZER = "~";
+
+	/**
+	 * minimum rows in EXP file we're willing to consider a "a good file"
+	 */
+	private static final int MIN_EXP_ROWS = 2500;
 
 	/**
 	 * debug mode runs individual insert queries instead of a batch query, to be able to track row failures.
@@ -151,7 +157,7 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 			List<Map<String, String>> looseData = loadFile(importFile);
 
 			// Validate some data was retrieved before we go any further
-			if (looseData.size() < 100) {
+			if (looseData.size() < MIN_EXP_ROWS) {
 				throw new Exception("Not enough records or EXP file not found: " + importFile);
 			}
 
@@ -164,6 +170,9 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 			//merge the data to determine where the deltas are
 			//after this step each record will be tagged 'insert','update','delete', or 'ignore'
 			sortDeltas(masterRecords, newRecords);
+
+			//inspect the payload - for EMEA if delete count is too high, fail-fast.
+			auditChanges(masterRecords);
 
 			//download (from LL) all the 'insert' and 'update' records.
 			//if download fails then set the record's State to failed - failed records will be reported and not transacted-upon
@@ -192,6 +201,35 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 
 		DBUtil.close(dbConn);
 		sendEmail(startNano, masterRecords);
+	}
+
+
+	/**
+	 * Inspect the records - if deltas are too high mark the payload suspicious and stop
+	 * processing so an administrator can intervene and review.
+	 * @param masterRecords
+	 * @throws Exception 
+	 */
+	protected void auditChanges(Map<String, MediaBinDeltaVO> masterRecords) throws InvalidDataException {
+		int maxUpdates = Convert.formatInteger(props.getProperty("auditMaxUpdates"),-1);
+		int maxDeletes = Convert.formatInteger(props.getProperty("auditMaxDeletes"),-1);
+		//if both are -1, that means there's no limit.  We're done here.
+		if (maxUpdates < 0 && maxDeletes < 0) return;
+
+		//count the master records by status
+		int updCnt = 0;
+		int delCnt = 0;
+		for (MediaBinDeltaVO vo : masterRecords.values()) {
+			if (State.Update == vo.getRecordState()) ++updCnt;
+			else if (State.Delete == vo.getRecordState()) ++delCnt;
+		}
+
+		//compare the #s and take action
+		if (maxUpdates > -1 && updCnt > maxUpdates) {
+			throw new InvalidDataException(String.format("Too many updates (%d out of %d, threshold is %d).  Data audit failed.", updCnt, masterRecords.size(), maxUpdates));
+		} else if (maxDeletes > -1 && delCnt > maxDeletes) {
+			throw new InvalidDataException(String.format("Too many deletions (%d out of %d, threshold is %d).  Data audit failed.", delCnt, masterRecords.size(), maxDeletes));
+		}
 	}
 
 

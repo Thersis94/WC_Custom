@@ -11,10 +11,9 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-
+//WC Custom
 import com.rezdox.action.RewardsAction.Reward;
 import com.rezdox.action.RezDoxNotifier.Message;
-//WC Custom
 import com.rezdox.api.SunNumberAPIManager;
 import com.rezdox.api.WalkScoreAPIManager;
 import com.rezdox.api.ZillowAPIManager;
@@ -87,6 +86,7 @@ public class ResidenceAction extends SBActionAdapter {
 
 	protected static final int STATUS_INACTIVE = 0;
 	protected static final int STATUS_ACTIVE = 1;
+	protected static final int STATUS_SHARED = 2;
 
 	public enum ResidenceColumnName {
 		RESIDENCE_ID, CREATE_DT, UPDATE_DT
@@ -228,7 +228,7 @@ public class ResidenceAction extends SBActionAdapter {
 		sql.append("'SELECT DISTINCT slug_txt FROM ").append(schema).append("rezdox_residence_attribute WHERE slug_txt in (''bedrooms'',''bathrooms'',''finishedSqFt'', ''RESIDENCE_ZESTIMATE'') ORDER BY 1') ");
 		sql.append("AS (residence_id text, baths_no float, beds_no int, f_sqft_no int, zestimate_no float) ");
 		sql.append(") ra on r.residence_id = ra.residence_id ");
-		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("rezdox_project_cost_view pc on r.residence_id=pc.residence_id and pc.is_improvement=1 ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("rezdox_project_cost_view pc on r.residence_id=pc.residence_id and pc.is_improvement=1 and pc.residence_view_flg=1 ");
 		sql.append("where m.member_id=? ");
 
 		// Return only a specific residence if selected
@@ -333,6 +333,9 @@ public class ResidenceAction extends SBActionAdapter {
 	@Override
 	public void build(ActionRequest req) throws ActionException {
 		log.debug("residence build called");
+		SubscriptionAction sa = new SubscriptionAction(getDBConnection(), getAttributes());	
+		String memberId = RezDoxUtils.getMemberId(req);
+
 		if (req.hasParameter("homeInfo") || req.hasParameter("settings")) {
 			saveForm(req);
 
@@ -341,14 +344,26 @@ public class ResidenceAction extends SBActionAdapter {
 
 		} else if (req.hasParameter("deleteResidence")) {
 			String msg = (String) getAttribute(AdminConstants.KEY_SUCCESS_MESSAGE);
+			PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
+			String url = page.getFullPath();
+
 			try {
 				new DBProcessor(dbConn, getCustomSchema()).delete(new ResidenceVO(req));
 			} catch (Exception e) {
 				log.error("could not delete residence", e);
 				msg = (String) getAttribute(AdminConstants.KEY_ERROR_MESSAGE);
 			}
-			PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
-			sendRedirect(page.getFullPath(), msg, req);
+
+			//downgrade this user's account if they just deleted their only residence (and are currently Hybrid role)
+			//first get a count of any residences this user can see.  Only if it's zero do we want to downgrade.
+			int count = sa.getResidenceUsage(memberId, ResidenceAction.STATUS_ACTIVE, ResidenceAction.STATUS_SHARED);
+			SBUserRole role = ((SBUserRole)req.getSession().getAttribute(Constants.ROLE_DATA));
+			if (count == 0 && RezDoxUtils.REZDOX_RES_BUS_ROLE.equals(role.getRoleId())) {
+				confirmMemberRole(req, RezDoxUtils.REZDOX_RES_BUS_ROLE, true);
+				url = RezDoxUtils.MEMBER_ROOT_PATH; //redir to dashboard, they can no longer see the residences page.
+			}
+
+			sendRedirect(url, msg, req);
 
 		} else {
 			try {
@@ -356,9 +371,8 @@ public class ResidenceAction extends SBActionAdapter {
 				ResidenceVO residence = new ResidenceVO(req);
 				boolean isNew = StringUtil.isEmpty(residence.getResidenceId());
 
-				//get usage count before writing the table, the increment it.  This avoids read locks and uncomitted data issues
-				SubscriptionAction sa = new SubscriptionAction(getDBConnection(), getAttributes());		
-				int count = sa.getResidenceUsage(RezDoxUtils.getMemberId(req));
+				//get usage count before writing the table, the increment it.  This avoids read locks and uncomitted data issues	
+				int count = sa.getUsageQty(memberId, Group.HO);
 				++count; //for the one we're adding.
 
 				putModuleData(saveResidence(req), 1, false);
@@ -372,14 +386,14 @@ public class ResidenceAction extends SBActionAdapter {
 					ia.applyInviterRewards(req, RezDoxUtils.REWARD_HOMEOWNER_INVITE);
 
 					//Add First Residence Notifications
-					sendFirstResidenceNotifications(site, RezDoxUtils.getMemberId(req));
+					sendFirstResidenceNotifications(site, memberId);
 
 					//make sure the user has the proper role - this only causes further action when a business user adds their first residence.
-					confirmMemberRole(req);
+					confirmMemberRole(req, RezDoxUtils.REZDOX_BUSINESS_ROLE, false);
 
 				} else if (isNew && count > 1) {
 					//award 100pts for subsequent residences
-					awardPoints(RezDoxUtils.getMemberId(req), req);
+					awardPoints(memberId, req);
 				}
 
 			} catch (Exception e) {
@@ -393,25 +407,35 @@ public class ResidenceAction extends SBActionAdapter {
 	 * Change business users to be hybrid (biz+res) - that's all we care about here.
 	 * @param req
 	 */
-	private void confirmMemberRole(ActionRequest req) {
+	private void confirmMemberRole(ActionRequest req, String reqRoleId, boolean isHybridDowngrade) {
 		SBUserRole role = ((SBUserRole)req.getSession().getAttribute(Constants.ROLE_DATA));
-		if (role == null || !RezDoxUtils.REZDOX_BUSINESS_ROLE.equals(role.getRoleId())) 
+		if (role == null || !reqRoleId.equals(role.getRoleId())) 
 			return;
 
-		//change them to a hybrid role
-		role.setRoleId(RezDoxUtils.REZDOX_RES_BUS_ROLE);
-		role.setRoleLevel(RezDoxUtils.REZDOX_RES_BUS_ROLE_LEVEL);
-		role.setRoleName(RezDoxUtils.REZDOX_RES_BUS_ROLE_NAME);
-		req.getSession().setAttribute(Constants.ROLE_DATA, role);
+		//downgrade to business user from hybrid - they no longer have residences to see.
+		if (isHybridDowngrade) {
+			role.setRoleId(RezDoxUtils.REZDOX_BUSINESS_ROLE);
+			role.setRoleLevel(RezDoxUtils.REZDOX_BUSINESS_ROLE_LEVEL);
+			role.setRoleName(RezDoxUtils.REZDOX_BUSINESS_ROLE_NAME);
+
+			//change them to a hybrid role
+		} else {
+			role.setRoleId(RezDoxUtils.REZDOX_RES_BUS_ROLE);
+			role.setRoleLevel(RezDoxUtils.REZDOX_RES_BUS_ROLE_LEVEL);
+			role.setRoleName(RezDoxUtils.REZDOX_RES_BUS_ROLE_NAME);
+		}
 
 		//preserve the change to the DB
 		try {
 			ProfileRoleManager prm = new ProfileRoleManager();
 			prm.removeRole(role.getProfileRoleId(), dbConn);
-			prm.addRole(role, dbConn);
+			prm.addRole(role.getProfileId(), RezDoxUtils.MAIN_SITE_ID, role.getRoleId(), SecurityController.STATUS_ACTIVE, getDBConnection());
+			role.setProfileRoleId(prm.checkRole(role.getProfileId(),  RezDoxUtils.MAIN_SITE_ID, dbConn));
 		} catch (DatabaseException e) {
 			log.error("could not change users role", e);
 		}
+
+		req.getSession().setAttribute(Constants.ROLE_DATA, role);
 	}
 
 

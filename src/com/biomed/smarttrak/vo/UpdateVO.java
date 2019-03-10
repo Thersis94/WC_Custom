@@ -56,10 +56,11 @@ public class UpdateVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc
 	}
 	
 	public enum AnnouncementType {
-		NON("Not an Announcemenet", 0),
+		NON("Not an Announcement", 0),
 		ANNOUNCEMENT("SmartTRAK Announcement", 1),
 		POLICY("Healthcare Policy", 2),
-		TREND("Healthcare Trend", 3);
+		TREND("Healthcare Trend", 3),
+		INDUSTRY("Industry News", 4);
 		
 		private String name;
 		private int value;
@@ -82,6 +83,7 @@ public class UpdateVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc
 				case 1:return AnnouncementType.ANNOUNCEMENT;
 				case 2:return AnnouncementType.POLICY;
 				case 3:return AnnouncementType.TREND;
+				case 4:return AnnouncementType.INDUSTRY;
 				default:return AnnouncementType.NON;
 			}
 		}
@@ -144,7 +146,6 @@ public class UpdateVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc
 		twitterTxt = req.getParameter("twitterTxt");
 		tweetFlg = Convert.formatInteger(Convert.formatBoolean(req.getParameter("tweetFlg")));
 		statusCd = req.getParameter("statusCd");
-		setPublishDate(Convert.formatDate(req.getParameter("publishDt")));
 		orderNo = Convert.formatInteger(req.getParameter("orderNo"));
 		emailFlg = Convert.formatInteger(req.getParameter("emailFlg"), 1);
 		announcementType = Convert.formatInteger(req.getParameter("announcementType"), 0);
@@ -255,7 +256,7 @@ public class UpdateVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc
 		SimpleDateFormat sdf = new SimpleDateFormat("MMM. dd, yyyy");
 		displayLink.append("&mdash; ").append(sdf.format(getPublishDt()));
 		if(isAdmin) {
-			return new BiomedLinkCheckerUtil(null, null).modifyRelativeLinks(displayLink.toString());
+			return new BiomedLinkCheckerUtil().modifyRelativeLinks(displayLink.toString());
 		} else {
 			return displayLink.toString();
 		}

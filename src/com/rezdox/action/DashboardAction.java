@@ -117,9 +117,9 @@ public class DashboardAction extends SimpleActionAdapter {
 		if (!isBusinessOnlyRole) {
 			sql.append("select 'SMT1'+a.project_id as key, a.project_nm as value, coalesce(a.update_dt, a.create_dt) from ").append(schema).append("REZDOX_PROJECT a ");
 			sql.append(DBUtil.INNER_JOIN).append(schema).append("REZDOX_RESIDENCE r on a.residence_id=r.residence_id ");
-			sql.append(DBUtil.INNER_JOIN).append(schema).append("REZDOX_RESIDENCE_MEMBER_XR rm on r.residence_id=rm.residence_id and rm.member_id=? and rm.status_flg=1 ");
-			sql.append("where a.residence_view_flg != 0 ");
-			sql.append("order by 3 desc limit 5"); //most recent first
+			sql.append(DBUtil.INNER_JOIN).append(schema).append("REZDOX_RESIDENCE_MEMBER_XR rm on r.residence_id=rm.residence_id and rm.member_id=? and rm.status_flg>=1 ");
+			sql.append("where coalesce(a.update_dt, a.create_dt) >= CURRENT_DATE-90 and a.residence_view_flg != 0 ");
+			sql.append("order by 3 desc "); //most recent first
 			log.debug(sql);
 			data.addAll(dbp.executeSelect(sql.toString(), params, new GenericVO()));
 			log.debug("datasize=" + data.size());
@@ -129,9 +129,9 @@ public class DashboardAction extends SimpleActionAdapter {
 			sql = new StringBuilder(400);
 			sql.append("select 'SMT2'+ a.project_id as key, a.project_nm as value, coalesce(a.update_dt, a.create_dt) from ").append(schema).append("REZDOX_PROJECT a ");
 			sql.append(DBUtil.INNER_JOIN).append(schema).append("REZDOX_BUSINESS b on a.business_id=b.business_id ");
-			sql.append(DBUtil.INNER_JOIN).append(schema).append("REZDOX_BUSINESS_MEMBER_XR bm on b.business_id=bm.business_id and bm.member_id=? and bm.status_flg=1 ");
-			sql.append("where a.business_view_flg != 0 ");
-			sql.append("order by 3 desc limit 5"); //most recent first
+			sql.append(DBUtil.INNER_JOIN).append(schema).append("REZDOX_BUSINESS_MEMBER_XR bm on b.business_id=bm.business_id and bm.member_id=? and bm.status_flg>=1 ");
+			sql.append("where coalesce(a.update_dt, a.create_dt) >= CURRENT_DATE-90 and a.business_view_flg != 0 ");
+			sql.append("order by 3 desc"); //most recent first
 			log.debug(sql);
 			data.addAll(dbp.executeSelect(sql.toString(), params, new GenericVO()));
 			log.debug("datasize=" + data.size());
@@ -294,7 +294,7 @@ public class DashboardAction extends SimpleActionAdapter {
 		sql.append("'RESIDENCE_TRANSIT_SCORE', 'RESIDENCE_SUN_NUMBER') ");
 		//join projects for IMPROVEMENT projects total
 		sql.append(DBUtil.LEFT_OUTER_JOIN);
-		sql.append("(select a.residence_id, sum(project_cost+material_cost)*? as project_total ");
+		sql.append("(select a.residence_id, sum(project_cost+material_cost) as project_total ");
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("rezdox_residence_member_xr a ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("rezdox_project_cost_view b on a.residence_id=b.residence_id ");
 		sql.append("and b.is_improvement=1 and b.residence_view_flg=1 ");
@@ -313,7 +313,7 @@ public class DashboardAction extends SimpleActionAdapter {
 		log.debug(sql);
 
 		DBProcessor db = new DBProcessor(getDBConnection());
-		List<Object> params = Arrays.asList(RezDoxUtils.IMPROVEMENTS_VALUE_COEF, memberId, memberId, memberId);
+		List<Object> params = Arrays.asList(memberId, memberId, memberId);
 		return db.executeSelect(sql.toString(), params, new ResidenceVO(), "residence_id");
 	}
 

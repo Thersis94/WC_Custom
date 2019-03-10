@@ -261,4 +261,11 @@ public class RSSArticleVO extends BeanDataVO implements Serializable {
 	public void setFullArticleTxt(String fullArticleTxt) {
 		this.fullArticleTxt = fullArticleTxt;
 	}
+
+	/**
+	 * Flush out Filtered Articles.
+	 */
+	public void flushFilteredText() {
+		this.filteredText.clear();
+	}
 }

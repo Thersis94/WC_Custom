@@ -22,7 +22,7 @@ import com.smt.sitebuilder.util.solr.SolrDocumentVO;
  * <b>Description: </b> Biomed Insight Solr Indexer
  * <b>Copyright:</b> Copyright (c) 2017
  * <b>Company:</b> Silicon Mountain Technologies
- * 
+ *
  * @author Ryan Riker
  * @version 1.0
  * @since Feb 16, 2017
@@ -69,7 +69,9 @@ public class BiomedInsightIndexer extends SMTAbstractIndex {
 		SolrClient server = makeServer();
 		try (SolrActionUtil util = new SmarttrakSolrUtil(server)) {
 			util.addDocuments(getDocuments(itemIds));
+
 			server.commit(false, false); //commit, but don't wait for Solr to acknowledge
+
 		} catch (Exception e) {
 			throw new SolrException(ErrorCode.BAD_REQUEST, e);
 		}
@@ -94,12 +96,11 @@ public class BiomedInsightIndexer extends SMTAbstractIndex {
 		for (final String name: config.stringPropertyNames())
 			attributes.put(name, config.getProperty(name));
 		ia.setAttributes(attributes);
-		List<Object> list = ia.loadForSolr(documentIds);
+		List<InsightVO> list = ia.loadForSolr(documentIds);
 
 		//Load the Section Tree and set all the Hierarchies.
 		SmarttrakTree t = ia.loadDefaultTree();
-		for(Object o : list) {
-			InsightVO i = (InsightVO)o;
+		for(InsightVO i : list) {
 			i.configureSolrHierarchies(t);
 		}
 		return(List<SolrDocumentVO>)(List<?>) list;

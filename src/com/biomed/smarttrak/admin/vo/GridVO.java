@@ -127,6 +127,10 @@ public class GridVO extends BeanDataVO {
 	@Expose(serialize = false, deserialize = false)
 	private String[] series;
 	
+
+	@Expose(serialize = false, deserialize = false)
+	private int[] seriesTxtFlg;
+	
 	@Expose(serialize = false, deserialize = false)
 	private List<GridDetailVO> details;
 	
@@ -138,6 +142,7 @@ public class GridVO extends BeanDataVO {
 	public GridVO() {
 		super();
 		series = new String[10];
+		seriesTxtFlg = new int[10];
 		details = new ArrayList<>(10);
 		deletedRows = new ArrayList<>(10);
 	}
@@ -382,6 +387,96 @@ public class GridVO extends BeanDataVO {
 	public String getSeries10() {
 		return series[9];
 	}
+	
+	/**
+	 * Returns the first value
+	 * @return
+	 */
+	@Column(name="series_1_txt_flg")
+	public int getSeries1TxtFlg() {
+		return seriesTxtFlg[0];
+	}
+	
+	/**
+	 * Returns the second value
+	 * @return
+	 */
+	@Column(name="series_2_txt_flg")
+	public int getSeries2TxtFlg() {
+		return seriesTxtFlg[1];
+	}
+	
+	/**
+	 * Returns the third value
+	 * @return
+	 */
+	@Column(name="series_3_txt_flg")
+	public int getSeries3TxtFlg() {
+		return seriesTxtFlg[2];
+	}
+	
+	/**
+	 * Returns the fourth value
+	 * @return
+	 */
+	@Column(name="series_4_txt_flg")
+	public int getSeries4TxtFlg() {
+		return seriesTxtFlg[3];
+	}
+	
+	/**
+	 * Returns the fifth value
+	 * @return
+	 */
+	@Column(name="series_5_txt_flg")
+	public int getSeries5TxtFlg() {
+		return seriesTxtFlg[4];
+	}
+	
+	/**
+	 * Returns the sixth value
+	 * @return
+	 */
+	@Column(name="series_6_txt_flg")
+	public int getSeries6TxtFlg() {
+		return seriesTxtFlg[5];
+	}
+
+	/**
+	 * Returns the seventh value
+	 * @return
+	 */
+	@Column(name="series_7_txt_flg")
+	public int getSeries7TxtFlg() {
+		return seriesTxtFlg[6];
+	}
+	
+	/**
+	 * Returns the eigth value
+	 * @return
+	 */
+	@Column(name="series_8_txt_flg")
+	public int getSeries8TxtFlg() {
+		return seriesTxtFlg[7];
+	}
+	
+	/**
+	 * Returns the ninth value
+	 * @return
+	 */
+	@Column(name="series_9_txt_flg")
+	public int getSeries9TxtFlg() {
+		return seriesTxtFlg[8];
+	}
+	
+	/**
+	 * Returns the tenth value
+	 * @return
+	 */
+	@Column(name="series_10_txt_flg")
+	public int getSeries10TxtFlg() {
+		return seriesTxtFlg[9];
+	}
 
 	/**
 	 * @return the details
@@ -566,6 +661,76 @@ public class GridVO extends BeanDataVO {
 	public void setSeries10(String value) {
 		this.series[9] = value;
 	}
+	
+	/**
+	 * @param value value to set
+	 */
+	public void setSeries1TxtFlg(int value) {
+		this.seriesTxtFlg[0] = value;
+	}
+	
+	/**
+	 * @param value value to set
+	 */
+	public void setSeries2TxtFlg(int value) {
+		this.seriesTxtFlg[1] = value;
+	}
+	
+	/**
+	 * @param value value to set
+	 */
+	public void setSeries3TxtFlg(int value) {
+		this.seriesTxtFlg[2] = value;
+	}
+	
+	/**
+	 * @param value value to set
+	 */
+	public void setSeries4TxtFlg(int value) {
+		this.seriesTxtFlg[3] = value;
+	}
+	
+	/**
+	 * @param value value to set
+	 */
+	public void setSeries5TxtFlg(int value) {
+		this.seriesTxtFlg[4] = value;
+	}
+	
+	/**
+	 * @param value value to set
+	 */
+	public void setSeries6TxtFlg(int value) {
+		this.seriesTxtFlg[5] = value;
+	}
+	
+	/**
+	 * @param value value to set
+	 */
+	public void setSeries7TxtFlg(int value) {
+		this.seriesTxtFlg[6] = value;
+	}
+	
+	/**
+	 * @param value value to set
+	 */
+	public void setSeries8TxtFlg(int value) {
+		this.seriesTxtFlg[7] = value;
+	}
+	
+	/**
+	 * @param value value to set
+	 */
+	public void setSeries9TxtFlg(int value) {
+		this.seriesTxtFlg[8] = value;
+	}
+	
+	/**
+	 * @param value value to set
+	 */
+	public void setSeries10TxtFlg(int value) {
+		this.seriesTxtFlg[9] = value;
+	}
 
 	/**
 	 * @return the numberRows
@@ -638,7 +803,7 @@ public class GridVO extends BeanDataVO {
 	 * Updates the appropriate series column information
 	 * @param column
 	 */
-	protected void updateColumn(Map<String, String> column, int columnNo) {
+	protected void updateColumn(Map<String, ?> column, int columnNo) {
 		// If this column is not visible it has been deleted and should not be added
 		if (!Convert.formatBoolean(column.get("visible"))) {
 			deletedRows.add(columnNo);
@@ -646,15 +811,19 @@ public class GridVO extends BeanDataVO {
 		}
 		
 		// Get the data elements, make sure they are populated
-		String field = column.get("field");
-		String cTitle = column.get("title");
+		String field = (String) column.get("field");
+		String cTitle = (String) column.get("title");
 		if (StringUtil.isEmpty(field)) return;
 
 		// Parse out the index from the field and store the data in the series array
 		String val = field.substring(field.lastIndexOf('_') + 1);
 		int index = Convert.formatInteger(val) - 1;
-		if(index - deletedRows.size() == -1) seriesLabel = cTitle;
-		else series[index - deletedRows.size()] = cTitle;
+		if(index - deletedRows.size() == -1) {
+			seriesLabel = cTitle;
+		} else {
+			series[index - deletedRows.size()] = cTitle;
+			seriesTxtFlg[index - deletedRows.size()] = (Convert.formatDouble(StringUtil.checkVal(column.get("txtFlg")), 0)).intValue();
+		}
 	}
 	
 	/**
@@ -810,6 +979,7 @@ public class GridVO extends BeanDataVO {
 		column.put("field", FIELD_LABEL + "0");
 		column.put("fieldIndex", "0");
 		column.put("title", "");
+		column.put("txtFlg", "0");
 		columns.add(column);
 		for (int x = 1; x < getNumberColumns()+1; x++) {
 			column = new LinkedHashMap<>();
@@ -818,6 +988,7 @@ public class GridVO extends BeanDataVO {
 			column.put("field", FIELD_LABEL + x);
 			column.put("fieldIndex", Integer.toString(x));
 			column.put("title", series[x-1]);
+			column.put("txtFlg", StringUtil.checkVal(seriesTxtFlg[x-1], "0"));
 			columns.add(column);
 		}
 		
@@ -830,6 +1001,11 @@ public class GridVO extends BeanDataVO {
 	 */
 	public String[] getSeries() {
 		return series;
+	}
+	
+
+	public int[] getSeriesTxtFlg() {
+		return seriesTxtFlg;
 	}
 	
 	/**

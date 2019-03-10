@@ -29,6 +29,7 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.Node;
+import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -352,19 +353,21 @@ public class CompanyAction extends SimpleActionAdapter {
 	 * @throws ActionException
 	 */
 	protected void addAttributes(CompanyVO company, SmarttrakRoleVO role) {
-		StringBuilder sql = new StringBuilder(150);
+		StringBuilder sql = new StringBuilder(1400);
 		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
-		sql.append("SELECT xr.*, a.*, parent.ATTRIBUTE_NM as PARENT_NM FROM ").append(customDb).append("BIOMEDGPS_COMPANY_ATTRIBUTE_XR xr ");
-		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_COMPANY_ATTRIBUTE a ");
+		sql.append(DBUtil.SELECT_CLAUSE).append("xr.*, a.*, parent.ATTRIBUTE_NM as PARENT_NM ");
+		sql.append(DBUtil.FROM_CLAUSE);
+		sql.append(customDb).append("BIOMEDGPS_COMPANY_ATTRIBUTE_XR xr ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(customDb).append("BIOMEDGPS_COMPANY_ATTRIBUTE a ");
 		sql.append("ON a.ATTRIBUTE_ID = xr.ATTRIBUTE_ID ");
-		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_COMPANY_ATTRIBUTE parent ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(customDb).append("BIOMEDGPS_COMPANY_ATTRIBUTE parent ");
 		sql.append("ON parent.ATTRIBUTE_ID = a.PARENT_ID ");
-		sql.append("WHERE COMPANY_ID = ? and STATUS_NO in (");
+		sql.append(DBUtil.WHERE_CLAUSE).append(" COMPANY_ID = ? and STATUS_NO in (");
 		if (AdminControllerAction.STAFF_ROLE_LEVEL == role.getRoleLevel()) {
 			sql.append("'").append(AdminControllerAction.Status.E).append("', "); 
 		}
-		sql.append("'").append(AdminControllerAction.Status.P).append("') "); 
-		sql.append("ORDER BY a.DISPLAY_ORDER_NO, xr.ORDER_NO ");
+		sql.append("'").append(AdminControllerAction.Status.P).append("') ");
+		sql.append(DBUtil.ORDER_BY).append("a.DISPLAY_ORDER_NO, xr.ORDER_NO, XR.TITLE_TXT ");
 		log.debug(sql+"|"+company.getCompanyId());
 
 		List<Object> params = new ArrayList<>();

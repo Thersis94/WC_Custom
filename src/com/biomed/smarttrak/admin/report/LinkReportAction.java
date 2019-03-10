@@ -92,6 +92,8 @@ public class LinkReportAction extends SimpleActionAdapter {
 			log.error("Error attempting to update record: " + e);
 			throw new ActionException(e);
 		}
+		// Pass along link id for callback method on client side.
+		super.putModuleData(linkId);
 	}
 
 
@@ -106,13 +108,19 @@ public class LinkReportAction extends SimpleActionAdapter {
 		List<LinkVO> data = new ArrayList<>(5000);
 
 		StringBuilder sql = new StringBuilder(250);
-		sql.append("select link_id, url_txt, status_no, check_dt, review_flg, ");
-		sql.append("coalesce(company_id,product_id,insight_id,update_id,market_id) as id, ");
-		sql.append("case when company_id is not null then 'COMPANY' when product_id is not null then 'PRODUCT' ");
-		sql.append("when insight_id is not null then 'INSIGHT' when market_id is not null then 'MARKET' else 'UPDATE' end as section ");
-		sql.append("from ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA)).append("biomedgps_link ");
-		sql.append("where status_no=404 ");
-		if(!reviewFlag) sql.append("and review_flg=0 ");
+		sql.append("select l.link_id, l.url_txt, l.status_no, l.check_dt, l.review_flg, l.content_id, ");
+		sql.append("coalesce(l.company_id,l.product_id,l.insight_id,l.update_id,l.market_id) as id, ");
+		sql.append("coalesce(c.company_nm,p.product_nm,i.title_txt,u.title_txt,m.market_nm) as nm, ");
+		sql.append("case when l.company_id is not null then 'COMPANY' when l.product_id is not null then 'PRODUCT' ");
+		sql.append("when l.insight_id is not null then 'INSIGHT' when l.market_id is not null then 'MARKET' else 'UPDATE' end as section ");
+		sql.append("from ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA)).append("biomedgps_link l ");
+		sql.append("left join custom.biomedgps_company c on c.company_id = l.company_id ");
+		sql.append("left join custom.biomedgps_product p on p.product_id = l.product_id ");
+		sql.append("left join custom.biomedgps_update u on u.update_id = l.update_id ");
+		sql.append("left join custom.biomedgps_market m on m.market_id = l.market_id ");
+		sql.append("left join custom.biomedgps_insight i on i.insight_id = l.insight_id ");
+		sql.append("where l.status_no=404 ");
+		if(!reviewFlag) sql.append("and l.review_flg=0 ");
 		sql.append("order by section, id");
 		log.debug(sql);
 
@@ -140,23 +148,29 @@ public class LinkReportAction extends SimpleActionAdapter {
 	protected void setUrls(String fqdn, LinkVO vo, String qsPath) {
 		String sec;
 		String actionType;
+		String contentType;
 		if (Section.COMPANY.name().equals(vo.getSection())) {
 			sec = Section.COMPANY.getPageURL();
 			actionType="companyAdmin&companyId=";
+			contentType="&attributeTypeCd=HTML&actionTarget=COMPANYATTRIBUTE&companyAttributeId=";
 		} else if (Section.PRODUCT.name().equals(vo.getSection())) {
 			sec = Section.PRODUCT.getPageURL();
 			actionType="productAdmin&productId=";
+			contentType="&actionTarget=PRODUCTATTRIBUTE&attributeTypeCd=HTML&productAttributeId=";
 		} else if (Section.INSIGHT.name().equals(vo.getSection())) {
 			sec = Section.INSIGHT.getPageURL();
 			actionType="insights&insightId=";
 			vo.setSection("ANALYSIS"); //override cosmetic label
+			contentType="&activeTab=";
 		} else if (Section.MARKET.name().equals(vo.getSection())) {
 			sec = Section.MARKET.getPageURL();
 			actionType="marketAdmin&marketId=";
+			contentType="&actionTarget=MARKETATTRIBUTE&attributeTypeCd=HTML&marketAttributeId=";
 		} else {
 			//updates - they don't have a page - just link to the homepage /qs/<id>
 			sec = "";
 			actionType="updates&updateId=";
+			contentType="";
 		}
 
 		//add FQDN to relative (presumed local) URLs
@@ -164,6 +178,6 @@ public class LinkReportAction extends SimpleActionAdapter {
 			vo.setUrl(fqdn + vo.getUrl());
 
 		vo.setPublicUrl(StringUtil.join(fqdn, sec, qsPath, vo.getObjectId()));
-		vo.setAdminUrl(StringUtil.join(fqdn, "/manage?actionType=", actionType, vo.getObjectId()));
+		vo.setAdminUrl(StringUtil.join(fqdn, "/manage?actionType=", actionType, vo.getObjectId(), contentType, vo.getContentId()));
 	}
 }

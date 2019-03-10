@@ -335,7 +335,7 @@ public class GapAnalysisAction extends SectionHierarchyAction {
 		if (hasSaveStateId)
 			sql.append("and save_state_id = ? ");
 
-		sql.append("order by layout_nm");
+		sql.append("order by lower(layout_nm) asc");
 		return sql.toString();
 	}
 

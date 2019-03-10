@@ -110,8 +110,14 @@ public class NewsroomAction extends SBActionAdapter {
 	 */
 	private String loadArticleSql(boolean hasStatusCd) {
 		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
-		StringBuilder sql = new StringBuilder(250);
-		sql.append(DBUtil.SELECT_FROM_STAR).append(schema).append("biomedgps_rss_article a ");
+		StringBuilder sql = new StringBuilder(750);
+		sql.append(DBUtil.SELECT_CLAUSE).append("a.rss_article_id, a.rss_entity_id, ");
+		sql.append("a.publication_nm, a.article_guid, a.article_url, a.article_source_type, ");
+		sql.append("a.attribute1_txt, a.publish_dt, a.create_dt, af.rss_article_filter_id, ");
+		sql.append("af.feed_group_id, af.article_status_cd, af.bucket_id, af.match_no, ");
+		sql.append("coalesce(af.filter_title_txt, a.title_txt, 'Untitled') as filter_title_txt, ");
+		sql.append("coalesce(af.filter_article_txt, a.article_txt, 'No Article Available') as filter_article_txt ");
+		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("biomedgps_rss_article a ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("biomedgps_rss_filtered_article af ");
 		sql.append("on a.rss_article_id = af.rss_article_id ");
 		sql.append("where af.feed_group_id = ? ");

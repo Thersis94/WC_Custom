@@ -18,7 +18,6 @@ import com.siliconmtn.sb.email.util.EmailCampaignBuilderUtil;
 import com.siliconmtn.sb.email.vo.EmailRecipientVO;
 import com.siliconmtn.util.Convert;
 import com.smt.sitebuilder.action.SBActionAdapter;
-import com.smt.sitebuilder.common.constants.Constants;
 /****************************************************************************
  * <b>Title</b>: InvitationAction.java<p/>
  * <b>Description: Manages invitations sent by a member to a potential new member.</b> 
@@ -32,11 +31,9 @@ import com.smt.sitebuilder.common.constants.Constants;
 public class InvitationAction extends SBActionAdapter {
 
 	private static final String REQ_RECIPIENT_EMAIL = "rcptEml";
-	private Map<String, Object> emailData;
 
 	public InvitationAction() {
 		super();
-		emailData = new HashMap<>();
 	}
 
 	/**
@@ -56,19 +53,22 @@ public class InvitationAction extends SBActionAdapter {
 		setAttributes(attributes);
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * @see com.smt.sitebuilder.action.tools.EmailFriendAction#build(com.siliconmtn.action.ActionRequest)
+	/**
+	 * Saves the invitation and returns info needed for sending the email
+	 * @param req
+	 * @return
+	 * @throws ActionException
 	 */
-	@Override 
-	public void build(ActionRequest req)  throws ActionException {
-		MemberVO member = (MemberVO) req.getSession().getAttribute(Constants.USER_DATA);
+	public Map<String, Object> saveInvite(ActionRequest req)  throws ActionException {
+		Map<String, Object> emailData = new HashMap<>();
+		MemberVO member = RezDoxUtils.getMember(req);
 
 		if (req.hasParameter("statusFlag")) {
-			updateInvitation(member, req);
+			updateInvitation(member, req, emailData);
 		} else {
-			saveInvitation(member, req);
+			saveInvitation(member, req, emailData);
 		}
+		return emailData;
 	}
 
 	/**
@@ -78,23 +78,28 @@ public class InvitationAction extends SBActionAdapter {
 	 * @param req
 	 * @throws ActionException 
 	 */
-	protected void saveInvitation(MemberVO member, ActionRequest req) {
+	protected void saveInvitation(MemberVO member, ActionRequest req, Map<String, Object> emailData) {
 		// Check if member has invited this email before, if so, then don't proceed
 		List<InvitationVO> invitations = retrieveInvitations(req);
+		log.debug(String.format("%d existing invitations", invitations.size()));
+
+		//don't re-send an existing invitation
 		if (!invitations.isEmpty()) {
+			Map<String, Object> resp = new HashMap<>();
+			resp.put("jsonActionError", "existing"); //gets picked up by JS logic to display a friendly msg
+			putModuleData(resp);
 			return;
 		}
 
 		// Set the data on the VO
 		InvitationVO invite = new InvitationVO(req);
-		invite.setMemberId(RezDoxUtils.getMemberId(req));
+		invite.setMemberId(member.getMemberId());
 		invite.setStatusFlag(InvitationVO.Status.SENT.getCode());
 		invite.setEmailAddressText(req.getParameter(REQ_RECIPIENT_EMAIL));
 
 		// Save the invitation record
-		DBProcessor dbp = new DBProcessor(dbConn, getCustomSchema());
 		try {
-			dbp.save(invite);
+			new DBProcessor(getDBConnection(), getCustomSchema()).save(invite);
 		} catch(Exception e) {
 			log.error("Could not save invitation", e);
 		}
@@ -112,7 +117,8 @@ public class InvitationAction extends SBActionAdapter {
 	 * @param req
 	 * @throws ActionException 
 	 */
-	protected void updateInvitation(MemberVO member, ActionRequest req) throws ActionException {
+	protected void updateInvitation(MemberVO member, ActionRequest req, Map<String, Object> emailData) 
+			throws ActionException {
 		// Update the status on the invitation record
 		updateStatus(new InvitationVO(req));
 
@@ -199,6 +205,7 @@ public class InvitationAction extends SBActionAdapter {
 		}
 
 		sql.append(DBUtil.ORDER_BY).append(" coalesce(update_dt, create_dt) desc ");
+		log.debug(sql);
 
 		DBProcessor dbp = new DBProcessor(dbConn, schema);
 		return dbp.executeSelect(sql.toString(), params, new InvitationVO());
@@ -259,17 +266,9 @@ public class InvitationAction extends SBActionAdapter {
 	private List<InvitationVO> retrieveRewardInvites(String emailAddress) {
 		String schema = getCustomSchema();
 		StringBuilder sql = getBaseRetrieveSql(schema);
-		sql.append(DBUtil.WHERE_CLAUSE).append("lower(email_address_txt) = ?  ");
+		sql.append(DBUtil.WHERE_CLAUSE).append("lower(email_address_txt) = ? and status_flg in (1,2)  ");
 
 		DBProcessor dbp = new DBProcessor(dbConn, schema);
 		return dbp.executeSelect(sql.toString(), Arrays.asList(emailAddress.trim().toLowerCase()), new InvitationVO());
-	}
-
-
-	/**
-	 * @return the emailData
-	 */
-	public Map<String, Object> getEmailData() {
-		return emailData;
 	}
 }
