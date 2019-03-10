@@ -35,7 +35,8 @@ public class CustomerVO extends BeanDataVO {
 	 */
 	public enum CustomerType {
 		TOUR("Tour Customer"),
-		VENUE("Venue Customer");
+		VENUE("Venue Customer"),
+		PS("Perfect Storm");
 		
 		private String customerName;
 		private CustomerType(String customerName) { this.customerName = customerName; }

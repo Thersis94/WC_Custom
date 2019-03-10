@@ -1,4 +1,4 @@
-package com.perfectstorm.action.weather;
+package com.perfectstorm.util.weather;
 
 import java.io.IOException;
 import java.sql.Connection;

@@ -1,4 +1,4 @@
-package com.perfectstorm.action.weather;
+package com.perfectstorm.util.weather;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -27,10 +27,8 @@ import org.xml.sax.SAXException;
 
 // Gson 2.3
 import com.google.gson.Gson;
-
-// PS Libs
-import com.perfectstorm.data.weather.StationExtVO;
 import com.perfectstorm.data.weather.WeatherStationVO;
+import com.perfectstorm.data.weather.nws.station.StationExtVO;
 import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.db.DatabaseConnection;
 import com.siliconmtn.db.orm.DBProcessor;

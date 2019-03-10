@@ -3,6 +3,7 @@ package com.perfectstorm.action;
 // JDK 1.8.x
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -25,6 +26,7 @@ import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.common.html.BSTableControlVO;
 import com.siliconmtn.data.GenericVO;
+import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.orm.GridDataVO;
 import com.siliconmtn.util.Convert;
@@ -71,10 +73,12 @@ public class SelectLookupAction extends SBActionAdapter {
 		keyMap.put("role", new GenericVO("getRoles", Boolean.FALSE));
 		keyMap.put("prefix", new GenericVO("getPrefix", Boolean.FALSE));
 		keyMap.put("gender", new GenericVO("getGenders", Boolean.FALSE));
+		keyMap.put("routes", new GenericVO("getRoutes", Boolean.TRUE));
 		keyMap.put("customer", new GenericVO("getCustomers", Boolean.TRUE));
 		keyMap.put("customerType", new GenericVO("getCustomerType", Boolean.FALSE));
 		keyMap.put("member", new GenericVO("getMembers", Boolean.TRUE));
 		keyMap.put("timezone", new GenericVO("getTimeZone", Boolean.TRUE));
+		keyMap.put("radarType", new GenericVO("getRadarTypes", Boolean.FALSE));
 	}
 
 	/**
@@ -206,6 +210,21 @@ public class SelectLookupAction extends SBActionAdapter {
 	}
 	
 	/**
+	 * gets a global list of all routes
+	 * @return
+	 */
+	public List<GenericVO> getRoutes(ActionRequest req){
+		StringBuilder sql = new StringBuilder(128);
+		sql.append("select tour_id as key, tour_nm as value from ").append(getCustomSchema()).append("ps_tour t ");
+		sql.append(DBUtil.WHERE_CLAUSE).append(" tour_type_cd = ? ");
+		sql.append(DBUtil.ORDER_BY).append(" t.tour_nm ");
+		 
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		db.setGenerateExecutedSQL(log.isDebugEnabled());
+		return db.executeSelect(sql.toString(), Arrays.asList(req.getStringParameter("tourTypeCode")), new GenericVO());
+	}
+	
+	/**
 	 * Gets the supported Customer Types for the app
 	 * @return
 	 */
@@ -228,9 +247,10 @@ public class SelectLookupAction extends SBActionAdapter {
 	public List<GenericVO> getCustomers(ActionRequest req) {
 		// Get the data from the action
 		CustomerAction ca = new CustomerAction(getDBConnection(), getAttributes());
-		BSTableControlVO bst = new BSTableControlVO(req);
+		String customerType = req.getParameter("customerType");
+		BSTableControlVO bst = new BSTableControlVO(req, CustomerVO.class);
 		bst.setLimit(req.getIntegerParameter("acReturn", 1000));
-		GridDataVO<CustomerVO> data = ca.getCustomers(bst);
+		GridDataVO<CustomerVO> data = ca.getCustomers(bst, customerType);
 		
 		// Store the id and name to a generic vo
 		List<GenericVO> customers = new ArrayList<>(data.getTotal());
@@ -293,6 +313,20 @@ public class SelectLookupAction extends SBActionAdapter {
 		
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		return db.executeSQLWithCount(sql.toString(), vals, new GenericVO(), bst).getRowData();
+	}
+	
+	
+	/**
+	 * Gets the list of radar image types
+	 * 
+	 * @return
+	 */
+	public List<GenericVO> getRadarTypes() {
+		String sql = StringUtil.join("select radar_type_cd as key, type_txt as value from ", getCustomSchema(), "ps_radar_type");
+		log.debug(sql);
+		
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		return db.executeSelect(sql, new ArrayList<>(), new GenericVO());
 	}
 	
 }

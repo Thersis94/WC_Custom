@@ -1,9 +1,9 @@
-package com.perfectstorm.data.weather.detail;
+package com.perfectstorm.data.weather.nws.detail;
 
 // JDK 1.8.x
 import java.sql.ResultSet;
 
-import com.perfectstorm.data.weather.ElevationVO;
+import com.perfectstorm.data.weather.nws.ElevationVO;
 // SMT Base Libs
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.parser.BeanDataVO;
@@ -33,10 +33,11 @@ public class ForecastDetailVO extends BeanDataVO {
 	private String gridX;
 	private String gridY;
 	private String forecastOffice;
+	private String validTimes;
 	
 	// Attributes to be parsed
 	private WeatherAttribueVO temperature;
-	private WeatherAttribueVO dewPoint;
+	private WeatherAttribueVO dewpoint;
 	private WeatherAttribueVO maxTemperature;
 	private WeatherAttribueVO minTemperature;
 	private WeatherAttribueVO relativeHumidity;
@@ -61,6 +62,8 @@ public class ForecastDetailVO extends BeanDataVO {
 	private WeatherAttribueVO twentyFootWindDirection;
 	private WeatherAttribueVO probabilityOfTropicalStormWinds;
 	private WeatherAttribueVO probabilityOfHurricaneWinds;
+	private WeatherAttribueVO lightningActivityLevel;
+	private WeatherAttribueVO probabilityOfThunder;
 
 	
 	// VO Members
@@ -123,10 +126,10 @@ public class ForecastDetailVO extends BeanDataVO {
 	}
 
 	/**
-	 * @return the dewPoint
+	 * @return the dewpoint
 	 */
-	public WeatherAttribueVO getDewPoint() {
-		return dewPoint;
+	public WeatherAttribueVO getDewpoint() {
+		return dewpoint;
 	}
 
 	/**
@@ -340,10 +343,10 @@ public class ForecastDetailVO extends BeanDataVO {
 	}
 
 	/**
-	 * @param dewPoint the dewPoint to set
+	 * @param dewpoint the dewpoint to set
 	 */
-	public void setDewPoint(WeatherAttribueVO dewPoint) {
-		this.dewPoint = dewPoint;
+	public void setDewpoint(WeatherAttribueVO dewpoint) {
+		this.dewpoint = dewpoint;
 	}
 
 	/**
@@ -519,6 +522,48 @@ public class ForecastDetailVO extends BeanDataVO {
 	 */
 	public void setElevation(ElevationVO elevation) {
 		this.elevation = elevation;
+	}
+
+	/**
+	 * @return the lightningActivityLevel
+	 */
+	public WeatherAttribueVO getLightningActivityLevel() {
+		return lightningActivityLevel;
+	}
+
+	/**
+	 * @param lightningActivityLevel the lightningActivityLevel to set
+	 */
+	public void setLightningActivityLevel(WeatherAttribueVO lightningActivityLevel) {
+		this.lightningActivityLevel = lightningActivityLevel;
+	}
+
+	/**
+	 * @return the probabilityOfThunder
+	 */
+	public WeatherAttribueVO getProbabilityOfThunder() {
+		return probabilityOfThunder;
+	}
+
+	/**
+	 * @param probabilityOfThunder the probabilityOfThunder to set
+	 */
+	public void setProbabilityOfThunder(WeatherAttribueVO probabilityOfThunder) {
+		this.probabilityOfThunder = probabilityOfThunder;
+	}
+
+	/**
+	 * @return the validTimes
+	 */
+	public String getValidTimes() {
+		return validTimes;
+	}
+
+	/**
+	 * @param validTimes the validTimes to set
+	 */
+	public void setValidTimes(String validTimes) {
+		this.validTimes = validTimes;
 	}
 }
 

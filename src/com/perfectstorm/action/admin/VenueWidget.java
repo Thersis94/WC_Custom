@@ -20,13 +20,11 @@ import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.orm.GridDataVO;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.db.util.DatabaseException;
-import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.gis.AbstractGeocoder;
 import com.siliconmtn.gis.GeocodeFactory;
 import com.siliconmtn.gis.GeocodeLocation;
 import com.siliconmtn.gis.MatchCode;
 import com.siliconmtn.util.StringUtil;
-
 // WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -95,12 +93,13 @@ public class VenueWidget extends SBActionAdapter {
 		// Add the params
 		List<Object> vals = new ArrayList<>(); 
 		StringBuilder sql = new StringBuilder(96);
-		sql.append("select * from ").append(getCustomSchema()).append("ps_venue a ");
+		sql.append("select a.*, b.*, c.customer_nm from ").append(getCustomSchema()).append("ps_venue a ");
 		sql.append("left outer join ( ");
 		sql.append("select venue_id, count(*) as station_no ");
 		sql.append("from custom.ps_venue_weather_station ");
 		sql.append("group by venue_id ");
 		sql.append(") as b on a.venue_id = b.venue_id ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(getCustomSchema()).append("ps_customer c on a.customer_id = c.customer_id ");
 		sql.append("where 1=1 ");
 		
 		// Add the search filter
@@ -149,15 +148,14 @@ public class VenueWidget extends SBActionAdapter {
 	
 	/**
 	 * Saves the venue information
+	 * 
 	 * @param venue
-	 * @throws InvalidDataException
-	 * @throws DatabaseException
+	 * @throws ActionException
 	 */
-	public void saveVenue(VenueVO venue, boolean override) 
-	throws InvalidDataException, DatabaseException {
-		boolean isNew = StringUtil.isEmpty(venue.getVenueId());
+	public void saveVenue(VenueVO venue, boolean override) throws ActionException {
+		boolean isInsert = StringUtil.isEmpty(venue.getVenueId());
 		
-		// If not manually assigned or orverriden, geocode the location
+		// If not manually assigned or overriden, geocode the location
 		if (venue.getManualGeocodeFlag() != 1 || override) {
 			AbstractGeocoder ag = GeocodeFactory.getInstance((String) attributes.get(Constants.GEOCODE_CLASS));
 			ag.addAttribute(AbstractGeocoder.CONNECT_URL, attributes.get(Constants.GEOCODE_URL));
@@ -171,12 +169,19 @@ public class VenueWidget extends SBActionAdapter {
 			log.debug(venue);
 		}
 		
-		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
-		db.save(venue);
-		
-		// If the transaction is an insert, update the list of observation stations
-		VenueStationWidget vsw = new VenueStationWidget(dbConn, attributes);
-		vsw.updateObservationStation(venue, isNew);
+		try {
+			// Save the venue data
+			DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+			db.save(venue);
+
+			// Update the nearest observation and radar stations, this only needs to happen the first time
+			if (isInsert) {
+				VenueStationWidget vsw = new VenueStationWidget(dbConn, attributes);
+				vsw.assignNearestStations(venue);
+			}
+		} catch (Exception e) {
+			throw new ActionException(e);
+		}
 	}
 	
 	/**
