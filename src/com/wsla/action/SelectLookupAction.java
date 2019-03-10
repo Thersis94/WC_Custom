@@ -359,7 +359,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		sql.append("where provider_type_id = 'RETAILER' ");
 		sql.append("and (lower(provider_nm) like ? or lower(location_nm) like ? ");
 		sql.append("or lower(city_nm) like ? or store_no like ?) ");
-		sql.append("order by provider_nm");
+		sql.append("order by provider_nm ");
 
 		List<Object> vals = new ArrayList<>();
 		vals.add(term);
@@ -368,7 +368,8 @@ public class SelectLookupAction extends SBActionAdapter {
 		vals.add(term);
 
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
-		return db.executeSelect(sql.toString(), vals, new GenericVO());
+		db.setGenerateExecutedSQL(log.isDebugEnabled());
+		return db.executeSelect(sql.toString(), vals, new GenericVO(),null,req.getIntegerParameter("offset").intValue(), req.getIntegerParameter("limit").intValue());
 	}
 
 	/**

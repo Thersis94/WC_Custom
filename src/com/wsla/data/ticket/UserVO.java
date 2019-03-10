@@ -46,6 +46,7 @@ public class UserVO extends BeanDataVO {
 	private String lastNamePost;
 	private String email;
 	private String mainPhone;
+	private String phoneExtensionNumber;
 	private String locale;
 	private String roleId;
 	private String profileRoleId;
@@ -210,6 +211,21 @@ public class UserVO extends BeanDataVO {
 	 */
 	public UserDataVO getProfile() {
 		return profile;
+	}
+
+	/**
+	 * @return the phoneExtensionNumber
+	 */
+	@Column(name="phone_extension_no" )
+	public String getPhoneExtensionNumber() {
+		return phoneExtensionNumber;
+	}
+
+	/**
+	 * @param phoneExtensionNumber the phoneExtensionNumber to set
+	 */
+	public void setPhoneExtensionNumber(String phoneExtensionNumber) {
+		this.phoneExtensionNumber = phoneExtensionNumber;
 	}
 
 	/**
