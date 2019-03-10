@@ -70,7 +70,7 @@ public class SmarttrakRegistrationAction extends SimpleActionAdapter {
 		req.setAttribute("permissionTree", t);
 
 		UserVO user;
-		if(req.hasParameter("userId") && attributes.get(Constants.MODULE_DATA) != null) {
+		if(req.hasParameter("userId") && !"ADD".equalsIgnoreCase(req.getParameter("userId")) && attributes.get(Constants.MODULE_DATA) != null) {
 			ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
 			user = ((List<UserVO>)mod.getActionData()).get(0);
 		} else {
