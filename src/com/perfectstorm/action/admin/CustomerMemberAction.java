@@ -73,20 +73,22 @@ public class CustomerMemberAction extends SBActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		setModuleData(getCustomerMembers());
+		setModuleData(getCustomerMembers(req.getParameter("customerId")));
 	}
 	
 	/**
 	 * Gets the attributes
 	 * @return
 	 */
-	public List<CustomerMemberVO> getCustomerMembers() {
+	public List<CustomerMemberVO> getCustomerMembers(String customerId) {
 		List<Object> vals = new ArrayList<>();
+		vals.add(customerId);
 		
 		StringBuilder sql = new StringBuilder(128);
 		sql.append("select * from ").append(getCustomSchema()).append("ps_customer_member_xr a ");
 		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("ps_member b ");
 		sql.append("on a.member_id = b.member_id ");
+		sql.append(DBUtil.WHERE_CLAUSE).append("customer_id = ? ");
 		sql.append("order by last_nm, first_nm");
 		log.debug(sql.length() + "|" + sql);
 		
