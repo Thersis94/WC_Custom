@@ -15,6 +15,7 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
+import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.weather.SunTimeVO;
 
 /****************************************************************************
@@ -308,6 +309,15 @@ public class VenueTourVO extends VenueVO {
 	public void setCurrentSunTime(SunTimeVO currentSunTime) {
 		this.currentSunTime = currentSunTime;
 	}
+	
+	/**
+	 * @param timezone the timezone to set
+	 */
+	@Override
+	public void setTimezone(String timezone) {
+		super.setTimezone(timezone);
+		setTimeUntilEvent();
+	}
 
 	/**
 	 * @return the timeUntilEvent
@@ -327,19 +337,23 @@ public class VenueTourVO extends VenueVO {
 	 * Sets the time until the start of the event using the bean's eventDate value
 	 */
 	public void setTimeUntilEvent() {
+		if (eventDate == null || StringUtil.isEmpty(getTimezone())) {
+			return;
+		}
+		
 		LocalDateTime eventDateTime = eventDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
-		LocalDateTime now = LocalDateTime.now();
+		LocalDateTime now = new Date().toInstant().atZone(ZoneId.of(getTimezone())).toLocalDateTime();
 		Duration remainingTime = Duration.between(now, eventDateTime);
 		
 		Long days = remainingTime.toDays();
-		String dayString = days + " day" + (days != 1 ? "s" : "");
+		String dayString = days + " day" + (Math.abs(days) != 1 ? "s" : "");
 
 		Long hours = remainingTime.toHours() - (days * 24);
-		String hourString = hours + " hour" + (hours != 1 ? "s" : "");
+		String hourString = hours + " hour" + (Math.abs(hours) != 1 ? "s" : "");
 		
-		String separator = days > 0 && hours > 0 ? ", " : "";
+		String separator = days != 0 && hours != 0 ? ", " : "";
 		
-		timeUntilEvent = (days > 0 ? dayString : "") + separator + (hours > 0 || days == 0 ? hourString : "");
+		timeUntilEvent = (days != 0 ? dayString : "") + separator + (hours != 0 || days == 0 ? hourString : "");
 	}
 }
 
