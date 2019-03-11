@@ -117,7 +117,7 @@ public class DashboardAction extends SimpleActionAdapter {
 		if (!isBusinessOnlyRole) {
 			sql.append("select 'SMT1'+a.project_id as key, a.project_nm as value, coalesce(a.update_dt, a.create_dt) from ").append(schema).append("REZDOX_PROJECT a ");
 			sql.append(DBUtil.INNER_JOIN).append(schema).append("REZDOX_RESIDENCE r on a.residence_id=r.residence_id ");
-			sql.append(DBUtil.INNER_JOIN).append(schema).append("REZDOX_RESIDENCE_MEMBER_XR rm on r.residence_id=rm.residence_id and rm.member_id=? and rm.status_flg=1 ");
+			sql.append(DBUtil.INNER_JOIN).append(schema).append("REZDOX_RESIDENCE_MEMBER_XR rm on r.residence_id=rm.residence_id and rm.member_id=? and rm.status_flg>=1 ");
 			sql.append("where coalesce(a.update_dt, a.create_dt) >= CURRENT_DATE-90 and a.residence_view_flg != 0 ");
 			sql.append("order by 3 desc "); //most recent first
 			log.debug(sql);
@@ -129,7 +129,7 @@ public class DashboardAction extends SimpleActionAdapter {
 			sql = new StringBuilder(400);
 			sql.append("select 'SMT2'+ a.project_id as key, a.project_nm as value, coalesce(a.update_dt, a.create_dt) from ").append(schema).append("REZDOX_PROJECT a ");
 			sql.append(DBUtil.INNER_JOIN).append(schema).append("REZDOX_BUSINESS b on a.business_id=b.business_id ");
-			sql.append(DBUtil.INNER_JOIN).append(schema).append("REZDOX_BUSINESS_MEMBER_XR bm on b.business_id=bm.business_id and bm.member_id=? and bm.status_flg=1 ");
+			sql.append(DBUtil.INNER_JOIN).append(schema).append("REZDOX_BUSINESS_MEMBER_XR bm on b.business_id=bm.business_id and bm.member_id=? and bm.status_flg>=1 ");
 			sql.append("where coalesce(a.update_dt, a.create_dt) >= CURRENT_DATE-90 and a.business_view_flg != 0 ");
 			sql.append("order by 3 desc"); //most recent first
 			log.debug(sql);

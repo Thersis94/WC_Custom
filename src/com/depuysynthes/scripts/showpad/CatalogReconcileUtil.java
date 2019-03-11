@@ -16,11 +16,10 @@ import java.util.Properties;
 
 import org.apache.log4j.Logger;
 
-import com.depuysynthes.huddle.HuddleUtils;
-import com.depuysynthes.huddle.solr.HuddleProductCatalogSolrIndex;
 import com.depuysynthes.scripts.DSMediaBinImporterV2;
 import com.depuysynthes.scripts.MediaBinDeltaVO;
 import com.depuysynthes.scripts.MediaBinDeltaVO.State;
+import com.depuysynthes.solr.ProductCatalogSolrIndex;
 import com.siliconmtn.commerce.catalog.ProductAttributeContainer;
 import com.siliconmtn.commerce.catalog.ProductAttributeVO;
 import com.siliconmtn.commerce.catalog.ProductCategoryVO;
@@ -48,12 +47,12 @@ public class CatalogReconcileUtil {
 	/*
 	 * The constant used for the MEDIABIN product attribute type - comes from the database
 	 */
-	protected static final String MEDIABIN_ATTR_TYPE = HuddleUtils.PROD_ATTR_MB_TYPE;
+	protected static final String MEDIABIN_ATTR_TYPE = "MEDIABIN";
 
 	/*
 	 * The constant used for the HTML product attribute type - comes from the database
 	 */
-	protected static final String HTML_ATTR_TYPE = HuddleUtils.PROD_ATTR_HTML_TYPE;
+	protected static final String HTML_ATTR_TYPE = "HTML";
 
 
 	/*
@@ -327,7 +326,7 @@ public class CatalogReconcileUtil {
 	 */
 	private Collection<String> convertFromJson(String jsonText) {
 		try {
-			return HuddleProductCatalogSolrIndex.convertFromJSON(jsonText);
+			return ProductCatalogSolrIndex.convertFromJSON(jsonText);
 		} catch (InvalidDataException ide) {
 			log.error("could not parse JSON stored on the Product record", ide);
 		}

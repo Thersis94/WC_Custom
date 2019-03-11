@@ -14,9 +14,8 @@ import com.siliconmtn.data.parser.BeanDataVO;
 import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
+import com.siliconmtn.util.StringUtil;
 import com.wsla.data.admin.InvoiceTypeCasVO;
-
-import opennlp.tools.util.StringUtil;
 
 /****************************************************************************
  * <b>Title</b>: ProviderVO.java
@@ -33,9 +32,6 @@ import opennlp.tools.util.StringUtil;
 @Table(name="wsla_provider")
 public class ProviderVO extends BeanDataVO {
 
-	/**
-	 * 
-	 */
 	private static final long serialVersionUID = -8670063898439472671L;
 	
 	// Member Variables
@@ -51,8 +47,8 @@ public class ProviderVO extends BeanDataVO {
 	private Date updateDate;
 	
 	// Bean Sub-Elements
-	List<ProviderLocationVO> locations = new ArrayList<>();
-	List<InvoiceTypeCasVO> invoiceItems = new ArrayList<>();
+	private List<ProviderLocationVO> locations = new ArrayList<>();
+	private List<InvoiceTypeCasVO> invoiceItems = new ArrayList<>();
 	
 	/**
 	 * 
@@ -275,4 +271,3 @@ public class ProviderVO extends BeanDataVO {
 			this.invoiceItems.add(invoiceItem);
 	}
 }
-

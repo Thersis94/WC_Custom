@@ -172,7 +172,7 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 		fields.add("credit_memo_id");
 		
 		StringBuilder sql = new StringBuilder(93);
-		sql.append("update ").append("wsla_credit_memo set asset_id = ?, refund_amount_no = ?, approved_by_txt = ?, approval_dt = ?  where credit_memo_id = ? ");
+		sql.append("update ").append(getCustomSchema()).append("wsla_credit_memo set asset_id = ?, refund_amount_no = ?, approved_by_txt = ?, approval_dt = ?  where credit_memo_id = ? ");
 		
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		try {
@@ -228,7 +228,7 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 	 * @param ticketId
 	 * @return
 	 */
-	private ProductOwner getProductOwnerType(String ticketId) {
+	public ProductOwner getProductOwnerType(String ticketId) {
 		TicketEditAction tea = new TicketEditAction(getDBConnection(), getAttributes());
 
 		TicketVO ticket = new TicketVO();
@@ -313,7 +313,7 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 		if (approvals.get(PROOF_PURCHASE) != null && approvals.get(SERIAL_NO) != null) {
 			boolean popHasApproval = !approvals.get(PROOF_PURCHASE).isRejected();
 			boolean snHasApproval = !approvals.get(SERIAL_NO).isRejected();
-			finalizeApproval(req, popHasApproval && snHasApproval);
+			finalizeApproval(req, popHasApproval && snHasApproval, true);
 		}
 	}
 	
@@ -350,7 +350,7 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 	 * @param req
 	 * @throws DatabaseException 
 	 */
-	public void finalizeApproval(ActionRequest req, boolean isApproved) throws DatabaseException {
+	public void finalizeApproval(ActionRequest req, boolean isApproved, boolean isNewTicketAssignment) throws DatabaseException {
 		StatusCode status = isApproved ? StatusCode.USER_DATA_COMPLETE : StatusCode.USER_CALL_DATA_INCOMPLETE;
 		String summary = isApproved ? LedgerSummary.ASSET_APPROVED.summary : LedgerSummary.ASSET_REJECTED.summary;
 		
@@ -370,6 +370,8 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 			TicketAssignmentVO tAss = new TicketAssignmentVO(req);
 			tAss.setLocationId(casLocation.getKey().toString());
 			tAss.setTypeCode(TypeCode.CAS);
+			
+			if(isNewTicketAssignment) tAss.setTicketAssignmentId(null);
 
 			try {
 				TicketAssignmentTransaction tat = new TicketAssignmentTransaction(getDBConnection(), getAttributes());

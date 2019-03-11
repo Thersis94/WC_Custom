@@ -83,6 +83,7 @@ public class ProductSerialAction extends BatchImport {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
+		log.debug("pro serial action retreve called");
 		String productId = req.getParameter(REQ_PRODUCT_ID);
 
 		if (!StringUtil.isEmpty(productId) && req.hasParameter("serialNo")) {
@@ -100,7 +101,38 @@ public class ProductSerialAction extends BatchImport {
 				
 				ticket = tea.getBaseTicket(req.getStringParameter("ticketId"));
 			}	
+			
+			//if its not found and the owner is retail trust them generate a new approved product serial vo 
+			//  that is already approved
+			if(req.getBooleanParameter("isRetailOwner") && pwvo != null && StringUtil.isEmpty(pwvo.getProductWarrantyId())) {
+				DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+				db.setGenerateExecutedSQL(log.isDebugEnabled());
+				
+				ProductSerialNumberVO pvo = new ProductSerialNumberVO();
+				pvo.setProductId(productId);
+				pvo.setSerialNumber(req.getParameter("serialNo"));
+				pvo.setValidatedFlag(1);
+				pvo.setDisposeFlag(0);
+				try {
+					//save the new product serial record
+					db.save(pvo);
+					
+					Calendar expireDate = Calendar.getInstance();
+					expireDate.add( Calendar.YEAR, 10 );
+					pwvo.setProductSerialId(pvo.getProductSerialId());
+					pwvo.setRequireApprovalFlag(0);
+					pwvo.setDisposeFlag(0);
+					pwvo.setExpirationDate(expireDate.getTime());
+					pwvo.setWarrantyId(WSLAConstants.RETAIL_WARRANTY);
+					
+					//save the new product warranty record.
+					db.save(pwvo);
+				} catch (Exception e) {
+					log.error("could not save new retailer product warranty vo",e);
+				}
 
+			}
+			
 			// Add the elements in a GVO to the response
 			putModuleData(new GenericVO(pwvo, ticket));
 			
@@ -186,12 +218,15 @@ public class ProductSerialAction extends BatchImport {
 	 */
 	public void save(ProductSerialNumberVO vo, ProductWarrantyVO pwvo, int val, String userId) 
 	throws InvalidDataException, DatabaseException {
+		
 		// Save the serial info
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		db.save(vo);
 		
+		pwvo.setProductSerialId(vo.getProductSerialId());
+		
 		// If the warranty info exists, update it
-		if (! StringUtil.isEmpty(pwvo.getProductWarrantyId())) {
+		if (! StringUtil.isEmpty(pwvo.getProductWarrantyId()) || ! StringUtil.isEmpty(vo.getWarrantyId())) {
 			db.save(pwvo);
 		}
 		
@@ -358,8 +393,9 @@ public class ProductSerialAction extends BatchImport {
 		List<Object> vals = new ArrayList<>();
 		vals.add(serialNo.toLowerCase());
 		vals.add(productId);
-		log.debug( sql +"|"+vals);
+
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		db.setGenerateExecutedSQL(log.isDebugEnabled());
 		List<ProductWarrantyVO> lpwvo = db.executeSelect(sql.toString(), vals, new ProductWarrantyVO());
 		
 		if (lpwvo != null && !lpwvo.isEmpty() && lpwvo.get(0) != null)
