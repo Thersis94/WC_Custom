@@ -9,13 +9,13 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-import com.perfectstorm.data.weather.SunTimeVO;
 import com.perfectstorm.data.weather.forecast.ForecastVO;
 // SMT Base Libs
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
+import com.siliconmtn.weather.SunTimeVO;
 
 /****************************************************************************
  * <b>Title</b>: TourVO.java
