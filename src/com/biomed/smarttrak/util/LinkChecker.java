@@ -58,21 +58,24 @@ public class LinkChecker extends CommandLineUtil {
 	 * This enum is what we iterate when the script runs.
 	 */
 	enum Table {
-		COMPANY_ATTR_XR(COMPANIES,"select company_id, value_txt, company_attribute_id from custom.BIOMEDGPS_COMPANY_ATTRIBUTE_XR where status_no = ?"),
-		PROD_ATTR_XR(PRODUCTS,"select product_id, value_txt, product_attribute_id from custom.BIOMEDGPS_PRODUCT_ATTRIBUTE_XR where status_no = ?"),
-		MKRT_ATTR_XR(MARKETS,"select market_id, value_txt, market_attribute_id from custom.BIOMEDGPS_MARKET_ATTRIBUTE_XR where status_no = ?"),
-		ANALYSIS_ABS(ANALYSIS,"select insight_id, abstract_txt, 'Abstract' from custom.BIOMEDGPS_INSIGHT where status_cd = ?"),
-		ANALYSIS_MAIN(ANALYSIS,"select insight_id, content_txt, 'Article' from custom.BIOMEDGPS_INSIGHT where status_cd = ?");
+		COMPANY_ATTR_XR(COMPANIES, true,"select i.company_id, value_txt, company_attribute_id from custom.BIOMEDGPS_COMPANY_ATTRIBUTE_XR i left join custom.BIOMEDGPS_COMPANY c on c.company_id = i.company_id left join custom.biomedgps_product p on p.company_id = i.company_id where i.status_no = ? and c.status_no = ? group by i.company_id, value_txt, company_attribute_id having count(p.product_id)>0"),
+		PROD_ATTR_XR(PRODUCTS, true,"select i.product_id, value_txt, product_attribute_id from custom.BIOMEDGPS_PRODUCT_ATTRIBUTE_XR i left join custom.BIOMEDGPS_PRODUCT p on p.product_id = i.product_id where i.status_no = ? and p.status_no = ?"),
+		MKRT_ATTR_XR(MARKETS, true,"select i.market_id, value_txt, market_attribute_id from custom.BIOMEDGPS_MARKET_ATTRIBUTE_XR i left join custom.BIOMEDGPS_MARKET m on m.market_id = i.market_id where i.status_no = ? and m.status_no = ?"),
+		ANALYSIS_ABS(ANALYSIS, false,"select insight_id, abstract_txt, 'Abstract' from custom.BIOMEDGPS_INSIGHT where status_cd = ?"),
+		ANALYSIS_MAIN(ANALYSIS, false,"select insight_id, content_txt, 'Article' from custom.BIOMEDGPS_INSIGHT where status_cd = ?");
 
 		String selectSql;
 		String section;
+		boolean extraCheck;
 
-		Table(String sec, String sel) {
+		Table(String sec, boolean extraCheck, String sel) {
 			this.selectSql = sel;
 			this.section = sec;
+			this.extraCheck = extraCheck;
 		}
 		String getSelectSql() { return selectSql; }
 		String getSection() { return section; }
+		boolean needsExtraCheck() { return extraCheck; }
 	}
 
 	List<String> validCompanyIds;
@@ -199,6 +202,8 @@ public class LinkChecker extends CommandLineUtil {
 		List<LinkVO> records = new ArrayList<>();
 		try (PreparedStatement ps = dbConn.prepareStatement(t.getSelectSql())) {
 			ps.setString(1, Status.P.toString());
+			if (t.needsExtraCheck())
+				ps.setString(2, Status.P.toString());
 			ResultSet rs = ps.executeQuery();
 			while (rs.next())
 				records.add(new LinkVO(t.getSection(), rs.getString(1), rs.getString(2), rs.getString(3)));
@@ -220,8 +225,13 @@ public class LinkChecker extends CommandLineUtil {
 		for (LinkVO vo : records) {
 			if (StringUtil.isEmpty(vo.getHtml())) 
 				continue;
-
-			checkLinksInHtml(urls, vo);
+			
+			// Check to see if the content is html or a single link. If neither it is skipped
+			if (vo.getHtml().contains("<")) {
+				checkLinksInHtml(urls, vo);
+			} else if (vo.getHtml().contains("/") || vo.getHtml().contains(".")) {
+				urls.add(LinkVO.makeForUrl(vo.getSection(), vo.getObjectId(), vo.getHtml(), vo.getContentId()));
+			}
 		}
 		log.debug("need to check " + urls.size() + " embedded links.  Skipping " + (skipped-priorSkips));
 		return urls;
