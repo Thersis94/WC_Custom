@@ -6,6 +6,7 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 
@@ -15,6 +16,7 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
+import com.siliconmtn.util.Convert;
 import com.siliconmtn.weather.SunTimeVO;
 
 /****************************************************************************
@@ -36,11 +38,13 @@ public class VenueTourVO extends VenueVO {
 	 * 
 	 */
 	private static final long serialVersionUID = -7510226690607925688L;
+	public static final int NOTIFICATION_HOURS_BEFORE = -4;
 	
 	// Members
 	private String venueTourId;
 	private String tourId;
 	private Date eventDate;
+	private int duration;
 	private Date startRetrieve;
 	private Date endRetrieve;
 	private int orderNumber;
@@ -78,6 +82,19 @@ public class VenueTourVO extends VenueVO {
 	 */
 	public VenueTourVO(ResultSet rs) {
 		super(rs);
+	}
+	
+	/**
+	 * Determines if the event is in progress
+	 * @param currDate local time datetime
+	 * @return
+	 */
+	public boolean isEventInProgress(Date currDate) {
+		if (eventDate == null) return false;
+		Date startDate = Convert.formatDate(eventDate, Calendar.HOUR, NOTIFICATION_HOURS_BEFORE);
+		Date endDate = Convert.formatDate(eventDate, Calendar.HOUR, duration);
+		
+		return currDate.after(startDate) && currDate.before(endDate);
 	}
 
 	/**
@@ -232,18 +249,26 @@ public class VenueTourVO extends VenueVO {
 	}
 
 	/**
-	 * @param tourName the tourName to set
-	 */
-	public void setTourName(String tourName) {
-		this.tourName = tourName;
-	}
-
-	/**
 	 * @return the tourTypeCode
 	 */
 	@Column(name="tour_type_cd", isReadOnly=true)
 	public String getTourTypeCode() {
 		return tourTypeCode;
+	}
+
+	/**
+	 * @return the duration
+	 */
+	@Column(name="duration_no")
+	public int getDuration() {
+		return duration;
+	}
+
+	/**
+	 * @param tourName the tourName to set
+	 */
+	public void setTourName(String tourName) {
+		this.tourName = tourName;
 	}
 
 	/**
@@ -340,6 +365,13 @@ public class VenueTourVO extends VenueVO {
 		String separator = days > 0 && hours > 0 ? ", " : "";
 		
 		timeUntilEvent = (days > 0 ? dayString : "") + separator + (hours > 0 || days == 0 ? hourString : "");
+	}
+
+	/**
+	 * @param duration the duration to set
+	 */
+	public void setDuration(int duration) {
+		this.duration = duration;
 	}
 }
 
