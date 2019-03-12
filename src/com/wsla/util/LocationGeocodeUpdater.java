@@ -43,9 +43,9 @@ public class LocationGeocodeUpdater {
 	public static void main(String[] args) throws Exception {
 		DatabaseConnection dc = new DatabaseConnection();
 		dc.setDriverClass("javax.sql.DataSource");
-		dc.setUrl("jdbc:postgresql://sonic:5432/webcrescendo_wsla_sb?defaultRowFetchSize=25&amp;prepareThreshold=3");
-		dc.setUserName("ryan_user_sb");
-		dc.setPassword("*** Update This ***");
+		dc.setUrl("jdbc:postgresql://staging-sb-db.aws.siliconmtn.com:5432/wc_staging_sb?defaultRowFetchSize=25&amp;prepareThreshold=3");
+		dc.setUserName("wc_staging_sb");
+		dc.setPassword("sqll0gin");
 		Connection conn = dc.getConnection();
 		System.out.println("Started");
 		List<ProviderLocationVO> locations = getLocations(conn);
