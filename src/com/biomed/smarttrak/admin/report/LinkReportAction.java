@@ -165,7 +165,7 @@ public class LinkReportAction extends SimpleActionAdapter {
 			actionType="insights&insightId=";
 			vo.setSection("ANALYSIS"); //override cosmetic label
 			contentType="&activeTab=";
-			nameType="";
+			nameType="&insightName";
 		} else if (Section.MARKET.name().equals(vo.getSection())) {
 			sec = Section.MARKET.getPageURL();
 			actionType="marketAdmin&marketId=";
@@ -176,7 +176,7 @@ public class LinkReportAction extends SimpleActionAdapter {
 			sec = "";
 			actionType="updates&updateId=";
 			contentType="";
-			nameType="";
+			nameType="&updateName=";
 		}
 
 		//add FQDN to relative (presumed local) URLs
