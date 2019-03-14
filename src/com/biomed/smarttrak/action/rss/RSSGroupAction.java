@@ -28,6 +28,7 @@ import com.smt.sitebuilder.action.SBActionAdapter;
 public class RSSGroupAction extends SBActionAdapter {
 
 	public static final String FEED_GROUP_ID = "feedGroupId";
+	public static final String DB_FEED_GROUP_ID = "feed_group_id";
 
 	public RSSGroupAction() {
 		super();
