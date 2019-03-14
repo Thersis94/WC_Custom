@@ -257,16 +257,16 @@ public class PubmedDataFeed extends AbstractSmarttrakRSSFeed {
 			saxParser.parse(is, handler);
 			articles = handler.getVos();
 			saxParser.reset();
+
+			int initSize = articles.size();
+			//Filter out Older Articles past the cutOffDate
+			articles = articles.stream().filter(a -> a.getPublishDt().after(cutOffDate)).collect(Collectors.toList());
+
+			if(initSize != articles.size()) {
+				log.debug("Filtered out some old articles.");
+			}
 		} catch (Exception se) {
 			log.error("Problem Processing Pubmed Articles", se);
-		}
-
-		int initSize = articles.size();
-		//Filter out Older Articles past the cutOffDate
-		articles = articles.stream().filter(a -> a.getPublishDt().after(cutOffDate)).collect(Collectors.toList());
-
-		if(initSize != articles.size()) {
-			log.debug("Filtered out some old articles.");
 		}
 
 		return articles;
