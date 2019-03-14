@@ -21,6 +21,7 @@ import org.apache.log4j.Logger;
 
 import com.biomed.smarttrak.action.rss.RSSDataAction.ArticleStatus;
 import com.biomed.smarttrak.action.rss.RSSFilterAction.FilterType;
+import com.biomed.smarttrak.action.rss.RSSGroupAction;
 import com.biomed.smarttrak.action.rss.vo.RSSArticleFilterVO;
 import com.biomed.smarttrak.action.rss.vo.RSSArticleVO;
 import com.biomed.smarttrak.action.rss.vo.RSSFeedGroupVO;
@@ -163,7 +164,7 @@ public abstract class AbstractSmarttrakRSSFeed {
 					feedGroupIds = (Set<String>) info.getValue();
 				}
 
-				feedGroupIds.add(rs.getString("feed_group_id"));
+				feedGroupIds.add(rs.getString(RSSGroupAction.DB_FEED_GROUP_ID));
 				data.put(currArticleGuid, info);
 			}
 		} catch (SQLException e) {
@@ -265,10 +266,10 @@ public abstract class AbstractSmarttrakRSSFeed {
 
 			ResultSet rs = ps.executeQuery();
 			while(rs.next()) {
-				if(articleFeedGroups.contains(rs.getString("feed_group_id"))) {
-					article.getFilterVOs().remove(rs.getString("feed_group_id"));
+				if(articleFeedGroups.contains(rs.getString(RSSGroupAction.DB_FEED_GROUP_ID))) {
+					article.getFilterVOs().remove(rs.getString(RSSGroupAction.DB_FEED_GROUP_ID));
 					skippedArticles++;
-					log.debug("Removing FeedGroup Record " + rs.getString("feed_group_id"));
+					log.debug("Removing FeedGroup Record " + rs.getString(RSSGroupAction.DB_FEED_GROUP_ID));
 				}
 			}
 		} catch (SQLException e) {
