@@ -97,6 +97,10 @@ public class WeatherAlertJob extends AbstractSMTJob {
 				// Save the forecast data to the db, since we are in the "recording" period
 				String forecastId = saveCurrentConditions(venueTour);
 				
+				// Notify via websocket sessions there are updated conditions available
+				WebSocketSessionManager wsm = WebSocketSessionManager.getInstance();
+				wsm.broadcast(venueTour.getVenueTourId(), "updateCurrent");
+				
 				// No alerts need to be sent if the event is not in progress
 				LocalDateTime now = new Date().toInstant().atZone(ZoneId.of(venueTour.getTimezone())).toLocalDateTime();
 				if (!venueTour.isEventInProgress(java.sql.Timestamp.valueOf(now)))
