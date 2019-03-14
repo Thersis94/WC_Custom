@@ -12,6 +12,7 @@ import com.siliconmtn.data.parser.BeanDataVO;
 import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
+import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 
 /****************************************************************************
@@ -68,7 +69,7 @@ public class RSSArticleVO extends BeanDataVO implements Serializable {
 		setArticleSourceType(ArticleSourceType.RSS);
 		setArticleGuid(StringUtil.checkVal(i.getGuid()));
 		setArticleTxt(StringUtil.checkVal(i.getDescription()).replace("\u00a0"," "));
-		setPublishDt(i.getPubDate());
+		setPublishDt(Convert.parseDateUnknownPattern(i.getElement("pubDate").getContent()));
 		setArticleUrl(i.getLink());
 		if(StringUtil.isEmpty(getArticleGuid())) {
 			setArticleGuid(i.getLink());

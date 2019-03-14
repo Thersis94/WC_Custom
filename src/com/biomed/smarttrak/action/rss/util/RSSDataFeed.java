@@ -20,7 +20,6 @@ import com.ernieyu.feedparser.FeedParserFactory;
 import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.util.Convert;
-import com.siliconmtn.util.StringUtil;
 
 /****************************************************************************
  * <b>Title:</b> RSSDataFeed.java
@@ -67,7 +66,7 @@ public class RSSDataFeed extends AbstractSmarttrakRSSFeed {
 			if (f.getRssEntityId().equals(props.get(PUBMED_ENTITY_ID))) continue;
 
 			try {
-				List<RSSArticleVO> articles = retrieveArticles(f.getRssUrl());
+				List<RSSArticleVO> articles = retrieveArticles(f.getRssUrl(), f.getRssEntityId());
 				filterArticles(f, articles);
 			} catch (Exception e) {
 				log.error("Problem Processing Feed", e);
@@ -78,15 +77,16 @@ public class RSSDataFeed extends AbstractSmarttrakRSSFeed {
 
 	/**
 	 * Method retrieves Article text for the given article Id.
+	 * @param rssEntityId
 	 * @param id
 	 * @return
 	 */
-	private List<RSSArticleVO> retrieveArticles(String url) {
+	private List<RSSArticleVO> retrieveArticles(String url, String rssEntityId) {
 		log.info("Retrieving Url: " + url);
 		byte[] results = getDataViaHttp(url, null);
 
 		//Process XML
-		return processArticleResult(results);
+		return processArticleResult(results, rssEntityId);
 	}
 
 
@@ -94,16 +94,17 @@ public class RSSDataFeed extends AbstractSmarttrakRSSFeed {
 	 * Method Processes Data Stream containing article list and Converts it to
 	 * a list of RSSArticleVO.
 	 * @param results
+	 * @param rssEntityId
 	 * @return
 	 */
-	private List<RSSArticleVO> processArticleResult(byte[] results) {
+	private List<RSSArticleVO> processArticleResult(byte[] results, String rssEntityId) {
 		List<RSSArticleVO> articles = Collections.emptyList();
 
 		if (results == null || results.length == 0) return articles;
 
 		try {
 			Feed feed = feedParser.parse(new ByteArrayInputStream(results));
-			articles = convertFeed(feed);
+			articles = convertFeed(feed, rssEntityId);
 		} catch(Exception se) {
 			log.error("Response was malformed: " + se.getMessage());
 		}
@@ -115,10 +116,23 @@ public class RSSDataFeed extends AbstractSmarttrakRSSFeed {
 	 * Convert the given Feed Object to our RSSArticleVO List Structure
 	 * and return it.
 	 * @param feed
+	 * @param rssEntityId
 	 * @return
 	 */
-	private List<RSSArticleVO> convertFeed(Feed feed) {
-		return feed.getItemList().stream().map(RSSArticleVO::new).collect(Collectors.toList());
+	private List<RSSArticleVO> convertFeed(Feed feed, String rssEntityId) {
+		log.debug(feed.getType());
+
+		List<RSSArticleVO> articles = feed.getItemList().stream().map(RSSArticleVO::new).collect(Collectors.toList());
+		log.debug("Retrieved " + articles.size() + " Articles.");
+		int initialSize = articles.size();
+			articles = articles.stream().filter(a -> a.getPublishDt().after(cutOffDate)).collect(Collectors.toList());
+		int diff = initialSize - articles.size();
+		if(diff != 0) {
+			log.debug("Removed " + diff + "articles");
+			this.addMessage(String.format("Feed: %s - PubDate Filter Removed %d articles.", rssEntityId, diff));
+		}
+		log.debug(articles.size() + " articles remaining after 30 day filter.");
+		return articles;
 	}
 
 
@@ -132,7 +146,7 @@ public class RSSDataFeed extends AbstractSmarttrakRSSFeed {
 	private void filterArticles(SmarttrakRssEntityVO f, List<RSSArticleVO> articles) {
 		if (articles.isEmpty()) return;
 
-		Map<String, GenericVO> existsIds = getExistingArticles(buildArticleIdsList(articles), f.getRssEntityId());
+		Map<String, GenericVO> existsIds = getExistingArticles(buildArticleIdsList(articles));
 		articles.stream().forEach(a -> this.populateFeed(a, f));
 		processArticles(f, articles, existsIds);
 	}
@@ -163,23 +177,28 @@ public class RSSDataFeed extends AbstractSmarttrakRSSFeed {
 	private void processArticles(SmarttrakRssEntityVO f, List<RSSArticleVO> articles, Map<String, GenericVO> existsIds) {
 		long start = System.currentTimeMillis();
 		for (RSSArticleVO article : articles) {
+			log.debug(String.format("Processing Article: %s, Title: %s", article.getArticleUrl(), article.getTitleTxt()));
 			for (RSSFeedGroupVO fg : f.getGroups()) {
-
-				//Only process new Articles that aren't in system.  If an articleIs is present, this article exists.
-				if (!articleExists(article, fg.getFeedGroupId(), existsIds) && StringUtil.isEmpty(article.getRssArticleId())) {
+				//Only process new Articles that aren't in system.  If an articleId is present, this article exists.
+				if (!articleExists(article, fg.getFeedGroupId(), existsIds)) {
 					applyFilter(article, fg.getFeedGroupId(), Convert.formatBoolean(f.getUseFiltersNo()));
+					log.debug(String.format("Processed Feed Group: %s", fg.getFeedGroupId()));
 				} else {
 
+					if(!article.getFilterVOs().isEmpty()) {
+						log.debug("Skipping Group but have articles!");
+					}
 					//Flush out the filtered articles and stop processing on it.
-					log.info("Article Already Processed.");
-					article.flushFilteredText();
-					break;
+					log.info(String.format("Article Already Processed for Feed Group: %s", fg.getFeedGroupId()));
 				}
 			}
 
 			if (!article.getFilterVOs().isEmpty()) {
 				//Save Articles.
 				storeArticle(article);
+
+				//After article is saved, we can flush out the data.  Prevent carrying around a lot of data.
+				article.flushFilteredText();
 			}
 		}
 		log.info("article Processing took " + (System.currentTimeMillis()-start) + "ms");

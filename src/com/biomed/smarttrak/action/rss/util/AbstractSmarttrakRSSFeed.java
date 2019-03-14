@@ -7,6 +7,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -54,7 +56,7 @@ public abstract class AbstractSmarttrakRSSFeed {
 	protected static final String PUBMED_ARTICLE_URL = "pubmedArticleUrl";
 	protected static final String PUBMED_ENTITY_ID = "pubmedEntityId";
 	protected static final String IS_DEBUG = "isDebug";
-
+	protected static final String OLD_ARTICLE_CUTOOFF = "oldArticleCutoff";
 	protected Logger log;
 	protected Properties props;
 	protected Connection dbConn;
@@ -65,8 +67,11 @@ public abstract class AbstractSmarttrakRSSFeed {
 	protected List<RSSFeedGroupVO> groups;
 	protected UUIDGenerator uuid;
 	protected String feedName;
+	protected Date cutOffDate;
 
-	private String  storeArticleQuery;
+	private List<String> messages;
+	private String storeArticleQuery;
+	private String storeHistoryQuery;
 	private Map<String, Long> accessTimes;
 	private static final long LAG_TIME_MS = 2000;
 
@@ -84,6 +89,10 @@ public abstract class AbstractSmarttrakRSSFeed {
 		groups = new ArrayList<>();
 		uuid = new UUIDGenerator();
 		accessTimes = new HashMap<>(5000);
+		Calendar c = Calendar.getInstance();
+		c.add(Calendar.DAY_OF_YEAR, Integer.parseInt(props.getProperty(OLD_ARTICLE_CUTOOFF)));
+		cutOffDate = c.getTime();
+		messages = new ArrayList<>();
 		prepQueries();
 	}
 
@@ -93,8 +102,13 @@ public abstract class AbstractSmarttrakRSSFeed {
 		sql.append("biomedgps_rss_filtered_article (rss_article_filter_id, ");
 		sql.append("feed_group_id, article_status_cd, rss_article_id, filter_title_txt, ");
 		sql.append("filter_article_txt, create_dt, match_no) values (?,?,?,?,?,?,?,?)");
-
 		storeArticleQuery = sql.toString();
+
+		StringBuilder history = new StringBuilder(250);
+		history.append(DBUtil.INSERT_CLAUSE).append(customDb);
+		history.append("biomedgps_article_group_history_xr (article_group_history_id, ");
+		history.append("feed_group_id, rss_article_id, create_dt) values (?,?,?,?)");
+		storeHistoryQuery = history.toString();
 	}
 	/**
 	 * Abstract run method to be implemented by concrete subclasses.
@@ -109,11 +123,20 @@ public abstract class AbstractSmarttrakRSSFeed {
 
 	/**
 	 * Retrieves a set of articleIds from the DB based on rssEntityId and article_guid values.
+	 * Update 3/14/2019 - The code has been adjusted to look for any existing
+	 * articles that match the given articleGuids, not just those tied to a
+	 * specific feed.  There was an invalid assumption made originally that
+	 * articles would be unique to a feed.  This was incorrect and led to lots
+	 * of additional overhead where an article would be processed in it's entirety
+	 * but then be thrown out at the save step because it actually already does
+	 * existn just not for that feed.  With the new Feed agnostic approach, this
+	 * prevents unnecessary overhead by ensuring articles are only ever parsed
+	 * when they truly don't exist for a feed group.
 	 * @param article
 	 * @return
 	 */
 	@SuppressWarnings("unchecked")
-	protected Map<String, GenericVO> getExistingArticles(List<String> articleGuids, String rssEntityId) {
+	protected Map<String, GenericVO> getExistingArticles(List<String> articleGuids) {
 		Map<String, GenericVO> data = new HashMap<>();
 		if (articleGuids == null || articleGuids.isEmpty()) return data;
 
@@ -124,10 +147,10 @@ public abstract class AbstractSmarttrakRSSFeed {
 		long start = System.currentTimeMillis();
 		log.info(getArticleExistsSql(articleGuids.size()));
 		try (PreparedStatement ps = dbConn.prepareStatement(getArticleExistsSql(articleGuids.size()))) {
-			ps.setString(++i, rssEntityId);
 			for (String id : articleGuids)
 				ps.setString(++i, id);
 
+			log.debug(ps);
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
 				currArticleGuid = rs.getString("value");
@@ -157,10 +180,10 @@ public abstract class AbstractSmarttrakRSSFeed {
 	 */
 	protected String getArticleExistsSql(int size) {
 		StringBuilder sql = new StringBuilder(500);
-		sql.append("select a.rss_article_id as key, a.article_guid as value, fa.feed_group_id from ").append(customDb);
+		sql.append("select a.rss_article_id as key, a.article_guid as value, h.feed_group_id from ").append(customDb);
 		sql.append("BIOMEDGPS_RSS_ARTICLE a ");
-		sql.append(DBUtil.INNER_JOIN).append(customDb).append("biomedgps_rss_filtered_article fa on a.rss_article_id=fa.rss_article_id ");
-		sql.append("where a.rss_entity_id=? and a.article_guid in (");
+		sql.append(DBUtil.INNER_JOIN).append(customDb).append("biomedgps_article_group_history_xr h on a.rss_article_id = h.rss_article_id ");
+		sql.append("where a.article_guid in (");
 		DBUtil.preparedStatmentQuestion(size, sql);
 		sql.append(") order by a.article_guid");
 		return sql.toString();
@@ -172,11 +195,18 @@ public abstract class AbstractSmarttrakRSSFeed {
 	 */
 	protected void storeArticle(RSSArticleVO article) {
 		long start = System.currentTimeMillis();
+		Map<String, List<Object>> historyValues = new HashMap<>();
+		log.debug(article.getFilterVOs().isEmpty());
 		try {
 			/*
 			 * This check is verifying the article is unique in the system.
 			 * Currently is preventing duplicates from aggregate feeds showing up
 			 * as newer articles.
+			 * 
+			 * Update 3/14/2019 - The code has been adjusted to allow duplicates
+			 * to be processed, but only for those feed groups which haven't been.
+			 * This is due to multiple feeds returning the same article and the
+			 * current code rejecting all attempts after the first is made.
 			 */
 			if (!articleExists(article)) {
 				DBProcessor dbp = new DBProcessor(dbConn, customDb);
@@ -187,18 +217,67 @@ public abstract class AbstractSmarttrakRSSFeed {
 				// Save a list of filtered matches tied to the article
 				// only if the article is new. If we already saved this article
 				// it is not breaking news and doesn't to be filtered and put into feeds.
-				dbp.executeBatch(storeArticleQuery, buildArticleFilterVals(article));
+				dbp.executeBatch(storeArticleQuery, buildArticleFilterVals(article, historyValues));
+
+				dbp.executeBatch(storeHistoryQuery, historyValues);
+				this.addMessage(String.format("All Groups Added - Feed: %s, ArticleId: %s, Title: %s, Group Count: %d", article.getRssEntityId(), article.getRssArticleId(), article.getTitleTxt(), article.getFilterVOs().size()));
 				log.info("write took " + (System.currentTimeMillis()-start) + "ms");
 
+			} else if(checkHistory(article)) {
+				DBProcessor dbp = new DBProcessor(dbConn, customDb);
+
+				// Save a list of filtered matches tied to the article
+				// only if the article is new. If we already saved this article
+				// it is not breaking news and doesn't to be filtered and put into feeds.
+				dbp.executeBatch(storeArticleQuery, buildArticleFilterVals(article, historyValues));
+
+				dbp.executeBatch(storeHistoryQuery, historyValues);
+				this.addMessage(String.format("Existing Article, Filtered - Feed: %s, ArticleId: %s, Title: %s, Article Count: %d", article.getRssEntityId(), article.getRssArticleId(), article.getTitleTxt(), article.getFilterVOs().size()));
+				log.info("write took " + (System.currentTimeMillis()-start) + "ms");
 			} else {
+				this.addMessage(String.format("All Articles Exist from Feed: %s, ArticleId: %s, Title: %s", article.getRssEntityId(), article.getRssArticleId(), article.getTitleTxt()));
 				log.info("Article Already Exists: " + article.getRssArticleId());
 			}
-
 		} catch (InvalidDataException | DatabaseException e) {
 			log.error("Error Saving Articles", e);
 		}
 	}
 
+
+	/**
+	 * An Article has been determined to exist in the system.  Load the Existing records
+	 * and remove the duplicates.
+	 * 
+	 * Note - this should be taken care of now that the intial filtering problem
+	 * has been addressed.  Leaving in for now as it's been tested with.  Can
+	 * Evaluate behavior and remove later if deemed unnecessary.
+	 * @param article
+	 * @param skipIds
+	 * @return
+	 */
+	private boolean checkHistory(RSSArticleVO article) {
+		StringBuilder sql = new StringBuilder(200);
+		sql.append("select feed_group_id from ").append(customDb).append("BIOMEDGPS_ARTICLE_GROUP_HISTORY_XR where RSS_ARTICLE_ID = ? ");
+		Set<String> articleFeedGroups = article.getFilterVOs().keySet();
+		int skippedArticles = 0;
+		try(PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, article.getRssArticleId());
+
+			ResultSet rs = ps.executeQuery();
+			while(rs.next()) {
+				if(articleFeedGroups.contains(rs.getString("feed_group_id"))) {
+					article.getFilterVOs().remove(rs.getString("feed_group_id"));
+					skippedArticles++;
+					log.debug("Removing FeedGroup Record " + rs.getString("feed_group_id"));
+				}
+			}
+		} catch (SQLException e) {
+			log.error("Error Processing Code", e);
+		}
+		log.debug("Ignoring " + skippedArticles + " Feed Groups");
+
+		return !article.getFilterVOs().isEmpty();
+	}
 
 	/**
 	 * quick DB query to see if the article already exists - so we don't create a dupliate.
@@ -230,12 +309,19 @@ public abstract class AbstractSmarttrakRSSFeed {
 	}
 
 
-	protected Map<String, List<Object>> buildArticleFilterVals(RSSArticleVO a) {
+	/**
+	 * Builds Filtered Article and History Articles Data Maps used in Batch
+	 * Processing.
+	 * @param a
+	 * @param historyValues
+	 * @return
+	 */
+	protected Map<String, List<Object>> buildArticleFilterVals(RSSArticleVO a, Map<String, List<Object>> historyValues) {
 		Map<String, List<Object>> insertValues = new HashMap<>();
 		int n = 0;
 		int r = 0;
 		int o = 0;
-
+		Date now = Convert.getCurrentTimestamp();
 		for (RSSArticleFilterVO af : a.getFilterVOs().values()) {
 			if (ArticleStatus.N.equals(af.getArticleStatus())) {
 				n++;
@@ -272,9 +358,11 @@ public abstract class AbstractSmarttrakRSSFeed {
 				}
 			}
 
-			insertData.add(Convert.getCurrentTimestamp());
+			insertData.add(now);
 			insertData.add(af.getMatchCount());
 			insertValues.put(afId, insertData);
+
+			historyValues.put(afId, Arrays.asList(afId, af.getFeedGroupId(), a.getRssArticleId(), now));
 		}
 
 		log.info("Number of New: " + n + ", Number of Rejected: " + r + ", Number of Omitted: " + o);
@@ -304,7 +392,6 @@ public abstract class AbstractSmarttrakRSSFeed {
 				data = conn.retrieveData(url);
 			}
 			log.info("http call took " + (System.currentTimeMillis()-start) + "ms");
-
 
 			//trap all errors generated by LL
 			if (404 == conn.getResponseCode()) {
@@ -409,6 +496,7 @@ public abstract class AbstractSmarttrakRSSFeed {
 		RSSArticleFilterVO af = new RSSArticleFilterVO(article, feedGroupId);
 
 		if(!useFilters && StringUtil.isEmpty(article.getRssArticleId())) {
+			log.debug("Skipping Filters!");
 			af.setFilterArticleTxt(af.getArticleTxt());
 			af.setArticleStatus(ArticleStatus.N);
 			af.setFilterTitleTxt(af.getTitleTxt());
@@ -626,4 +714,19 @@ public abstract class AbstractSmarttrakRSSFeed {
 		this.feedName = feedName;
 	}
 
+	/**
+	 * Retrieve Messages added by System.
+	 * @return
+	 */
+	protected List<String> getMessages() {
+		return messages;
+	}
+
+	/**
+	 * Add Messages to System.
+	 * @param msg
+	 */
+	protected void addMessage(String msg) {
+		messages.add(msg);
+	}
 }

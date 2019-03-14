@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.stream.Collectors;
 
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParser;
@@ -169,7 +170,7 @@ public class PubmedDataFeed extends AbstractSmarttrakRSSFeed {
 	 * @param results
 	 */
 	protected void processArticleList(String feedGroupId, PubMedSearchResultVO vo) {
-		Map<String, GenericVO> existsIds = getExistingArticles(vo.getIdList(), props.getProperty(PUBMED_ENTITY_ID));
+		Map<String, GenericVO> existsIds = getExistingArticles(vo.getIdList());
 
 		//Retrieve Articles from Search.
 		List<RSSArticleVO> results = retrieveArticles(vo);
@@ -259,6 +260,15 @@ public class PubmedDataFeed extends AbstractSmarttrakRSSFeed {
 		} catch (Exception se) {
 			log.error("Problem Processing Pubmed Articles", se);
 		}
+
+		int initSize = articles.size();
+		//Filter out Older Articles past the cutOffDate
+		articles = articles.stream().filter(a -> a.getPublishDt().after(cutOffDate)).collect(Collectors.toList());
+
+		if(initSize != articles.size()) {
+			log.debug("Filtered out some old articles.");
+		}
+
 		return articles;
 	}
 
