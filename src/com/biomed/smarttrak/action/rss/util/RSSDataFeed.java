@@ -177,31 +177,58 @@ public class RSSDataFeed extends AbstractSmarttrakRSSFeed {
 	private void processArticles(SmarttrakRssEntityVO f, List<RSSArticleVO> articles, Map<String, GenericVO> existsIds) {
 		long start = System.currentTimeMillis();
 		for (RSSArticleVO article : articles) {
-			log.debug(String.format("Processing Article: %s, Title: %s", article.getArticleUrl(), article.getTitleTxt()));
-			for (RSSFeedGroupVO fg : f.getGroups()) {
-				//Only process new Articles that aren't in system.  If an articleId is present, this article exists.
-				if (!articleExists(article, fg.getFeedGroupId(), existsIds)) {
-					applyFilter(article, fg.getFeedGroupId(), Convert.formatBoolean(f.getUseFiltersNo()));
-					log.debug(String.format("Processed Feed Group: %s", fg.getFeedGroupId()));
-				} else {
-
-					if(!article.getFilterVOs().isEmpty()) {
-						log.debug("Skipping Group but have articles!");
-					}
-					//Flush out the filtered articles and stop processing on it.
-					log.info(String.format("Article Already Processed for Feed Group: %s", fg.getFeedGroupId()));
-				}
-			}
-
-			if (!article.getFilterVOs().isEmpty()) {
-				//Save Articles.
-				storeArticle(article);
-
-				//After article is saved, we can flush out the data.  Prevent carrying around a lot of data.
-				article.flushFilteredText();
-			}
+			processArticleFeedGroups(f, article, existsIds);
 		}
 		log.info("article Processing took " + (System.currentTimeMillis()-start) + "ms");
+	}
+
+
+	/**
+	 * Iterate over all the Feedgroups in a given Entity and determine if we need
+	 * to process an article for it.  If any articles are processed, persist them
+	 * to the database using storeArticle.
+	 * @param f 
+	 * @param article
+	 * @param existsIds
+	 */
+	private void processArticleFeedGroups(SmarttrakRssEntityVO f, RSSArticleVO article, Map<String, GenericVO> existsIds) {
+		log.debug(String.format("Processing Article: %s, Title: %s", article.getArticleUrl(), article.getTitleTxt()));
+		for (RSSFeedGroupVO fg : f.getGroups()) {
+			processArticle(f, fg, article, existsIds);
+		}
+
+		if (!article.getFilterVOs().isEmpty()) {
+			//Save Articles.
+			storeArticle(article);
+
+			//After article is saved, we can flush out the data.  Prevent carrying around a lot of data.
+			article.flushFilteredText();
+		}
+	}
+
+
+	/**
+	 * Process an articles through an individual Feed Group.  If the articles already
+	 * exists for the FeedGroup, log it but don't filter it.
+	 * @param f
+	 * @param fg
+	 * @param article
+	 * @param existsIds
+	 */
+	private void processArticle(SmarttrakRssEntityVO f, RSSFeedGroupVO fg, RSSArticleVO article, Map<String, GenericVO> existsIds) {
+		//Only process new Articles that aren't in system.  If an articleId is present, this article exists.
+		if (!articleExists(article, fg.getFeedGroupId(), existsIds)) {
+			applyFilter(article, fg.getFeedGroupId(), Convert.formatBoolean(f.getUseFiltersNo()));
+			log.debug(String.format("Processed Feed Group: %s", fg.getFeedGroupId()));
+		} else {
+
+			//Log if the article exists but we have matched un-processed feed groups.
+			if(!article.getFilterVOs().isEmpty()) {
+				log.debug("Skipping Group but have articles!");
+			}
+
+			log.info(String.format("Article Already Processed for Feed Group: %s", fg.getFeedGroupId()));
+		}
 	}
 
 
