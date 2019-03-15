@@ -3,10 +3,14 @@ package com.biomed.smarttrak.action;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Calendar;
 import java.util.List;
 import java.util.Map;
+import java.util.TimeZone;
 
 import org.apache.solr.client.solrj.response.FacetField;
 import org.apache.solr.client.solrj.response.FacetField.Count;
@@ -22,8 +26,10 @@ import com.biomed.smarttrak.vo.UserVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.common.http.CookieUtil;
 import com.siliconmtn.data.Node;
 import com.siliconmtn.http.session.SMTSession;
+import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.search.SolrAction;
@@ -70,6 +76,7 @@ public class UpdatesAction extends SBActionAdapter {
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
+		req.setParameter("fmid", mod.getPageModuleId());
 		actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
 		List<String> docIds = null;
 		if("favorites".equals(req.getParameter("filter"))) {
@@ -376,8 +383,23 @@ public class UpdatesAction extends SBActionAdapter {
 			}
 		}
 
+		//Build the proper end date based on the users timezone.
+		DateFormat formatter= new SimpleDateFormat(Convert.DATE_DASH_PATTERN);
+		formatter.setTimeZone(TimeZone.getTimeZone(CookieUtil.getValue("userTimeZone", req.getCookies())));
+		Calendar c = Calendar.getInstance();
+		String d = formatter.format(c.getTime());
+
+		//If we have a specified date, ensure that we've offset time to midnight.
+		c.setTime(Convert.formatDate(formatter.format(c.getTime())));
+		c.set(Calendar.HOUR, 23);
+		c.set(Calendar.MINUTE, 59);
+		c.set(Calendar.SECOND, 59);
+		d = Convert.formatDate(c.getTime(), Convert.DATE_TIME_DASH_PATTERN);
+		req.setParameter("endDt", d);
+
+		System.out.println(req.getParameter("endDt"));
 		//Get a Date Range String.
-		String dates = SolrActionUtil.makeRangeQuery(FieldType.DATE, req.getParameter("startDt"), req.getParameter("endDt"));
+		String dates = SolrActionUtil.makeRangeQuery(FieldType.DATE, req.getParameter("startDt"), d);
 		if (!StringUtil.isEmpty(dates))
 			data.add(SearchDocumentHandler.PUBLISH_DATE + ":" + dates);
 
@@ -390,6 +412,7 @@ public class UpdatesAction extends SBActionAdapter {
 		//put the new list of filter queries back on the request
 		req.setParameter("fq", data.toArray(new String[data.size()]), true);
 		req.setParameter("ft", terms.toArray(new String[terms.size()]), true);
+		req.setParameter("fieldOverride", SearchDocumentHandler.PUBLISH_DATE);
 	}
 	
 	
