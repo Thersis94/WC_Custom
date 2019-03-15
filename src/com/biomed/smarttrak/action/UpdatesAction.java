@@ -383,9 +383,11 @@ public class UpdatesAction extends SBActionAdapter {
 			}
 		}
 
+		String userTimeZone = CookieUtil.getValue("userTimeZone", req.getCookies());
+		userTimeZone = StringUtil.checkVal(userTimeZone, TimeZone.getDefault().toString());
 		//Build the proper end date based on the users timezone.
 		DateFormat formatter= new SimpleDateFormat(Convert.DATE_DASH_PATTERN);
-		formatter.setTimeZone(TimeZone.getTimeZone(CookieUtil.getValue("userTimeZone", req.getCookies())));
+		formatter.setTimeZone(TimeZone.getTimeZone(userTimeZone));
 		Calendar c = Calendar.getInstance();
 		String d = formatter.format(c.getTime());
 
