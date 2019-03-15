@@ -102,7 +102,7 @@ public class MemberWidget extends SBActionAdapter {
 		StringBuilder sql = new StringBuilder(832);
 		sql.append("select alias_nm, gender_cd, prefix_nm, a.profile_id, authentication_id, a.member_id, a.first_nm, ");
 		sql.append(" a.last_nm, a.email_address_txt, a.phone_number_txt, locale_txt,");
-		sql.append(" r.role_id, role_nm, profile_role_id,string_agg(customer_nm, ',') as customers_txt ");
+		sql.append(" r.role_id, role_nm, profile_role_id,string_agg(customer_nm, ', ') as customers_txt ");
 		sql.append("from ").append(getCustomSchema()).append("ps_member a ");
 		sql.append("inner join profile p on a.profile_id = p.profile_id ");
 		sql.append("inner join profile_role pr on p.profile_id = pr.profile_id ");
