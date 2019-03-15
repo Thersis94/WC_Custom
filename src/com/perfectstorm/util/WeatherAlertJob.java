@@ -216,7 +216,7 @@ public class WeatherAlertJob extends AbstractSMTJob {
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("ps_customer c");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("ps_customer_member_xr cm on c.customer_id = cm.customer_id");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("ps_member m on cm.member_id = m.member_id");
-		sql.append(DBUtil.WHERE_CLAUSE).append("c.customer_type_cd = ? and m.send_sms_flg = 1 ");
+		sql.append(DBUtil.WHERE_CLAUSE).append("c.customer_type_cd = ? and m.send_sms_flg = 1 and m.phone_number_txt is not null and m.phone_number_txt != '' ");
 		
 		// Venue Members
 		sql.append(DBUtil.UNION);
@@ -225,7 +225,7 @@ public class WeatherAlertJob extends AbstractSMTJob {
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("ps_customer c on v.customer_id = c.customer_id ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("ps_customer_member_xr cm on c.customer_id = cm.customer_id ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("ps_member m on cm.member_id = m.member_id ");
-		sql.append(DBUtil.WHERE_CLAUSE).append("v.venue_id = ? and m.send_sms_flg = 1 ");
+		sql.append(DBUtil.WHERE_CLAUSE).append("v.venue_id = ? and m.send_sms_flg = 1 and m.phone_number_txt is not null and m.phone_number_txt != '' ");
 		
 		// Tour Members
 		sql.append(DBUtil.UNION);
@@ -234,7 +234,7 @@ public class WeatherAlertJob extends AbstractSMTJob {
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("ps_customer c on t.customer_id = c.customer_id ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("ps_customer_member_xr cm on c.customer_id = cm.customer_id ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("ps_member m on cm.member_id = m.member_id ");
-		sql.append(DBUtil.WHERE_CLAUSE).append("t.tour_id = ? and m.send_sms_flg = 1 ");
+		sql.append(DBUtil.WHERE_CLAUSE).append("t.tour_id = ? and m.send_sms_flg = 1 and m.phone_number_txt is not null and m.phone_number_txt != '' ");
 		log.debug(sql);
 		
 		// Add the parameters
