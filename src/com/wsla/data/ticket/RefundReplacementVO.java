@@ -353,6 +353,9 @@ public class RefundReplacementVO extends BeanDataVO {
 	 */
 	@BeanSubElement
 	public void addShipment(ShipmentVO shipment) {
+		if (shipment == null || shipment.getShipmentType() == null) 
+			return;
+		
 		this.shipments.put(shipment.getShipmentType().name(), shipment);
 	}
 }
