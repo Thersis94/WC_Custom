@@ -97,6 +97,16 @@ public class VenueTourVO extends VenueVO {
 		
 		return currDate.after(startDate) && currDate.before(endDate);
 	}
+	
+	/**
+	 * Determines if the event's data retrieval period is active
+	 * @param currDate local time datetime
+	 * @return
+	 */
+	public boolean isRetrievalPeriod(Date currDate) {
+		if (startRetrieve == null || endRetrieve == null) return false;
+		return currDate.after(startRetrieve) && currDate.before(endRetrieve);
+	}
 
 	/**
 	 * @return the venueTourId

@@ -94,7 +94,12 @@ public class WeatherAlertJob extends AbstractSMTJob {
 				venueTour = va.getVenueTour(venueTour.getVenueTourId());
 				venueTour.setCurrentConditions(va.getForecast(venueTour, null));
 				
-				// Save the forecast data to the db, since we are in the "recording" period
+				// Make sure we are in the "retrieval" period for the time zone of the venue
+				LocalDateTime now = new Date().toInstant().atZone(ZoneId.of(venueTour.getTimezone())).toLocalDateTime();
+				if (!venueTour.isRetrievalPeriod(java.sql.Timestamp.valueOf(now)))
+					continue;
+				
+				// Save the forecast data to the db
 				String forecastId = saveCurrentConditions(venueTour);
 				
 				// Notify via websocket sessions there are updated conditions available
@@ -102,16 +107,14 @@ public class WeatherAlertJob extends AbstractSMTJob {
 				wsm.broadcast(venueTour.getVenueTourId(), "updateCurrent");
 				
 				// No alerts need to be sent if the event is not in progress
-				LocalDateTime now = new Date().toInstant().atZone(ZoneId.of(venueTour.getTimezone())).toLocalDateTime();
-				if (!venueTour.isEventInProgress(java.sql.Timestamp.valueOf(now)))
-					continue;
-				
-				// Get thresholds for the tour venue
-				VenueTourAttributeWidget vta = new VenueTourAttributeWidget(attributes, dbConnection);
-				List<VenueTourAttributeVO> thresholds = vta.getVenueTourAttributes(venueTour.getVenueTourId());
-				
-				// Scan forecast data for thresholds that are exceeded
-				checkThresholds(venueTour, thresholds, forecastId);
+				if (venueTour.isEventInProgress(java.sql.Timestamp.valueOf(now))) {
+					// Get thresholds for the tour venue
+					VenueTourAttributeWidget vta = new VenueTourAttributeWidget(attributes, dbConnection);
+					List<VenueTourAttributeVO> thresholds = vta.getVenueTourAttributes(venueTour.getVenueTourId());
+					
+					// Scan forecast data for thresholds that are exceeded
+					checkThresholds(venueTour, thresholds, forecastId);
+				}
 			}
 			
 		} catch (Exception e) {
@@ -323,7 +326,8 @@ public class WeatherAlertJob extends AbstractSMTJob {
 		
 		StringBuilder sql = new StringBuilder(150);
 		sql.append(DBUtil.SELECT_FROM_STAR).append(schema).append("ps_venue_tour_xr vt");
-		sql.append(DBUtil.WHERE_CLAUSE).append("start_retrieve_dt <= ? and end_retrieve_dt >= ? ");
+		sql.append(DBUtil.WHERE_CLAUSE).append("start_retrieve_dt - interval '24 hours' <= ? and end_retrieve_dt + interval '24 hours' >= ? ");
+		sql.append(DBUtil.ORDER_BY).append("start_retrieve_dt");
 		log.debug(sql);
 		
 		DBProcessor dbp = new DBProcessor(dbConnection, schema);
