@@ -144,7 +144,8 @@ public class WeatherAlertJob extends AbstractSMTJob {
 
 		// Scan the forecast data for thresholds that are exceeded
 		for (VenueTourAttributeVO threshold : thresholds) {
-			if (forecastData.get(threshold.getAttributeCode()) >= threshold.getValue()) {
+			Integer forecastValue = forecastData.get(threshold.getAttributeCode());
+			if (forecastValue != null && forecastValue >= threshold.getValue()) {
 				alertCount++;
 				
 				// Save the alert
