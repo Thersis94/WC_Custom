@@ -392,8 +392,7 @@ public class TicketOverviewAction extends BasePortalAction {
 	 * @throws InvalidDataException
 	 * @throws DatabaseException
 	 */
-	public void assignDataAttributes(TicketVO vo, TicketLedgerVO ledger) 
-	throws InvalidDataException, DatabaseException {
+	public void assignDataAttributes(TicketVO vo, TicketLedgerVO ledger) {
 		Map<String, String> ids = getTicketDataIds(vo.getTicketId());
 
 		for (TicketDataVO data : vo.getTicketData()) {
@@ -411,7 +410,11 @@ public class TicketOverviewAction extends BasePortalAction {
 			
 			// Save the attribute data
 			DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
-			db.save(data);
+			try {
+				db.save(data);
+			} catch (InvalidDataException | DatabaseException e) {
+				log.error("Unable to add attribute: " + data.getAttributeCode(), e);
+			}
 		}
 	}
 	
