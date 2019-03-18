@@ -125,7 +125,7 @@ public class RSSDataFeed extends AbstractSmarttrakRSSFeed {
 		List<RSSArticleVO> articles = feed.getItemList().stream().map(RSSArticleVO::new).collect(Collectors.toList());
 		log.debug("Retrieved " + articles.size() + " Articles.");
 		int initialSize = articles.size();
-			articles = articles.stream().filter(a -> a.getPublishDt() != null ? a.getPublishDt().after(cutOffDate) : false).collect(Collectors.toList());
+			articles = articles.stream().filter(a -> a.getPublishDt() != null ? a.getPublishDt().after(cutOffDate) : true).collect(Collectors.toList());
 		int diff = initialSize - articles.size();
 		if(diff != 0) {
 			log.debug("Removed " + diff + "articles");
