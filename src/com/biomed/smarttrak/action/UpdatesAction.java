@@ -392,14 +392,13 @@ public class UpdatesAction extends SBActionAdapter {
 		String d = formatter.format(c.getTime());
 
 		//If we have a specified date, ensure that we've offset time to midnight.
-		c.setTime(Convert.formatDate(formatter.format(c.getTime())));
+		c.setTime(Convert.formatDate(d));
 		c.set(Calendar.HOUR, 23);
 		c.set(Calendar.MINUTE, 59);
 		c.set(Calendar.SECOND, 59);
 		d = Convert.formatDate(c.getTime(), Convert.DATE_TIME_DASH_PATTERN);
 		req.setParameter("endDt", d);
 
-		System.out.println(req.getParameter("endDt"));
 		//Get a Date Range String.
 		String dates = SolrActionUtil.makeRangeQuery(FieldType.DATE, req.getParameter("startDt"), d);
 		if (!StringUtil.isEmpty(dates))
