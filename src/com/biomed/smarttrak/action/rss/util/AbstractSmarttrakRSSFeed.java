@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.apache.log4j.Logger;
 
@@ -221,7 +222,8 @@ public abstract class AbstractSmarttrakRSSFeed {
 				dbp.executeBatch(storeArticleQuery, buildArticleFilterVals(article, historyValues));
 
 				dbp.executeBatch(storeHistoryQuery, historyValues);
-				this.addMessage(String.format("All Groups Added - Feed: %s, ArticleId: %s, Title: %s, Group Count: %d", article.getRssEntityId(), article.getRssArticleId(), article.getTitleTxt(), article.getFilterVOs().size()));
+
+				this.addMessage(String.format("<b>All Groups Added - Feed:</b> %s, <br/><b>ArticleId:</b> %s, <br/><b>Article Url:</b> %s, <br/><b>Title:</b> %s, <br/><b>Groups:</b> %s<br/>", article.getRssEntityId(), article.getRssArticleId(), article.getArticleUrl(), article.getTitleTxt(), buildGroupSummary(article)));
 				log.info("write took " + (System.currentTimeMillis()-start) + "ms");
 
 			} else if(checkHistory(article)) {
@@ -233,10 +235,11 @@ public abstract class AbstractSmarttrakRSSFeed {
 				dbp.executeBatch(storeArticleQuery, buildArticleFilterVals(article, historyValues));
 
 				dbp.executeBatch(storeHistoryQuery, historyValues);
-				this.addMessage(String.format("Existing Article, Filtered - Feed: %s, ArticleId: %s, Title: %s, Article Count: %d", article.getRssEntityId(), article.getRssArticleId(), article.getTitleTxt(), article.getFilterVOs().size()));
+
+				this.addMessage(String.format("<b>Existing Article, Filtered - Feed:</b> %s,<br/><b>ArticleId:</b> %s, <br/><b>Article Url:</b> %s, <br/><b>Title:</b> %s,<br/><b>Feed Groups:</b> %s<br/>", article.getRssEntityId(), article.getRssArticleId(), article.getArticleUrl(), article.getTitleTxt(), buildGroupSummary(article)));
 				log.info("write took " + (System.currentTimeMillis()-start) + "ms");
 			} else {
-				this.addMessage(String.format("All Articles Exist from Feed: %s, ArticleId: %s, Title: %s", article.getRssEntityId(), article.getRssArticleId(), article.getTitleTxt()));
+				this.addMessage(String.format("<b>All Articles Exist from Feed:</b> %s,<br/><b>ArticleId:</b> %s,<br/><b>Title:</b> %s<br/>", article.getRssEntityId(), article.getRssArticleId(), article.getTitleTxt()));
 				log.info("Article Already Exists: " + article.getRssArticleId());
 			}
 		} catch (InvalidDataException | DatabaseException e) {
@@ -245,6 +248,18 @@ public abstract class AbstractSmarttrakRSSFeed {
 	}
 
 
+	/**
+	 * Helper method for building formatted Feed Group Summary.
+	 * Is Comma Delim Text of FeedGroupNm:ArticleStatus
+	 * @param article
+	 * @return
+	 */
+	private String buildGroupSummary(RSSArticleVO article) {
+		return article.getFilterVOs().values()
+		           .stream()
+		           .map(a -> StringUtil.join(a.getFeedGroupNm(), ":", a.getArticleStatus().name()))
+		           .collect(Collectors.joining(", "));
+	}
 	/**
 	 * An Article has been determined to exist in the system.  Load the Existing records
 	 * and remove the duplicates.
@@ -469,7 +484,7 @@ public abstract class AbstractSmarttrakRSSFeed {
 	 */
 	protected String getFiltersSql(boolean hasRSSEntityId) {
 		StringBuilder sql = new StringBuilder(450);
-		sql.append("select g.feed_group_id, f.filter_expression, f.filter_type_cd ");
+		sql.append("select g.feed_group_id, g.feed_group_nm, f.filter_expression, f.filter_type_cd ");
 		sql.append("from ").append(customDb).append("biomedgps_feed_group g ");
 		sql.append(DBUtil.INNER_JOIN).append(customDb).append("biomedgps_feed_filter_group_xr gxr ");
 		sql.append("on g.feed_group_id = gxr.feed_group_id ");
@@ -491,10 +506,10 @@ public abstract class AbstractSmarttrakRSSFeed {
 	 * @param feedGroupId
 	 * @param useFilters
 	 */
-	protected void applyFilter(RSSArticleVO article, String feedGroupId, boolean useFilters) {
+	protected void applyFilter(RSSArticleVO article, String feedGroupId, String feedGroupNm, boolean useFilters) {
 		long start = System.currentTimeMillis();
 		Map<String, List<RSSFilterVO>> omitFilters = filters.get(FilterType.O);
-		RSSArticleFilterVO af = new RSSArticleFilterVO(article, feedGroupId);
+		RSSArticleFilterVO af = new RSSArticleFilterVO(article, feedGroupId, feedGroupNm);
 
 		if(!useFilters && StringUtil.isEmpty(article.getRssArticleId())) {
 			log.debug("Skipping Filters!");
