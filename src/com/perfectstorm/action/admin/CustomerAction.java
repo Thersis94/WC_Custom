@@ -73,14 +73,14 @@ public class CustomerAction extends SBActionAdapter {
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		BSTableControlVO bst = new BSTableControlVO(req, CustomerVO.class);
-		setModuleData(getCustomers(bst, null));
+		setModuleData(getCustomers(bst, null, null));
 	}
 	
 	/**
 	 * Gets the attributes
 	 * @return
 	 */
-	public GridDataVO<CustomerVO> getCustomers(BSTableControlVO bst, String customerType) {
+	public GridDataVO<CustomerVO> getCustomers(BSTableControlVO bst, String customerType, String memberId) {
 		List<Object> vals = new ArrayList<>();
 		
 		StringBuilder sql = new StringBuilder(128);
@@ -94,6 +94,13 @@ public class CustomerAction extends SBActionAdapter {
 		if (!StringUtil.isEmpty(customerType)) {
 			sql.append("and customer_type_cd = ? ");
 			vals.add(customerType);
+		}
+		
+		if (!StringUtil.isEmpty(memberId)) {
+			sql.append("and customer_id not in (");
+			sql.append("select customer_id from ").append(getCustomSchema()).append("ps_customer_member_xr ");
+			sql.append("where member_id = ?) ");
+			vals.add(memberId);
 		}
 		
 		sql.append("order by ").append(bst.getDBSortColumnName("customer_nm"));

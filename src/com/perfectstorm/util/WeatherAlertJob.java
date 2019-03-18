@@ -94,20 +94,27 @@ public class WeatherAlertJob extends AbstractSMTJob {
 				venueTour = va.getVenueTour(venueTour.getVenueTourId());
 				venueTour.setCurrentConditions(va.getForecast(venueTour, null));
 				
-				// Save the forecast data to the db, since we are in the "recording" period
-				String forecastId = saveCurrentConditions(venueTour);
-				
-				// No alerts need to be sent if the event is not in progress
+				// Make sure we are in the "retrieval" period for the time zone of the venue
 				LocalDateTime now = new Date().toInstant().atZone(ZoneId.of(venueTour.getTimezone())).toLocalDateTime();
-				if (!venueTour.isEventInProgress(java.sql.Timestamp.valueOf(now)))
+				if (!venueTour.isRetrievalPeriod(java.sql.Timestamp.valueOf(now)))
 					continue;
 				
-				// Get thresholds for the tour venue
-				VenueTourAttributeWidget vta = new VenueTourAttributeWidget(attributes, dbConnection);
-				List<VenueTourAttributeVO> thresholds = vta.getVenueTourAttributes(venueTour.getVenueTourId());
+				// Save the forecast data to the db
+				String forecastId = saveCurrentConditions(venueTour);
 				
-				// Scan forecast data for thresholds that are exceeded
-				checkThresholds(venueTour, thresholds, forecastId);
+				// Notify via websocket sessions there are updated conditions available
+				WebSocketSessionManager wsm = WebSocketSessionManager.getInstance();
+				wsm.broadcast(venueTour.getVenueTourId(), "updateCurrent");
+				
+				// No alerts need to be sent if the event is not in progress
+				if (venueTour.isEventInProgress(java.sql.Timestamp.valueOf(now))) {
+					// Get thresholds for the tour venue
+					VenueTourAttributeWidget vta = new VenueTourAttributeWidget(attributes, dbConnection);
+					List<VenueTourAttributeVO> thresholds = vta.getVenueTourAttributes(venueTour.getVenueTourId());
+					
+					// Scan forecast data for thresholds that are exceeded
+					checkThresholds(venueTour, thresholds, forecastId);
+				}
 			}
 			
 		} catch (Exception e) {
@@ -140,7 +147,8 @@ public class WeatherAlertJob extends AbstractSMTJob {
 
 		// Scan the forecast data for thresholds that are exceeded
 		for (VenueTourAttributeVO threshold : thresholds) {
-			if (forecastData.get(threshold.getAttributeCode()) >= threshold.getValue()) {
+			Integer forecastValue = forecastData.get(threshold.getAttributeCode());
+			if (forecastValue != null && forecastValue >= threshold.getValue()) {
 				alertCount++;
 				
 				// Save the alert
@@ -212,7 +220,7 @@ public class WeatherAlertJob extends AbstractSMTJob {
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("ps_customer c");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("ps_customer_member_xr cm on c.customer_id = cm.customer_id");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("ps_member m on cm.member_id = m.member_id");
-		sql.append(DBUtil.WHERE_CLAUSE).append("c.customer_type_cd = ? ");
+		sql.append(DBUtil.WHERE_CLAUSE).append("c.customer_type_cd = ? and m.send_sms_flg = 1 and m.phone_number_txt is not null and m.phone_number_txt != '' ");
 		
 		// Venue Members
 		sql.append(DBUtil.UNION);
@@ -221,7 +229,7 @@ public class WeatherAlertJob extends AbstractSMTJob {
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("ps_customer c on v.customer_id = c.customer_id ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("ps_customer_member_xr cm on c.customer_id = cm.customer_id ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("ps_member m on cm.member_id = m.member_id ");
-		sql.append(DBUtil.WHERE_CLAUSE).append("v.venue_id = ? ");
+		sql.append(DBUtil.WHERE_CLAUSE).append("v.venue_id = ? and m.send_sms_flg = 1 and m.phone_number_txt is not null and m.phone_number_txt != '' ");
 		
 		// Tour Members
 		sql.append(DBUtil.UNION);
@@ -230,7 +238,7 @@ public class WeatherAlertJob extends AbstractSMTJob {
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("ps_customer c on t.customer_id = c.customer_id ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("ps_customer_member_xr cm on c.customer_id = cm.customer_id ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("ps_member m on cm.member_id = m.member_id ");
-		sql.append(DBUtil.WHERE_CLAUSE).append("t.tour_id = ? ");
+		sql.append(DBUtil.WHERE_CLAUSE).append("t.tour_id = ? and m.send_sms_flg = 1 and m.phone_number_txt is not null and m.phone_number_txt != '' ");
 		log.debug(sql);
 		
 		// Add the parameters
@@ -318,7 +326,8 @@ public class WeatherAlertJob extends AbstractSMTJob {
 		
 		StringBuilder sql = new StringBuilder(150);
 		sql.append(DBUtil.SELECT_FROM_STAR).append(schema).append("ps_venue_tour_xr vt");
-		sql.append(DBUtil.WHERE_CLAUSE).append("start_retrieve_dt <= ? and end_retrieve_dt >= ? ");
+		sql.append(DBUtil.WHERE_CLAUSE).append("start_retrieve_dt - interval '24 hours' <= ? and end_retrieve_dt + interval '24 hours' >= ? ");
+		sql.append(DBUtil.ORDER_BY).append("start_retrieve_dt");
 		log.debug(sql);
 		
 		DBProcessor dbp = new DBProcessor(dbConnection, schema);
