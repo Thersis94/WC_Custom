@@ -171,7 +171,7 @@ public class QuertleDataFeed extends AbstractSmarttrakRSSFeed {
 		for (RSSFeedGroupVO g : groups) {
 			if (! articleExists(a, g.getFeedGroupId(), articleGuids)) {
 				//Apply Matching Filters to article.
-				applyFilter(a, g.getFeedGroupId(), true);
+				applyFilter(a, g.getFeedGroupId(), g.getFeedGroupNm(), true);
 			}
 		}
 	}

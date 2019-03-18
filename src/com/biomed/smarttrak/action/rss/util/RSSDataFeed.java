@@ -125,7 +125,7 @@ public class RSSDataFeed extends AbstractSmarttrakRSSFeed {
 		List<RSSArticleVO> articles = feed.getItemList().stream().map(RSSArticleVO::new).collect(Collectors.toList());
 		log.debug("Retrieved " + articles.size() + " Articles.");
 		int initialSize = articles.size();
-			articles = articles.stream().filter(a -> a.getPublishDt().after(cutOffDate)).collect(Collectors.toList());
+			articles = articles.stream().filter(a -> a.getPublishDt() != null ? a.getPublishDt().after(cutOffDate) : true).collect(Collectors.toList());
 		int diff = initialSize - articles.size();
 		if(diff != 0) {
 			log.debug("Removed " + diff + "articles");
@@ -176,9 +176,11 @@ public class RSSDataFeed extends AbstractSmarttrakRSSFeed {
 	 */
 	private void processArticles(SmarttrakRssEntityVO f, List<RSSArticleVO> articles, Map<String, GenericVO> existsIds) {
 		long start = System.currentTimeMillis();
+		this.addMessage(String.format("Processing Feed Url: %s</br>", f.getRssUrl()));
 		for (RSSArticleVO article : articles) {
 			processArticleFeedGroups(f, article, existsIds);
 		}
+		this.addMessage("Finished Processing Feed</br>");
 		log.info("article Processing took " + (System.currentTimeMillis()-start) + "ms");
 	}
 
@@ -218,7 +220,7 @@ public class RSSDataFeed extends AbstractSmarttrakRSSFeed {
 	private void processArticle(SmarttrakRssEntityVO f, RSSFeedGroupVO fg, RSSArticleVO article, Map<String, GenericVO> existsIds) {
 		//Only process new Articles that aren't in system.  If an articleId is present, this article exists.
 		if (!articleExists(article, fg.getFeedGroupId(), existsIds)) {
-			applyFilter(article, fg.getFeedGroupId(), Convert.formatBoolean(f.getUseFiltersNo()));
+			applyFilter(article, fg.getFeedGroupId(), fg.getFeedGroupNm(), Convert.formatBoolean(f.getUseFiltersNo()));
 			log.debug(String.format("Processed Feed Group: %s", fg.getFeedGroupId()));
 		} else {
 
@@ -264,13 +266,15 @@ public class RSSDataFeed extends AbstractSmarttrakRSSFeed {
 	 * @return
 	 */
 	private String getFeedsSql() {
-		StringBuilder sql = new StringBuilder(375);
-		sql.append("select e.rss_entity_id, e.rss_url, e.rss_feed_nm, fsg.feed_group_id, e.use_filters_no ");
+		StringBuilder sql = new StringBuilder(475);
+		sql.append("select e.rss_entity_id, e.rss_url, e.rss_feed_nm, fsg.feed_group_id, fg.feed_group_nm, e.use_filters_no ");
 		sql.append("from rss_entity e inner join ").append(customDb).append("biomedgps_rss_entity bre ");
 		sql.append("on e.rss_entity_id = bre.rss_entity_id ");
 		sql.append("inner join ").append(customDb).append("biomedgps_feed_source_group_xr fsg ");
 		sql.append("on bre.rss_entity_id = fsg.rss_entity_id ");
-		sql.append("where e.organization_id = ?");
+		sql.append("inner join ").append(customDb).append("biomedgps_feed_group fg ");
+		sql.append("on fg.feed_group_id = fsg.feed_group_id ");
+		sql.append("where e.organization_id = ? and e.rss_entity_id='32'");
 		return sql.toString();
 	}
 }
