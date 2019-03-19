@@ -274,7 +274,7 @@ public class RSSDataFeed extends AbstractSmarttrakRSSFeed {
 		sql.append("on bre.rss_entity_id = fsg.rss_entity_id ");
 		sql.append("inner join ").append(customDb).append("biomedgps_feed_group fg ");
 		sql.append("on fg.feed_group_id = fsg.feed_group_id ");
-		sql.append("where e.organization_id = ? and e.rss_entity_id='32'");
+		sql.append("where e.organization_id = ? ");
 		return sql.toString();
 	}
 }
