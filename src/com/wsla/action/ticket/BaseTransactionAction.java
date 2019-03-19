@@ -100,8 +100,27 @@ public class BaseTransactionAction extends SBActionAdapter {
 			throw new DatabaseException(e);
 		}
 		
+		// Get the status data
+		StatusCodeVO sc = new StatusCodeVO();
+		sc.setStatusCode(newStatus.name());
+		try {
+			dbp.getByPrimaryKey(sc);
+		} catch (InvalidDataException e) {
+			log.error("Could not get status data");
+		}
+		
+		// Populate the email data
+		Map<String,Object> emailData = new HashMap<>();
+		emailData.put(NotificationWorkflowModule.TICKET_ID_TEXT, ticket.getTicketIdText());
+		emailData.put(NotificationWorkflowModule.USER_ID, userId);
+		emailData.put("ticketId", ticket.getTicketId());
+		emailData.put("soNumber", ticket.getTicketIdText());
+		emailData.put("statusCd", newStatus.name());
+		emailData.put("groupStatusCode", sc.getGroupStatusCode().name());
+		emailData.put("statusName", sc.getStatusName());
+		
 		// Send the notification and add the ledger entry
-		processNotification(ticket.getTicketIdText(), userId, newStatus, null);
+		processNotification(ticket.getTicketIdText(), userId, newStatus, emailData);
 		return addLedger(ticketId, userId, newStatus, summary, location);
 	}
 

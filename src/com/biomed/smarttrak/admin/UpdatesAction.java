@@ -13,6 +13,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TimeZone;
 
 // J2EE libs
 import javax.servlet.http.HttpServletResponse;
@@ -645,7 +646,7 @@ public class UpdatesAction extends ManagementAction {
 		}
 
 		Calendar pDate = Calendar.getInstance();
-		Calendar now = Calendar.getInstance();
+		Calendar now = Calendar.getInstance(TimeZone.getTimeZone(ZoneId.of("EST5EDT")));
 		pDate.setTime(reqDate);
 
 		boolean isSameDay = pDate.get(Calendar.DAY_OF_YEAR) == now.get(Calendar.DAY_OF_YEAR);
