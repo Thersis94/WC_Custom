@@ -83,7 +83,7 @@ public class PubmedDataFeed extends AbstractSmarttrakRSSFeed {
 			if (results != null && !results.getIdList().isEmpty()) {
 				log.info("query returned " + results.getIdList().size() + " results");
 				results.setQueryTerm(req);
-				processArticleList(req.getFilterGroupId(), results);
+				processArticleList(req.getFilterGroupId(), req.getFeedGroupNm(), results);
 			}
 		}
 	}
@@ -156,7 +156,7 @@ public class PubmedDataFeed extends AbstractSmarttrakRSSFeed {
 	 */
 	protected String getTermsSql() {
 		StringBuilder sql = new StringBuilder(300);
-		sql.append("select g.feed_segment_id, t.* from ").append(customDb).append("biomedgps_feed_group g ");
+		sql.append("select g.feed_segment_id, g.feed_group_nm, t.* from ").append(customDb).append("biomedgps_feed_group g ");
 		sql.append("inner join ").append(customDb).append("biomedgps_filter_term t on g.feed_group_id = t.feed_group_id ");
 		sql.append("where filter_type_cd = ? order by g.feed_group_id;");
 		return sql.toString();
@@ -167,9 +167,10 @@ public class PubmedDataFeed extends AbstractSmarttrakRSSFeed {
 	 * Method manages retrieving full article data for PubMed Articles contained
 	 * in the PubMedSearchResultVO.
 	 * @param feedGroupId
+	 * @param feedGroupNm 
 	 * @param results
 	 */
-	protected void processArticleList(String feedGroupId, PubMedSearchResultVO vo) {
+	protected void processArticleList(String feedGroupId, String feedGroupNm, PubMedSearchResultVO vo) {
 		Map<String, GenericVO> existsIds = getExistingArticles(vo.getIdList());
 
 		//Retrieve Articles from Search.
@@ -185,7 +186,7 @@ public class PubmedDataFeed extends AbstractSmarttrakRSSFeed {
 				log.debug("Saving article " + article.getArticleGuid() + " from term group " + vo.getReqTerm().getFilterGroupId());
 				article.setArticleUrl(props.getProperty(PUBMED_ARTICLE_URL) + article.getArticleGuid());
 				article.setRssEntityId(props.getProperty(PUBMED_ENTITY_ID));
-				RSSArticleFilterVO af = buildArticleFilter(feedGroupId, article);
+				RSSArticleFilterVO af = buildArticleFilter(feedGroupId, feedGroupNm, article);
 				article.addFilteredText(highlightMatch(af, vo.getReqTerm()));
 
 				storeArticle(article);
@@ -197,13 +198,15 @@ public class PubmedDataFeed extends AbstractSmarttrakRSSFeed {
 
 
 	/**
+	 * @param feedGroupNm 
 	 * @param filterGroupId
 	 * @param a
 	 * @return
 	 */
-	private RSSArticleFilterVO buildArticleFilter(String feedGroupId, RSSArticleVO a) {
+	private RSSArticleFilterVO buildArticleFilter(String feedGroupId, String feedGroupNm, RSSArticleVO a) {
 		RSSArticleFilterVO af = new RSSArticleFilterVO();
 		af.setFeedGroupId(feedGroupId);
+		af.setFeedGroupNm(feedGroupNm);
 		af.setArticleTxt(a.getArticleTxt());
 		af.setTitleTxt(a.getTitleTxt());
 		af.setArticleStatus(ArticleStatus.N);

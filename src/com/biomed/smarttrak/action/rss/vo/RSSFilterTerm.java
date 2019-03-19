@@ -28,6 +28,7 @@ public class RSSFilterTerm implements Serializable {
 	private String filterGroupId;
 	private String filterGroupNm;
 	private String filterTerm;
+	private String feedGroupNm;
 	private Date createDt;
 
 	public RSSFilterTerm() {
@@ -99,6 +100,10 @@ public class RSSFilterTerm implements Serializable {
 		return createDt;
 	}
 
+	@Column(name="feed_group_nm", isReadOnly=true)
+	public String getFeedGroupNm() {
+		return feedGroupNm;
+	}
 	/**
 	 * @param filterTermId the filterTermId to set.
 	 */
@@ -146,5 +151,9 @@ public class RSSFilterTerm implements Serializable {
 	 */
 	public void setCreateDt(Date createDt) {
 		this.createDt = createDt;
+	}
+
+	public void setFeedGroupNm(String feedGroupNm) {
+		this.feedGroupNm = feedGroupNm;
 	}
 }
