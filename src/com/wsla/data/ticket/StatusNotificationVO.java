@@ -13,6 +13,9 @@ import com.siliconmtn.data.parser.BeanDataVO;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
 import com.siliconmtn.util.StringUtil;
+
+// WSLA Libs
+import com.wsla.common.WSLAConstants.WSLARole;
 import com.wsla.common.WSLALocales;
 
 /****************************************************************************
@@ -48,6 +51,7 @@ public class StatusNotificationVO extends BeanDataVO {
 	private String campaignInstanceName;
 	private String statusCodeName;
 	private String localeName;
+	private String roleNames;
 	
 	/**
 	 * 
@@ -78,6 +82,34 @@ public class StatusNotificationVO extends BeanDataVO {
 		if (StringUtil.isEmpty(roleId)) return  new ArrayList<>();
 		return Arrays.asList(roleId.split(","));
 	}
+	
+	/**
+	 * Sets the name of the roles rather than the list of ids
+	 */
+	private void setRoleNames() {
+		if (StringUtil.isEmpty(roleId)) return;
+		StringBuilder s = new StringBuilder();
+		int i=0;
+		List<String> r = getRoles();
+		for (WSLARole role : WSLARole.values()) {
+			if (r.contains(role.getRoleId())) {
+				if (i++ > 0) s.append(", ");
+				s.append(role.getRoleName());
+			}
+		}
+		
+		roleNames = s.toString();
+	}
+	
+	/**
+	 * 
+	 * @return
+	 */
+	public String getRoleNames() {
+		if (StringUtil.isEmpty(roleNames)) setRoleNames();
+		return roleNames;
+	}
+	
 	/**
 	 * @return the statusNotificationId
 	 */
@@ -186,6 +218,8 @@ public class StatusNotificationVO extends BeanDataVO {
 	 */
 	public void setRoleId(String roleId) {
 		this.roleId = roleId;
+		
+		setRoleNames();
 	}
 
 	/**
