@@ -68,6 +68,5 @@ public class LocaleWrapper extends BeanDataVO {
 	public Locale getLocale() {
 		return locale;
 	}
-
 }
 

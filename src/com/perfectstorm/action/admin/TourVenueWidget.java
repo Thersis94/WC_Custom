@@ -113,7 +113,7 @@ public class TourVenueWidget extends SBActionAdapter {
 		// Add the filter designation whether to show past events
 		if (!showPast) {
 			sql.append("and a.event_dt >= ? ");
-			vals.add(new Date());
+			vals.add(Convert.formatStartDate(Convert.formatDate(new Date(), Calendar.DAY_OF_YEAR, -1)));
 		}
 
 		sql.append(DBUtil.ORDER_BY).append("a.event_dt asc");
@@ -140,13 +140,14 @@ public class TourVenueWidget extends SBActionAdapter {
 		sql.append(schema).append("ps_venue_tour_xr a ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("ps_venue b on a.venue_id=b.venue_id ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("ps_tour c on a.tour_id = c.tour_id ");
-		sql.append(DBUtil.WHERE_CLAUSE).append("a.event_dt >= CURRENT_TIMESTAMP ");
+		sql.append(DBUtil.WHERE_CLAUSE).append("a.event_dt >= ? ");
 		sql.append(DBUtil.ORDER_BY).append("a.event_dt asc, distance limit 10");
 
 		// Add the params
 		List<Object> vals = new ArrayList<>();
 		vals.add(latitude);
 		vals.add(longitude);
+		vals.add(Convert.formatStartDate(Convert.formatDate(new Date(), Calendar.DAY_OF_YEAR, -1)));
 
 		// execute the sql
 		DBProcessor db = new DBProcessor(dbConn, schema);
