@@ -263,13 +263,15 @@ public class TicketOverviewAction extends BasePortalAction {
 		UserDataVO profile = (UserDataVO)req.getSession().getAttribute(Constants.USER_DATA);
 		UserVO adminUser = (UserVO)profile.getUserExtendedInfo();
 		BaseTransactionAction bta = new BaseTransactionAction(getDBConnection(), getAttributes());
-		TicketLedgerVO ledger = bta.addLedger(ticket.getTicketId(), adminUser.getUserId(), ticket.getStatusCode(), LedgerSummary.CALL_RECVD.summary, null);
-		
-		// Add Data Attributes
-		assignDataAttributes(ticket, ledger);
 		
 		// Update the ticket originator from the user
 		updateOriginator(user.getUserId(), ticket.getTicketId());
+
+		// Change the status
+		TicketLedgerVO ledger = bta.changeStatus(ticket.getTicketId(), adminUser.getUserId(), ticket.getStatusCode(), LedgerSummary.CALL_RECVD.summary, null);
+		
+		// Add Data Attributes
+		assignDataAttributes(ticket, ledger);
 		
 		return ticket;
 	}
