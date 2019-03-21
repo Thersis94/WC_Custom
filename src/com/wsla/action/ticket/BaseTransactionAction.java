@@ -113,7 +113,7 @@ public class BaseTransactionAction extends SBActionAdapter {
 		Map<String,Object> emailData = new HashMap<>();
 		emailData.put(NotificationWorkflowModule.TICKET_ID_TEXT, ticket.getTicketIdText());
 		emailData.put(NotificationWorkflowModule.USER_ID, userId);
-		emailData.put("ticketId", ticket.getTicketId());
+		emailData.put(NotificationWorkflowModule.TICKET_ID, ticket.getTicketId());
 		emailData.put("soNumber", ticket.getTicketIdText());
 		emailData.put("statusCd", newStatus.name());
 		emailData.put("groupStatusCode", sc.getGroupStatusCode().name());
