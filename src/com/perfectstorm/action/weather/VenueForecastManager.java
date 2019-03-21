@@ -1,6 +1,7 @@
 package com.perfectstorm.action.weather;
 
 import java.time.LocalDateTime;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -12,6 +13,7 @@ import com.perfectstorm.action.weather.manager.ForecastManagerInterface;
 import com.perfectstorm.data.VenueVO;
 import com.perfectstorm.data.weather.WeatherStationVO;
 import com.perfectstorm.data.weather.forecast.ForecastVO;
+import com.perfectstorm.data.weather.forecast.FullForecastVO;
 import com.siliconmtn.action.ActionException;
 import com.smt.sitebuilder.util.CacheAdministrator;
 
@@ -129,19 +131,22 @@ public class VenueForecastManager {
 	 * @param attributes
 	 * @throws ActionException
 	 */
-	@SuppressWarnings("unchecked")
 	private void retrieveForecast(Map<String, Object> attributes) throws ActionException {
 		CacheAdministrator cache = new CacheAdministrator(attributes);
 		
-		detailForecast = (Map<String, ForecastVO>) cache.readObjectFromCache(DETAIL_CACHE_KEY_PREFIX + venue.getVenueId());
-		extendedForecast = (Map<String, ForecastVO>) cache.readObjectFromCache(EXTENDED_CACHE_KEY_PREFIX + venue.getVenueId());
+		FullForecastVO fullDetail = (FullForecastVO) cache.readObjectFromCache(DETAIL_CACHE_KEY_PREFIX + venue.getVenueId());
+		FullForecastVO fullExtended = (FullForecastVO) cache.readObjectFromCache(EXTENDED_CACHE_KEY_PREFIX + venue.getVenueId());
 		
-		if (detailForecast == null) {
+		if (fullDetail == null || fullDetail.getHoursSinceForecast() > 1) {
 			refreshCache(cache, DETAIL_CACHE_KEY_PREFIX);
+		} else {
+			detailForecast = fullDetail.getFullForecast();
 		}
 		
-		if (extendedForecast == null) {
+		if (fullExtended == null || fullExtended.getHoursSinceForecast() > 1) {
 			refreshCache(cache, EXTENDED_CACHE_KEY_PREFIX);
+		} else {
+			extendedForecast = fullExtended.getFullForecast();
 		}
 	}
 	
@@ -176,7 +181,10 @@ public class VenueForecastManager {
 			default:
 		}
 
-		// Weather data should be cached for 24 hours
-		cache.writeToCache(type + venue.getVenueId(), forecastData, 86400);
+		// Weather data should be cached for 1 hour
+		FullForecastVO fullForecast = new FullForecastVO();
+		fullForecast.setFullForecast(forecastData);
+		fullForecast.setForecastDate(new Date());
+		cache.writeToCache(type + venue.getVenueId(), fullForecast, 3600);
 	}
 }

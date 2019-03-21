@@ -4,6 +4,7 @@ package com.perfectstorm.action.admin;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.perfectstorm.data.AttributeVO.AttributeType;
 // PS Libs
 import com.perfectstorm.data.VenueAttributeVO;
 
@@ -70,12 +71,14 @@ public class VenueAttributeWidget extends SBActionAdapter {
 		// Add the params
 		List<Object> vals = new ArrayList<>(); 
 		vals.add(venueId);
+		vals.add(AttributeType.VENUE);
 		
 		StringBuilder sql = new StringBuilder(192);
 		sql.append("select a.attribute_cd, a.attribute_nm, b.venue_attribute_id, value_txt  from ");
 		sql.append(getCustomSchema()).append("ps_attribute a ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(getCustomSchema()).append("ps_venue_attribute_xr b ");
 		sql.append("on a.attribute_cd = b.attribute_cd and venue_id = ? ");
+		sql.append(DBUtil.WHERE_CLAUSE).append("attribute_type_cd = ? ");
 		sql.append(DBUtil.ORDER_BY).append("attribute_nm ");
 		log.debug(sql.length() + "|" + sql + vals);
 		

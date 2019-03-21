@@ -198,10 +198,11 @@ public class StatusCodeAction extends SBActionAdapter {
 	public StatusNotificationVO saveStatusNotification(ActionRequest req) 
 	throws InvalidDataException, DatabaseException {
 		
-		String delim = StringUtil.getDelimitedList(req.getParameterValues("roleId"), false, ",");
+		String delim = StringUtil.getDelimitedList(req.getParameterValues("roles"), false, ",");
 		req.setParameter("roleId", delim, false);
 		StatusNotificationVO ntfcn = new StatusNotificationVO(req);
 		log.debug(ntfcn);
+		
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		db.save(ntfcn);
 		
