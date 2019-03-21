@@ -163,13 +163,9 @@ public class RSSDataFeed extends AbstractSmarttrakRSSFeed {
 				temp.put(a.getArticleGuid(), a);
 			}
 
-			log.debug(ps);
 			ResultSet rs = ps.executeQuery();
 			RSSArticleVO a = null;
 			while (rs.next()) {
-				if("https://www.jshoulderelbow.org/article/S1058-2746(18)30776-6/fulltext?rss=yes".equals(rs.getString("key"))) {
-					log.debug("Found Target!");
-				}
 				a = temp.get(rs.getString("key"));
 				a.setPublishDt(rs.getDate("publish_dt"));
 				a.setRssArticleId(rs.getString("rss_article_id"));
