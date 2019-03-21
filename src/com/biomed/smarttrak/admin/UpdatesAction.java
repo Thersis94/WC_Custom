@@ -616,6 +616,11 @@ public class UpdatesAction extends ManagementAction {
 					u.setUpdateDt(Convert.convertTimeZoneOffset(new Date(), "EST5EDT"));
 				}
 
+				/*
+				 * If the submitted publish date is different than the old one,
+				 * process it.  If they're the same then use the oldPublishDate
+				 * which has the time.
+				 */
 				String oldPubDt = req.getParameter("oldPubDt");
 				if(StringUtil.isEmpty(oldPubDt) || !publishDateSameDay(oldPubDt, req.getParameter("publishDt"))) {
 					u.setPublishDate(calcPublishDt(Convert.formatDate(req.getParameter("publishDt"))));
