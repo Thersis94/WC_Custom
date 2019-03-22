@@ -49,7 +49,7 @@ public class ticketCallCenterTransaction extends BaseTransactionAction  {
 	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
-		log.debug("########## build called ");
+		log.debug("build called ");
 		TicketEditAction tea = new TicketEditAction();
 		tea.setActionInit(actionInit);
 		tea.setAttributes(getAttributes());
