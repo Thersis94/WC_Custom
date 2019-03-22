@@ -2,6 +2,8 @@ package com.perfectstorm.data.weather.forecast;
 
 import java.sql.ResultSet;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 import com.perfectstorm.data.weather.forecast.element.ConditionVO;
 import com.perfectstorm.data.weather.forecast.element.HazardVO;
@@ -67,6 +69,22 @@ public class ForecastVO extends BeanDataVO {
 	 */
 	public ForecastVO(ResultSet rs) {
 		super(rs);
+	}
+	
+	/**
+	 * Gets a map of all values
+	 * @return
+	 */
+	public Map<String, Integer> getDataMap() {
+		Map<String, Integer> dataMap = new HashMap<>();
+		dataMap.putAll(temperature.getDataMap());
+		dataMap.putAll(wind.getDataMap());
+		dataMap.putAll(precipitation.getDataMap());
+		dataMap.putAll(condition.getDataMap());
+		dataMap.putAll(hazard.getDataMap());
+		dataMap.putAll(wave.getDataMap());
+		
+		return dataMap;
 	}
 
 	/**
