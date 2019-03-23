@@ -5,6 +5,7 @@ import com.restpeer.action.admin.ProductWidget;
 import com.restpeer.action.admin.UserWidget;
 import com.restpeer.action.account.LocationAttributeWidget;
 import com.restpeer.action.account.LocationProductAction;
+import com.restpeer.action.account.LocationProductScheduleAction;
 import com.restpeer.action.account.MemberLocationUserAction;
 import com.restpeer.action.admin.AttributeWidget;
 import com.restpeer.action.admin.CategoryWidget;
@@ -78,6 +79,7 @@ public class AjaxControllerFacadeAction extends FacadeActionAdapter {
 		actionMap.put(UserWidget.AJAX_KEY, UserWidget.class);
 		actionMap.put(MemberLocationUserAction.AJAX_KEY, MemberLocationUserAction.class);
 		actionMap.put(LocationProductAction.AJAX_KEY, LocationProductAction.class);
+		actionMap.put(LocationProductScheduleAction.AJAX_KEY, LocationProductScheduleAction.class);
 		actionMap.put(LocationAttributeWidget.AJAX_KEY, LocationAttributeWidget.class);
 	}
 
