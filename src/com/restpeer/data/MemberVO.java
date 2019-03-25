@@ -33,7 +33,7 @@ public class MemberVO extends BeanDataVO {
 	public enum MemberType {
 		KITCHEN("Kitchen Facility"),
 		RESTAURANT_PEER("Restaurant Peer"),
-		CUSTOMER("Customer");
+		CUSTOMER("Mobile Restauranteur");
 		
 		private String memberName;
 		MemberType(String memberName) { 
@@ -57,6 +57,7 @@ public class MemberVO extends BeanDataVO {
 	
 	// Helpers
 	private long numLocations;
+	private String memberTypeName;
 	
 	// Sub-Beans
 	private List<MemberLocationVO> locations = new ArrayList<>(); 
@@ -138,6 +139,14 @@ public class MemberVO extends BeanDataVO {
 	}
 
 	/**
+	 * @return the memberTypeName
+	 */
+	@Column(name="type_nm", isReadOnly=true)
+	public String getMemberTypeName() {
+		return memberTypeName;
+	}
+
+	/**
 	 * @param memberId the memberId to set
 	 */
 	public void setMemberId(String memberId) {
@@ -184,6 +193,13 @@ public class MemberVO extends BeanDataVO {
 	 */
 	public void setNumLocations(long numLocations) {
 		this.numLocations = numLocations;
+	}
+
+	/**
+	 * @param memberTypeName the memberTypeName to set
+	 */
+	public void setMemberTypeName(String memberTypeName) {
+		this.memberTypeName = memberTypeName;
 	}
 
 }

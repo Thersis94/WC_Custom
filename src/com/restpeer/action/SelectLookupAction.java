@@ -83,7 +83,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		keyMap.put("members", new GenericVO("getMembers", Boolean.TRUE));
 		keyMap.put("memberType", new GenericVO("getMemberTypes", Boolean.FALSE));
 		keyMap.put("memberLocations", new GenericVO("getMemberLocations", Boolean.TRUE));
-		keyMap.put("locationProducts", new GenericVO("getLocationProducts", Boolean.TRUE));
+		keyMap.put("locationProducts", new GenericVO("getLocationProducts", Boolean.FALSE));
 		keyMap.put("users", new GenericVO("getUsers", Boolean.TRUE));
 	}
 
@@ -334,16 +334,17 @@ public class SelectLookupAction extends SBActionAdapter {
 	 * @param req
 	 * @return
 	 */
-	public List<GenericVO> getLocationProducts(ActionRequest req) {
+	public List<GenericVO> getLocationProducts() {
 		List<GenericVO> data = new ArrayList<>(10);
 		
 		ProductWidget pw = new ProductWidget(getDBConnection(), getAttributes());
 		List<ProductVO> products = pw.getProducts(null, true);
 		for (ProductVO pvo : products) {
+			String pc = pvo.getScheduleFlag() + "_" + pvo.getProductCode();
 			NumberFormat formatter = NumberFormat.getCurrencyInstance();
 			String name = pvo.getName() + " - " + formatter.format(pvo.getPrice());
 			if (StringUtil.isEmpty(pvo.getParentCode())) data.add(new GenericVO(null, pvo.getName()));
-			else data.add(new GenericVO(pvo.getProductCode(), name));
+			else data.add(new GenericVO(pc, name));
 		}
 		
 		return data;
