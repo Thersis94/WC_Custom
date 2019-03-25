@@ -16,6 +16,7 @@ import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.util.CommandLineUtil;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.EnumUtil;
+import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
@@ -118,6 +119,12 @@ public class SmarttrakRSSImporter extends CommandLineUtil {
 		msg.append("</h3>");
 		msg.append("<h4>Feeds processed: ").append("</h4>");
 		for (Entry<String, List<String>> feedData : messages.entrySet()) {
+
+			//If this is a single Run, update the Subject Line to reflect the run.
+			if(messages.size() == 1) {
+				String subject = props.getProperty("subject");
+				props.replace("subject", StringUtil.join(subject, " - ", feedData.getKey()));
+			}
 			msg.append(feedData.getKey()).append(br);
 			for(String m : feedData.getValue()) {
 				msg.append(m).append(br);

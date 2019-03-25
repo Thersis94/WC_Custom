@@ -122,7 +122,6 @@ public abstract class AbstractSmarttrakRSSFeed {
 		return UPDATE_RSS_SQL;
 	}
 
-
 	/**
 	 * Retrieves a set of articleIds from the DB based on rssEntityId and article_guid values.
 	 * Update 3/14/2019 - The code has been adjusted to look for any existing
@@ -223,7 +222,7 @@ public abstract class AbstractSmarttrakRSSFeed {
 
 				dbp.executeBatch(storeHistoryQuery, historyValues);
 
-				this.addMessage(String.format("<b>All Groups Added - Feed:</b> %s, <br/><b>ArticleId:</b> %s, <br/><b>Article Url:</b> %s, <br/><b>Title:</b> %s, <br/><b>Groups:</b> %s<br/>", article.getRssEntityId(), article.getRssArticleId(), article.getArticleUrl(), article.getTitleTxt(), buildGroupSummary(article)));
+				this.addMessage(String.format("<b>All Groups Added</b><br/><b>Article Url:</b> %s, <br/><b>Title:</b> %s, <br/><b>Groups:</b> %s<br/>", article.getArticleUrl(), article.getTitleTxt(), buildGroupSummary(article)));
 				log.info("write took " + (System.currentTimeMillis()-start) + "ms");
 
 			} else if(checkHistory(article)) {
@@ -236,10 +235,10 @@ public abstract class AbstractSmarttrakRSSFeed {
 
 				dbp.executeBatch(storeHistoryQuery, historyValues);
 
-				this.addMessage(String.format("<b>Existing Article, Filtered - Feed:</b> %s,<br/><b>ArticleId:</b> %s, <br/><b>Article Url:</b> %s, <br/><b>Title:</b> %s,<br/><b>Feed Groups:</b> %s<br/>", article.getRssEntityId(), article.getRssArticleId(), article.getArticleUrl(), article.getTitleTxt(), buildGroupSummary(article)));
+				this.addMessage(String.format("<b>Existing Article, Filtered</b><br/><b>Article Url:</b> %s, <br/><b>Title:</b> %s,<br/><b>Feed Groups:</b> %s<br/>", article.getArticleUrl(), article.getTitleTxt(), buildGroupSummary(article)));
 				log.info("write took " + (System.currentTimeMillis()-start) + "ms");
 			} else {
-				this.addMessage(String.format("<b>All Articles Exist from Feed:</b> %s,<br/><b>ArticleId:</b> %s,<br/><b>Title:</b> %s<br/>", article.getRssEntityId(), article.getRssArticleId(), article.getTitleTxt()));
+				this.addMessage(String.format("<b>All Articles Exist for article:</b> %s<br/>", article.getTitleTxt()));
 				log.info("Article Already Exists: " + article.getRssArticleId());
 			}
 		} catch (InvalidDataException | DatabaseException e) {

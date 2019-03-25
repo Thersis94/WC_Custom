@@ -11,6 +11,7 @@ import java.util.Map;
 //SMT Base Libs
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
+import com.siliconmtn.io.mail.EmailMessageVO.Header;
 import com.siliconmtn.sb.email.util.EmailCampaignBuilderUtil;
 import com.siliconmtn.sb.email.vo.EmailRecipientVO;
 import com.siliconmtn.util.StringUtil;
@@ -22,6 +23,7 @@ import com.smt.sitebuilder.common.constants.Constants;
 import com.wsla.action.BasePortalAction;
 import com.wsla.action.admin.StatusCodeAction;
 import com.wsla.action.ticket.TicketEditAction;
+import com.wsla.common.WSLAConstants;
 import com.wsla.common.WSLAConstants.WSLARole;
 import com.wsla.data.ticket.StatusNotificationVO;
 import com.wsla.data.ticket.TicketVO;
@@ -45,6 +47,7 @@ public class NotificationWorkflowModule extends AbstractWorkflowModule {
 	public static final String USER_ID = "userId";
 	public static final String STATUS_CODE = "statusCode";
 	public static final String EMAIL_DATA = "emailData";
+	public static final String TICKET_ID = "ticketId";
 	
 	public static final String WSLA_END_CUSTOMER = "WSLA_END_CUSTOMER";
 	private List<String> wslaRoles = new ArrayList<>();
@@ -194,10 +197,15 @@ public class NotificationWorkflowModule extends AbstractWorkflowModule {
 
 		@SuppressWarnings("unchecked")
 		Map<String, Object> mData = (Map<String, Object>) mod.getWorkflowConfig(NotificationWorkflowModule.EMAIL_DATA);
-		
 		if (mData == null || mData.size() == 0 ) {
 			mData = new HashMap<>();
 		}
+		
+		// Add additional header param to the data map so the user can reply with comments
+		String ticketId = StringUtil.checkVal(mData.get(TICKET_ID));
+		String headerValue = StringUtil.join("<", ticketId, "|", user.getUserId(), WSLAConstants.TICKET_EMAIL_REFERENCE_SUFFIX, ">");
+		mData.put(Header.IN_REPLY_TO.toString(), headerValue);
+		mData.put(Header.REFERENCES.toString(), headerValue);
 		
 		util.sendMessage(mData, rcpts, notification.getCampaignInstanceId());
 	}
