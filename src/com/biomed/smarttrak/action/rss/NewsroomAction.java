@@ -224,16 +224,19 @@ public class NewsroomAction extends SBActionAdapter {
 	 */
 	private String loadSegmentGroupArticlesSql() {
 		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
-		StringBuilder sql = new StringBuilder(700);
+		StringBuilder sql = new StringBuilder(900);
 		sql.append("select a.feed_segment_id, a.feed_group_id, a.feed_group_nm, ");
-		sql.append("b.FEED_SEGMENT_NM, cast(Count(distinct d.rss_article_id) as int) as article_count from ");
+		sql.append("b.FEED_SEGMENT_NM, cast(Count(distinct d.rss_article_id) as int) as article_count, s.section_nm, b.section_id from ");
 		sql.append(schema).append("BIOMEDGPS_FEED_GROUP a ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("BIOMEDGPS_FEED_SEGMENT b ");
 		sql.append("on a.FEED_SEGMENT_ID = b.FEED_SEGMENT_ID ");
+		sql.append(DBUtil.INNER_JOIN).append(schema).append("BIOMEDGPS_SECTION s ");
+		sql.append("on b.section_id = s.section_id and s.parent_id = 'MASTER_ROOT' ");
 		sql.append("left outer join ").append(schema).append("biomedgps_rss_filtered_article d ");
 		sql.append("on a.feed_group_id = d.feed_group_id and d.article_status_cd = ? ");
-		sql.append("group by a.feed_segment_id, a.feed_group_id, a.feed_group_nm, b.feed_segment_id ");
-		sql.append("order by b.order_no, FEED_GROUP_NM");
+		sql.append("and d.create_dt > current_date - 1 ");
+		sql.append("group by a.feed_segment_id, a.feed_group_id, a.feed_group_nm, b.feed_segment_id, s.section_nm, s.order_no ");
+		sql.append("order by s.order_no, b.order_no, FEED_GROUP_NM");
 		log.debug(sql.toString());
 		return sql.toString();
 	}

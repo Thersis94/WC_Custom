@@ -32,6 +32,9 @@ public class RSSFeedSegment extends BeanDataVO implements Serializable {
 	private String segmentId;
 	private String segmentNm;
 	private String segmentDesc;
+	private String sectionId;
+	private String sectionNm;
+	private int articleCount;
 	private int orderNo;
 	private Date createDt;
 	private Date updateDt;
@@ -75,6 +78,10 @@ public class RSSFeedSegment extends BeanDataVO implements Serializable {
 		return orderNo;
 	}
 
+	public int getArticleCount() {
+		return articleCount;
+	}
+
 	/**
 	 * @return the createDt
 	 */
@@ -89,6 +96,19 @@ public class RSSFeedSegment extends BeanDataVO implements Serializable {
 	@Column(name="update_dt", isAutoGen=true, isUpdateOnly=true)
 	public Date getUpdateDt() {
 		return updateDt;
+	}
+
+	/**
+	 * @return the sectionId
+	 */
+	@Column(name="SECTION_ID")
+	public String getSectionId() {
+		return sectionId;
+	}
+
+	@Column(name="SECTION_NM", isReadOnly=true)
+	public String getSectionNm() {
+		return sectionNm;
 	}
 
 	public List<RSSFeedGroupVO> getGroups() {
@@ -119,6 +139,10 @@ public class RSSFeedSegment extends BeanDataVO implements Serializable {
 	public void setOrderNo(int orderNo) {
 		this.orderNo = orderNo;
 	}
+
+	public void setArticleCount(int articleCount) {
+		this.articleCount = articleCount;
+	}
 	/**
 	 * @param createDt the createDt to set.
 	 */
@@ -133,6 +157,14 @@ public class RSSFeedSegment extends BeanDataVO implements Serializable {
 		this.updateDt = updateDt;
 	}
 
+	public void setSectionId(String sectionId) {
+		this.sectionId = sectionId;
+	}
+
+	public void setSectionNm(String sectionNm) {
+		this.sectionNm = sectionNm;
+	}
+
 	public void setGroups(List<RSSFeedGroupVO> groups) {
 		this.groups = groups;
 	}
@@ -141,6 +173,7 @@ public class RSSFeedSegment extends BeanDataVO implements Serializable {
 	public void addGroup(RSSFeedGroupVO g) {
 		if(g != null) {
 			groups.add(g);
+			articleCount += g.getArticleCount();
 		}
 	}
 }
