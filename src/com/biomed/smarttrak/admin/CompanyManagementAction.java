@@ -13,7 +13,6 @@ import com.biomed.smarttrak.action.AdminControllerAction.Section;
 import com.biomed.smarttrak.action.AdminControllerAction.Status;
 import com.biomed.smarttrak.action.AdminControllerAction;
 import com.biomed.smarttrak.action.CompanyAction;
-import com.biomed.smarttrak.security.SmarttrakRoleVO;
 import com.biomed.smarttrak.util.BiomedCompanyIndexer;
 import com.biomed.smarttrak.util.BiomedProductIndexer;
 import com.biomed.smarttrak.util.ManagementActionUtil;
@@ -59,7 +58,7 @@ public class CompanyManagementAction extends ManagementAction {
 
 
 	private enum ActionType {
-		COMPANY, LOCATION, ALLIANCE, COMPANYATTRIBUTE, COMPANYATTACH, COMPANYLINK, ATTRIBUTE, PREVIEW, COMPANYATTRIBUTEARCHIVE, COMPANYATTRIBUTEARCHIVEUPDATE
+		COMPANY, LOCATION, ALLIANCE, UNKNOWNATTRIBUTE, COMPANYATTRIBUTE, COMPANYATTACH, COMPANYLINK, ATTRIBUTE, PREVIEW, COMPANYATTRIBUTEARCHIVE, COMPANYATTRIBUTEARCHIVEUPDATE
 	}
 
 
@@ -173,10 +172,11 @@ public class CompanyManagementAction extends ManagementAction {
 			case COMPANYATTRIBUTEARCHIVE:
 				retrieveArchives(req);
 				break;
+			case UNKNOWNATTRIBUTE:
 			case COMPANYATTRIBUTE:
 			case COMPANYLINK:
 			case COMPANYATTACH:
-				companyAttributeRetrieve(req);
+				companyAttributeRetrieve(req, type);
 				break;
 			case LOCATION:
 				locationRetrieve(req);
@@ -308,11 +308,12 @@ public class CompanyManagementAction extends ManagementAction {
 	/**
 	 * Determine how to retrieve company information and do so.
 	 * @param req
+	 * @param type 
 	 * @throws ActionException
 	 */
-	protected void companyAttributeRetrieve(ActionRequest req) {
+	protected void companyAttributeRetrieve(ActionRequest req, ActionType type) {
 		if (req.hasParameter("companyAttributeId"))
-			retrieveAttribute(req);
+			retrieveAttribute(req, type);
 		if ("HTML".equals(req.getParameter("attributeTypeCd")))
 			retrieveAttributes(req);
 	}
@@ -449,9 +450,10 @@ public class CompanyManagementAction extends ManagementAction {
 
 	/**
 	 * Get the details of the supplied company attribute
+	 * @param type 
 	 * @param attributeId
 	 */
-	protected void retrieveAttribute(ActionRequest req) {
+	protected void retrieveAttribute(ActionRequest req, ActionType type) {
 		StringBuilder sql = new StringBuilder(100);
 		sql.append(DBUtil.SELECT_FROM_STAR).append(customDbSchema).append("BIOMEDGPS_COMPANY_ATTRIBUTE_XR xr ");
 		sql.append(LEFT_OUTER_JOIN).append(customDbSchema).append("BIOMEDGPS_COMPANY_ATTRIBUTE a ");
@@ -463,6 +465,13 @@ public class CompanyManagementAction extends ManagementAction {
 		DBProcessor db = new DBProcessor(dbConn);
 		CompanyAttributeVO attr = (CompanyAttributeVO) db.executeSelect(sql.toString(), params, new CompanyAttributeVO()).get(0);
 		super.putModuleData(attr);
+		if (ActionType.UNKNOWNATTRIBUTE == type) {
+			if ("LINK".equals(attr.getAttributeTypeName())) {
+				req.setParameter(ACTION_TYPE, ActionType.COMPANYLINK.toString());
+			} else {
+				req.setParameter(ACTION_TYPE, ActionType.COMPANYATTRIBUTE.toString());
+			}
+		}
 		if (!req.hasParameter("attributeTypeName"))
 			req.setParameter("attributeTypeName", attr.getAttributeTypeName());
 	}
