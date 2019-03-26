@@ -17605,13 +17605,22 @@ UniqueAKUIndexTablespace
 <ID>1</ID>
 <GUID>{2C64A950-20A1-42F5-B54D-DA7153515636}</GUID>
 <ENTITYID>0</ENTITYID>
-<SOURCE><![CDATA[create or replace view custom.rezdox_project_material_warranty_view as (
-  SELECT * FROM crosstab($$select project_material_id::VARCHAR, slug_txt::VARCHAR, value_txt::VARCHAR from custom.rezdox_project_material_attribute 
-  where slug_txt = any('{PROJECT_MATERIAL_PBRAND,PROJECT_MATERIAL_PMODEL,
-  PROJECT_MATERIAL_PRETAILER,PROJECT_MATERIAL_PSERIALNO,PROJECT_PRODUCT_PMANUFACTURER, SUBMIT_WARRANTY}') order by 1,2$$) AS proj_attrs_cross
-  (project_material_id VARCHAR, PROJECT_MATERIAL_PBRAND VARCHAR , PROJECT_MATERIAL_PMODEL VARCHAR, PROJECT_MATERIAL_PRETAILER VARCHAR,
-  PROJECT_MATERIAL_PSERIALNO VARCHAR,PROJECT_PRODUCT_PMANUFACTURER VARCHAR, SUBMIT_WARRANTY VARCHAR)
-);
+<SOURCE><![CDATA[CREATE OR REPLACE VIEW custom.rezdox_project_material_warranty_view as
+SELECT proj_attrs_cross.project_material_id,
+    proj_attrs_cross.project_material_pbrand,
+    proj_attrs_cross.project_material_pmodel,
+    proj_attrs_cross.project_material_pretailer,
+    proj_attrs_cross.project_material_pserialno,
+    proj_attrs_cross.project_product_pmanufacturer,
+    proj_attrs_cross.submit_warranty
+   FROM crosstab('select project_material_id::VARCHAR, slug_txt::VARCHAR, value_txt::VARCHAR from custom.rezdox_project_material_attribute 
+  where slug_txt = any(''{PROJECT_MATERIAL_PBRAND,PROJECT_MATERIAL_PMODEL,
+  PROJECT_MATERIAL_PRETAILER,PROJECT_MATERIAL_PSERIALNO,PROJECT_PRODUCT_PMANUFACTURER, SUBMIT_WARRANTY}'') order by 1,2'::text,
+  'select distinct slug_txt from custom.rezdox_project_material_attribute where slug_txt in (''PROJECT_MATERIAL_PBRAND'',''PROJECT_MATERIAL_PMODEL'',
+  ''PROJECT_MATERIAL_PRETAILER'',''PROJECT_MATERIAL_PSERIALNO'',''PROJECT_PRODUCT_PMANUFACTURER'',''SUBMIT_WARRANTY'') order by slug_txt') 
+  proj_attrs_cross(project_material_id character varying, project_material_pbrand character varying, project_material_pmodel character varying, 
+  project_material_pretailer character varying, project_material_pserialno character varying, project_product_pmanufacturer character varying, 
+  submit_warranty character varying);
 ]]></SOURCE>
 <TYPE>2</TYPE>
 <ENABLED>1</ENABLED>
@@ -17621,13 +17630,22 @@ UniqueAKUIndexTablespace
 <ID>2</ID>
 <GUID>{E00D7C89-6436-4E9B-AEBB-E542D566ED8C}</GUID>
 <ENTITYID>0</ENTITYID>
-<SOURCE><![CDATA[create or replace view custom.rezdox_project_attribute_warranty_view as (
-  SELECT * FROM crosstab($$select project_id::VARCHAR, slug_txt::VARCHAR, value_txt::VARCHAR from custom.rezdox_project_attribute 
-  where slug_txt = any('{PROJECT_ADDRESS, PROJECT_ZIP_CODE, PROJECT_STATE, PROJECT_PHONE, 
-	PROJECT_OWNER, PROJECT_CITY, PROJECT_EMAIL}') order by 1,2$$) AS proj_attrs_cross
-  (project_id VARCHAR, PROJECT_ADDRESS VARCHAR, PROJECT_CITY VARCHAR, PROJECT_EMAIL VARCHAR, PROJECT_OWNER VARCHAR, 
-  PROJECT_PHONE VARCHAR,  PROJECT_STATE VARCHAR, PROJECT_ZIP_CODE VARCHAR)
-);
+<SOURCE><![CDATA[CREATE OR REPLACE VIEW custom.rezdox_project_attribute_warranty_view
+AS SELECT proj_attrs_cross.project_id,
+    proj_attrs_cross.project_address,
+    proj_attrs_cross.project_city,
+    proj_attrs_cross.project_email,
+    proj_attrs_cross.project_owner,
+    proj_attrs_cross.project_phone,
+    proj_attrs_cross.project_state,
+    proj_attrs_cross.project_zip_code
+   FROM crosstab('select project_id::VARCHAR, slug_txt::VARCHAR, value_txt::VARCHAR from custom.rezdox_project_attribute 
+  where slug_txt = any(''{PROJECT_ADDRESS, PROJECT_ZIP_CODE, PROJECT_STATE, PROJECT_PHONE, 
+	PROJECT_OWNER, PROJECT_CITY, PROJECT_EMAIL}'') order by 1,2'::text,
+	'select distinct slug_txt from custom.rezdox_project_attribute where slug_txt in (''PROJECT_ADDRESS'', ''PROJECT_ZIP_CODE'', ''PROJECT_STATE'', ''PROJECT_PHONE'', 
+	''PROJECT_OWNER'', ''PROJECT_CITY'', ''PROJECT_EMAIL'') order by slug_txt') proj_attrs_cross(project_id character varying, project_address character varying, 
+project_city character varying, project_email character varying, project_owner character varying, project_phone character varying, 
+project_state character varying, project_zip_code character varying);
 ]]></SOURCE>
 <TYPE>2</TYPE>
 <ENABLED>1</ENABLED>
@@ -17637,13 +17655,20 @@ UniqueAKUIndexTablespace
 <ID>3</ID>
 <GUID>{E029D79B-D04E-4712-897D-8D55FA63A6CE}</GUID>
 <ENTITYID>0</ENTITYID>
-<SOURCE><![CDATA[create or replace view custom.rezdox_treasure_item_warranty_view as (
-  SELECT * FROM crosstab($$select treasure_item_id::VARCHAR, slug_txt::VARCHAR, value_txt::VARCHAR from custom.rezdox_treasure_item_attribute 
-  where slug_txt = any('{BRAND, DATEPICKER, MODEL, RETAILER, 
-	SERIALNO, SUBMIT_WARRANTY}') order by 1,2$$) AS treas_attrs_cross
-  (treasure_item_id VARCHAR, BRAND VARCHAR, DATEPICKER VARCHAR, MODEL VARCHAR, RETAILER VARCHAR, 
-  SERIALNO VARCHAR, SUBMIT_WARRANTY VARCHAR)
-);
+<SOURCE><![CDATA[CREATE OR REPLACE VIEW custom.rezdox_treasure_item_warranty_view
+AS SELECT treas_attrs_cross.treasure_item_id,
+    treas_attrs_cross.brand,
+    treas_attrs_cross.datepicker,
+    treas_attrs_cross.model,
+    treas_attrs_cross.retailer,
+    treas_attrs_cross.serialno,
+    treas_attrs_cross.submit_warranty
+   FROM crosstab('select treasure_item_id::VARCHAR, slug_txt::VARCHAR, value_txt::VARCHAR from custom.rezdox_treasure_item_attribute 
+  where slug_txt = any(''{BRAND, DATEPICKER, MODEL, RETAILER, 
+	SERIALNO, SUBMIT_WARRANTY}'') order by 1,2'::text,
+	'select distinct slug_txt from custom.rezdox_treasure_item_attribute where slug_txt in (''BRAND'', ''DATEPICKER'', ''MODEL'', ''RETAILER'', 
+	''SERIALNO'', ''SUBMIT_WARRANTY'') order by slug_txt') treas_attrs_cross(treasure_item_id character varying, brand character varying, 
+datepicker character varying, model character varying, retailer character varying, serialno character varying, submit_warranty character varying);
 ]]></SOURCE>
 <TYPE>2</TYPE>
 <ENABLED>1</ENABLED>
@@ -17669,13 +17694,22 @@ UniqueAKUIndexTablespace
 <ID>1</ID>
 <GUID>{2C64A950-20A1-42F5-B54D-DA7153515636}</GUID>
 <ENTITYID>0</ENTITYID>
-<SOURCE><![CDATA[create or replace view custom.rezdox_project_material_warranty_view as (
-  SELECT * FROM crosstab($$select project_material_id::VARCHAR, slug_txt::VARCHAR, value_txt::VARCHAR from custom.rezdox_project_material_attribute 
-  where slug_txt = any('{PROJECT_MATERIAL_PBRAND,PROJECT_MATERIAL_PMODEL,
-  PROJECT_MATERIAL_PRETAILER,PROJECT_MATERIAL_PSERIALNO,PROJECT_PRODUCT_PMANUFACTURER, SUBMIT_WARRANTY}') order by 1,2$$) AS proj_attrs_cross
-  (project_material_id VARCHAR, PROJECT_MATERIAL_PBRAND VARCHAR , PROJECT_MATERIAL_PMODEL VARCHAR, PROJECT_MATERIAL_PRETAILER VARCHAR,
-  PROJECT_MATERIAL_PSERIALNO VARCHAR,PROJECT_PRODUCT_PMANUFACTURER VARCHAR, SUBMIT_WARRANTY VARCHAR)
-);
+<SOURCE><![CDATA[CREATE OR REPLACE VIEW custom.rezdox_project_material_warranty_view as
+SELECT proj_attrs_cross.project_material_id,
+    proj_attrs_cross.project_material_pbrand,
+    proj_attrs_cross.project_material_pmodel,
+    proj_attrs_cross.project_material_pretailer,
+    proj_attrs_cross.project_material_pserialno,
+    proj_attrs_cross.project_product_pmanufacturer,
+    proj_attrs_cross.submit_warranty
+   FROM crosstab('select project_material_id::VARCHAR, slug_txt::VARCHAR, value_txt::VARCHAR from custom.rezdox_project_material_attribute 
+  where slug_txt = any(''{PROJECT_MATERIAL_PBRAND,PROJECT_MATERIAL_PMODEL,
+  PROJECT_MATERIAL_PRETAILER,PROJECT_MATERIAL_PSERIALNO,PROJECT_PRODUCT_PMANUFACTURER, SUBMIT_WARRANTY}'') order by 1,2'::text,
+  'select distinct slug_txt from custom.rezdox_project_material_attribute where slug_txt in (''PROJECT_MATERIAL_PBRAND'',''PROJECT_MATERIAL_PMODEL'',
+  ''PROJECT_MATERIAL_PRETAILER'',''PROJECT_MATERIAL_PSERIALNO'',''PROJECT_PRODUCT_PMANUFACTURER'',''SUBMIT_WARRANTY'') order by slug_txt') 
+  proj_attrs_cross(project_material_id character varying, project_material_pbrand character varying, project_material_pmodel character varying, 
+  project_material_pretailer character varying, project_material_pserialno character varying, project_product_pmanufacturer character varying, 
+  submit_warranty character varying);
 ]]></SOURCE>
 <TYPE>2</TYPE>
 <ENABLED>1</ENABLED>
@@ -17685,13 +17719,22 @@ UniqueAKUIndexTablespace
 <ID>2</ID>
 <GUID>{E00D7C89-6436-4E9B-AEBB-E542D566ED8C}</GUID>
 <ENTITYID>0</ENTITYID>
-<SOURCE><![CDATA[create or replace view custom.rezdox_project_attribute_warranty_view as (
-  SELECT * FROM crosstab($$select project_id::VARCHAR, slug_txt::VARCHAR, value_txt::VARCHAR from custom.rezdox_project_attribute 
-  where slug_txt = any('{PROJECT_ADDRESS, PROJECT_ZIP_CODE, PROJECT_STATE, PROJECT_PHONE, 
-	PROJECT_OWNER, PROJECT_CITY, PROJECT_EMAIL}') order by 1,2$$) AS proj_attrs_cross
-  (project_id VARCHAR, PROJECT_ADDRESS VARCHAR, PROJECT_CITY VARCHAR, PROJECT_EMAIL VARCHAR, PROJECT_OWNER VARCHAR, 
-  PROJECT_PHONE VARCHAR,  PROJECT_STATE VARCHAR, PROJECT_ZIP_CODE VARCHAR)
-);
+<SOURCE><![CDATA[CREATE OR REPLACE VIEW custom.rezdox_project_attribute_warranty_view
+AS SELECT proj_attrs_cross.project_id,
+    proj_attrs_cross.project_address,
+    proj_attrs_cross.project_city,
+    proj_attrs_cross.project_email,
+    proj_attrs_cross.project_owner,
+    proj_attrs_cross.project_phone,
+    proj_attrs_cross.project_state,
+    proj_attrs_cross.project_zip_code
+   FROM crosstab('select project_id::VARCHAR, slug_txt::VARCHAR, value_txt::VARCHAR from custom.rezdox_project_attribute 
+  where slug_txt = any(''{PROJECT_ADDRESS, PROJECT_ZIP_CODE, PROJECT_STATE, PROJECT_PHONE, 
+	PROJECT_OWNER, PROJECT_CITY, PROJECT_EMAIL}'') order by 1,2'::text,
+	'select distinct slug_txt from custom.rezdox_project_attribute where slug_txt in (''PROJECT_ADDRESS'', ''PROJECT_ZIP_CODE'', ''PROJECT_STATE'', ''PROJECT_PHONE'', 
+	''PROJECT_OWNER'', ''PROJECT_CITY'', ''PROJECT_EMAIL'') order by slug_txt') proj_attrs_cross(project_id character varying, project_address character varying, 
+project_city character varying, project_email character varying, project_owner character varying, project_phone character varying, 
+project_state character varying, project_zip_code character varying);
 ]]></SOURCE>
 <TYPE>2</TYPE>
 <ENABLED>1</ENABLED>
@@ -17701,13 +17744,20 @@ UniqueAKUIndexTablespace
 <ID>3</ID>
 <GUID>{E029D79B-D04E-4712-897D-8D55FA63A6CE}</GUID>
 <ENTITYID>0</ENTITYID>
-<SOURCE><![CDATA[create or replace view custom.rezdox_treasure_item_warranty_view as (
-  SELECT * FROM crosstab($$select treasure_item_id::VARCHAR, slug_txt::VARCHAR, value_txt::VARCHAR from custom.rezdox_treasure_item_attribute 
-  where slug_txt = any('{BRAND, DATEPICKER, MODEL, RETAILER, 
-	SERIALNO, SUBMIT_WARRANTY}') order by 1,2$$) AS treas_attrs_cross
-  (treasure_item_id VARCHAR, BRAND VARCHAR, DATEPICKER VARCHAR, MODEL VARCHAR, RETAILER VARCHAR, 
-  SERIALNO VARCHAR, SUBMIT_WARRANTY VARCHAR)
-);
+<SOURCE><![CDATA[CREATE OR REPLACE VIEW custom.rezdox_treasure_item_warranty_view
+AS SELECT treas_attrs_cross.treasure_item_id,
+    treas_attrs_cross.brand,
+    treas_attrs_cross.datepicker,
+    treas_attrs_cross.model,
+    treas_attrs_cross.retailer,
+    treas_attrs_cross.serialno,
+    treas_attrs_cross.submit_warranty
+   FROM crosstab('select treasure_item_id::VARCHAR, slug_txt::VARCHAR, value_txt::VARCHAR from custom.rezdox_treasure_item_attribute 
+  where slug_txt = any(''{BRAND, DATEPICKER, MODEL, RETAILER, 
+	SERIALNO, SUBMIT_WARRANTY}'') order by 1,2'::text,
+	'select distinct slug_txt from custom.rezdox_treasure_item_attribute where slug_txt in (''BRAND'', ''DATEPICKER'', ''MODEL'', ''RETAILER'', 
+	''SERIALNO'', ''SUBMIT_WARRANTY'') order by slug_txt') treas_attrs_cross(treasure_item_id character varying, brand character varying, 
+datepicker character varying, model character varying, retailer character varying, serialno character varying, submit_warranty character varying);
 ]]></SOURCE>
 <TYPE>2</TYPE>
 <ENABLED>1</ENABLED>
