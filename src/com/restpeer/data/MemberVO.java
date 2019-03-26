@@ -15,7 +15,7 @@ import com.siliconmtn.db.orm.Table;
 /****************************************************************************
  * <b>Title</b>: MemberVO.java
  * <b>Project</b>: WC_Custom
- * <b>Description: </b> Manages the Member Information
+ * <b>Description: </b> Manages the Member Information 
  * <b>Copyright:</b> Copyright (c) 2019
  * <b>Company:</b> Silicon Mountain Technologies
  * 
@@ -33,7 +33,7 @@ public class MemberVO extends BeanDataVO {
 	public enum MemberType {
 		KITCHEN("Kitchen Facility"),
 		RESTAURANT_PEER("Restaurant Peer"),
-		CUSTOMER("Mobile Restauranteur");
+		CUSTOMER("Mobile Restaurateur");
 		
 		private String memberName;
 		MemberType(String memberName) { 

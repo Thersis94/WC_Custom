@@ -17,7 +17,7 @@ import com.smt.sitebuilder.action.SimpleActionAdapter;
 /****************************************************************************
  * <b>Title</b>: MobileRestWidget.java
  * <b>Project</b>: WC_Custom
- * <b>Description: </b> Main widget for management of the mobile restauranteur data
+ * <b>Description: </b> Main widget for management of the mobile restaurateur data
  * <b>Copyright:</b> Copyright (c) 2019
  * <b>Company:</b> Silicon Mountain Technologies
  * 
