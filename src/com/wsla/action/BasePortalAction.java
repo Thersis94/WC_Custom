@@ -72,7 +72,7 @@ public class BasePortalAction extends SBActionAdapter {
 		this.dbConn = dbConn;
 		this.attributes = attributes;
 	}
-	
+
 	/**
 	 * 
 	 * @param summary if the summary is passed, the first param will be added to the bean
@@ -130,16 +130,16 @@ public class BasePortalAction extends SBActionAdapter {
 
 		UserDataVO profile = user.getProfile();
 		boolean isInsert = StringUtil.isEmpty(profile.getProfileId());
+		ProfileManager pm = ProfileManagerFactory.getInstance(attributes);
 
 		//transpose some data between the UserVO and UserDataVO
 		configureProfile(user, profile);
 
 		//create or update the auth record before saving the profile
-		if (hasAuth && StringUtil.isEmpty(profile.getAuthenticationId()))
-			profile.setAuthenticationId(addAuthenticationRecord(user));
+		if (hasAuth)
+			profile.setAuthenticationId(saveAuthenticationRecord(profile));
 
 		// Update / add the profile.
-		ProfileManager pm = ProfileManagerFactory.getInstance(attributes);
 		pm.updateProfile(profile, getDBConnection());
 
 		// opt-in the user if this is a new record
@@ -208,8 +208,12 @@ public class BasePortalAction extends SBActionAdapter {
 		}
 
 		// Replace (recreate) the phone#s now that we have established a country code
-		if (! StringUtil.isEmpty(profile.getMobilePhone()))
+		if (! StringUtil.isEmpty(profile.getMobilePhone())) {
 			profile.addPhone(new PhoneVO(PhoneVO.MOBILE_PHONE, profile.getMobilePhone(), profile.getCountryCode()));
+			//if the UserVO doesn't have a main phone, use mobile from the profile data
+			if (StringUtil.isEmpty(user.getMainPhone()))
+				user.setMainPhone(profile.getMobilePhone());
+		}
 
 		if (! StringUtil.isEmpty(profile.getWorkPhone()))
 			profile.addPhone(new PhoneVO(PhoneVO.WORK_PHONE, profile.getWorkPhone(), profile.getCountryCode()));
@@ -224,11 +228,18 @@ public class BasePortalAction extends SBActionAdapter {
 	 * @throws DatabaseException
 	 * @throws com.siliconmtn.exception.DatabaseException 
 	 */
-	public String addAuthenticationRecord(UserVO user) throws com.siliconmtn.exception.DatabaseException {
+	public String saveAuthenticationRecord(UserDataVO profile) throws com.siliconmtn.exception.DatabaseException {
 		UserLogin login = new UserLogin(getDBConnection(), getAttributes());
-		String authId = login.checkAuth(user.getEmail());
-		if (StringUtil.isEmpty(authId))
-			authId = login.saveAuthRecord(null, user.getEmail(), RandomAlphaNumeric.generateRandom(10), 1);
+		String authId = login.checkAuth(profile.getEmailAddress()); //lookup authId using the NEW email address
+		//if we find an authId using the NEW email, see if it matches the old authId (if we had one)
+		if (!StringUtil.checkVal(authId).equals(profile.getAuthenticationId())) {
+			//edit the existing record, we have a changed email address
+			//note use of the pre-existing authenticationId
+			authId = login.saveAuthRecord(profile.getAuthenticationId(), profile.getEmailAddress(), UserLogin.DUMMY_PSWD, 0);
+		} else if (StringUtil.isEmpty(authId)) {
+			//add a record, there wasn't one prior
+			authId = login.saveAuthRecord(null, profile.getEmailAddress(), RandomAlphaNumeric.generateRandom(10), 1);
+		} //the 'else' here is that the auth record does not need modification or creation - do nothing
 
 		return authId;
 	}
@@ -255,7 +266,7 @@ public class BasePortalAction extends SBActionAdapter {
 		new ProfileRoleManager().addRole(role, getDBConnection());
 		return role;
 	}
-	
+
 	/**
 	 * Returns the resource bundle for the logged in user
 	 * 
@@ -268,13 +279,13 @@ public class BasePortalAction extends SBActionAdapter {
 		UserDataVO udvo = getAdminUser(req);
 
 		if (udvo != null && udvo.getUserExtendedInfo() != null) {
-		UserVO user = (UserVO) getAdminUser(req).getUserExtendedInfo();
-		locale = user.getUserLocale();
+			UserVO user = (UserVO) getAdminUser(req).getUserExtendedInfo();
+			locale = user.getUserLocale();
 		}
 
 		return ResourceBundle.getBundle(WSLAConstants.RESOURCE_BUNDLE, locale);  
 	}
-	
+
 	/**
 	 * Get the base user data for the user id
 	 * 
@@ -285,7 +296,7 @@ public class BasePortalAction extends SBActionAdapter {
 	public UserVO getUser(String userId) throws SQLException {
 		UserVO user = new UserVO();
 		user.setUserId(userId);
-		
+
 		try {
 			DBProcessor dbp = new DBProcessor(getDBConnection(), getCustomSchema());
 			dbp.getByPrimaryKey(user);
@@ -295,7 +306,7 @@ public class BasePortalAction extends SBActionAdapter {
 
 		return user;
 	}
-	
+
 	/**
 	 * Returns a list of users for a given role
 	 * 
@@ -309,7 +320,7 @@ public class BasePortalAction extends SBActionAdapter {
 		sql.append(DBUtil.INNER_JOIN).append("profile p on u.profile_id = p.profile_id ");
 		sql.append(DBUtil.INNER_JOIN).append("profile_role pr on p.profile_id = pr.profile_id ");
 		sql.append("where role_id = ? ");
-		
+
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		return db.executeSelect(sql.toString(), Arrays.asList(roleId), new UserVO());
 	}
