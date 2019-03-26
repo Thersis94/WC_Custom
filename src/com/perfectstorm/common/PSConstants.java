@@ -20,7 +20,7 @@ public class PSConstants {
 	public enum PSRole {
 		PATRON("PATRON", "Subscriber"),
 		TOUR("TOUR", "Tour Management"),
-		VENUE("VENUE", "Vendor Management"),
+		VENUE("VENUE", "Venue Management"),
 		ADMIN("100", "Site Administrators");
 		
 		private String roleId;

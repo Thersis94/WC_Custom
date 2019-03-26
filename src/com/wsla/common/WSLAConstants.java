@@ -45,27 +45,36 @@ public class WSLAConstants {
 	 * Defines the roles used by this site
 	 */
 	public enum WSLARole {
-		PUBLIC("0"),
-		REGISTERED("10"),
-		ADMIN("100"),
-		WSLA_CALL_CENTER("WSLA_CALL_CENTER"),
-		WSLA_CUSTOMER_SVC("WSLA_CUSTOMER_SVC"),
-		WSLA_END_CUSTOMER("WSLA_END_CUSTOMER"),
-		WSLA_EXECUTIVE("WSLA_EXECUTIVE"),
-		WSLA_OEM("WSLA_OEM"),
-		WSLA_PROSPECT("WSLA_PROSPECT"),
-		WSLA_RETAILER("WSLA_RETAILER"),
-		WSLA_SERVICE_CENTER("WSLA_SERVICE_CENTER"),
-		WSLA_WAREHOUSE("WSLA_WAREHOUSE");
+		PUBLIC("0", "Public"),
+		REGISTERED("10", "RegisteredUser"),
+		ADMIN("100", "Site Administrator"),
+		WSLA_CALL_CENTER("WSLA_CALL_CENTER", "Call Center Rep"),
+		WSLA_CUSTOMER_SVC("WSLA_CUSTOMER_SVC", "Customer Service"),
+		WSLA_END_CUSTOMER("WSLA_END_CUSTOMER", "WSLA End Customer"),
+		WSLA_EXECUTIVE("WSLA_EXECUTIVE", "WSLA Executive"),
+		WSLA_OEM("WSLA_OEM", "Manufacturer"),
+		WSLA_PROSPECT("WSLA_PROSPECT", "Prospect"),
+		WSLA_RETAILER("WSLA_RETAILER", "Retailer"),
+		WSLA_SERVICE_CENTER("WSLA_SERVICE_CENTER", "WSLA Service Center"),
+		WSLA_WAREHOUSE("WSLA_WAREHOUSE", "WSLA Warehouse");
 		
 		private String roleId;
+		private String roleName;
 		
 		WSLARole(String roleId) {
 			this.roleId = roleId;
+			this.roleName = "";
 		}
 		
+		WSLARole(String roleId, String roleName) {
+			this.roleId = roleId;
+			this.roleName = roleName;
+		}
 		public String getRoleId() {
 			return roleId;
+		}
+		public String getRoleName() {
+			return roleName;
 		}
 	}
 	/**
