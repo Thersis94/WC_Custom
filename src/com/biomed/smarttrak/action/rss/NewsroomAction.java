@@ -4,6 +4,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import com.biomed.smarttrak.action.rss.RSSDataAction.ArticleStatus;
@@ -24,6 +25,7 @@ import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.user.ProfileManager;
 import com.smt.sitebuilder.action.user.ProfileManagerFactory;
 import com.smt.sitebuilder.common.constants.Constants;
+import com.smt.sitebuilder.util.solr.SolrDocumentVO;
 
 /****************************************************************************
  * <b>Title:</b> NewsroomAction.java
@@ -65,7 +67,9 @@ public class NewsroomAction extends SBActionAdapter {
 			loadBuckets(req);
 			loadSegmentGroupArticles(req);
 		} else if(req.hasParameter("feedGroupId") && !req.hasParameter("isConsole")) {
-			loadArticles(req.getParameter("feedGroupId"), req.getParameter("statusCd"), req.getIntegerParameter("page", 0) * 10);
+			List<RSSArticleVO> articles = loadArticles(req.getParameter("feedGroupId"), req.getParameter("statusCd"), req.getIntegerParameter("page", 0) * 10);
+			if(!articles.isEmpty())
+				this.putModuleData(articles, articles.size(), false);
 
 			//Load Managers for assigning rss articles.
 			loadManagers(req);
@@ -89,8 +93,9 @@ public class NewsroomAction extends SBActionAdapter {
 	/**
 	 * Method loads list of articles tied to a given groupId.
 	 * @param req
+	 * @return 
 	 */
-	private void loadArticles(String feedGroupId, String statusCd, int offset) {
+	private List<RSSArticleVO> loadArticles(String feedGroupId, String statusCd, int offset) {
 		List<Object> vals = new ArrayList<>();
 		boolean hasStatus = !"ALL".equals(StringUtil.checkVal(statusCd));
 		vals.add(feedGroupId);
@@ -99,9 +104,68 @@ public class NewsroomAction extends SBActionAdapter {
 		}
 
 		DBProcessor dbp = new DBProcessor(dbConn, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
-		List<RSSArticleVO> articles = dbp.executeSelect(loadArticleSql(hasStatus), vals, new RSSArticleVO(), null, offset, offset+10);
-		if(!articles.isEmpty())
-			this.putModuleData(articles, articles.size(), false);
+		return dbp.executeSelect(loadArticleSql(hasStatus), vals, new RSSArticleVO(), null, offset, offset+10);
+	}
+
+	/**
+	 * Method for loading all filtered articles in a feedGroupId.  Used to load Articles for
+	 * Solr.
+	 * @param feedGroupId
+	 * @return
+	 */
+	public List<SolrDocumentVO> loadAllArticles(String rssArticleId, String feedGroupId) {
+		List<Object> vals = new ArrayList<>();
+		boolean hasArticleId = !StringUtil.isEmpty(rssArticleId);
+		boolean hasGroupId = !StringUtil.isEmpty(feedGroupId);
+
+		if(hasGroupId) {
+			vals.add(feedGroupId);
+		}
+
+		if(hasArticleId) {
+			vals.add(rssArticleId);
+		}
+
+		//Check to prevent overloading the system with all Articles.
+		if(!hasGroupId && !hasArticleId) {
+			return Collections.emptyList();
+		}
+
+		DBProcessor dbp = new DBProcessor(dbConn, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
+		List<SolrDocumentVO> articles = dbp.executeSelect(loadFilterArticleSql(hasGroupId, hasArticleId), vals, new RSSArticleFilterVO());
+		System.out.println(String.format("Loaded %d Articles", articles.size()));
+		return articles;
+	}
+
+	/**
+	 * Build Filtered Article Query
+	 * @return
+	 */
+	private String loadFilterArticleSql(boolean hasGroupId, boolean hasArticleId) {
+		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
+		StringBuilder sql = new StringBuilder(750);
+		sql.append(DBUtil.SELECT_CLAUSE).append("a.rss_article_id, a.rss_entity_id, ");
+		sql.append("a.publication_nm, a.article_guid, a.article_url, a.article_source_type, ");
+		sql.append("a.attribute1_txt, a.publish_dt, a.create_dt, af.rss_article_filter_id, ");
+		sql.append("af.feed_group_id, af.article_status_cd, af.bucket_id, af.match_no, ");
+		sql.append("coalesce(af.filter_title_txt, a.title_txt, 'Untitled') as filter_title_txt, ");
+		sql.append("coalesce(af.filter_article_txt, a.article_txt, 'No Article Available') as filter_article_txt ");
+		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("biomedgps_rss_article a ");
+		sql.append(DBUtil.INNER_JOIN).append(schema).append("biomedgps_rss_filtered_article af ");
+		sql.append("on a.rss_article_id = af.rss_article_id ");
+		sql.append(DBUtil.WHERE_CLAUSE);
+		if(hasGroupId)
+			sql.append("af.feed_group_id = ? ");
+
+		if(hasArticleId) {
+			if(hasGroupId) {
+				sql.append("and ");
+			}
+			sql.append("af.rss_article_filter_id = ? ");
+		}
+		sql.append(DBUtil.ORDER_BY).append("a.create_dt desc ");
+
+		return sql.toString();
 	}
 
 	/**
@@ -234,7 +298,6 @@ public class NewsroomAction extends SBActionAdapter {
 		sql.append("on b.section_id = s.section_id and s.parent_id = 'MASTER_ROOT' ");
 		sql.append("left outer join ").append(schema).append("biomedgps_rss_filtered_article d ");
 		sql.append("on a.feed_group_id = d.feed_group_id and d.article_status_cd = ? ");
-		sql.append("and d.create_dt > current_date - 1 ");
 		sql.append("group by a.feed_segment_id, a.feed_group_id, a.feed_group_nm, b.feed_segment_id, s.section_nm, s.order_no ");
 		sql.append("order by s.order_no, b.order_no, FEED_GROUP_NM");
 		log.debug(sql.toString());

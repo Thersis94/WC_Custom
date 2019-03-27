@@ -27,6 +27,7 @@ import com.biomed.smarttrak.action.rss.vo.RSSFilterTerm;
 import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.util.StringUtil;
+import com.smt.sitebuilder.search.SMTIndexIntfc;
 
 /****************************************************************************
  * <b>Title</b>: PubmedDataFeed.java
@@ -46,10 +47,11 @@ public class PubmedDataFeed extends AbstractSmarttrakRSSFeed {
 	private SAXParser saxParser;
 
 	/**
+	 * @param index 
 	 * @param args
 	 */
-	public PubmedDataFeed(Connection dbConn, Properties props) {
-		super(dbConn,props);
+	public PubmedDataFeed(Connection dbConn, Properties props, SMTIndexIntfc index) {
+		super(dbConn,props,index);
 		factory = SAXParserFactory.newInstance();
 		try {
 			saxParser = factory.newSAXParser();

@@ -1,13 +1,20 @@
 package com.biomed.smarttrak.action.rss.vo;
 
 import java.sql.ResultSet;
+import java.util.ArrayList;
 import java.util.Date;
 
+import com.biomed.smarttrak.action.AdminControllerAction;
 import com.biomed.smarttrak.action.rss.RSSDataAction.ArticleStatus;
+import com.biomed.smarttrak.util.RSSArticleIndexer;
+import com.biomed.smarttrak.util.UpdateIndexer;
 import com.siliconmtn.action.ActionRequest;
-import com.siliconmtn.data.parser.BeanDataVO;
+import com.siliconmtn.annotations.SolrField;
+import com.siliconmtn.data.parser.AutoPopulateIntfc;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
+import com.smt.sitebuilder.security.SecurityController;
+import com.smt.sitebuilder.util.solr.SolrDocumentVO;
 
 /****************************************************************************
  * <b>Title:</b> RSSFilterArticleVO.java
@@ -22,9 +29,8 @@ import com.siliconmtn.db.orm.Table;
  * @since Oct 3, 2017
  ****************************************************************************/
 @Table(name="biomedgps_rss_article_filter")
-public class RSSArticleFilterVO extends BeanDataVO {
+public class RSSArticleFilterVO extends SolrDocumentVO implements AutoPopulateIntfc {
 
-	private static final long serialVersionUID = -7885046900442552916L;
 	private String articleFilterId;
 	private String rssArticleId;
 	private String filterArticleTxt;
@@ -42,7 +48,10 @@ public class RSSArticleFilterVO extends BeanDataVO {
 	private String titleTxt;
 
 	public RSSArticleFilterVO() {
-		super();
+		super(RSSArticleIndexer.INDEX_TYPE);
+		addOrganization(AdminControllerAction.BIOMED_ORG_ID);
+		addRole(SecurityController.PUBLIC_ROLE_LEVEL);
+		setContentType(RSSArticleIndexer.INDEX_TYPE);
 	}
 
 	public RSSArticleFilterVO(ActionRequest req) {
@@ -80,6 +89,7 @@ public class RSSArticleFilterVO extends BeanDataVO {
 	 * @return the rssArticleId
 	 */
 	@Column(name="rss_article_id")
+	@SolrField(name="rssArticleId_s")
 	public String getRssArticleId() {
 		return rssArticleId;
 	}
@@ -104,11 +114,13 @@ public class RSSArticleFilterVO extends BeanDataVO {
 	 * @return the feedGroupId
 	 */
 	@Column(name="feed_group_id")
+	@SolrField(name="feedGroupId_s")
 	public String getFeedGroupId() {
 		return feedGroupId;
 	}
 
 	@Column(name="bucket_id")
+	@SolrField(name="bucketId_s")
 	public String getBucketId() {
 		return bucketId;
 	}
@@ -121,15 +133,26 @@ public class RSSArticleFilterVO extends BeanDataVO {
 		return articleStatus;
 	}
 
+	@SolrField(name="articleStatus_s")
+	public String getArticleStatusTxt() {
+		if(articleStatus != null)
+			return articleStatus.name();
+		else {
+			return ArticleStatus.O.name();
+		}
+	}
+
 	@Column(name="create_dt", isInsertOnly=true, isAutoGen=true)
 	public Date getCreateDt() {
 		return createDt;
 	}
+
 	/**
 	 * @param articleFilterId the articleFilterId to set.
 	 */
 	public void setArticleFilterId(String articleFilterId) {
 		this.articleFilterId = articleFilterId;
+		setDocumentId(articleFilterId);
 	}
 
 	/**
@@ -144,6 +167,7 @@ public class RSSArticleFilterVO extends BeanDataVO {
 	 */
 	public void setFilterArticleTxt(String filterArticleTxt) {
 		this.filterArticleTxt = filterArticleTxt;
+		this.setContents(filterArticleTxt);
 	}
 
 	/**
@@ -151,6 +175,7 @@ public class RSSArticleFilterVO extends BeanDataVO {
 	 */
 	public void setFilterTitleTxt(String filterTitleTxt) {
 		this.filterTitleTxt = filterTitleTxt;
+		this.setTitle(filterTitleTxt);
 	}
 
 	/**
@@ -172,6 +197,7 @@ public class RSSArticleFilterVO extends BeanDataVO {
 
 	public void setCreateDt(Date createDt) {
 		this.createDt = createDt;
+		this.setPublishDate(createDt);
 	}
 
 	/**
@@ -183,6 +209,7 @@ public class RSSArticleFilterVO extends BeanDataVO {
 
 	public void setArticleUrl(String articleUrl) {
 		this.articleUrl = articleUrl;
+		this.setDocumentUrl(articleUrl);
 	}
 
 	/**
@@ -219,6 +246,7 @@ public class RSSArticleFilterVO extends BeanDataVO {
 	}
 
 	@Column(name="match_no")
+	@SolrField(name="matchCount_i")
 	public int getMatchCount() {
 		return matchCount;
 	}

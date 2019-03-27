@@ -21,6 +21,7 @@ import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
+import com.smt.sitebuilder.search.SMTIndexIntfc;
 
 /****************************************************************************
  * <b>Title:</b> RSSDataFeed.java
@@ -36,8 +37,8 @@ import com.siliconmtn.util.StringUtil;
 public class RSSDataFeed extends AbstractSmarttrakRSSFeed {
 	private FeedParser feedParser;
 
-	public RSSDataFeed(Connection dbConn, Properties props) {
-		super(dbConn, props);
+	public RSSDataFeed(Connection dbConn, Properties props, SMTIndexIntfc index) {
+		super(dbConn, props, index);
 		feedParser = FeedParserFactory.newParser();
 		feedName = "RSS Feed";
 	}
