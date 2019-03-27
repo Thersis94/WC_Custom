@@ -292,7 +292,7 @@ public class MarketManagementAction extends ManagementAction {
 		params.add(req.getParameter("marketAttributeId"));
 		DBProcessor db = new DBProcessor(dbConn, customDbSchema);
 		MarketAttributeVO attr = (MarketAttributeVO) db.executeSelect(sql.toString(), params, new MarketAttributeVO()).get(0);
-		putModuleData(attr);		super.putModuleData(attr);
+		super.putModuleData(attr);
 		if (ActionTarget.UNKNOWNATTRIBUTE == type) {
 			if ("LINK".equals(attr.getAttributeTypeCd())) {
 				req.setParameter(ACTION_TARGET, ActionTarget.MARKETLINK.toString());
