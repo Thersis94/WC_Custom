@@ -166,16 +166,15 @@ public class FinancialDashDataRowVO implements Serializable {
 		for (int i=1; i <= colCount; i++) {
 			String colName = rsmd.getColumnName(i).toUpperCase();
 			String qtr = colName.substring(0,2);
+			int currQtr = Convert.formatInteger(qtr.substring(qtr.length() - 1, qtr.length()));
 
 			if (FinancialDashBaseAction.QTR_PATTERN.matcher(qtr).matches()) {
 				int yearIdx = Convert.formatInteger(colName.substring(colName.length() - 1, colName.length()));
 				String quarterString = null;
 				// If we are in the current year always compar the the current year
 				// so that unreported quarters don't get used for the year to date comparison.
-				if (year == maxYear) {
+				if (year == maxYear && currQtr >= dashboard.getCurrentQtr()) {
 					quarterString = qtr + "-" + maxYear;
-				} else {
-					quarterString = qtr + "-" + (maxYear-yearIdx);
 				}
 				addColumn(qtr, yearIdx, maxYear, util, rs);
 				incrementTotal(cyTotals, yearIdx, util.getIntVal(colName, rs), null);
@@ -424,7 +423,6 @@ public class FinancialDashDataRowVO implements Serializable {
 			totals.put(yearIdx, 0);
 
 		boolean adjustForIncompleteYear = curYrColId != null;
-
 		// Run through a series of checks to see if the current 
 		// quarter should be added to the totals. This prevents fewer than
 		// four quarters of sales in the current year from being compared
