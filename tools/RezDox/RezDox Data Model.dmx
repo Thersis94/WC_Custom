@@ -17600,6 +17600,54 @@ UniqueAKUIndexTablespace
 </ENTITY>
 </ENTITIES>
 <TRIGGERS>
+<TRIGGER>
+<NAME>custom.rezdox_project_material_warranty_view</NAME>
+<ID>1</ID>
+<GUID>{2C64A950-20A1-42F5-B54D-DA7153515636}</GUID>
+<ENTITYID>0</ENTITYID>
+<SOURCE><![CDATA[create or replace view custom.rezdox_project_material_warranty_view as (
+  SELECT * FROM crosstab($$select project_material_id::VARCHAR, slug_txt::VARCHAR, value_txt::VARCHAR from custom.rezdox_project_material_attribute 
+  where slug_txt = any('{PROJECT_MATERIAL_PBRAND,PROJECT_MATERIAL_PMODEL,
+  PROJECT_MATERIAL_PRETAILER,PROJECT_MATERIAL_PSERIALNO,PROJECT_PRODUCT_PMANUFACTURER, SUBMIT_WARRANTY}') order by 1,2$$) AS proj_attrs_cross
+  (project_material_id VARCHAR, PROJECT_MATERIAL_PBRAND VARCHAR , PROJECT_MATERIAL_PMODEL VARCHAR, PROJECT_MATERIAL_PRETAILER VARCHAR,
+  PROJECT_MATERIAL_PSERIALNO VARCHAR,PROJECT_PRODUCT_PMANUFACTURER VARCHAR, SUBMIT_WARRANTY VARCHAR)
+);
+]]></SOURCE>
+<TYPE>2</TYPE>
+<ENABLED>1</ENABLED>
+</TRIGGER>
+<TRIGGER>
+<NAME>custom.rezdox_project_attribute_warranty_view</NAME>
+<ID>2</ID>
+<GUID>{E00D7C89-6436-4E9B-AEBB-E542D566ED8C}</GUID>
+<ENTITYID>0</ENTITYID>
+<SOURCE><![CDATA[create or replace view custom.rezdox_project_attribute_warranty_view as (
+  SELECT * FROM crosstab($$select project_id::VARCHAR, slug_txt::VARCHAR, value_txt::VARCHAR from custom.rezdox_project_attribute 
+  where slug_txt = any('{PROJECT_ADDRESS, PROJECT_ZIP_CODE, PROJECT_STATE, PROJECT_PHONE, 
+	PROJECT_OWNER, PROJECT_CITY, PROJECT_EMAIL}') order by 1,2$$) AS proj_attrs_cross
+  (project_id VARCHAR, PROJECT_ADDRESS VARCHAR, PROJECT_CITY VARCHAR, PROJECT_EMAIL VARCHAR, PROJECT_OWNER VARCHAR, 
+  PROJECT_PHONE VARCHAR,  PROJECT_STATE VARCHAR, PROJECT_ZIP_CODE VARCHAR)
+);
+]]></SOURCE>
+<TYPE>2</TYPE>
+<ENABLED>1</ENABLED>
+</TRIGGER>
+<TRIGGER>
+<NAME>custom.rezdox_treasure_item_warranty_view</NAME>
+<ID>3</ID>
+<GUID>{E029D79B-D04E-4712-897D-8D55FA63A6CE}</GUID>
+<ENTITYID>0</ENTITYID>
+<SOURCE><![CDATA[create or replace view custom.rezdox_treasure_item_warranty_view as (
+  SELECT * FROM crosstab($$select treasure_item_id::VARCHAR, slug_txt::VARCHAR, value_txt::VARCHAR from custom.rezdox_treasure_item_attribute 
+  where slug_txt = any('{BRAND, DATEPICKER, MODEL, RETAILER, 
+	SERIALNO, SUBMIT_WARRANTY}') order by 1,2$$) AS treas_attrs_cross
+  (treasure_item_id VARCHAR, BRAND VARCHAR, DATEPICKER VARCHAR, MODEL VARCHAR, RETAILER VARCHAR, 
+  SERIALNO VARCHAR, SUBMIT_WARRANTY VARCHAR)
+);
+]]></SOURCE>
+<TYPE>2</TYPE>
+<ENABLED>1</ENABLED>
+</TRIGGER>
 </TRIGGERS>
 <TEXTOBJECTS>
 </TEXTOBJECTS>
@@ -17616,6 +17664,54 @@ UniqueAKUIndexTablespace
 <STAMPS>
 </STAMPS>
 <LISTTRIGGERS>
+<TRIGGER>
+<NAME>custom.rezdox_project_material_warranty_view</NAME>
+<ID>1</ID>
+<GUID>{2C64A950-20A1-42F5-B54D-DA7153515636}</GUID>
+<ENTITYID>0</ENTITYID>
+<SOURCE><![CDATA[create or replace view custom.rezdox_project_material_warranty_view as (
+  SELECT * FROM crosstab($$select project_material_id::VARCHAR, slug_txt::VARCHAR, value_txt::VARCHAR from custom.rezdox_project_material_attribute 
+  where slug_txt = any('{PROJECT_MATERIAL_PBRAND,PROJECT_MATERIAL_PMODEL,
+  PROJECT_MATERIAL_PRETAILER,PROJECT_MATERIAL_PSERIALNO,PROJECT_PRODUCT_PMANUFACTURER, SUBMIT_WARRANTY}') order by 1,2$$) AS proj_attrs_cross
+  (project_material_id VARCHAR, PROJECT_MATERIAL_PBRAND VARCHAR , PROJECT_MATERIAL_PMODEL VARCHAR, PROJECT_MATERIAL_PRETAILER VARCHAR,
+  PROJECT_MATERIAL_PSERIALNO VARCHAR,PROJECT_PRODUCT_PMANUFACTURER VARCHAR, SUBMIT_WARRANTY VARCHAR)
+);
+]]></SOURCE>
+<TYPE>2</TYPE>
+<ENABLED>1</ENABLED>
+</TRIGGER>
+<TRIGGER>
+<NAME>custom.rezdox_project_attribute_warranty_view</NAME>
+<ID>2</ID>
+<GUID>{E00D7C89-6436-4E9B-AEBB-E542D566ED8C}</GUID>
+<ENTITYID>0</ENTITYID>
+<SOURCE><![CDATA[create or replace view custom.rezdox_project_attribute_warranty_view as (
+  SELECT * FROM crosstab($$select project_id::VARCHAR, slug_txt::VARCHAR, value_txt::VARCHAR from custom.rezdox_project_attribute 
+  where slug_txt = any('{PROJECT_ADDRESS, PROJECT_ZIP_CODE, PROJECT_STATE, PROJECT_PHONE, 
+	PROJECT_OWNER, PROJECT_CITY, PROJECT_EMAIL}') order by 1,2$$) AS proj_attrs_cross
+  (project_id VARCHAR, PROJECT_ADDRESS VARCHAR, PROJECT_CITY VARCHAR, PROJECT_EMAIL VARCHAR, PROJECT_OWNER VARCHAR, 
+  PROJECT_PHONE VARCHAR,  PROJECT_STATE VARCHAR, PROJECT_ZIP_CODE VARCHAR)
+);
+]]></SOURCE>
+<TYPE>2</TYPE>
+<ENABLED>1</ENABLED>
+</TRIGGER>
+<TRIGGER>
+<NAME>custom.rezdox_treasure_item_warranty_view</NAME>
+<ID>3</ID>
+<GUID>{E029D79B-D04E-4712-897D-8D55FA63A6CE}</GUID>
+<ENTITYID>0</ENTITYID>
+<SOURCE><![CDATA[create or replace view custom.rezdox_treasure_item_warranty_view as (
+  SELECT * FROM crosstab($$select treasure_item_id::VARCHAR, slug_txt::VARCHAR, value_txt::VARCHAR from custom.rezdox_treasure_item_attribute 
+  where slug_txt = any('{BRAND, DATEPICKER, MODEL, RETAILER, 
+	SERIALNO, SUBMIT_WARRANTY}') order by 1,2$$) AS treas_attrs_cross
+  (treasure_item_id VARCHAR, BRAND VARCHAR, DATEPICKER VARCHAR, MODEL VARCHAR, RETAILER VARCHAR, 
+  SERIALNO VARCHAR, SUBMIT_WARRANTY VARCHAR)
+);
+]]></SOURCE>
+<TYPE>2</TYPE>
+<ENABLED>1</ENABLED>
+</TRIGGER>
 </LISTTRIGGERS>
 </ERD>
 <DFD>
