@@ -156,7 +156,7 @@ public class UserWidget extends UserBaseWidget {
 	@Override
 	public void build(ActionRequest req) throws ActionException {
 		// Call the base class and process the user. Assign to the RP User
-		super.build(req);
+		super.build(req, "rp_user");
 		
 		RPUserVO user = new RPUserVO(this.extUser);
 		user.setDriverLicense(req.getParameter("driverLicense"));
