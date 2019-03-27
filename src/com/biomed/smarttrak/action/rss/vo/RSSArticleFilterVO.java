@@ -46,6 +46,7 @@ public class RSSArticleFilterVO extends SolrDocumentVO implements AutoPopulateIn
 	private String articleTxt;
 	private String fullArticleTxt;
 	private String titleTxt;
+	private String feedGroupNm;
 
 	public RSSArticleFilterVO() {
 		super(RSSArticleIndexer.INDEX_TYPE);
@@ -68,13 +69,14 @@ public class RSSArticleFilterVO extends SolrDocumentVO implements AutoPopulateIn
 	 * @param article
 	 * @param feedGroupId2
 	 */
-	public RSSArticleFilterVO(RSSArticleVO article, String feedGroupId) {
+	public RSSArticleFilterVO(RSSArticleVO article, String feedGroupId, String feedGroupNm) {
 		this.feedGroupId = feedGroupId;
 		this.rssArticleId = article.getRssArticleId();
 		this.fullArticleTxt = article.getFullArticleTxt();
 		this.titleTxt = article.getTitleTxt();
 		this.articleTxt = article.getArticleTxt();
 		this.articleStatus = ArticleStatus.O;
+		this.feedGroupNm = feedGroupNm;
 	}
 
 	/**
@@ -253,5 +255,13 @@ public class RSSArticleFilterVO extends SolrDocumentVO implements AutoPopulateIn
 
 	public void setMatchCount(int matchCount) {
 		this.matchCount = matchCount;
+	}
+
+	public String getFeedGroupNm() {
+		return this.feedGroupNm;
+	}
+
+	public void setFeedGroupNm(String feedGroupNm) {
+		this.feedGroupNm = feedGroupNm;
 	}
 }

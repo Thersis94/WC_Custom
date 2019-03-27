@@ -132,21 +132,25 @@ public class InventoryAction extends SBActionAdapter {
 		DBProcessor dbp = new DBProcessor(getDBConnection(), getCustomSchema());
 		
 		LocationItemMasterVO original = new LocationItemMasterVO();
-		original.setItemMasterId(vo.getItemMasterId());
-		dbp.getByPrimaryKey(original);
 		
-		// Only Admins can directly edit quantity-on-hand. The UI prevents submission
-		// of a changed value. However, if someone hacks the UI in order to submit
-		// a different value anyway, we are changing it back to the original value here.
-		if (!WSLARole.ADMIN.getRoleId().equals(roleId)) {
-			vo.setQuantityOnHand(original.getQuantityOnHand());
+		if (!StringUtil.isEmpty(vo.getItemMasterId())) {
+			original.setItemMasterId(vo.getItemMasterId());
+			dbp.getByPrimaryKey(original);
+			
+			// Only Admins can directly edit quantity-on-hand. The UI prevents submission
+			// of a changed value. However, if someone hacks the UI in order to submit
+			// a different value anyway, we are changing it back to the original value here.
+			if (!WSLARole.ADMIN.getRoleId().equals(roleId)) {
+				vo.setQuantityOnHand(original.getQuantityOnHand());
+			}
+			
 		}
+		
+		dbp.save(vo);
 		
 		//use the new and original vo to make a ledger entry
 		saveInventoryLedger(vo, original, user);
-		
-		
-		dbp.save(vo);
+
 	}
 	
 	/**

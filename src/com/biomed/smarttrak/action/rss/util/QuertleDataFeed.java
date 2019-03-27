@@ -140,6 +140,11 @@ public class QuertleDataFeed extends AbstractSmarttrakRSSFeed {
 			article = buildArticleVO(id, searchType, resultAttrs);
 			log.info("article VO took " + (System.currentTimeMillis()-start) + "ms");
 
+			//Check if publishDate is outside the accepted range.
+			if(article.getPublishDt().before(cutOffDate)) {
+				return 0;
+			}
+
 			applyFilters(article, articleGuids);
 			log.info("article filters took " + (System.currentTimeMillis()-start) + "ms");
 
@@ -168,7 +173,7 @@ public class QuertleDataFeed extends AbstractSmarttrakRSSFeed {
 		for (RSSFeedGroupVO g : groups) {
 			if (! articleExists(a, g.getFeedGroupId(), articleGuids)) {
 				//Apply Matching Filters to article.
-				applyFilter(a, g.getFeedGroupId(), true);
+				applyFilter(a, g.getFeedGroupId(), g.getFeedGroupNm(), true);
 			}
 		}
 	}
@@ -236,7 +241,7 @@ public class QuertleDataFeed extends AbstractSmarttrakRSSFeed {
 		for (ResultAttributes resultAttrs : results) {
 			articleGuids.add(searchType + resultAttrs.getApplicationNumber());
 		}
-		return super.getExistingArticles(articleGuids, props.getProperty(QUERTLE_ENTITY_ID));
+		return super.getExistingArticles(articleGuids);
 	}
 
 

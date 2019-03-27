@@ -7,8 +7,11 @@ import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Map.Entry;
 
 import org.apache.solr.client.solrj.SolrClient;
 
@@ -18,6 +21,7 @@ import com.siliconmtn.exception.ApplicationException;
 import com.siliconmtn.util.CommandLineUtil;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.EnumUtil;
+import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.solr.SolrClientBuilder;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.CustomIndexFactory;
@@ -39,7 +43,7 @@ public class SmarttrakRSSImporter extends CommandLineUtil {
 	private static final String SCRIPT_PROPERTIES_PATH = "scripts/bmg_smarttrak/rss_config.properties";
 	private static final int MAX_KEEP_DAYS = 60;
 	private static final String FEEDS_OOB_INDEXER_CLASSPATH = "feedsSolrClasspath";
-	private List<String> feedList;
+	private Map<String, List<String>> messages; 
 	private long startTime;
 	protected SolrClient server;
 	private SMTIndexIntfc index;
@@ -51,7 +55,7 @@ public class SmarttrakRSSImporter extends CommandLineUtil {
 		super(args);
 		loadProperties(SCRIPT_PROPERTIES_PATH);
 		loadDBConnection(props);
-		feedList = new ArrayList<>();
+		messages = new HashMap<>();
 
 		// initialize the connection to the solr server
 		String baseUrl = props.getProperty(Constants.SOLR_BASE_URL);
@@ -129,7 +133,7 @@ public class SmarttrakRSSImporter extends CommandLineUtil {
 		if (asf != null) {
 			log.info("****************   Beginning " + ast + " Feed ****************");
 			asf.run();
-			feedList.add(asf.getFeedName());
+			messages.put(asf.getFeedName(), asf.getMessages());
 		}
 	}
 
@@ -143,8 +147,17 @@ public class SmarttrakRSSImporter extends CommandLineUtil {
 		msg.append(Convert.formatDate(new Date(startTime), Convert.DATETIME_SLASH_PATTERN));
 		msg.append("</h3>");
 		msg.append("<h4>Feeds processed: ").append("</h4>");
-		for (String feedName : feedList) {
-			msg.append(feedName).append(br);
+		for (Entry<String, List<String>> feedData : messages.entrySet()) {
+
+			//If this is a single Run, update the Subject Line to reflect the run.
+			if(messages.size() == 1) {
+				String subject = props.getProperty("subject");
+				props.replace("subject", StringUtil.join(subject, " - ", feedData.getKey()));
+			}
+			msg.append(feedData.getKey()).append(br);
+			for(String m : feedData.getValue()) {
+				msg.append(m).append(br);
+			}
 		}
 		// exec time
 		msg.append("<h4>Total elapsed time: ");

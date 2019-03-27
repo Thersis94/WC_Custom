@@ -263,13 +263,15 @@ public class TicketOverviewAction extends BasePortalAction {
 		UserDataVO profile = (UserDataVO)req.getSession().getAttribute(Constants.USER_DATA);
 		UserVO adminUser = (UserVO)profile.getUserExtendedInfo();
 		BaseTransactionAction bta = new BaseTransactionAction(getDBConnection(), getAttributes());
-		TicketLedgerVO ledger = bta.addLedger(ticket.getTicketId(), adminUser.getUserId(), ticket.getStatusCode(), LedgerSummary.CALL_RECVD.summary, null);
-		
-		// Add Data Attributes
-		assignDataAttributes(ticket, ledger);
 		
 		// Update the ticket originator from the user
 		updateOriginator(user.getUserId(), ticket.getTicketId());
+
+		// Change the status
+		TicketLedgerVO ledger = bta.changeStatus(ticket.getTicketId(), adminUser.getUserId(), ticket.getStatusCode(), LedgerSummary.CALL_RECVD.summary, null);
+		
+		// Add Data Attributes
+		assignDataAttributes(ticket, ledger);
 		
 		return ticket;
 	}
@@ -392,8 +394,7 @@ public class TicketOverviewAction extends BasePortalAction {
 	 * @throws InvalidDataException
 	 * @throws DatabaseException
 	 */
-	public void assignDataAttributes(TicketVO vo, TicketLedgerVO ledger) 
-	throws InvalidDataException, DatabaseException {
+	public void assignDataAttributes(TicketVO vo, TicketLedgerVO ledger) {
 		Map<String, String> ids = getTicketDataIds(vo.getTicketId());
 
 		for (TicketDataVO data : vo.getTicketData()) {
@@ -411,7 +412,11 @@ public class TicketOverviewAction extends BasePortalAction {
 			
 			// Save the attribute data
 			DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
-			db.save(data);
+			try {
+				db.save(data);
+			} catch (InvalidDataException | DatabaseException e) {
+				log.error("Unable to add attribute: " + data.getAttributeCode(), e);
+			}
 		}
 	}
 	
