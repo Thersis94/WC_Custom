@@ -59,7 +59,7 @@ public class ProductManagementAction extends ManagementAction {
 
 	private enum ActionTarget {
 		PRODUCT, PRODUCTATTRIBUTE, ATTRIBUTE, PRODUCTLINK, PRODUCTATTACH,
-		ATTRIBUTELIST, ALLIANCE, DETAILSATTRIBUTE, REGULATION, PREVIEW, PRODUCTATTRIBUTEARCHIVE, PRODUCTATTRIBUTEARCHIVEUPDATE
+		ATTRIBUTELIST, ALLIANCE, DETAILSATTRIBUTE, REGULATION, PREVIEW, PRODUCTATTRIBUTEARCHIVE, PRODUCTATTRIBUTEARCHIVEUPDATE, UNKNOWNATTRIBUTE
 	}
 
 	/**
@@ -213,10 +213,11 @@ public class ProductManagementAction extends ManagementAction {
 			case PRODUCTATTRIBUTEARCHIVE:
 				retrieveArchives(req);
 				break;
+			case UNKNOWNATTRIBUTE:
 			case PRODUCTLINK:
 			case PRODUCTATTACH:
 			case PRODUCTATTRIBUTE:
-				productAttributeRetrieve(req);
+				productAttributeRetrieve(req, action);
 				break;
 			case ATTRIBUTE:
 				attributeRetrieve(req);
@@ -324,10 +325,11 @@ public class ProductManagementAction extends ManagementAction {
 	/**
 	 * Get information neccesary to populate product attribute pages
 	 * @param req
+	 * @param action 
 	 */
-	private void productAttributeRetrieve(ActionRequest req) {
+	private void productAttributeRetrieve(ActionRequest req, ActionTarget action) {
 		if (req.hasParameter("productAttributeId"))
-			retrieveProductAttribute(req);
+			retrieveProductAttribute(req, action);
 	}
 
 
@@ -492,8 +494,9 @@ public class ProductManagementAction extends ManagementAction {
 	/**
 	 * get a particular product attribute from the database for editing
 	 * @param req
+	 * @param action 
 	 */
-	protected void retrieveProductAttribute(ActionRequest req) {
+	protected void retrieveProductAttribute(ActionRequest req, ActionTarget action) {
 		StringBuilder sql = new StringBuilder(300);
 		sql.append("SELECT xr.*, a.TYPE_CD FROM ").append(customDbSchema).append("BIOMEDGPS_PRODUCT_ATTRIBUTE_XR xr ");
 		sql.append(LEFT_OUTER_JOIN).append(customDbSchema).append("BIOMEDGPS_PRODUCT_ATTRIBUTE a ");
@@ -506,6 +509,13 @@ public class ProductManagementAction extends ManagementAction {
 		DBProcessor db = new DBProcessor(dbConn);
 		ProductAttributeVO attr = db.executeSelect(sql.toString(), params, new ProductAttributeVO()).get(0);
 		super.putModuleData(attr);
+		if (ActionTarget.UNKNOWNATTRIBUTE == action) {
+			if ("LINK".equals(attr.getAttributeTypeCd())) {
+				req.setParameter(ACTION_TARGET, ActionTarget.PRODUCTLINK.toString());
+			} else {
+				req.setParameter(ACTION_TARGET, ActionTarget.PRODUCTATTRIBUTE.toString());
+			}
+		}
 		req.setParameter("rootNode", attr.getAttributeId());
 	}
 
