@@ -103,8 +103,8 @@ public class WeatherAlertJob extends AbstractSMTJob {
 				String forecastId = saveCurrentConditions(venueTour);
 				
 				// Notify via websocket sessions there are updated conditions available
-				WebSocketSessionManager wsm = WebSocketSessionManager.getInstance();
-				wsm.broadcast(venueTour.getVenueTourId(), "updateCurrent");
+				WebSocketSessionManager wsm = WebSocketSessionManager.getInstance(attributes);
+				wsm.publishSocketData(venueTour.getVenueTourId(), "updateCurrent");
 				
 				// No alerts need to be sent if the event is not in progress
 				if (venueTour.isEventInProgress(java.sql.Timestamp.valueOf(now))) {
@@ -161,8 +161,8 @@ public class WeatherAlertJob extends AbstractSMTJob {
 		
 		// Send push notification to the browser via websockets and SMS messages
 		if (alertCount > 0) {
-			WebSocketSessionManager wsm = WebSocketSessionManager.getInstance();
-			wsm.broadcast(venueTour.getVenueTourId(), "updateAlerts");
+			WebSocketSessionManager wsm = WebSocketSessionManager.getInstance(attributes);
+			wsm.publishSocketData(venueTour.getVenueTourId(), "updateAlerts");
 			
 			sendSmsAlerts(smsMessage.toString(), venueTour);
 		}
