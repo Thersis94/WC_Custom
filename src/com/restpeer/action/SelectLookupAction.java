@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.restpeer.action.admin.AttributeWidget;
 // PS Imports
 import com.restpeer.action.admin.CategoryWidget;
 import com.restpeer.action.admin.MemberWidget;
@@ -19,11 +20,13 @@ import com.restpeer.common.RPConstants.DataType;
 import com.restpeer.common.RPConstants.RPRole;
 import com.restpeer.data.ProductVO.UnitMeasure;
 import com.restpeer.data.RPUserVO;
+import com.restpeer.data.AttributeVO;
 import com.restpeer.data.AttributeVO.GroupCode;
 import com.restpeer.data.CategoryVO;
 import com.restpeer.data.MemberVO;
 import com.restpeer.data.MemberVO.MemberType;
 import com.restpeer.data.ProductVO;
+
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -78,12 +81,13 @@ public class SelectLookupAction extends SBActionAdapter {
 		keyMap.put("gender", new GenericVO("getGenders", Boolean.FALSE));
 		keyMap.put("category", new GenericVO("getCategories", Boolean.FALSE));
 		keyMap.put("uom", new GenericVO("getUnitMeasures", Boolean.FALSE));
+		keyMap.put("attributes", new GenericVO("getAttributeValues", Boolean.TRUE));
 		keyMap.put("attrType", new GenericVO("getAttributeTypes", Boolean.FALSE));
 		keyMap.put("attrGroup", new GenericVO("getAttributeGroups", Boolean.FALSE));
 		keyMap.put("members", new GenericVO("getMembers", Boolean.TRUE));
 		keyMap.put("memberType", new GenericVO("getMemberTypes", Boolean.FALSE));
 		keyMap.put("memberLocations", new GenericVO("getMemberLocations", Boolean.TRUE));
-		keyMap.put("locationProducts", new GenericVO("getLocationProducts", Boolean.TRUE));
+		keyMap.put("locationProducts", new GenericVO("getLocationProducts", Boolean.FALSE));
 		keyMap.put("users", new GenericVO("getUsers", Boolean.TRUE));
 	}
 
@@ -214,6 +218,23 @@ public class SelectLookupAction extends SBActionAdapter {
 	}
 	
 	/**
+	 * Gets a list of attribute codes.  Optionally may pass a groupCode to filter by that
+	 * @param req
+	 * @return
+	 */
+	public List<GenericVO> getAttributeValues(ActionRequest req) {
+		List<GenericVO> data = new ArrayList<>(16);
+		
+		AttributeWidget aw = new AttributeWidget(getDBConnection(), getAttributes());
+		List<AttributeVO> attrs = aw.getAttributeData(req.getParameter("groupCode"));
+		
+		for (AttributeVO attr : attrs) {
+			data.add(new GenericVO(attr.getAttributeCode(), attr.getName()));
+		}
+		
+		return data;
+	}
+	/**
 	 * Creates the list of attribute types (list, single, etc ...)
 	 * @return
 	 */
@@ -223,6 +244,9 @@ public class SelectLookupAction extends SBActionAdapter {
 		for (DataType dt : DataType.values()) {
 			data.add(new GenericVO(dt, dt.getTypeName()));
 		}
+		
+		// Sort the collection by the value
+		Collections.sort(data, (a, b) -> ((String)a.getValue()).compareTo(((String)a.getValue())));
 		
 		return data;
 	}
@@ -249,11 +273,10 @@ public class SelectLookupAction extends SBActionAdapter {
 		List<GenericVO> data = new ArrayList<>(16);
 		
 		String roleId = ((SBUserRole)req.getSession().getAttribute(Constants.ROLE_DATA)).getRoleId();
-		String memberType = req.getParameter("memberType");
 		String userId = "";// Add this when the login module is added
 		
 		MemberWidget mw = new MemberWidget(getDBConnection(), getAttributes());
-		List<MemberVO> members = mw.getMembers(userId, roleId, memberType);
+		List<MemberVO> members = mw.getMembers(userId, roleId, req.getParameter("memberType"));
 		
 		for (MemberVO mvo : members) {
 			data.add(new GenericVO(mvo.getMemberId(), mvo.getName()));
@@ -334,16 +357,17 @@ public class SelectLookupAction extends SBActionAdapter {
 	 * @param req
 	 * @return
 	 */
-	public List<GenericVO> getLocationProducts(ActionRequest req) {
+	public List<GenericVO> getLocationProducts() {
 		List<GenericVO> data = new ArrayList<>(10);
 		
 		ProductWidget pw = new ProductWidget(getDBConnection(), getAttributes());
 		List<ProductVO> products = pw.getProducts(null, true);
 		for (ProductVO pvo : products) {
+			String pc = pvo.getScheduleFlag() + "_" + pvo.getProductCode();
 			NumberFormat formatter = NumberFormat.getCurrencyInstance();
 			String name = pvo.getName() + " - " + formatter.format(pvo.getPrice());
 			if (StringUtil.isEmpty(pvo.getParentCode())) data.add(new GenericVO(null, pvo.getName()));
-			else data.add(new GenericVO(pvo.getProductCode(), name));
+			else data.add(new GenericVO(pc, name));
 		}
 		
 		return data;

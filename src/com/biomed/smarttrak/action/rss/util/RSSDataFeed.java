@@ -2,9 +2,13 @@ package com.biomed.smarttrak.action.rss.util;
 
 import java.io.ByteArrayInputStream;
 import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -18,6 +22,7 @@ import com.ernieyu.feedparser.Feed;
 import com.ernieyu.feedparser.FeedParser;
 import com.ernieyu.feedparser.FeedParserFactory;
 import com.siliconmtn.data.GenericVO;
+import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.util.Convert;
 
@@ -123,6 +128,10 @@ public class RSSDataFeed extends AbstractSmarttrakRSSFeed {
 		log.debug(feed.getType());
 
 		List<RSSArticleVO> articles = feed.getItemList().stream().map(RSSArticleVO::new).collect(Collectors.toList());
+
+		//Match Articles Retrieved against db articles to get proper Dates and Article Id for existing records.
+		matchArticles(articles);
+
 		log.debug("Retrieved " + articles.size() + " Articles.");
 		int initialSize = articles.size();
 			articles = articles.stream().filter(a -> a.getPublishDt() != null ? a.getPublishDt().after(cutOffDate) : true).collect(Collectors.toList());
@@ -135,6 +144,51 @@ public class RSSDataFeed extends AbstractSmarttrakRSSFeed {
 		return articles;
 	}
 
+
+	/**
+	 * Before we begine processing, lookup articles and attempt to set rss_Article_id
+	 * and publish_dt before we process.  Ensures that if there is no publish_dt
+	 * parsed from the Feed, we use what we have in the system which would be
+	 * ingestion date.  Prevents non-dated articles that are historically out
+	 * dated from getting indexed again.
+	 * @param articles
+	 */
+	protected void matchArticles(List<RSSArticleVO> articles) {
+		Map<String, RSSArticleVO> temp = new HashMap<>();
+		try (PreparedStatement ps = dbConn.prepareStatement(getArticleMatchSql(articles.size()))) {
+			int i = 0;
+
+			for (RSSArticleVO a: articles) {
+				ps.setString(++i, a.getArticleGuid());
+				temp.put(a.getArticleGuid(), a);
+			}
+
+			ResultSet rs = ps.executeQuery();
+			RSSArticleVO a = null;
+			while (rs.next()) {
+				a = temp.get(rs.getString("key"));
+				a.setPublishDt(rs.getDate("publish_dt"));
+				a.setRssArticleId(rs.getString("rss_article_id"));
+			}
+		} catch (SQLException e) {
+			log.error("error checking if RSS article exists", e);
+		}
+	}
+
+	/**
+	 * Build Article Match Query.
+	 * @param size
+	 * @return
+	 */
+	private String getArticleMatchSql(int size) {
+		StringBuilder sql = new StringBuilder(500);
+		sql.append("select a.rss_article_id, a.article_guid as key, a.publish_dt from ").append(customDb);
+		sql.append("BIOMEDGPS_RSS_ARTICLE a ");
+		sql.append("where a.article_guid in (");
+		DBUtil.preparedStatmentQuestion(size, sql);
+		sql.append(") order by a.article_guid");
+		return sql.toString();
+	}
 
 	/**
 	 * Method manages applying filters to each of the messages in a feed.

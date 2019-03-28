@@ -2,9 +2,12 @@ package com.restpeer.data;
 
 // JDK 1.8.x
 import java.sql.ResultSet;
+import java.util.ArrayList;
+import java.util.List;
 
 // SMT Base Libs
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
 import com.siliconmtn.util.StringUtil;
@@ -34,6 +37,9 @@ public class LocationProductVO extends ProductVO {
 	private String memberLocationId;
 	private int qtyAvailable;
 	private int qtyPurchased;
+	
+	// Sub-Beans
+	private List<ProductScheduleVO> schedules = new ArrayList<>();
 
 	/**
 	 * 
@@ -123,6 +129,29 @@ public class LocationProductVO extends ProductVO {
 	 */
 	public void setQtyPurchased(int qtyPurchased) {
 		this.qtyPurchased = qtyPurchased;
+	}
+
+	/**
+	 * @return the schedules
+	 */
+	public List<ProductScheduleVO> getSchedules() {
+		return schedules;
+	}
+
+	/**
+	 * @param schedules the schedules to set
+	 */
+	public void setSchedules(List<ProductScheduleVO> schedules) {
+		this.schedules = schedules;
+	}
+	
+	/**
+	 * @param schedules the schedules to set
+	 */
+	@BeanSubElement
+	public void addSchedule(ProductScheduleVO schedule) {
+		if (schedule != null && ! StringUtil.isEmpty(locationProductId))
+			this.schedules.add(schedule);
 	}
 
 }

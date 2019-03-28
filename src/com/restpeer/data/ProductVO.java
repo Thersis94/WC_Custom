@@ -33,7 +33,8 @@ public class ProductVO extends BeanDataVO {
 	public enum UnitMeasure {
 		MONTHLY("Monthly"),
 		NONE("N/A"),
-		WEEKLY("Weekly");
+		WEEKLY("Weekly"),
+		SINGLE("One Time Event");
 		
 		private String uomName;
 		UnitMeasure(String uomName) { 

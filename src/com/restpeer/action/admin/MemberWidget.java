@@ -86,14 +86,16 @@ public class MemberWidget extends SBActionAdapter {
 		List<Object> vals = new ArrayList<>();
 		
 		StringBuilder sql = new StringBuilder(128);
-		sql.append("select a.*, coalesce(b.locations_no, 0) as locations_no from ");
+		sql.append("select a.*, t.type_nm, coalesce(b.locations_no, 0) as locations_no from ");
 		sql.append(getCustomSchema()).append("rp_member a ");
+		sql.append("inner join ").append(getCustomSchema()).append("rp_member_type t ");
+		sql.append("on a.member_type_cd = t.member_type_cd ");
 		sql.append("left outer join ( ");
 		sql.append("select member_id, count(*) locations_no ");
 		sql.append("from ").append(getCustomSchema()).append("rp_member_location ");
 		sql.append("group by member_id ");
 		sql.append(") as b on a.member_id = b.member_id ");
-		
+				
 		// If the member id is passed, add to the filter
 		if (! StringUtil.isEmpty(memberId)) {
 			sql.append("where a.member_id = ? ");
@@ -117,10 +119,12 @@ public class MemberWidget extends SBActionAdapter {
 	public List<MemberVO> getMembers(String userId, String roleId, String memberType) {
 		List<Object> vals = new ArrayList<>();
 		StringBuilder sql = new StringBuilder(128);
-		sql.append("select * from ").append(getCustomSchema()).append("rp_member ");
+		sql.append("select * from ").append(getCustomSchema()).append("rp_member a ");
+		sql.append("inner join ").append(getCustomSchema()).append("rp_member_type b ");
+		sql.append("on a.member_type_cd = b.member_type_cd ");
 		sql.append("where 1 = 1 ");
 		if (! StringUtil.isEmpty(memberType)) {
-			sql.append("and member_type_cd = ? ");
+			sql.append("and a.member_type_cd = ? ");
 			vals.add(memberType);
 		}
 		

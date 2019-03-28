@@ -50,6 +50,7 @@ public class MemberLocationVO extends GeocodeLocation {
 	// Helpers
 	private String memberTypeCode;
 	private String memberName;
+	private double distance;
 	
 	/**
 	 * 
@@ -165,6 +166,14 @@ public class MemberLocationVO extends GeocodeLocation {
 	@Column(name="member_nm", isReadOnly=true)
 	public String getMemberName() {
 		return memberName;
+	}
+
+	/**
+	 * @return the distance
+	 */
+	@Column(name="distance", isReadOnly=true)
+	public double getDistance() {
+		return distance;
 	}
 
 	/**
@@ -285,6 +294,13 @@ public class MemberLocationVO extends GeocodeLocation {
 	 */
 	public void setMemberName(String memberName) {
 		this.memberName = memberName;
+	}
+
+	/**
+	 * @param distance the distance to set
+	 */
+	public void setDistance(double distance) {
+		this.distance = Math.round(distance);
 	}
 
 }

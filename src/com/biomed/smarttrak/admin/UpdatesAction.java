@@ -616,7 +616,17 @@ public class UpdatesAction extends ManagementAction {
 					u.setUpdateDt(Convert.convertTimeZoneOffset(new Date(), "EST5EDT"));
 				}
 
-				u.setPublishDate(calcPublishDt(Convert.formatDate(req.getParameter("publishDt"))));
+				/*
+				 * If the submitted publish date is different than the old one,
+				 * process it.  If they're the same then use the oldPublishDate
+				 * which has the time.
+				 */
+				String oldPubDt = req.getParameter("oldPubDt");
+				if(StringUtil.isEmpty(oldPubDt) || !publishDateSameDay(oldPubDt, req.getParameter("publishDt"))) {
+					u.setPublishDate(calcPublishDt(Convert.formatDate(req.getParameter("publishDt"))));
+				} else {
+					u.setPublishDate(Convert.formatDate(oldPubDt));
+				}
 
 				db.save(u);
 
@@ -633,6 +643,21 @@ public class UpdatesAction extends ManagementAction {
 		} catch (InvalidDataException | DatabaseException e) {
 			throw new ActionException(e);
 		}
+	}
+
+	/**
+	 * Check if the oldPublishDt and the new are the same day in the year.
+	 * @param parameter
+	 * @param parameter2
+	 * @return
+	 */
+	private boolean publishDateSameDay(String oldPubDt, String newPubDt) {
+		Calendar old = Calendar.getInstance();
+		old.setTime(Convert.formatDate(oldPubDt));
+		Calendar reqPub = Calendar.getInstance();
+		reqPub.setTime(Convert.formatDate(newPubDt));
+		return old.get(Calendar.DAY_OF_YEAR) == reqPub.get(Calendar.DAY_OF_YEAR);
+
 	}
 
 	/**
