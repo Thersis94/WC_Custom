@@ -91,7 +91,7 @@ public class AjaxControllerFacadeAction extends FacadeActionAdapter {
 	public void list(ActionRequest req) throws ActionException {
 		ModuleVO module = (ModuleVO) getAttribute(AdminConstants.ADMIN_MODULE_DATA);
 		module.setSimpleAction(true);
-		loadActionByType(req.getParameter(SELECTOR_KEY	, DEFAULT_TYPE)).list(req);
+		loadActionByType(req.getParameter(SELECTOR_KEY, DEFAULT_TYPE)).list(req);
 	}
 
 	/*

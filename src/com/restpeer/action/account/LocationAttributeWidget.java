@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 // RP Libs
-	import com.restpeer.data.LocationAttributeVO;
+import com.restpeer.data.LocationAttributeVO;
 import com.siliconmtn.action.ActionException;
 
 // SMT Base Libs
@@ -64,12 +64,43 @@ public class LocationAttributeWidget extends SBActionAdapter {
 		String mlid = req.getParameter("memberLocationId");
 		String gc = req.getParameter("groupCode");
 		boolean all = req.getBooleanParameter("allData");
+		
 		try {
-			setModuleData(getLocationAttributes(mlid, gc,all));
+			if (req.getBooleanParameter("isAsset")) {
+				setModuleData(getAssets(mlid));
+			} else {
+				setModuleData(getLocationAttributes(mlid, gc,all));
+			}
 		} catch (SQLException e) {
 			setModuleData(null, 0, e.getLocalizedMessage());
 			log.error("Failed retrieving location attributes", e);
 		}
+	}
+	
+	/**
+	 * Gets the documents that were uploaded for a give location
+	 * @param mlid
+	 * @return
+	 */
+	public List<LocationAttributeVO> getAssets(String mlid) {
+		// Set the params
+		List<Object> vals = new ArrayList<>();
+		vals.add(mlid);
+		
+		// Build the SQL
+		StringBuilder sql = new StringBuilder(256);
+		sql.append("select * from ").append(getCustomSchema());
+		sql.append("rp_location_attribute_xr a ");
+		sql.append("inner join ").append(getCustomSchema());
+		sql.append("rp_attribute b on a.attribute_cd = b.attribute_cd ");
+		sql.append("inner join ").append(getCustomSchema());
+		sql.append("rp_user c on a.user_id = c.user_id ");
+		sql.append("where group_cd = 'ASSET_GROUP' and member_location_id = ? ");
+		log.debug("SQL: " + sql.length() + "|" + sql +vals );
+		
+		// Get the data
+		DBProcessor db = new DBProcessor(getDBConnection());
+		return db.executeSelect(sql.toString(), vals, new LocationAttributeVO());
 	}
 	
 	/**
@@ -119,16 +150,57 @@ public class LocationAttributeWidget extends SBActionAdapter {
 	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
-
 		try {
 			if (req.getBooleanParameter("toggle")) {
 				toggleAttribute(req);
+			} else if (req.getBooleanParameter("isAsset")) {
+				saveAssetInfo(req);
 			} else {
 				saveAttributes(req);
 			}
 		} catch(Exception e) {
 			putModuleData(null, 0, false, e.getLocalizedMessage(), true);
 			log.error("Unable to update location attributes", e);
+		}
+	}
+	
+	/**
+	 * Saves the asset that was uploaded into the location attribute table
+	 * @param req
+	 * @throws DatabaseException
+	 */
+	public void saveAssetInfo(ActionRequest req) throws DatabaseException {
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+
+		try {
+			LocationAttributeVO attr = new LocationAttributeVO(req);
+			attr.setMetaValue(req.getParameter("fileName"));
+			attr.setUserId(getUserFromProfile(getAdminUser(req).getProfileId()));
+			
+			db.save(attr);
+		} catch (Exception e) {
+			throw new DatabaseException("unable to save asset", e);
+		}
+	}
+	
+	/**
+	 * Gets the User Id from the profile id
+	 * @param profileId
+	 * @return
+	 * @throws SQLException
+	 */
+	public String getUserFromProfile(String profileId) throws SQLException {
+		StringBuilder sql = new StringBuilder(64);
+		sql.append("select user_id from ").append(getCustomSchema()).append("rp_user ");
+		sql.append("where profile_id = ?");
+		log.debug(sql + "|" + profileId);
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, profileId);
+			try (ResultSet rs = ps.executeQuery()) {
+				if (rs.next()) return rs.getString(1);
+				else throw new SQLException("No user found");
+			}
 		}
 	}
 	
