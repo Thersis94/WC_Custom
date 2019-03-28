@@ -32,6 +32,7 @@ public class AttributeVO extends BeanDataVO {
 	
 	public enum GroupCode {
 		ADD_ONS("Facility Add Ons"),
+		ASSET_GROUP("Files and Documents"),
 		BUSINESS("Business Data"),
 		KITCHEN_INFO("Kitchen Info");
 		
