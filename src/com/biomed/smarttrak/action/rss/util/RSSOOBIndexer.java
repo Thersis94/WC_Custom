@@ -7,7 +7,6 @@ import java.util.Properties;
 import org.apache.solr.client.solrj.SolrClient;
 
 import com.biomed.smarttrak.util.RSSArticleIndexer;
-import com.smt.sitebuilder.search.SMTAbstractIndex;
 
 /****************************************************************************
  * <b>Title:</b> RSSOOBSolrIndexer.java
@@ -15,12 +14,12 @@ import com.smt.sitebuilder.search.SMTAbstractIndex;
  * <b>Description:</b> Solr Indexer for Feeds Articles processed in the OOB Scripts.
  * <b>Copyright:</b> Copyright (c) 2019
  * <b>Company:</b> Silicon Mountain Technologies
- * 
+ *
  * @author Billy Larsen
  * @version 3.3.1
  * @since Mar 27, 2019
  ****************************************************************************/
-public class RSSOOBIndexer extends SMTAbstractIndex {
+public class RSSOOBIndexer extends RSSArticleIndexer {
 
 	public RSSOOBIndexer(Properties config) {
 		super(config);
@@ -35,21 +34,12 @@ public class RSSOOBIndexer extends SMTAbstractIndex {
 	 */
 	@Override
 	public void addIndexItems(SolrClient server) {
-		
-	}
-
-
-	/* (non-Javadoc)
-	 * @see com.smt.sitebuilder.search.SMTIndexIntfc#indexItems(java.lang.String[])
-	 */
-	@Override
-	public void indexItems(String... itemIds) {
-		
+		throw new UnsupportedOperationException("This indexer doesn't support blanket index.  Use the itemIds method variant.");
 	}
 
 	@Override
 	public void purgeIndexItems(SolrClient server) throws IOException {
-		
+		throw new UnsupportedOperationException("This indexer doesn't support blanket purge Operation.  Use the purge(itemIds) variant.");
 	}
 
 	/* (non-Javadoc)
@@ -59,5 +49,4 @@ public class RSSOOBIndexer extends SMTAbstractIndex {
 	public String getIndexType() {
 		return RSSArticleIndexer.INDEX_TYPE;
 	}
-
 }

@@ -246,6 +246,9 @@ public abstract class AbstractSmarttrakRSSFeed {
 				this.addMessage(String.format("<b>All Articles Exist for article:</b> %s<br/>", article.getTitleTxt()));
 				log.info("Article Already Exists: " + article.getRssArticleId());
 			}
+			if(index != null && !historyValues.isEmpty()) {
+				index.indexItems(historyValues.keySet().toArray(new String[historyValues.size()]));
+			}
 		} catch (InvalidDataException | DatabaseException e) {
 			log.error("Error Saving Articles", e);
 		}

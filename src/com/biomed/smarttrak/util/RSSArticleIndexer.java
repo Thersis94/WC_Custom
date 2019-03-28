@@ -1,6 +1,7 @@
 package com.biomed.smarttrak.util;
 
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -18,17 +19,17 @@ import com.smt.sitebuilder.util.solr.SolrDocumentVO;
 /****************************************************************************
  * <b>Title:</b> RSSArticleIndexer.java
  * <b>Project:</b> WC_Custom
- * <b>Description:</b> TODO
+ * <b>Description:</b> Indexer for processing RSS Filtered Articles in Bulk.
  * <b>Copyright:</b> Copyright (c) 2019
  * <b>Company:</b> Silicon Mountain Technologies
- * 
+ *
  * @author Billy Larsen
  * @version 3.3.1
  * @since Mar 26, 2019
  ****************************************************************************/
 public class RSSArticleIndexer extends SMTAbstractIndex {
 
-	public static final String INDEX_TYPE = "BIOMED_RSS_ARTICLE";
+	public static final String INDEX_TYPE = "BIOMEDGPS_FEED";
 
 	public RSSArticleIndexer(Properties config) {
 		super(config);
@@ -55,7 +56,7 @@ public class RSSArticleIndexer extends SMTAbstractIndex {
 			List<RSSFeedGroupVO> groups = ga.loadGroupXrs(null, null, null);
 
 			for(RSSFeedGroupVO g : groups)
-				util.addDocuments(getDocuments(null, g.getFeedGroupId()));
+				util.addDocuments(getDocuments(g.getFeedGroupId(), null));
 		} catch (Exception e) {
 			log.error("Failed to index Updates", e);
 		}
@@ -76,13 +77,12 @@ public class RSSArticleIndexer extends SMTAbstractIndex {
 	 * @return
 	 * @throws SQLException
 	 */
-	private List<SolrDocumentVO> getDocuments(String documentId, String feedGroupId) {
+	private List<SolrDocumentVO> getDocuments(String feedGroupId, List<String> documentIds) {
 		NewsroomAction na = new NewsroomAction();
 		na.setDBConnection(new SMTDBConnection(dbConn));
 		na.setAttributes(getAttributes());
-		return na.loadAllArticles(documentId, feedGroupId);
+		return na.loadAllArticles(feedGroupId, documentIds);
 	}
-
 
 	/* (non-Javadoc)
 	 * @see com.smt.sitebuilder.search.SMTIndexIntfc#indexItems(java.lang.String[])
@@ -91,10 +91,8 @@ public class RSSArticleIndexer extends SMTAbstractIndex {
 	public void indexItems(String... itemIds) {
 		log.debug("adding single Update: " + itemIds);
 		SolrClient server = makeServer();
-		try (SolrActionUtil util = new SmarttrakSolrUtil(server)) {
-			for (String id : itemIds)
-				util.addDocuments(getDocuments(id, null));
-
+		try (SolrActionUtil util = new SolrActionUtil(server)) {
+				util.addDocuments(getDocuments(null, Arrays.asList(itemIds)));
 		} catch (Exception e) {
 			log.error("Failed to index Update with id=" + itemIds, e);
 		}

@@ -88,6 +88,11 @@ public class SmarttrakRSSImporter extends CommandLineUtil {
 		//Flush Old Filtered Articles.
 		flushOldFilteredArticles();
 
+		/*
+		 * Check End of last index.  If there are articles not added, add them.
+		 * Prevent Loss of Articles if performing a restart.
+		 */
+
 		//Process Feeds.
 		if(args == null || args.length == 0) {
 			//loop all types in the enum
@@ -101,9 +106,6 @@ public class SmarttrakRSSImporter extends CommandLineUtil {
 				processFeed(s);
 			}
 		}
-
-		//Clean up Solr Connection
-		closeSolrServer();
 
 		// clean up db conn.
 		closeDBConnection();
@@ -214,6 +216,9 @@ public class SmarttrakRSSImporter extends CommandLineUtil {
 		} catch (Exception ae) {
 			log.error("Unable to Flush Feeds", ae);
 		}
+
+		//Clean up Solr Connection
+		closeSolrServer();
 	}
 
 	/**

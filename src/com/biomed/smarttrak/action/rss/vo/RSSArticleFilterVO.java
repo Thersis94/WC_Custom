@@ -1,13 +1,11 @@
 package com.biomed.smarttrak.action.rss.vo;
 
 import java.sql.ResultSet;
-import java.util.ArrayList;
 import java.util.Date;
 
 import com.biomed.smarttrak.action.AdminControllerAction;
 import com.biomed.smarttrak.action.rss.RSSDataAction.ArticleStatus;
 import com.biomed.smarttrak.util.RSSArticleIndexer;
-import com.biomed.smarttrak.util.UpdateIndexer;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.annotations.SolrField;
 import com.siliconmtn.data.parser.AutoPopulateIntfc;
@@ -169,7 +167,7 @@ public class RSSArticleFilterVO extends SolrDocumentVO implements AutoPopulateIn
 	 */
 	public void setFilterArticleTxt(String filterArticleTxt) {
 		this.filterArticleTxt = filterArticleTxt;
-		this.setContents(filterArticleTxt);
+		this.setSummary(filterArticleTxt);
 	}
 
 	/**

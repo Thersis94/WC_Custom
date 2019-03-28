@@ -7,24 +7,33 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import org.apache.solr.common.SolrDocument;
+
 import com.biomed.smarttrak.action.rss.RSSDataAction.ArticleStatus;
 import com.biomed.smarttrak.action.rss.vo.RSSArticleFilterVO;
 import com.biomed.smarttrak.action.rss.vo.RSSArticleVO;
 import com.biomed.smarttrak.action.rss.vo.RSSFeedSegment;
 import com.biomed.smarttrak.admin.AccountAction;
+import com.biomed.smarttrak.admin.UpdatesAction;
 import com.biomed.smarttrak.vo.UserVO.AssigneeSection;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
+import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.security.UserDataVO;
+import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
+import com.smt.sitebuilder.action.search.SolrAction;
+import com.smt.sitebuilder.action.search.SolrResponseVO;
 import com.smt.sitebuilder.action.user.ProfileManager;
 import com.smt.sitebuilder.action.user.ProfileManagerFactory;
+import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
+import com.smt.sitebuilder.search.SearchDocumentHandler;
 import com.smt.sitebuilder.util.solr.SolrDocumentVO;
 
 /****************************************************************************
@@ -43,6 +52,8 @@ public class NewsroomAction extends SBActionAdapter {
 	public static final String GROUP_DATA = "groupData";
 	public static final String BUCKET_DATA = "bucketData";
 	public static final String BUCKET_ID = "bucketId";
+	private static final String FEED_GROUP_ID = "feedGroupId";
+	private static final String RSS_ARTICLE_FILTER_ID = "rssArticleFilterId";
 
 	/**
 	 * 
@@ -67,15 +78,76 @@ public class NewsroomAction extends SBActionAdapter {
 			loadBuckets(req);
 			loadSegmentGroupArticles(req);
 		} else if(req.hasParameter("feedGroupId") && !req.hasParameter("isConsole")) {
-			List<RSSArticleVO> articles = loadArticles(req.getParameter("feedGroupId"), req.getParameter("statusCd"), req.getIntegerParameter("page", 0) * 10);
-			if(!articles.isEmpty())
-				this.putModuleData(articles, articles.size(), false);
+			//Get the Filtered Updates according to Request.
+			getFilteredUpdates(req);
+
+			ModuleVO mod = (ModuleVO) attributes.get(Constants.MODULE_DATA);
+			SolrResponseVO resp = (SolrResponseVO)mod.getActionData();
+			List<Object> params = getIdsFromDocs(resp);
+			
+			if(!params.isEmpty()) {
+				List<RSSArticleVO> articles = loadDetails(params);
+				log.debug("DB Count " + articles.size());
+				if(!articles.isEmpty())
+					this.putModuleData(articles, articles.size(), false);
+			}
+
+//			List<RSSArticleVO> articles = loadArticles(req.getParameter("feedGroupId"), req.getParameter("statusCd"), req.getIntegerParameter("page", 0) * 10);
+//			log.debug("DB Count " + articles.size());
+//			if(!articles.isEmpty())
+//				this.putModuleData(articles, articles.size(), false);
 
 			//Load Managers for assigning rss articles.
 			loadManagers(req);
 		} else if (!req.hasParameter("statusCd")) {
 			loadSegmentGroupArticles(req);
 		}
+	}
+
+	/**
+	 * @param params
+	 * @return
+	 */
+	private List<RSSArticleVO> loadDetails(List<Object> vals) {
+		DBProcessor dbp = new DBProcessor(dbConn, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
+		return dbp.executeSelect(loadFilteredArticleSql(vals.size()), vals, new RSSArticleVO());
+	}
+
+	/**
+	 * @param size
+	 * @return
+	 */
+	private String loadFilteredArticleSql(int size) {
+		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
+		StringBuilder sql = new StringBuilder(750);
+		sql.append(DBUtil.SELECT_CLAUSE).append("a.rss_article_id, a.rss_entity_id, ");
+		sql.append("a.publication_nm, a.article_guid, a.article_url, a.article_source_type, ");
+		sql.append("a.attribute1_txt, a.publish_dt, a.create_dt, af.rss_article_filter_id, ");
+		sql.append("af.feed_group_id, af.article_status_cd, af.bucket_id, af.match_no, ");
+		sql.append("coalesce(af.filter_title_txt, a.title_txt, 'Untitled') as filter_title_txt, ");
+		sql.append("coalesce(af.filter_article_txt, a.article_txt, 'No Article Available') as filter_article_txt ");
+		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("biomedgps_rss_article a ");
+		sql.append(DBUtil.INNER_JOIN).append(schema).append("biomedgps_rss_filtered_article af ");
+		sql.append("on a.rss_article_id = af.rss_article_id ");
+		sql.append("where af.rss_article_filter_id in (");
+		DBUtil.preparedStatmentQuestion(size, sql);
+		sql.append(") order by a.create_dt desc ");
+		return sql.toString();
+	}
+
+	/**
+	 * Get all the document ids from the solr documents and remove the
+	 * custom identifier if it is present.
+	 * @param resp
+	 * @return
+	 */
+	private List<Object> getIdsFromDocs(SolrResponseVO resp) {
+		List<Object> params = new ArrayList<>();
+
+		for (SolrDocument doc : resp.getResultDocuments()) {
+			params.add((String) doc.getFieldValue(SearchDocumentHandler.DOCUMENT_ID));
+		}
+		return params;
 	}
 
 	/**
@@ -108,40 +180,99 @@ public class NewsroomAction extends SBActionAdapter {
 	}
 
 	/**
+	 * Helper method that returns list of Updates filtered by ActionRequest
+	 * parameters.
+	 * @param req
+	 * @param dir 
+	 * @param order
+	 * @return
+	 * @throws ActionException 
+	 */
+	private void getFilteredUpdates(ActionRequest req) throws ActionException {
+		//parse the requet object
+		setSolrParams(req);
+		
+		// Pass along the proper information for a search to be done.
+		ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
+		actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
+		req.setParameter("pmid", mod.getPageModuleId());
+
+		// Build the solr action
+		ActionInterface sa = new SolrAction(actionInit);
+		sa.setDBConnection(dbConn);
+		sa.setAttributes(attributes);
+		sa.retrieve(req);
+	}
+
+	/**
+	 * Set all paramters neccesary for solr to be able to properly search for the desired documents.
+	 * @param req
+	 * @param dir 
+	 * @param order
+	 */
+	private void setSolrParams(ActionRequest req) {
+		int rpp = Convert.formatInteger(req.getParameter("limit"), 10);
+		int page = Convert.formatInteger(req.getParameter("offset"), 0)/rpp;
+		req.setParameter("rpp", StringUtil.checkVal(rpp));
+		req.setParameter("page", StringUtil.checkVal(page));
+		if(req.hasParameter(UpdatesAction.SEARCH)) 
+			req.setParameter("searchData", req.getParameter(UpdatesAction.SEARCH));
+
+		//build a list of filter queries
+		List<String> fq = new ArrayList<>();
+		String feedGroupId = req.getParameter(FEED_GROUP_ID);
+		String bucketId = req.getParameter(BUCKET_ID);
+
+		if(req.hasParameter(RSS_ARTICLE_FILTER_ID)) {
+			StringBuilder id = new StringBuilder(req.getParameter(RSS_ARTICLE_FILTER_ID));
+			fq.add(SearchDocumentHandler.DOCUMENT_ID + ":" + id);
+		}
+
+		if (!StringUtil.isEmpty(feedGroupId))
+			fq.add("feedGroupId_s:" + feedGroupId);
+
+		if (!StringUtil.isEmpty(bucketId)) {
+			fq.add("bucketId_s:" + bucketId);
+		}
+
+		req.setParameter("fq", fq.toArray(new String[fq.size()]), true);
+		req.setParameter("allowCustom", "true");
+		req.setParameter("fieldOverride", SearchDocumentHandler.PUBLISH_DATE);
+	}
+
+	/**
 	 * Method for loading all filtered articles in a feedGroupId.  Used to load Articles for
 	 * Solr.
 	 * @param feedGroupId
 	 * @return
 	 */
-	public List<SolrDocumentVO> loadAllArticles(String rssArticleId, String feedGroupId) {
+	public List<SolrDocumentVO> loadAllArticles(String feedGroupId, List<String> rssFilteredArticleIds) {
 		List<Object> vals = new ArrayList<>();
-		boolean hasArticleId = !StringUtil.isEmpty(rssArticleId);
+		boolean hasFilteredArticleId = rssFilteredArticleIds != null && !rssFilteredArticleIds.isEmpty();
 		boolean hasGroupId = !StringUtil.isEmpty(feedGroupId);
 
 		if(hasGroupId) {
 			vals.add(feedGroupId);
 		}
 
-		if(hasArticleId) {
-			vals.add(rssArticleId);
+		if(hasFilteredArticleId) {
+			vals.addAll(rssFilteredArticleIds);
 		}
 
 		//Check to prevent overloading the system with all Articles.
-		if(!hasGroupId && !hasArticleId) {
+		if(!hasGroupId && !hasFilteredArticleId) {
 			return Collections.emptyList();
 		}
 
 		DBProcessor dbp = new DBProcessor(dbConn, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
-		List<SolrDocumentVO> articles = dbp.executeSelect(loadFilterArticleSql(hasGroupId, hasArticleId), vals, new RSSArticleFilterVO());
-		System.out.println(String.format("Loaded %d Articles", articles.size()));
-		return articles;
+		return dbp.executeSelect(loadFilterArticleSql(hasGroupId, hasFilteredArticleId ? rssFilteredArticleIds.size() : 0), vals, new RSSArticleFilterVO());
 	}
 
 	/**
 	 * Build Filtered Article Query
 	 * @return
 	 */
-	private String loadFilterArticleSql(boolean hasGroupId, boolean hasArticleId) {
+	private String loadFilterArticleSql(boolean hasGroupId, int articleCount) {
 		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(750);
 		sql.append(DBUtil.SELECT_CLAUSE).append("a.rss_article_id, a.rss_entity_id, ");
@@ -157,11 +288,13 @@ public class NewsroomAction extends SBActionAdapter {
 		if(hasGroupId)
 			sql.append("af.feed_group_id = ? ");
 
-		if(hasArticleId) {
+		if(articleCount > 0) {
 			if(hasGroupId) {
 				sql.append("and ");
 			}
-			sql.append("af.rss_article_filter_id = ? ");
+			sql.append("af.rss_article_filter_id in (");
+			DBUtil.preparedStatmentQuestion(articleCount, sql);
+			sql.append(") ");
 		}
 		sql.append(DBUtil.ORDER_BY).append("a.create_dt desc ");
 
