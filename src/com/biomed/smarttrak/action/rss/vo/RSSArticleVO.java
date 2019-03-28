@@ -6,12 +6,14 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.ernieyu.feedparser.Element;
 import com.ernieyu.feedparser.Item;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.parser.BeanDataVO;
 import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
+import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 
 /****************************************************************************
@@ -68,7 +70,9 @@ public class RSSArticleVO extends BeanDataVO implements Serializable {
 		setArticleSourceType(ArticleSourceType.RSS);
 		setArticleGuid(StringUtil.checkVal(i.getGuid()));
 		setArticleTxt(StringUtil.checkVal(i.getDescription()).replace("\u00a0"," "));
-		setPublishDt(i.getPubDate());
+		Element e = i.getElement("pubDate");
+		if(e != null)
+			setPublishDt(Convert.parseDateUnknownPattern(e.getContent()));
 		setArticleUrl(i.getLink());
 		if(StringUtil.isEmpty(getArticleGuid())) {
 			setArticleGuid(i.getLink());
