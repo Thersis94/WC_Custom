@@ -77,7 +77,7 @@ public class NewsroomAction extends SBActionAdapter {
 		} else if(req.hasParameter("isBucket")) {
 			loadBuckets(req);
 			loadSegmentGroupArticles(req);
-		} else if(req.hasParameter("feedGroupId") && !req.hasParameter("isConsole")) {
+		} else if(req.hasParameter(FEED_GROUP_ID) && !req.hasParameter("isConsole")) {
 			//Get the Filtered Updates according to Request.
 			getFilteredUpdates(req);
 
@@ -88,14 +88,12 @@ public class NewsroomAction extends SBActionAdapter {
 			if(!params.isEmpty()) {
 				List<RSSArticleVO> articles = loadDetails(params);
 				log.debug("DB Count " + articles.size());
-				if(!articles.isEmpty())
+				if(!articles.isEmpty()) {
 					this.putModuleData(articles, articles.size(), false);
+				}
+			} else {
+				this.putModuleData(Collections.emptyList(), 0, false);
 			}
-
-//			List<RSSArticleVO> articles = loadArticles(req.getParameter("feedGroupId"), req.getParameter("statusCd"), req.getIntegerParameter("page", 0) * 10);
-//			log.debug("DB Count " + articles.size());
-//			if(!articles.isEmpty())
-//				this.putModuleData(articles, articles.size(), false);
 
 			//Load Managers for assigning rss articles.
 			loadManagers(req);
@@ -212,9 +210,8 @@ public class NewsroomAction extends SBActionAdapter {
 	 */
 	private void setSolrParams(ActionRequest req) {
 		int rpp = Convert.formatInteger(req.getParameter("limit"), 10);
-		int page = Convert.formatInteger(req.getParameter("offset"), 0)/rpp;
 		req.setParameter("rpp", StringUtil.checkVal(rpp));
-		req.setParameter("page", StringUtil.checkVal(page));
+
 		if(req.hasParameter(UpdatesAction.SEARCH)) 
 			req.setParameter("searchData", req.getParameter(UpdatesAction.SEARCH));
 
@@ -228,6 +225,10 @@ public class NewsroomAction extends SBActionAdapter {
 			fq.add(SearchDocumentHandler.DOCUMENT_ID + ":" + id);
 		}
 
+		String statusCd = req.getParameter("statusCd", ArticleStatus.N.name());
+		if(!"ALL".equals(statusCd)) {
+			fq.add("articleStatus_s:" + statusCd);
+		}
 		if (!StringUtil.isEmpty(feedGroupId))
 			fq.add("feedGroupId_s:" + feedGroupId);
 
@@ -237,7 +238,7 @@ public class NewsroomAction extends SBActionAdapter {
 
 		req.setParameter("fq", fq.toArray(new String[fq.size()]), true);
 		req.setParameter("allowCustom", "true");
-		req.setParameter("fieldOverride", SearchDocumentHandler.PUBLISH_DATE);
+//		req.setParameter("fieldOverride", SearchDocumentHandler.PUBLISH_DATE);
 	}
 
 	/**
