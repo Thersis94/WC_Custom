@@ -754,6 +754,8 @@ public class MarketManagementAction extends ManagementAction {
 	protected String completeMarketSave(String marketId, ActionRequest req, DBProcessor db) throws ActionException {
 		MarketVO c = new MarketVO(req);
 		boolean isInsert = StringUtil.isEmpty(c.getMarketId());
+		if (StringUtil.isEmpty(c.getMarketName()))
+			c.setMarketName(c.getSectionName() + " - " + c.getRegionCode());
 		saveMarket(c, db);
 		if (isInsert) generateContent(req, c.getMarketId());
 		// Market save also includes the single section associated
@@ -993,7 +995,7 @@ public class MarketManagementAction extends ManagementAction {
 			} else if("bulkLinkUpdate".equals(buildAction)) {
 				new ManagementActionUtil(dbConn, attributes).bulkUpdateAttributeLinks(req);
 			} else if("generateArchive".equals(buildAction)) {
-				String marketArchiveId = createHTMLArchive(req.getCookie("JSESSIONID"), (SiteVO) req.getAttribute(Constants.SITE_DATA), req.getParameter(MARKET_ID));
+				String marketArchiveId = createHTMLArchive(req.getCookie("JSESSIONID"), req);
 				super.putModuleData(marketArchiveId);
 				return;
 			}
@@ -1045,7 +1047,9 @@ public class MarketManagementAction extends ManagementAction {
 			rdu.copy();
 			
 			// Update the name and status of the new market
-			updateMarketName(ids.get( req.getParameter(MARKET_ID)));
+			String marketId = ids.get( req.getParameter(MARKET_ID));
+			updateMarketName(marketId);
+			updateMarketAttributes(marketId);
 
 			dbConn.commit();
 			
@@ -1062,6 +1066,33 @@ public class MarketManagementAction extends ManagementAction {
 	}
 
 	/**
+	 * Update the cloned market attributes group ids to match the new market attribute ids
+	 * @param marketId
+	 * @throws ActionException
+	 */
+	private void updateMarketAttributes(String marketId) throws ActionException {
+		StringBuilder sql = new StringBuilder(300);
+		sql.append("update ").append(customDbSchema).append("biomedgps_market_attribute_xr ");
+		sql.append("set market_attribute_group_id = subquery.market_attribute_id ");
+		sql.append("from (select market_attribute_id, market_attribute_group_id ");
+		sql.append("from ").append(customDbSchema).append("biomedgps_market_attribute_xr ");
+		sql.append("where market_id = ? and (status_no = ? or status_no is null) ");
+		sql.append(") as subquery ");
+		sql.append("where ").append(customDbSchema).append("biomedgps_market_attribute_xr.market_attribute_group_id = subquery.market_attribute_group_id ");
+		sql.append("and ").append(customDbSchema).append("biomedgps_market_attribute_xr.market_id = ? ");
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, marketId);
+			ps.setString(2, Status.P.name());
+			ps.setString(3, marketId);
+			ps.executeUpdate();
+		} catch (SQLException e) {
+			throw new ActionException(e);
+		}
+	}
+
+
+	/**
 	 * Retrieve the HTML for a Market Page and then stores it in db.
 	 * @param smtCookie 
 	 * @param marketId
@@ -1069,13 +1100,14 @@ public class MarketManagementAction extends ManagementAction {
 	 * @throws DatabaseException 
 	 * @throws InvalidDataException 
 	 */
-	private String createHTMLArchive(SMTCookie sessionCookie, SiteVO site, String marketId) throws IOException, InvalidDataException, DatabaseException {
-
+	private String createHTMLArchive(SMTCookie sessionCookie, ActionRequest req) throws IOException, InvalidDataException, DatabaseException {
+		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
+		
 		//Get the Archive HTML text
-		String archiveHtml = retrieveArchiveHtml(sessionCookie, site.getFullSiteAlias(), marketId);
+		String archiveHtml = retrieveArchiveHtml(sessionCookie, site.getFullSiteAlias(), req.getParameter(MARKET_ID));
 
 		//Build the VO
-		MarketArchiveVO vo = new MarketArchiveVO(marketId, archiveHtml);
+		MarketArchiveVO vo = new MarketArchiveVO(req.getParameter("sectionId"), req.getParameter("regionCode"), archiveHtml);
 
 		//Save the VO
 		new DBProcessor(dbConn, getCustomSchema()).save(vo);
