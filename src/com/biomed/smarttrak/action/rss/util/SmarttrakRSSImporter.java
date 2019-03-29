@@ -3,17 +3,20 @@ package com.biomed.smarttrak.action.rss.util;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.text.NumberFormat;
-import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Map.Entry;
 
 import com.biomed.smarttrak.action.rss.vo.RSSArticleVO.ArticleSourceType;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.util.CommandLineUtil;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.EnumUtil;
+import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
@@ -31,7 +34,7 @@ public class SmarttrakRSSImporter extends CommandLineUtil {
 
 	private static final String SCRIPT_PROPERTIES_PATH = "scripts/bmg_smarttrak/rss_config.properties";
 	private static final int MAX_KEEP_DAYS = 60;
-	private List<String> feedList;
+	private Map<String, List<String>> messages; 
 	private long startTime;
 
 	/**
@@ -39,7 +42,7 @@ public class SmarttrakRSSImporter extends CommandLineUtil {
 	 */
 	public SmarttrakRSSImporter(String[] args) {
 		super(args);
-		feedList = new ArrayList<>();
+		messages = new HashMap<>();
 	}
 
 	public static void main(String [] args) {
@@ -101,7 +104,7 @@ public class SmarttrakRSSImporter extends CommandLineUtil {
 		if (asf != null) {
 			log.info("****************   Beginning " + ast + " Feed ****************");
 			asf.run();
-			feedList.add(asf.getFeedName());
+			messages.put(asf.getFeedName(), asf.getMessages());
 		}
 	}
 
@@ -115,8 +118,17 @@ public class SmarttrakRSSImporter extends CommandLineUtil {
 		msg.append(Convert.formatDate(new Date(startTime), Convert.DATETIME_SLASH_PATTERN));
 		msg.append("</h3>");
 		msg.append("<h4>Feeds processed: ").append("</h4>");
-		for (String feedName : feedList) {
-			msg.append(feedName).append(br);
+		for (Entry<String, List<String>> feedData : messages.entrySet()) {
+
+			//If this is a single Run, update the Subject Line to reflect the run.
+			if(messages.size() == 1) {
+				String subject = props.getProperty("subject");
+				props.replace("subject", StringUtil.join(subject, " - ", feedData.getKey()));
+			}
+			msg.append(feedData.getKey()).append(br);
+			for(String m : feedData.getValue()) {
+				msg.append(m).append(br);
+			}
 		}
 		// exec time
 		msg.append("<h4>Total elapsed time: ");

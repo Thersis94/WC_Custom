@@ -13,6 +13,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TimeZone;
 
 // J2EE libs
 import javax.servlet.http.HttpServletResponse;
@@ -615,7 +616,17 @@ public class UpdatesAction extends ManagementAction {
 					u.setUpdateDt(Convert.convertTimeZoneOffset(new Date(), "EST5EDT"));
 				}
 
-				u.setPublishDate(calcPublishDt(Convert.formatDate(req.getParameter("publishDt"))));
+				/*
+				 * If the submitted publish date is different than the old one,
+				 * process it.  If they're the same then use the oldPublishDate
+				 * which has the time.
+				 */
+				String oldPubDt = req.getParameter("oldPubDt");
+				if(StringUtil.isEmpty(oldPubDt) || !publishDateSameDay(oldPubDt, req.getParameter("publishDt"))) {
+					u.setPublishDate(calcPublishDt(Convert.formatDate(req.getParameter("publishDt"))));
+				} else {
+					u.setPublishDate(Convert.formatDate(oldPubDt));
+				}
 
 				db.save(u);
 
@@ -635,6 +646,21 @@ public class UpdatesAction extends ManagementAction {
 	}
 
 	/**
+	 * Check if the oldPublishDt and the new are the same day in the year.
+	 * @param parameter
+	 * @param parameter2
+	 * @return
+	 */
+	private boolean publishDateSameDay(String oldPubDt, String newPubDt) {
+		Calendar old = Calendar.getInstance();
+		old.setTime(Convert.formatDate(oldPubDt));
+		Calendar reqPub = Calendar.getInstance();
+		reqPub.setTime(Convert.formatDate(newPubDt));
+		return old.get(Calendar.DAY_OF_YEAR) == reqPub.get(Calendar.DAY_OF_YEAR);
+
+	}
+
+	/**
 	 * Determine if Time needs Adjusted on the PublishDate.
 	 * @param reqDate
 	 * @return
@@ -645,7 +671,7 @@ public class UpdatesAction extends ManagementAction {
 		}
 
 		Calendar pDate = Calendar.getInstance();
-		Calendar now = Calendar.getInstance();
+		Calendar now = Calendar.getInstance(TimeZone.getTimeZone(ZoneId.of("EST5EDT")));
 		pDate.setTime(reqDate);
 
 		boolean isSameDay = pDate.get(Calendar.DAY_OF_YEAR) == now.get(Calendar.DAY_OF_YEAR);
