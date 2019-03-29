@@ -509,6 +509,7 @@ public class MarketManagementAction extends ManagementAction {
 		DBProcessor db = new DBProcessor(dbConn, customDbSchema);
 		market = (MarketVO) db.executeSelect(sql.toString(), params, new MarketVO()).get(0);
 		req.getSession().setAttribute("marketName", market.getMarketName());
+		req.getSession().setAttribute("shortMarketName", market.getShortName());
 		req.getSession().setAttribute("marketNameParam", StringEncoder.urlEncode(market.getMarketName()));
 
 		// Get specifics on market details

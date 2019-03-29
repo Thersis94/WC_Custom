@@ -38,7 +38,7 @@ import com.biomed.smarttrak.admin.ToolsFacadeAction;
 import com.biomed.smarttrak.admin.UpdateListTitleAction;
 import com.biomed.smarttrak.admin.UpdatesAction;
 import com.biomed.smarttrak.admin.UpdatesEmailSendAction;
-import com.biomed.smarttrak.admin.UpdatesWeeklyReportAction;
+import com.biomed.smarttrak.admin.UpdatesManageReportAction;
 import com.biomed.smarttrak.admin.UserAccountSearchAction;
 import com.biomed.smarttrak.admin.ZohoIntegrationAction;
 import com.biomed.smarttrak.admin.report.EmailReportAction;
@@ -232,7 +232,7 @@ public class AdminControllerAction extends SimpleActionAdapter {
 		ACTIONS.put("marketingCampaigns", CampaignInstanceAction.class);
 		ACTIONS.put("crm", CRMAction.class);
 		ACTIONS.put("marketingInstanceReport", InstanceReport.class);
-		ACTIONS.put("uwr", UpdatesWeeklyReportAction.class); 
+		ACTIONS.put("uwr", UpdatesManageReportAction.class);
 		ACTIONS.put("grid", GridChartAction.class);
 		ACTIONS.put("author", ManageAuthorAction.class);
 		ACTIONS.put("editorsDesk", EditorsDeskAction.class);
