@@ -15,6 +15,7 @@ import com.biomed.smarttrak.action.rss.vo.RSSArticleVO;
 import com.biomed.smarttrak.action.rss.vo.RSSFeedSegment;
 import com.biomed.smarttrak.admin.AccountAction;
 import com.biomed.smarttrak.admin.UpdatesAction;
+import com.biomed.smarttrak.util.RSSArticleIndexer;
 import com.biomed.smarttrak.vo.UserVO.AssigneeSection;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -79,7 +80,7 @@ public class NewsroomAction extends SBActionAdapter {
 			loadSegmentGroupArticles(req);
 		} else if(req.hasParameter(FEED_GROUP_ID) && !req.hasParameter("isConsole")) {
 			//Get the Filtered Updates according to Request.
-			getFilteredUpdates(req);
+			getFilteredArticles(req);
 
 			ModuleVO mod = (ModuleVO) attributes.get(Constants.MODULE_DATA);
 			SolrResponseVO resp = (SolrResponseVO)mod.getActionData();
@@ -161,23 +162,6 @@ public class NewsroomAction extends SBActionAdapter {
 	}
 
 	/**
-	 * Method loads list of articles tied to a given groupId.
-	 * @param req
-	 * @return 
-	 */
-	private List<RSSArticleVO> loadArticles(String feedGroupId, String statusCd, int offset) {
-		List<Object> vals = new ArrayList<>();
-		boolean hasStatus = !"ALL".equals(StringUtil.checkVal(statusCd));
-		vals.add(feedGroupId);
-		if(hasStatus) {
-			vals.add(statusCd);
-		}
-
-		DBProcessor dbp = new DBProcessor(dbConn, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
-		return dbp.executeSelect(loadArticleSql(hasStatus), vals, new RSSArticleVO(), null, offset, offset+10);
-	}
-
-	/**
 	 * Helper method that returns list of Updates filtered by ActionRequest
 	 * parameters.
 	 * @param req
@@ -186,7 +170,7 @@ public class NewsroomAction extends SBActionAdapter {
 	 * @return
 	 * @throws ActionException 
 	 */
-	private void getFilteredUpdates(ActionRequest req) throws ActionException {
+	private void getFilteredArticles(ActionRequest req) throws ActionException {
 		//parse the requet object
 		setSolrParams(req);
 		
@@ -299,30 +283,6 @@ public class NewsroomAction extends SBActionAdapter {
 		}
 		sql.append(DBUtil.ORDER_BY).append("a.create_dt desc ");
 
-		return sql.toString();
-	}
-
-	/**
-	 * Method returns the sql for loading the article list.
-	 * @return
-	 */
-	private String loadArticleSql(boolean hasStatusCd) {
-		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
-		StringBuilder sql = new StringBuilder(750);
-		sql.append(DBUtil.SELECT_CLAUSE).append("a.rss_article_id, a.rss_entity_id, ");
-		sql.append("a.publication_nm, a.article_guid, a.article_url, a.article_source_type, ");
-		sql.append("a.attribute1_txt, a.publish_dt, a.create_dt, af.rss_article_filter_id, ");
-		sql.append("af.feed_group_id, af.article_status_cd, af.bucket_id, af.match_no, ");
-		sql.append("coalesce(af.filter_title_txt, a.title_txt, 'Untitled') as filter_title_txt, ");
-		sql.append("coalesce(af.filter_article_txt, a.article_txt, 'No Article Available') as filter_article_txt ");
-		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("biomedgps_rss_article a ");
-		sql.append(DBUtil.INNER_JOIN).append(schema).append("biomedgps_rss_filtered_article af ");
-		sql.append("on a.rss_article_id = af.rss_article_id ");
-		sql.append("where af.feed_group_id = ? ");
-		if(hasStatusCd) {
-			sql.append("and af.article_status_cd = ? ");
-		}
-		sql.append("order by a.create_dt desc ");
 		return sql.toString();
 	}
 
@@ -468,10 +428,22 @@ public class NewsroomAction extends SBActionAdapter {
 			}
 			fields.add("rss_article_filter_id");
 			dbp.executeSqlUpdate(getUpdateArticleSql(hasBucketId), rss, fields);
+
+			writeToSolr(rss);
 		} catch (Exception e) {
 			log.error("Error updating article status Code", e);
 			throw new ActionException(e);
 		}
+	}
+
+	/**
+	 * Save an UpdatesVO to solr.
+	 * @param u
+	 */
+	protected void writeToSolr(RSSArticleFilterVO rss) {
+		RSSArticleIndexer idx = RSSArticleIndexer.makeInstance(getAttributes());
+		idx.setDBConnection(dbConn);
+		idx.indexItems(rss.getArticleFilterId());
 	}
 
 	/**
