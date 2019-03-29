@@ -106,6 +106,7 @@ public class GridVO extends BeanDataVO {
 	private String gridId;
 	private String gridType;
 	private String title;
+	private String shortTitle;
 	private String subtitle;
 	private String disclaimer;
 	private String primaryYTitle;
@@ -201,6 +202,14 @@ public class GridVO extends BeanDataVO {
 	@Column(name="title_nm")
 	public String getTitle() {
 		return title;
+	}
+
+	/**
+	 * @return the shortTitle
+	 */
+	@Column(name="short_title_nm")
+	public String getShortTitle() {
+		return shortTitle;
 	}
 
 	/**
@@ -504,6 +513,13 @@ public class GridVO extends BeanDataVO {
 	 */
 	public void setTitle(String title) {
 		this.title = title;
+	}
+
+	/**
+	 * @param shortTitle the shortTitle to set
+	 */
+	public void setShortTitle(String shortTitle) {
+		this.shortTitle = shortTitle;
 	}
 
 	/**
