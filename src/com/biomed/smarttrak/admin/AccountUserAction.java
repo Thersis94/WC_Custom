@@ -439,7 +439,7 @@ public class AccountUserAction extends SBActionAdapter {
 			StringEncrypter se = new StringEncrypter(encKey);
 			String encProfileId = StringEncoder.urlEncode(se.encrypt(req.getParameter("loginAs")));
 
-			SecurityController sc = new SecurityController(site.getLoginModule(), site.getRoleModule(), getAttributes());
+			SecurityController sc = new SecurityController(site.getLoginModules(), site.getRoleModule(), getAttributes());
 			sc.processCookieLogin(encProfileId, dbConn, req, site);
 
 			sendRedirect("/","", req);

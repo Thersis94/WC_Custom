@@ -271,7 +271,7 @@ public class AccountAction extends SBActionAdapter {
 	 */
 	protected String formatRetrieveQuery(String accountId, String schema) {
 		StringBuilder sql = new StringBuilder(600);
-		sql.append("select a.account_id, a.company_id, a.account_nm, a.type_id, ");
+		sql.append("select a.account_id, a.company_id, a.account_nm, a.type_id, a.enterprise_flg, a.complimentary_flg, ");
 		sql.append("a.start_dt, a.expiration_dt, a.owner_profile_id, a.address_txt, ");
 		sql.append("a.address2_txt, a.city_nm, a.state_cd, a.zip_cd, a.country_cd, a.company_url, a.coowner_profile_id, ");
 		sql.append("a.status_no, a.create_dt, a.update_dt, a.fd_auth_flg, a.ga_auth_flg, a.mkt_auth_flg, ");
