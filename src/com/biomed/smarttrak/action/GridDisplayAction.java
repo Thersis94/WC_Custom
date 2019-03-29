@@ -1,5 +1,6 @@
 package com.biomed.smarttrak.action;
 
+import java.math.BigDecimal;
 // JDK 1.8
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -8,33 +9,29 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import java.math.BigDecimal;
 
 // App Libs
 import com.biomed.smarttrak.admin.GridChartAction;
 import com.biomed.smarttrak.admin.vo.GridDetailVO;
 import com.biomed.smarttrak.admin.vo.GridVO;
 import com.biomed.smarttrak.vo.grid.BiomedExcelReport;
-
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.report.chart.SMTChartDetailVO;
-import com.siliconmtn.data.report.chart.SMTChartVO;
 import com.siliconmtn.data.report.chart.SMTChartFactory;
 import com.siliconmtn.data.report.chart.SMTChartFactory.ProviderType;
 import com.siliconmtn.data.report.chart.SMTChartIntfc;
 import com.siliconmtn.data.report.chart.SMTChartOptionFactory;
 import com.siliconmtn.data.report.chart.SMTChartOptionFactory.ChartType;
 import com.siliconmtn.data.report.chart.SMTChartOptionIntfc;
+import com.siliconmtn.data.report.chart.SMTChartVO;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
-
 // WC Libs
 import com.smt.sitebuilder.action.SimpleActionAdapter;
-import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
 
 /********************************************************************
@@ -721,10 +718,7 @@ public class GridDisplayAction extends SimpleActionAdapter {
 		gca.setAttributes(getAttributes());
 		gca.setDBConnection(getDBConnection());
 
-		gca.retrieveData(gridId, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA), display);
-		ModuleVO mod = (ModuleVO) attributes.get(Constants.MODULE_DATA);
-
-		return (GridVO) mod.getActionData();
+		return gca.retrieveData(gridId, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA), display);
 	}
 
 }

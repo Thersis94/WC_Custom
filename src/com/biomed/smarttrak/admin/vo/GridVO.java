@@ -104,6 +104,7 @@ public class GridVO extends BeanDataVO {
 	
 	// Member Variables
 	private String gridId;
+	private String gridGroupId;
 	private String gridType;
 	private String title;
 	private String shortTitle;
@@ -115,6 +116,7 @@ public class GridVO extends BeanDataVO {
 	private String slug;
 	private String seriesLabel;
 	private boolean approved;
+	private boolean archived;
 	private int decimalDisplay;
 	private Date updateDate;
 	private Date createDate;
@@ -186,6 +188,14 @@ public class GridVO extends BeanDataVO {
 	@Column(name="grid_id", isPrimaryKey=true)
 	public String getGridId() {
 		return gridId;
+	}
+
+	/**
+	 * @return the gridGroupId
+	 */
+	@Column(name="grid_group_id")
+	public String getGridGroupId() {
+		return gridGroupId;
 	}
 
 	/**
@@ -273,6 +283,11 @@ public class GridVO extends BeanDataVO {
 	@Column(name="approve_flg")
 	public boolean isApproved() {
 		return approved;
+	}
+
+	@Column(name="archive_flg")
+	public boolean isArchived() {
+		return archived;
 	}
 
 	/**
@@ -502,6 +517,13 @@ public class GridVO extends BeanDataVO {
 	}
 
 	/**
+	 * @param gridGroupId - the gridGroupId to set
+	 */
+	public void setGridGroupId(String gridGroupId) {
+		this.gridGroupId = gridGroupId;
+	}
+
+	/**
 	 * @param gridType the gridType to set
 	 */
 	public void setGridType(String gridType) {
@@ -562,6 +584,13 @@ public class GridVO extends BeanDataVO {
 	 */
 	public void setApproved(boolean approved) {
 		this.approved = approved;
+	}
+
+	/**
+	 * @param archived the archived to set
+	 */
+	public void setArchived(boolean archived) {
+		this.archived = archived;
 	}
 
 	/**
@@ -1084,6 +1113,4 @@ public class GridVO extends BeanDataVO {
 	public void setLegacyName(String legacyName) {
 		this.legacyName = legacyName;
 	}
-
 }
-
