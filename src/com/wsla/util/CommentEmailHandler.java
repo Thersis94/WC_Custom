@@ -59,6 +59,7 @@ public class CommentEmailHandler implements EmailHandlerInterface {
 			comment.setComment(EmailReplyParser.parseReply(email.getTextBody()));
 			comment.setPriorityTicketFlag(0);
 			comment.setEndUserFlag(1);
+			comment.setActivityType(TicketCommentVO.ActivityType.COMMENT);
 			
 			tct.addTicketComment(comment, null);
 		}
