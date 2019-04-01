@@ -481,8 +481,8 @@ public class SelectLookupAction extends SBActionAdapter {
 		List<GenericVO> data = new ArrayList<>(8);
 		
 		if (lw.getLocale().equals(new Locale("es", "MX"))) {
-			data.add(new GenericVO("F", "Female"));
-			data.add(new GenericVO("M", "Hembra"));
+			data.add(new GenericVO("F", "Mujer"));
+			data.add(new GenericVO("M", "Hombre"));
 		} else {
 			data.add(new GenericVO("F", "Female"));
 			data.add(new GenericVO("M", "Male"));
@@ -536,8 +536,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		if (lw.getLocale().equals(new Locale("es", "MX"))) {
 			selectList.add(new GenericVO("Mr.", "Señor"));
 			selectList.add(new GenericVO("Mrs.", "Señora"));
-			selectList.add(new GenericVO("Ms", "Sra"));
-			selectList.add(new GenericVO("Miss", "Perder"));
+			selectList.add(new GenericVO("Miss", "Srta."));
 		} else {
 			selectList.add(new GenericVO("Mr.", "Mr."));
 			selectList.add(new GenericVO("Mrs.", "Mrs."));
