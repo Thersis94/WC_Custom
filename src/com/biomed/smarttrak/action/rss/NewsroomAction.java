@@ -10,6 +10,7 @@ import java.util.List;
 import org.apache.solr.common.SolrDocument;
 
 import com.biomed.smarttrak.action.rss.RSSDataAction.ArticleStatus;
+import com.biomed.smarttrak.action.rss.util.SmarttrakRSSImporter;
 import com.biomed.smarttrak.action.rss.vo.RSSArticleFilterVO;
 import com.biomed.smarttrak.action.rss.vo.RSSArticleVO;
 import com.biomed.smarttrak.action.rss.vo.RSSFeedSegment;
@@ -236,6 +237,11 @@ public class NewsroomAction extends SBActionAdapter {
 		boolean hasFilteredArticleId = rssFilteredArticleIds != null && !rssFilteredArticleIds.isEmpty();
 		boolean hasGroupId = !StringUtil.isEmpty(feedGroupId);
 
+		/* 
+		 * When running a full index, limit to articles within valid time range.  
+		 * No sense grabbing articles that are about to be or could be wiped while indexing.
+		 */
+		vals.add(SmarttrakRSSImporter.MAX_KEEP_DAYS);
 		if(hasGroupId) {
 			vals.add(feedGroupId);
 		}
@@ -270,14 +276,12 @@ public class NewsroomAction extends SBActionAdapter {
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("biomedgps_rss_filtered_article af ");
 		sql.append("on a.rss_article_id = af.rss_article_id ");
 		sql.append(DBUtil.WHERE_CLAUSE);
+		sql.append("create_dt < current_date - ? and article_status_cd != 'K' ");
 		if(hasGroupId)
-			sql.append("af.feed_group_id = ? ");
+			sql.append("and af.feed_group_id = ? ");
 
 		if(articleCount > 0) {
-			if(hasGroupId) {
-				sql.append("and ");
-			}
-			sql.append("af.rss_article_filter_id in (");
+			sql.append("and af.rss_article_filter_id in (");
 			DBUtil.preparedStatmentQuestion(articleCount, sql);
 			sql.append(") ");
 		}

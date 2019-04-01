@@ -41,12 +41,13 @@ import com.smt.sitebuilder.search.SMTIndexIntfc;
 public class SmarttrakRSSImporter extends CommandLineUtil {
 
 	private static final String SCRIPT_PROPERTIES_PATH = "scripts/bmg_smarttrak/rss_config.properties";
-	private static final int MAX_KEEP_DAYS = 60;
+	public static final int MAX_KEEP_DAYS = 60;
 	private static final String FEEDS_OOB_INDEXER_CLASSPATH = "feedsSolrClasspath";
 	private Map<String, List<String>> messages; 
 	private long startTime;
 	protected SolrClient server;
 	private SMTIndexIntfc index;
+
 	/**
 	 * @param args
 	 * @throws ApplicationException 
