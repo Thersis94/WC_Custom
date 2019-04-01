@@ -189,7 +189,18 @@ public class FinancialDashScenarioOverlayAction extends FinancialDashBaseAction 
 		
 		// Usinig coalesce here to "prefer" the overlay data over the standard data where applicable
 		sql.append("sum(coalesce(o.Q1_NO, r.Q1_NO)) as Q1_0, sum(coalesce(o.Q2_NO, r.Q2_NO)) as Q2_0, sum(coalesce(o.Q3_NO, r.Q3_NO)) as Q3_0, sum(coalesce(o.Q4_NO, r.Q4_NO)) as Q4_0, ");
-		sql.append("sum(coalesce(o2.Q1_NO, r2.Q1_NO)) as Q1_1, sum(coalesce(o2.Q2_NO, r2.Q2_NO)) as Q2_1, sum(coalesce(o2.Q3_NO, r2.Q3_NO)) as Q3_1, sum(coalesce(o2.Q4_NO, r2.Q4_NO)) as Q4_1 "); // Needed for all column display types to get percent change from prior year
+		// Market summation needs to handle skipping empty data from the current quarter in the current year
+		// in the comparison year so as to prevent the appearance of large losses in areas that have not yet been reported
+		if (TableType.MARKET == dash.getTableType() && dash.getColHeaders().getCalendarYear() == dash.getCurrentYear()) {
+			for (int i = 1; i <= 4; i++) {
+				if (i == dash.getCurrentQtr()) continue;
+				sql.append("sum(coalesce(o2.Q").append(i).append("_NO, r2.Q").append(i).append("_NO)) as Q").append(i).append("_1, ");
+			}
+			sql.append("sum(case when coalesce(o.Q").append(dash.getCurrentQtr()).append("_NO, r.Q").append(dash.getCurrentQtr()).append("_NO) > 0 then coalesce(o2.Q");
+			sql.append(dash.getCurrentQtr()).append("_NO, r2.Q").append(dash.getCurrentQtr()).append("_NO) else 0 end) as Q").append(dash.getCurrentQtr()).append("_1 ");
+		} else {
+			sql.append("sum(coalesce(o2.Q1_NO, r2.Q1_NO)) as Q1_1, sum(coalesce(o2.Q2_NO, r2.Q2_NO)) as Q2_1, sum(coalesce(o2.Q3_NO, r2.Q3_NO)) as Q3_1, sum(coalesce(o2.Q4_NO, r2.Q4_NO)) as Q4_1 "); // Needed for all column display types to get percent change from prior year
+		}
 		
 		// Add in additional years of data as required by the FD display type
 		int dataYears = getDataYears(dt, dash.getCurrentYear());
