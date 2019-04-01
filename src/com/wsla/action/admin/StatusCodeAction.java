@@ -168,6 +168,7 @@ public class StatusCodeAction extends SBActionAdapter {
 				putModuleData(saveStatus(req));
 			}
 		} catch (InvalidDataException | DatabaseException e) {
+			log.error("Unable to save status inifo", e);
 			putModuleData("", 0, false, e.getLocalizedMessage(), true);
 		}
 	}
