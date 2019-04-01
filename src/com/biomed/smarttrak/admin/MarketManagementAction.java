@@ -244,9 +244,9 @@ public class MarketManagementAction extends ManagementAction {
 	 * Get attributes assigned to a particular market.
 	 * @param req
 	 */
-	private void retireveMarketAttributes(ActionRequest req) {
+	private void retireveMarketAttributes(ActionRequest req, ActionTarget type) {
 		if (req.hasParameter("marketAttributeId"))
-			retrieveMarketAttribute(req);
+			retrieveMarketAttribute(req, type);
 	}
 
 
@@ -281,7 +281,7 @@ public class MarketManagementAction extends ManagementAction {
 	 * get a particular market attribute from the database for editing
 	 * @param req
 	 */
-	private void retrieveMarketAttribute(ActionRequest req) {
+	private void retrieveMarketAttribute(ActionRequest req, ActionTarget type) {
 		StringBuilder sql = new StringBuilder(300);
 		sql.append("SELECT xr.*, a.TYPE_CD, m.MARKET_NM FROM ").append(customDbSchema).append("BIOMEDGPS_MARKET_ATTRIBUTE_XR xr ");
 		sql.append(LEFT_OUTER_JOIN).append(customDbSchema).append("BIOMEDGPS_MARKET_ATTRIBUTE a ");
@@ -294,7 +294,15 @@ public class MarketManagementAction extends ManagementAction {
 		params.add(req.getParameter("marketAttributeId"));
 		DBProcessor db = new DBProcessor(dbConn, customDbSchema);
 		MarketAttributeVO attr = (MarketAttributeVO) db.executeSelect(sql.toString(), params, new MarketAttributeVO()).get(0);
-		putModuleData(attr);
+		super.putModuleData(attr);
+		if (ActionTarget.UNKNOWNATTRIBUTE == type) {
+			if ("LINK".equals(attr.getAttributeTypeCd())) {
+				req.setParameter(ACTION_TARGET, ActionTarget.MARKETLINK.toString());
+			} else {
+				req.setParameter(ACTION_TARGET, ActionTarget.MARKETATTRIBUTE.toString());
+			}
+		}
+
 		req.setParameter("rootNode", attr.getAttributeId());
 	}
 
