@@ -9,17 +9,15 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-// App Libs
-import static com.biomed.smarttrak.action.GridDisplayAction.GRID_ID;
-
+import com.biomed.smarttrak.action.GridDisplayAction;
 import com.biomed.smarttrak.admin.report.GridClipboardReport;
 import com.biomed.smarttrak.admin.vo.GridDetailVO;
 import com.biomed.smarttrak.admin.vo.GridVO;
-
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -28,13 +26,17 @@ import com.siliconmtn.common.constants.GlobalConfig;
 import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
+import com.siliconmtn.db.util.DatabaseException;
+import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
-
+import com.siliconmtn.util.UUIDGenerator;
 // WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
+import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.common.constants.ErrorCodes;
+import com.smt.sitebuilder.util.RecordDuplicatorUtility;
 
 /********************************************************************
  * <b>Title: </b>GridChartAction.java<br/>
@@ -45,12 +47,13 @@ import com.smt.sitebuilder.common.constants.ErrorCodes;
  * @version 3.x
  * @since Feb 24, 2017
  * Last Updated:
- * 	
+ *
  *******************************************************************/
 public class GridChartAction extends SBActionAdapter {
 	// Maps the table field name to the db field name for sorting purposes
 	private Map<String, String> sortMapper;
-
+	public static final String DB_GRID_ID = "GRID_ID";
+	public static final String GRID_ID = GridDisplayAction.GRID_ID;
 	/**
 	 * 
 	 */
@@ -70,6 +73,87 @@ public class GridChartAction extends SBActionAdapter {
 		super(actionInit);
 	}
 
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	@Override
+	public void copy(ActionRequest req) throws ActionException {
+		Boolean isWizard = Convert.formatBoolean(req.getParameter(AdminConstants.IS_WIZARD));
+		Map<String, Object> replaceVals = ((Map)(attributes.get(RecordDuplicatorUtility.REPLACE_VALS)));
+
+		try {
+			if (!isWizard) {
+				dbConn.setAutoCommit(false);
+			}
+
+			//Check for ReplaceVals Map.
+			if(replaceVals == null) {
+				replaceVals = new HashMap<>();
+				attributes.put(RecordDuplicatorUtility.REPLACE_VALS, replaceVals);
+			}
+			String gridId = req.getParameter(GRID_ID);
+			//Copy Grid
+			RecordDuplicatorUtility rdu = new RecordDuplicatorUtility(attributes, dbConn, "BIOMEDGPS_GRID", DB_GRID_ID, true);
+			rdu.setSchemaNm(getCustomSchema());
+			rdu.addWhereClause(DB_GRID_ID, gridId);
+			replaceVals.put(DB_GRID_ID, rdu.copy());
+
+			//Copy Grid Details
+			rdu = new RecordDuplicatorUtility(attributes, dbConn, "BIOMEDGPS_GRID_DETAIL", "GRID_DETAIL_ID", true);
+			rdu.setSchemaNm(getCustomSchema());
+			rdu.addWhereListClause(DB_GRID_ID);
+
+			replaceVals.put("GRID_DETAIL_ID", rdu.copy());
+
+			updateNewName((String)((Map)replaceVals.get(DB_GRID_ID)).get(gridId));
+			if (!isWizard) {
+				dbConn.commit();
+				dbConn.setAutoCommit(true);
+			}
+		} catch(Exception e) {
+			log.error("Copy Grid and Charts Failed", e);
+			try {
+				dbConn.rollback();
+			} catch (SQLException sqle) {
+				log.error("A Problem occured with the rollback.", sqle);
+			}
+			throw new ActionException(e);
+		}
+	}
+
+	@Override
+	public void delete(ActionRequest req) throws ActionException {
+		String gridId = req.getParameter(GRID_ID);
+
+		StringBuilder sql = new StringBuilder(150);
+		sql.append(DBUtil.DELETE_CLAUSE).append(DBUtil.FROM_CLAUSE).append(getCustomSchema()).append("BIOMEDGPS_GRID ");
+		sql.append(DBUtil.WHERE_CLAUSE).append("grid_id = ?");
+		if(!StringUtil.isEmpty(gridId)) {
+			try(PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+				ps.setString(1, gridId);
+				log.debug(ps);
+				ps.executeUpdate();
+			} catch (SQLException e) {
+				log.error("Error Processing Code", e);
+			}
+		}
+	}
+
+	/**
+	 * @param object
+	 */
+	private void updateNewName(String newGridId) {
+		StringBuilder sql = new StringBuilder(150);
+		sql.append(DBUtil.UPDATE_CLAUSE).append(getCustomSchema()).append("biomedgps_grid ");
+		sql.append("set  title_nm = concat(title_nm, ' (copy)') ");
+		sql.append(DBUtil.WHERE_CLAUSE).append("grid_id = ?");
+
+		try(PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, newGridId);
+			ps.executeUpdate();
+		} catch (SQLException e) {
+			log.error("Error Updating new Grid Title", e);
+		}
+	}
+
 	/*
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.action.ActionRequest)
@@ -85,7 +169,8 @@ public class GridChartAction extends SBActionAdapter {
 		} else if ("column".equalsIgnoreCase(req.getParameter("type"))) {
 			getColumnList(schema, gridId);
 		} else if (! "ADD".equalsIgnoreCase(gridId)){
-			retrieveData(gridId, schema, false);
+			GridVO g = retrieveData(gridId, schema, false);
+			putModuleData(g);
 		}
 	}
 
@@ -178,6 +263,8 @@ public class GridChartAction extends SBActionAdapter {
 	public void build(ActionRequest req) throws ActionException {
 		if (Convert.formatBoolean(req.getParameter("deleteLegacy"))) {
 			deactivateLegacy(req.getParameter("slugText"));
+		} else if(req.getBooleanParameter("promoteFlg")) {
+			promoteGridCharts(req);
 		} else if(req.hasParameter("tableData")) {
 			buildGridExcel(req);
 		}else {
@@ -185,6 +272,86 @@ public class GridChartAction extends SBActionAdapter {
 		}
 	}
 
+
+	/**
+	 * Promote given gridId to replace the records where gridId = gridGroupId.
+	 * @param gridId
+	 * @param gridGroupId
+	 * @throws ActionException 
+	 */
+	private void promoteGridCharts(ActionRequest req) throws ActionException {
+
+		String gridId = req.getParameter(GRID_ID);
+		String gridGroupId = req.getParameter("gridGroupId");
+
+		try {
+			dbConn.setAutoCommit(false);
+
+			// Archive Current Grid Group.
+			archiveCurrentGrid(gridGroupId);
+
+			// Migrate Data to existing Grid Group
+			migratePromotedData(gridId, gridGroupId);
+
+			// Delete migrated Grid.  Placeholder no longer necessary.
+			delete(req);
+
+			dbConn.commit();
+			dbConn.setAutoCommit(true);
+		} catch(Exception e) {
+			log.error("Problem Promoting ");
+		}
+	}
+
+	/**
+	 * Archive grid where gridId = gridGroupId
+	 * @param gridGroupId
+	 * @throws Exception 
+	 */
+	private void archiveCurrentGrid(String gridGroupId) throws Exception {
+
+		//Load Existing Grid. Ensure Display false to prevent loss of data.
+		GridVO g = retrieveData(gridGroupId, getCustomSchema(), false);
+
+		//Flush GridId and update flags to reflect new record in archive state.
+		g.setGridId(null);
+		g.setApproved(false);
+		g.setArchived(true);
+
+		//Flush GridDetailIds to ensure inserts.
+		for(GridDetailVO d : g.getDetails()) {
+			d.setGridDetailId(null);
+		}
+
+		//Save Grid
+		this.persistGridChanges(g, new HashMap<>());
+	}
+
+	/**
+	 * Update Current Live records with data sitting in placeholder edit record.
+	 * @param gridId
+	 * @param gridGroupId
+	 * @throws Exception 
+	 */
+	private void migratePromotedData(String gridId, String gridGroupId) throws Exception {
+
+		//Load New Record we want to promote. Ensure Display false to prevent loss of data.
+		GridVO g = retrieveData(gridId, getCustomSchema(), false);
+
+		//Update it's gridId to be the gridGroupId.  We're replacing that record.
+		g.setGridId(gridGroupId);
+
+		//Ensure it's not archived
+		g.setArchived(false);
+
+		//Flush GridDetailIds to ensure inserts.
+		for(GridDetailVO d : g.getDetails()) {
+			d.setGridDetailId(null);
+		}
+
+		//Save Record.
+		this.persistGridChanges(g, new HashMap<>());
+	}
 
 	/**
 	 * Create an excel file from the supplied table data.
@@ -230,21 +397,56 @@ public class GridChartAction extends SBActionAdapter {
 		grid.setCreateDate(new Date());
 		grid.setUpdateDate(new Date());
 
-		log.debug(req.getParameter(GridVO.JSON_DATA_KEY));
 		String msg = "You have successfuly saved the grid data";
 		boolean error = false;
+
+		log.debug(req.getParameter(GridVO.JSON_DATA_KEY));
 		Map<String, String> columnMatch = new HashMap<>(grid.getDetails().size());
-		DBProcessor db = new DBProcessor(dbConn, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
 
 		// For the financial dashboard, find existing grid by name
 		if (StringUtil.isEmpty(grid.getGridId()) && "FINANCE_DASHBOARD".equalsIgnoreCase(grid.getGridType())) {
 			grid.setGridId(findGridIdByName(grid));
 		}
 
+		//Persist the Grid.
 		try {
-			// Make sure the new grid id is assigned when creating a new grid
-			// otherwise use the existing
-			db.save(grid);
+			persistGridChanges(grid, columnMatch);
+		} catch(Exception e) {
+			error = true;
+			msg = e.getLocalizedMessage();
+		}
+
+		// Return the data
+		Map<String, Object> response = new HashMap<>(8);
+		response.put(GRID_ID, grid.getGridId());
+		response.put("gridGroupId", grid.getGridGroupId());
+		response.put(GlobalConfig.SUCCESS_KEY, !error);
+		response.put(ErrorCodes.ERR_JSON_ACTION, msg);
+		response.put(ErrorCodes.ERR_JSON_ACTION, msg);
+		response.put(GlobalConfig.ACTION_DATA_KEY, columnMatch);
+		response.put(GlobalConfig.ACTION_DATA_COUNT, columnMatch.size());
+		putModuleData(response, 0, false, msg, error);
+
+	}
+
+
+	/**
+	 * @param grid
+	 * @param columnMatch 
+	 */
+	private void persistGridChanges(GridVO grid, Map<String, String> columnMatch) throws Exception {
+		DBProcessor db = new DBProcessor(dbConn, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
+		try {
+
+			//On new Record, ensure gridId and gridGroupId are same before inserting, else save as normal.
+			if(StringUtil.isEmpty(grid.getGridId())) {
+				grid.setGridId(new UUIDGenerator().getUUID());
+				grid.setGridGroupId(grid.getGridId());
+				db.insert(grid);
+			} else {
+				db.save(grid);
+			}
+
 			log.debug("Grid ID: " + grid.getGridId());
 
 			// Delete any rows that aren't being updated
@@ -264,30 +466,17 @@ public class GridChartAction extends SBActionAdapter {
 				db.save(detail);
 				if (gridDetailId.startsWith("BIO_")) columnMatch.put(gridDetailId, detail.getGridDetailId());
 			}
-		} catch (Exception e) {
+		} catch (InvalidDataException | DatabaseException e) {
 			log.error("unable to save the grid data", e);
-			msg = e.getLocalizedMessage();
-			error = true;
+			throw e;
 		}
-
-		// Return the data
-		Map<String, Object> response = new HashMap<>(8);
-		response.put(GRID_ID, grid.getGridId());
-		response.put(GlobalConfig.SUCCESS_KEY, !error);
-		response.put(ErrorCodes.ERR_JSON_ACTION, msg);
-		response.put(ErrorCodes.ERR_JSON_ACTION, msg);
-		response.put(GlobalConfig.ACTION_DATA_KEY, columnMatch);
-		response.put(GlobalConfig.ACTION_DATA_COUNT, columnMatch.size());
-		putModuleData(response, 0, false, msg, error);
-
 	}
-
 
 	/**
 	 * Deletes any rows not being updated
 	 * @param grid
 	 */
-	public void deleteRows(GridVO grid) {
+	private void deleteRows(GridVO grid) {
 		// Build a collection of new ID's
 		Set<String> ids = new HashSet<>();
 		Set<String> delIds = new HashSet<>();
@@ -296,7 +485,7 @@ public class GridChartAction extends SBActionAdapter {
 		}
 
 		// Build the delete sql
-		Object schema = getAttribute(Constants.CUSTOM_DB_SCHEMA);
+		String schema = getCustomSchema();
 
 		// Build the SQL to retrieve the list of ids
 		StringBuilder lSql = new StringBuilder(128);
@@ -391,7 +580,7 @@ public class GridChartAction extends SBActionAdapter {
 	 * @param req
 	 * @param schema
 	 */
-	public void retrieveData(String gridId, String schema, boolean display) {
+	public GridVO retrieveData(String gridId, String schema, boolean display) {
 		StringBuilder sql = new StringBuilder(650);
 		sql.append("select a.*, b.*, g2.grid_id as LEGACY_ID, g2.title_nm as LEGACY_NM from ").append(schema).append("biomedgps_grid a ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("biomedgps_grid_detail b on a.grid_id = b.grid_id ");
@@ -404,12 +593,12 @@ public class GridChartAction extends SBActionAdapter {
 
 		DBProcessor db = new DBProcessor(dbConn);
 		List<Object> params = Arrays.asList(new Object[]{gridId, gridId});
-		List<?> data = db.executeSelect(sql.toString(), params, new GridVO(), null);
+		List<GridVO> data = db.executeSelect(sql.toString(), params, new GridVO(), null);
 		if (log.isDebugEnabled())
 			log.debug("Data: " + data);
 
-		// Add the vo only.  Add a blank bean if nothing found
-		putModuleData(data.isEmpty() ? new GridVO() : data.get(0));
+		// Return the vo only.  Add a blank bean if nothing found
+		return data.isEmpty() ? new GridVO() : data.get(0);
 	}
 
 	/**
@@ -450,9 +639,12 @@ public class GridChartAction extends SBActionAdapter {
 		int count = 0;
 		String search = StringUtil.checkVal(req.getParameter("search")).toUpperCase();
 
-		StringBuilder sql = new StringBuilder(100);
+		StringBuilder sql = new StringBuilder(250);
 		sql.append("select count(*) from ").append(schema).append("biomedgps_grid ");
-		if (search.length() > 0) sql.append("where upper(title_nm) like ? or upper(subtitle_nm) like ? ");
+		sql.append(DBUtil.WHERE_1_CLAUSE);
+		if (search.length() > 0) sql.append("and (upper(title_nm) like ? or upper(subtitle_nm) like ?) ");
+		if(!req.getBooleanParameter("showArchives"))
+			sql.append("and archive_flg = 'false' ");
 
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			if (search.length() > 0) {
@@ -460,6 +652,7 @@ public class GridChartAction extends SBActionAdapter {
 				ps.setString(2, "%" + search + "%");
 			}
 
+			log.debug(ps);
 			ResultSet rs = ps.executeQuery();
 			rs.next();
 			count = rs.getInt(1);
@@ -481,20 +674,38 @@ public class GridChartAction extends SBActionAdapter {
 		String sort = StringUtil.checkVal(sortMapper.get(req.getParameter("sort")), "title_nm");
 		String order = StringUtil.checkVal(req.getParameter("order"), "asc");
 		String search = StringUtil.checkVal(req.getParameter("search")).toUpperCase();
+		boolean showArchives = req.getBooleanParameter("showArchives");
 		if ("update_dt".equalsIgnoreCase(sort)){
 			sort = "coalesce(update_dt, create_dt)";
 		}
 
 		// Build the SQL
-		List<GridVO> data = new ArrayList<>();
-		StringBuilder sql = new StringBuilder(200);
-		sql.append("select a.*, (select count(*) from ").append(schema).append("biomedgps_grid_detail b ");
-		sql.append("where a.grid_id = b.grid_id) as total_rows ");
-		sql.append("from ").append(schema).append("biomedgps_grid a ");
-		if (search.length() > 0) sql.append("where upper(title_nm) like ? or upper(subtitle_nm) like ? ");
+		Map<String, GridVO> data = new LinkedHashMap<>();
+		StringBuilder sql = new StringBuilder(800);
+		
+		sql.append("select *, 1 as original from (");
+		sql.append("select a.*, (");
+		sql.append("select count(*) from ").append(schema).append("biomedgps_grid_detail b where a.grid_id = b.grid_id ");
+		sql.append(") as total_rows from ").append(schema).append("biomedgps_grid a ");
+		sql.append("where ");
+		if(showArchives) {
+			sql.append("(a.grid_id = a.grid_group_id or a.archive_flg = true) ");
+		} else {
+			sql.append("a.grid_id = a.grid_group_id and a.archive_flg = false ");
+		}
+		if (search.length() > 0) sql.append("and (upper(title_nm) like ? or upper(subtitle_nm) like ?) ");
 		sql.append("order by ").append(sort).append(" ").append(order);
-		sql.append(" limit ? offset ? ");		
-		log.debug(sql.toString());
+		sql.append(" limit ? offset ? ) as a ");
+		sql.append("union ");
+		sql.append("select *, 0 as original from (");
+		sql.append("select a.*, (");
+		sql.append("select count(*) from ").append(schema).append("biomedgps_grid_detail b where a.grid_id = b.grid_id ");
+		sql.append(") as total_rows from ").append(schema).append("biomedgps_grid a ");
+		sql.append("where a.grid_id != a.grid_group_id and archive_flg != true ");
+		if (search.length() > 0) sql.append("and (upper(title_nm) like ? or upper(subtitle_nm) like ?) ");
+		sql.append("order by ").append(sort).append(" ").append(order);
+		sql.append(" limit ? offset ? ) as b ");
+		sql.append("order by original desc, ").append(sort).append(" ").append(order);
 
 		// Loop the data and store
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
@@ -507,15 +718,29 @@ public class GridChartAction extends SBActionAdapter {
 			ps.setInt(ctr++, rpp);
 			ps.setInt(ctr++, start);
 
+			if (search.length() > 0) {
+				ps.setString(ctr++, "%" + search + "%");
+				ps.setString(ctr++, "%" + search + "%");
+			}
+
+			ps.setInt(ctr++, rpp);
+			ps.setInt(ctr++, start);
+
+			log.debug(ps);
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
 				GridVO vo = new GridVO(rs);
 				vo.setNumberRows(rs.getInt("total_rows"));
-				data.add(vo);
+
+				//If we're showing Archives, don't stack them in same way Live/InProgress grids are stacked.
+				if(vo.isArchived()) {
+					data.put(vo.getGridId(), vo);
+				} else {
+					data.put(vo.getGridGroupId(), vo);
+				}
 			}
 		}
 
-		return data;
+		return new ArrayList<>(data.values());
 	}
 }
-

@@ -52,6 +52,7 @@ import com.wsla.action.ticket.CASSelectionAction;
 import com.wsla.action.ticket.TicketListAction;
 import com.wsla.action.ticket.TicketSearchAction;
 import com.wsla.action.ticket.TicketEditAction;
+import com.wsla.common.LocaleWrapper;
 import com.wsla.common.WSLALocales;
 import com.wsla.common.WSLAConstants.WSLARole;
 import com.wsla.data.product.LocationItemMasterVO;
@@ -113,12 +114,12 @@ public class SelectLookupAction extends SBActionAdapter {
 		keyMap.put("provider", new GenericVO("getProviders", Boolean.TRUE));
 		keyMap.put("oemParts", new GenericVO("getProviderParts", Boolean.TRUE));
 		keyMap.put("providerLocations", new GenericVO("getProviderLocations", Boolean.TRUE));
-		keyMap.put("activeFlag", new GenericVO("getYesNoLookup", Boolean.FALSE));
+		keyMap.put("activeFlag", new GenericVO("getYesNoLookup", Boolean.TRUE));
 		keyMap.put("warrantyServiceTypeCode", new GenericVO("getServiceTypeCode", Boolean.FALSE));
 		keyMap.put("role", new GenericVO("getOrgRoles", Boolean.TRUE));
 		keyMap.put("locale", new GenericVO("getLocales", Boolean.FALSE));
-		keyMap.put("gender", new GenericVO("getGenders", Boolean.FALSE));
-		keyMap.put("prefix", new GenericVO("getPrefix", Boolean.FALSE));
+		keyMap.put("gender", new GenericVO("getGenders", Boolean.TRUE));
+		keyMap.put("prefix", new GenericVO("getPrefix", Boolean.TRUE));
 		keyMap.put("defect", new GenericVO("getDefects", Boolean.TRUE));
 		keyMap.put("product", new GenericVO("getProducts", Boolean.TRUE));
 		keyMap.put("productSetParts", new GenericVO("getProductSetParts", Boolean.TRUE));
@@ -236,11 +237,17 @@ public class SelectLookupAction extends SBActionAdapter {
 	 * Load a yes no list
 	 * @return
 	 */
-	public List<GenericVO> getYesNoLookup() {
+	public List<GenericVO> getYesNoLookup(ActionRequest req) {
+		LocaleWrapper lw = new LocaleWrapper(req);
 		List<GenericVO> yesNo = new ArrayList<>();
-
-		yesNo.add(new GenericVO("1","Yes"));
-		yesNo.add(new GenericVO("0","No"));
+		
+		if (lw.getLocale().equals(new Locale("es", "MX"))) {
+			yesNo.add(new GenericVO("1","Sí"));
+			yesNo.add(new GenericVO("0","No"));
+		} else {
+			yesNo.add(new GenericVO("1","Yes"));
+			yesNo.add(new GenericVO("0","No"));
+		}
 
 		return yesNo;
 	}
@@ -359,7 +366,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		sql.append("where provider_type_id = 'RETAILER' ");
 		sql.append("and (lower(provider_nm) like ? or lower(location_nm) like ? ");
 		sql.append("or lower(city_nm) like ? or store_no like ?) ");
-		sql.append("order by provider_nm");
+		sql.append("order by provider_nm ");
 
 		List<Object> vals = new ArrayList<>();
 		vals.add(term);
@@ -368,7 +375,8 @@ public class SelectLookupAction extends SBActionAdapter {
 		vals.add(term);
 
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
-		return db.executeSelect(sql.toString(), vals, new GenericVO());
+		db.setGenerateExecutedSQL(log.isDebugEnabled());
+		return db.executeSelect(sql.toString(), vals, new GenericVO(),null,req.getIntegerParameter("offset").intValue(), req.getIntegerParameter("limit").intValue());
 	}
 
 	/**
@@ -467,11 +475,18 @@ public class SelectLookupAction extends SBActionAdapter {
 	 * Gets the supported genders for the app
 	 * @return
 	 */
-	public List<GenericVO> getGenders() {
+	public List<GenericVO> getGenders(ActionRequest req) {
+		LocaleWrapper lw = new LocaleWrapper(req);
 		List<GenericVO> data = new ArrayList<>(8);
-		data.add(new GenericVO("F", "Female"));
-		data.add(new GenericVO("M", "Male"));
-
+		
+		if (lw.getLocale().equals(new Locale("es", "MX"))) {
+			data.add(new GenericVO("F", "Female"));
+			data.add(new GenericVO("M", "Hembra"));
+		} else {
+			data.add(new GenericVO("F", "Female"));
+			data.add(new GenericVO("M", "Male"));
+		}
+		
 		return data;
 	}
 
@@ -513,12 +528,21 @@ public class SelectLookupAction extends SBActionAdapter {
 	 * Retruns a list of user prefixes
 	 * @return
 	 */
-	public List<GenericVO> getPrefix() {
+	public List<GenericVO> getPrefix(ActionRequest req) {
+		LocaleWrapper lw = new LocaleWrapper(req);
 		List<GenericVO> selectList = new ArrayList<>(8);
-		selectList.add(new GenericVO("Mr.", "Mr."));
-		selectList.add(new GenericVO("Mrs.", "Mrs."));
-		selectList.add(new GenericVO("Ms", "Ms."));
-		selectList.add(new GenericVO("Miss", "Miss"));
+		
+		if (lw.getLocale().equals(new Locale("es", "MX"))) {
+			selectList.add(new GenericVO("Mr.", "Señor"));
+			selectList.add(new GenericVO("Mrs.", "Señora"));
+			selectList.add(new GenericVO("Ms", "Sra"));
+			selectList.add(new GenericVO("Miss", "Perder"));
+		} else {
+			selectList.add(new GenericVO("Mr.", "Mr."));
+			selectList.add(new GenericVO("Mrs.", "Mrs."));
+			selectList.add(new GenericVO("Ms", "Ms."));
+			selectList.add(new GenericVO("Miss", "Miss"));
+		}
 
 		return selectList;
 	}

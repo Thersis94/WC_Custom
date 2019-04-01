@@ -4,6 +4,9 @@ package com.biomed.smarttrak.admin;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.time.Instant;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
@@ -11,6 +14,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TimeZone;
 
 // J2EE libs
 import javax.servlet.http.HttpServletResponse;
@@ -25,6 +29,7 @@ import com.biomed.smarttrak.util.BiomedLinkCheckerUtil;
 import com.biomed.smarttrak.util.SmarttrakSolrUtil;
 import com.biomed.smarttrak.util.SmarttrakTree;
 import com.biomed.smarttrak.util.UpdateIndexer;
+import com.biomed.smarttrak.vo.AccountVO;
 import com.biomed.smarttrak.vo.UpdateVO;
 import com.biomed.smarttrak.vo.UpdateXRVO;
 //SMT base libs
@@ -41,7 +46,6 @@ import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
-import com.siliconmtn.util.user.HumanNameIntfc;
 import com.siliconmtn.util.user.NameComparator;
 import com.smt.sitebuilder.action.search.SolrFieldVO.FieldType;
 // WC Core libs
@@ -138,22 +142,32 @@ public class UpdatesAction extends ManagementAction {
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.action.ActionRequest)
 	 */
+	@SuppressWarnings("unchecked")
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		//loadData gets passed on the ajax call.  If we're not loading data simply go to view to render the bootstrap 
 		//table into the view (which will come back for the data).
 		configureCookies(req);
-		
+
 		if (!req.hasParameter("loadData") && !req.hasParameter("loadhistory") && !req.hasParameter(UPDATE_ID) ) return;
 		int count = 0;
 
-		List<Object> data;
+		List<UpdateVO> data;
+
+		//when an add/edit form, load list of BiomedGPS Staff for the "Author" drop-down
+		if(req.hasParameter("loadAuthors")) {
+			loadAuthors(req);
+			List<AccountVO> accts = (List<AccountVO>)req.getAttribute(AccountAction.MANAGERS);
+			putModuleData(accts, accts.size(), false);
+			return;
+		}
+
 		if(req.hasParameter("loadHistory")) {
 			data = getHistory(req.getParameter("historyId"));
-		} else if (req.hasParameter("updateId")) {
+		} else if (req.hasParameter(UPDATE_ID)) {
 			// If we have an id just load directly from the database.
 			List<Object> params = new ArrayList<>();
-			params.add(req.getParameter("updateId"));
+			params.add(req.getParameter(UPDATE_ID));
 			data = loadDetails(params);
 		} else {
 			//Get the Filtered Updates according to Request.
@@ -162,10 +176,10 @@ public class UpdatesAction extends ManagementAction {
 			ModuleVO mod = (ModuleVO) attributes.get(Constants.MODULE_DATA);
 			SolrResponseVO resp = (SolrResponseVO)mod.getActionData();
 			count = (int) resp.getTotalResponses();
-			if (count > 0) {
+			if (count > 0 && resp.getResultDocuments().size() > 0) {
 
 				List<Object> params = getIdsFromDocs(resp);
-				
+
 				data = loadDetails(params);
 				log.debug("DB Count " + data.size());
 			} else {
@@ -180,10 +194,6 @@ public class UpdatesAction extends ManagementAction {
 		addProductCompanyData(data);
 
 		putModuleData(data, count, false);
-
-		//when an add/edit form, load list of BiomedGPS Staff for the "Author" drop-down
-		if (req.hasParameter(UPDATE_ID))
-			loadAuthors(req);
 	}
 
 
@@ -213,7 +223,7 @@ public class UpdatesAction extends ManagementAction {
 	 * @param docs
 	 * @return
 	 */
-	private List<Object> loadDetails(List<Object> ids) {
+	private List<UpdateVO> loadDetails(List<Object> ids) {
 		String sql = formatDetailQuery(ids.size());
 		log.debug(sql);
 
@@ -231,11 +241,18 @@ public class UpdatesAction extends ManagementAction {
 	 * @return
 	 */
 	private String formatDetailQuery(int size) {
-		StringBuilder sql = new StringBuilder(200);
+		StringBuilder sql = new StringBuilder(500);
 		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
-		sql.append("SELECT * FROM ").append(schema).append("BIOMEDGPS_UPDATE up ");
+		sql.append("SELECT up.*, xr.*, c.company_nm, m.market_nm, p.product_nm, '");
+		sql.append(getAttribute(Constants.QS_PATH)).append("' as qs_path FROM ").append(schema).append("BIOMEDGPS_UPDATE up ");
 		sql.append("LEFT JOIN ").append(schema).append("BIOMEDGPS_UPDATE_SECTION xr ");
 		sql.append("on up.UPDATE_ID = xr.UPDATE_ID ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("BIOMEDGPS_COMPANY c ");
+		sql.append("on c.company_id = up.company_id ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("BIOMEDGPS_PRODUCT p ");
+		sql.append("on p.product_id = up.product_id ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("BIOMEDGPS_MARKET m ");
+		sql.append("on m.market_id = up.market_id ");
 		sql.append("WHERE up.UPDATE_ID in (").append(DBUtil.preparedStatmentQuestion(size)).append(") ");
 		sql.append("order by publish_dt desc, order_no asc, up.create_dt desc ");
 
@@ -287,6 +304,11 @@ public class UpdatesAction extends ManagementAction {
 			fq.add(StringUtil.join("announcement_type_i:", announcementType));
 		}
 
+		String updateStatus = CookieUtil.getValue("updateStatus", req.getCookies());
+		if(!StringUtil.isEmpty(updateStatus)) {
+			fq.add(StringUtil.join("status_cd_s:", updateStatus));
+		}
+
 		req.setParameter("fq", fq.toArray(new String[fq.size()]), true);
 		req.setParameter("allowCustom", "true");
 		req.setParameter("fieldOverride", SearchDocumentHandler.PUBLISH_DATE);
@@ -309,6 +331,15 @@ public class UpdatesAction extends ManagementAction {
 			HttpServletResponse res = (HttpServletResponse) req.getAttribute(GlobalConfig.HTTP_RESPONSE);
 			end = Convert.formatDate(Convert.convertTimeZoneOffset(Calendar.getInstance().getTime(), "EST5EDT"), Convert.DATE_SLASH_PATTERN); //today
 			CookieUtil.add(res, COOK_UPD_END_DT, end, "/", -1);
+		} else if (end != "") {
+
+			//If we have a specified date, ensure that we've offset time to midnight.
+			Calendar cal = Calendar.getInstance();
+			cal.setTime(Convert.formatDate(end));
+			cal.set(Calendar.HOUR, 23);
+			cal.set(Calendar.MINUTE, 59);
+			cal.set(Calendar.SECOND, 59);
+			end = Convert.formatDate(cal.getTime(), Convert.DATE_TIME_DASH_PATTERN);
 		}
 		req.setParameter(COOK_UPD_START_DT, start);
 		req.setParameter(COOK_UPD_END_DT, end);
@@ -344,14 +375,13 @@ public class UpdatesAction extends ManagementAction {
 	 * @param updates
 	 * @param req
 	 */
-	protected void adjustContentLinks(List<Object> updates, ActionRequest req) {
+	protected void adjustContentLinks(List<UpdateVO> updates, ActionRequest req) {
 		//create link checker util
 		SiteVO site = (SiteVO)req.getAttribute(Constants.SITE_DATA);
 		BiomedLinkCheckerUtil linkUtil = new BiomedLinkCheckerUtil(dbConn, site);
 		
 		//modify appropriate content links for updates
-		for (Object o : updates) {
-			UpdateVO up = (UpdateVO)o;
+		for (UpdateVO up : updates) {
 			up.setMessageTxt(linkUtil.modifySiteLinks(up.getMessageTxt()));
 		}
 	}
@@ -383,7 +413,7 @@ public class UpdatesAction extends ManagementAction {
 	 * @param updates
 	 *TODO change query to "in (1,2,3)" instead of looping outside the query - Zoho SC-232
 	 */
-	private void addProductCompanyData(List<Object> updates) {
+	private void addProductCompanyData(List<UpdateVO> updates) {
 		log.debug("adding company short name and id ");
 
 		int productCount = getProductCount(updates);
@@ -400,8 +430,7 @@ public class UpdatesAction extends ManagementAction {
 		Map<String, GenericVO> companies = new HashMap<>();
 		try (PreparedStatement ps = dbConn.prepareStatement(sb.toString())) {
 			int i = 1;
-			for (Object o : updates) {
-				UpdateVO up = (UpdateVO)o;
+			for (UpdateVO up : updates) {
 				if (StringUtil.isEmpty(up.getProductId())) continue;
 				ps.setString(i++, up.getProductId());
 			}
@@ -423,9 +452,8 @@ public class UpdatesAction extends ManagementAction {
 	 * @param updates
 	 * @param companies
 	 */
-	private void mergeResults(List<Object> updates, Map<String, GenericVO> companies) {
-		for (Object o : updates) {
-			UpdateVO up = (UpdateVO)o;
+	private void mergeResults(List<UpdateVO> updates, Map<String, GenericVO> companies) {
+		for (UpdateVO up : updates) {
 			if (StringUtil.isEmpty(up.getProductId())) continue;
 			GenericVO company = companies.get(up.getProductId());
 			up.setCompanyId((String) company.getKey());
@@ -438,10 +466,9 @@ public class UpdatesAction extends ManagementAction {
 	 * @param updates
 	 * @return
 	 */
-	private int getProductCount(List<Object> updates) {
+	private int getProductCount(List<UpdateVO> updates) {
 		int productCount = 0;
-		for (Object o : updates) {
-			UpdateVO up = (UpdateVO)o;
+		for (UpdateVO up : updates) {
 			if (StringUtil.isEmpty(up.getProductId())) continue;
 			productCount++;
 		}
@@ -480,14 +507,14 @@ public class UpdatesAction extends ManagementAction {
 	 * @param parameter
 	 * @return
 	 */
-	protected List<Object> getHistory(String updateId) {
+	protected List<UpdateVO> getHistory(String updateId) {
 		String sql = formatHistoryRetrieveQuery();
 
 		List<Object> params = new ArrayList<>();
 		if (!StringUtil.isEmpty(updateId)) params.add(updateId);
 
 		DBProcessor db = new DBProcessor(dbConn);
-		List<Object>  updates = db.executeSelect(sql, params, new UpdateVO());
+		List<UpdateVO>  updates = db.executeSelect(sql, params, new UpdateVO());
 		log.debug("loaded " + updates.size() + " updates");
 		return updates;
 	}
@@ -513,9 +540,8 @@ public class UpdatesAction extends ManagementAction {
 	 * loop and decrypt owner names, which came from the profile table
 	 * @param accounts
 	 */
-	@SuppressWarnings("unchecked")
-	protected void decryptNames(List<Object> data) {
-		new NameComparator().decryptNames((List<? extends HumanNameIntfc>)(List<?>)data, (String)getAttribute(Constants.ENCRYPT_KEY));
+	protected void decryptNames(List<UpdateVO> data) {
+		new NameComparator().decryptNames(data, (String)getAttribute(Constants.ENCRYPT_KEY));
 	}
 
 
@@ -535,13 +561,54 @@ public class UpdatesAction extends ManagementAction {
 	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
+		String buildAction = req.getParameter("buildAction");
+
 		if (Convert.formatBoolean(req.getParameter("markReviewed"))) {
 			markReviewed(req.getParameter(UPDATE_ID));
+		} else if ("orderUpdate".equals(buildAction)) {
+			updateOrder(req);
+			// We don't want to send redirects after an order update
+			return;
 		} else {
 			saveRecord(req, false);
 		}
 	}
 
+	/**
+	 * Update the Order.  Set Publish_dt on the update records 
+	 * @param req
+	 * @throws ActionException
+	 */
+	protected void updateOrder(ActionRequest req) throws ActionException {
+		boolean isOlder = req.getBooleanParameter("isOlder");
+		String updateId = req.getParameter("targetId");
+		String refPublishDt = req.getParameter("refPublishDt");
+
+		Calendar refCal = Calendar.getInstance();
+		refCal.setTime(Convert.formatDate(refPublishDt));
+		Instant publishDt = refCal.toInstant();
+
+		StringBuilder sql = new StringBuilder(150);
+		sql.append("UPDATE ").append(customDbSchema);
+		sql.append("BIOMEDGPS_UPDATE SET PUBLISH_DT = ? WHERE UPDATE_ID = ? ");
+
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			if(isOlder) {
+				publishDt = publishDt.minusMillis(1000);
+			} else {
+				publishDt = publishDt.plusMillis(1000);
+			}
+			ps.setTimestamp(1, Timestamp.from(publishDt));
+			ps.setString(2, updateId);
+			ps.executeUpdate();
+
+			UpdateIndexer idx = UpdateIndexer.makeInstance(getAttributes());
+			idx.setDBConnection(dbConn);
+			idx.indexItems(updateId);
+		} catch (SQLException e) {
+			throw new ActionException(e);
+		}
+	}
 
 	/**
 	 * Change the supplied update's status code to Reviewed
@@ -556,6 +623,9 @@ public class UpdatesAction extends ManagementAction {
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, updateId);
 			ps.executeUpdate();
+			UpdateIndexer idx = UpdateIndexer.makeInstance(getAttributes());
+			idx.setDBConnection(dbConn);
+			idx.indexItems(updateId);
 		} catch (SQLException e) {
 			throw new ActionException(e);
 		}
@@ -603,6 +673,19 @@ public class UpdatesAction extends ManagementAction {
 				} else {
 					u.setUpdateDt(Convert.convertTimeZoneOffset(new Date(), "EST5EDT"));
 				}
+
+				/*
+				 * If the submitted publish date is different than the old one,
+				 * process it.  If they're the same then use the oldPublishDate
+				 * which has the time.
+				 */
+				String oldPubDt = req.getParameter("oldPubDt");
+				if(StringUtil.isEmpty(oldPubDt) || !publishDateSameDay(oldPubDt, req.getParameter("publishDt"))) {
+					u.setPublishDate(calcPublishDt(Convert.formatDate(req.getParameter("publishDt"))));
+				} else {
+					u.setPublishDate(Convert.formatDate(oldPubDt));
+				}
+
 				db.save(u);
 
 				fixPkids(u);
@@ -619,7 +702,85 @@ public class UpdatesAction extends ManagementAction {
 			throw new ActionException(e);
 		}
 	}
-	
+
+	/**
+	 * Check if the oldPublishDt and the new are the same day in the year.
+	 * @param parameter
+	 * @param parameter2
+	 * @return
+	 */
+	private boolean publishDateSameDay(String oldPubDt, String newPubDt) {
+		Calendar old = Calendar.getInstance();
+		old.setTime(Convert.formatDate(oldPubDt));
+		Calendar reqPub = Calendar.getInstance();
+		reqPub.setTime(Convert.formatDate(newPubDt));
+		return old.get(Calendar.DAY_OF_YEAR) == reqPub.get(Calendar.DAY_OF_YEAR);
+
+	}
+
+	/**
+	 * Determine if Time needs Adjusted on the PublishDate.
+	 * @param reqDate
+	 * @return
+	 */
+	public Date calcPublishDt(Date reqDate) {
+		if(reqDate == null) {
+			return null;
+		}
+
+		Calendar pDate = Calendar.getInstance();
+		Calendar now = Calendar.getInstance(TimeZone.getTimeZone(ZoneId.of("EST5EDT")));
+		pDate.setTime(reqDate);
+
+		boolean isSameDay = pDate.get(Calendar.DAY_OF_YEAR) == now.get(Calendar.DAY_OF_YEAR);
+		boolean zeroTime = pDate.get(Calendar.HOUR) == 0 && pDate.get(Calendar.MINUTE) == 0 && pDate.get(Calendar.SECOND) == 0;
+
+		/**
+		 * If the publishDate is the same as today and we don't have a time set,
+		 * Set current time on the pDate Calendar.  If this is a future update,
+		 * Look for the max date in the database, adjust by 1 minute later and
+		 * set pDate with that value.
+		 *
+		 * Ensures that ordering is maintained using publish_dt as the rule
+		 * moving forward.
+		 */
+		if(isSameDay && zeroTime) {
+			log.debug("New Date");
+			pDate.add(Calendar.HOUR, now.get(Calendar.HOUR));
+			pDate.add(Calendar.MINUTE, now.get(Calendar.MINUTE));
+			pDate.add(Calendar.SECOND, now.get(Calendar.SECOND));
+			pDate.set(Calendar.AM_PM, now.get(Calendar.AM_PM));
+		} else {
+			Timestamp latestDbPubDt = loadLatestPubDate(reqDate);
+			if(latestDbPubDt != null) {
+				pDate.setTime(latestDbPubDt);
+				pDate.add(Calendar.MINUTE, 1);
+			}
+		}
+		return pDate.getTime();
+	}
+
+	/**
+	 * Load latest publishDate Timestamp for a given reqDate.
+	 * @param pDate
+	 * @return
+	 */
+	private Timestamp loadLatestPubDate(Date reqDate) {
+		StringBuilder sql = new StringBuilder(100);
+		sql.append("select max(publish_dt) from ").append(getCustomSchema()).append("biomedgps_update where date_trunc('day', publish_dt) = ?");
+		try(PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setObject(1, reqDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDate());
+			ResultSet rs = ps.executeQuery();
+			if(rs.next()) {
+				return rs.getTimestamp(1);
+			}
+		} catch (SQLException e) {
+			log.error("Error Processing Code", e);
+		}
+
+		return null;
+	}
+
 	/**
 	* The form data used for this update can come from several places. Either the updates tool, 
  	* from the updates review tool, or from the updates home page. If it has come from the review tool 

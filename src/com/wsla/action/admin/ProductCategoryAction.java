@@ -146,7 +146,7 @@ public class ProductCategoryAction extends SBActionAdapter {
 		StringBuilder sql = new StringBuilder(196);
 		sql.append("select product_category_id as key, category_cd as value from ");
 		sql.append(getCustomSchema()).append("wsla_product_category ");
-		sql.append("where 1=1 ");
+		sql.append("where 1=1 and active_flg = 1 ");
 
 		if (! productCategoryId.isEmpty()) {
 			sql.append("and parent_id = ? ");
