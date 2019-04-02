@@ -121,9 +121,8 @@ public class TicketOverviewAction extends BasePortalAction {
 				ProductOwner owner = tat.getProductOwnerType(ticket.getTicketId());
 				UserDataVO profile = (UserDataVO)req.getSession().getAttribute(Constants.USER_DATA);
 				UserVO user = (UserVO)profile.getUserExtendedInfo();
-				
-				if (owner == ProductOwner.RETAILER) {
-					
+
+				if (owner == ProductOwner.RETAILER && ticket.getStatusCode() != StatusCode.CLOSED) {
 					tat.addLedger(ticket.getTicketId(), user.getUserId(), ticket.getStatusCode(), LedgerSummary.RETAIL_OWNED_ASSET_NOT_REQUIRED.summary, null);
 					tat.finalizeApproval(req, true, true);
 				}
@@ -131,6 +130,7 @@ public class TicketOverviewAction extends BasePortalAction {
 				if(req.hasParameter("attr_unitRepairCode")) {
 					tat.addLedger(ticket.getTicketId(), user.getUserId(), ticket.getStatusCode(), LedgerSummary.RESOLVED_DURING_CALL.summary, null);
 				}
+
 			}
 			
 			// Return the populated ticket
@@ -149,16 +149,17 @@ public class TicketOverviewAction extends BasePortalAction {
 	 * @throws Exception
 	 */
 	public TicketVO saveTicketCall(ActionRequest req) throws Exception {
+		log.debug("saving ticket a second time");
 		UserDataVO profile = (UserDataVO)req.getSession().getAttribute(Constants.USER_DATA);
 		UserVO user = (UserVO)profile.getUserExtendedInfo();
 		TicketVO ticket = new TicketVO(req);
 		ticket.setStatusCode(StatusCode.USER_CALL_DATA_INCOMPLETE);
 		ticket.addDiagnosticRun(new DiagnosticRunVO(req));
-		
+
 		// Check the productSerial and add it if it is missing
 		if (StringUtil.isEmpty(req.getParameter("productSerialId"))) 
 			this.addProductSerialNumber(req, ticket);
-		
+
 		// If the user resolved the ticket during diagnostics, close the ticket
 		BaseTransactionAction bta = new BaseTransactionAction(getDBConnection(), getAttributes());
 		if (req.getIntegerParameter("attr_issueResolved", 0) == 1) {
@@ -168,19 +169,17 @@ public class TicketOverviewAction extends BasePortalAction {
 			bta.changeStatus(ticket.getTicketId(), user.getUserId(), StatusCode.EXPIRED_WARRANTY, null, null);
 			ticket.setStatusCode(StatusCode.CLOSED);
 		}
-
 		// Save the ticket core data
 		this.saveCoreTicket(ticket);
 
 		// Save the diagnostic info
 		this.saveDiagnosticRun(ticket.getDiagnosticRun().get(0));
-		
 		// Add an item to the ledger
 		TicketLedgerVO ledger = bta.addLedger(ticket.getTicketId(), user.getUserId(), ticket.getStatusCode(), LedgerSummary.CALL_FINISHED.summary, null);
 		
 		// Save the extended data elements
 		assignDataAttributes(ticket, ledger);
-		
+
 		// Update the caller's user record and profile
 		UserVO caller = new UserVO(req);
 		updateWSLAUser(caller);
@@ -189,7 +188,7 @@ public class TicketOverviewAction extends BasePortalAction {
 		String callerAssignmentId = req.getParameter("ticketAssignmentId");
 		String ownsTv = req.getParameter("attr_ownsProduct");
 		updateAllAssignments(ticket, callerAssignmentId, ownsTv, caller);
-		
+
 		return ticket;
 	}
 	

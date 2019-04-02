@@ -1,7 +1,5 @@
 package com.depuysynthes.security;
 
-// Java 7
-import java.sql.Connection;
 import java.util.Calendar;
 import java.util.Map;
 
@@ -58,7 +56,6 @@ public class SAMLProxyLoginModule extends SAMLLoginModule {
 			throws AuthenticationException {
 
 		ActionRequest req = (ActionRequest)getAttribute(GlobalConfig.ACTION_REQUEST);
-		Connection conn = (Connection) getAttribute(GlobalConfig.KEY_DB_CONN);
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 
 		if (req.hasParameter("initiateSSO")) {
@@ -75,7 +72,7 @@ public class SAMLProxyLoginModule extends SAMLLoginModule {
 			UserDataVO baseUser = null;
 			SAMLAuthenticationUtil sau = new SAMLAuthenticationUtil();
 			try {
-				baseUser = sau.parseSAMLResponse(req, conn, site);
+				baseUser = sau.parseSAMLResponse(req, site, getAttributes());
 			} catch (AuthenticationException ae) {
 				log.error("Intercepted the parent SSO response parsing exception.");
 			}

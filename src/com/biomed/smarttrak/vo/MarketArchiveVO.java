@@ -27,6 +27,8 @@ public class MarketArchiveVO extends BeanDataVO{
 	private static final long serialVersionUID = -8977714692218096064L;
 	private String marketArchiveId;
 	private String marketId;
+	private String regionCode;
+	private String sectionId;
 	private String archiveTxt;
 	private Date createDt;
 
@@ -36,6 +38,12 @@ public class MarketArchiveVO extends BeanDataVO{
 
 	public MarketArchiveVO(String marketId, String archiveTxt) {
 		this.marketId = marketId;
+		this.archiveTxt = archiveTxt;
+	}
+
+	public MarketArchiveVO(String sectionId, String regionCode, String archiveTxt) {
+		this.sectionId = sectionId;
+		this.regionCode = regionCode;
 		this.archiveTxt = archiveTxt;
 	}
 
@@ -67,6 +75,22 @@ public class MarketArchiveVO extends BeanDataVO{
 	}
 
 	/**
+	 * @return the regionCode
+	 */
+	@Column(name="REGION_CD")
+	public String getRegionCode() {
+		return regionCode;
+	}
+
+	/**
+	 * @return the sectionId
+	 */
+	@Column(name="SECTION_ID")
+	public String getSectionId() {
+		return sectionId;
+	}
+
+	/**
 	 * @return the archiveTxt
 	 */
 	@Column(name="ARCHIVE_TXT")
@@ -94,6 +118,20 @@ public class MarketArchiveVO extends BeanDataVO{
 	 */
 	public void setMarketId(String marketId) {
 		this.marketId = marketId;
+	}
+
+	/**
+	 * @param regionCode the regionCode to set
+	 */
+	public void setRegionCode(String regionCode) {
+		this.regionCode = regionCode;
+	}
+
+	/**
+	 * @param sectionId the sectionId to set
+	 */
+	public void setSectionId(String sectionId) {
+		this.sectionId = sectionId;
 	}
 
 	/**
