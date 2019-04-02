@@ -17,6 +17,7 @@ import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.util.EnumUtil;
+import com.siliconmtn.util.StringUtil;
 // WC Libs
 import com.wsla.action.ticket.BaseTransactionAction;
 import com.wsla.action.ticket.CASSelectionAction;
@@ -354,9 +355,17 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 		StatusCode status = isApproved ? StatusCode.USER_DATA_COMPLETE : StatusCode.USER_CALL_DATA_INCOMPLETE;
 		String summary = isApproved ? LedgerSummary.ASSET_APPROVED.summary : LedgerSummary.ASSET_REJECTED.summary;
 		
+		//if its not approved we need to capture the text added in for the rejection.  
+		//	which is stored in ticket data meta value 1
+		if (!isApproved && req.hasParameter("metaValue1")) {
+			summary = summary + ": " + StringUtil.checkVal(req.getStringParameter("metaValue1"));
+		}
+		
 		// Update the status based on approval or rejection.
 		TicketVO ticket = new TicketVO(req);
 		UserVO user = (UserVO) getAdminUser(req).getUserExtendedInfo();
+		
+		
 		TicketLedgerVO ledger = changeStatus(ticket.getTicketId(), user.getUserId(), status, summary, null);
 		buildNextStep(ledger.getStatusCode(), null, false);
 		if (!isApproved) return;
