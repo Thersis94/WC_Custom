@@ -211,7 +211,7 @@ public class UserVO extends BeanDataVO {
 	 */
 	public UserDataVO getProfile() {
 		
-		//make sure the languate and country have been set if not set 
+		//make sure the language and country have been set if not set 
 		//	them from locale if it exists
 		
 		if(StringUtil.isEmpty(profile.getCountryCode()) && getUserLocale() != null && !StringUtil.isEmpty(getUserLocale().getCountry())) {
