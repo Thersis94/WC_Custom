@@ -6,16 +6,19 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 
-import com.perfectstorm.data.weather.SunTimeVO;
 import com.perfectstorm.data.weather.forecast.ForecastVO;
 // SMT Base Libs
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
+import com.siliconmtn.util.StringUtil;
+import com.siliconmtn.util.Convert;
+import com.siliconmtn.weather.SunTimeVO;
 
 /****************************************************************************
  * <b>Title</b>: TourVO.java
@@ -36,11 +39,13 @@ public class VenueTourVO extends VenueVO {
 	 * 
 	 */
 	private static final long serialVersionUID = -7510226690607925688L;
+	public static final int NOTIFICATION_HOURS_BEFORE = -4;
 	
 	// Members
 	private String venueTourId;
 	private String tourId;
 	private Date eventDate;
+	private int duration;
 	private Date startRetrieve;
 	private Date endRetrieve;
 	private int orderNumber;
@@ -78,6 +83,19 @@ public class VenueTourVO extends VenueVO {
 	 */
 	public VenueTourVO(ResultSet rs) {
 		super(rs);
+	}
+	
+	/**
+	 * Determines if the event is in progress
+	 * @param currDate local time datetime
+	 * @return
+	 */
+	public boolean isEventInProgress(Date currDate) {
+		if (eventDate == null) return false;
+		Date startDate = Convert.formatDate(eventDate, Calendar.HOUR, NOTIFICATION_HOURS_BEFORE);
+		Date endDate = Convert.formatDate(eventDate, Calendar.HOUR, duration);
+		
+		return currDate.after(startDate) && currDate.before(endDate);
 	}
 
 	/**
@@ -232,18 +250,26 @@ public class VenueTourVO extends VenueVO {
 	}
 
 	/**
-	 * @param tourName the tourName to set
-	 */
-	public void setTourName(String tourName) {
-		this.tourName = tourName;
-	}
-
-	/**
 	 * @return the tourTypeCode
 	 */
 	@Column(name="tour_type_cd", isReadOnly=true)
 	public String getTourTypeCode() {
 		return tourTypeCode;
+	}
+
+	/**
+	 * @return the duration
+	 */
+	@Column(name="duration_no")
+	public int getDuration() {
+		return duration;
+	}
+
+	/**
+	 * @param tourName the tourName to set
+	 */
+	public void setTourName(String tourName) {
+		this.tourName = tourName;
 	}
 
 	/**
@@ -308,6 +334,15 @@ public class VenueTourVO extends VenueVO {
 	public void setCurrentSunTime(SunTimeVO currentSunTime) {
 		this.currentSunTime = currentSunTime;
 	}
+	
+	/**
+	 * @param timezone the timezone to set
+	 */
+	@Override
+	public void setTimezone(String timezone) {
+		super.setTimezone(timezone);
+		setTimeUntilEvent();
+	}
 
 	/**
 	 * @return the timeUntilEvent
@@ -327,19 +362,30 @@ public class VenueTourVO extends VenueVO {
 	 * Sets the time until the start of the event using the bean's eventDate value
 	 */
 	public void setTimeUntilEvent() {
+		if (eventDate == null || StringUtil.isEmpty(getTimezone())) {
+			return;
+		}
+		
 		LocalDateTime eventDateTime = eventDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
-		LocalDateTime now = LocalDateTime.now();
+		LocalDateTime now = new Date().toInstant().atZone(ZoneId.of(getTimezone())).toLocalDateTime();
 		Duration remainingTime = Duration.between(now, eventDateTime);
 		
 		Long days = remainingTime.toDays();
-		String dayString = days + " day" + (days != 1 ? "s" : "");
+		String dayString = days + " day" + (Math.abs(days) != 1 ? "s" : "");
 
 		Long hours = remainingTime.toHours() - (days * 24);
-		String hourString = hours + " hour" + (hours != 1 ? "s" : "");
+		String hourString = hours + " hour" + (Math.abs(hours) != 1 ? "s" : "");
 		
-		String separator = days > 0 && hours > 0 ? ", " : "";
+		String separator = days != 0 && hours != 0 ? ", " : "";
 		
-		timeUntilEvent = (days > 0 ? dayString : "") + separator + (hours > 0 || days == 0 ? hourString : "");
+		timeUntilEvent = (days != 0 ? dayString : "") + separator + (hours != 0 || days == 0 ? hourString : "");
+	}
+
+	/**
+	 * @param duration the duration to set
+	 */
+	public void setDuration(int duration) {
+		this.duration = duration;
 	}
 }
 

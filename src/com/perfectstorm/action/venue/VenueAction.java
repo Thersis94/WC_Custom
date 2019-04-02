@@ -18,19 +18,20 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.pool.SMTDBConnection;
-import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.util.StringUtil;
+import com.siliconmtn.weather.SunTimeVO;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
+import com.smt.sitebuilder.action.gis.weather.SunriseSunsetAction;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+
 //WC Libs 3.x
-import com.perfectstorm.action.weather.SunTimeCalculatorAction;
 import com.perfectstorm.action.weather.VenueForecastManager;
 import com.perfectstorm.action.weather.manager.NWSRadarManager;
+
 // Perfect Storm Libs
 import com.perfectstorm.data.VenueTourVO;
 import com.perfectstorm.data.VenueVO;
-import com.perfectstorm.data.weather.SunTimeVO;
 import com.perfectstorm.data.weather.forecast.ForecastVO;
 import com.perfectstorm.data.weather.forecast.VenueTourForecastVO;
 
@@ -281,19 +282,13 @@ public class VenueAction extends SimpleActionAdapter {
 	 * @return
 	 */
 	public SunTimeVO getSunTime(VenueVO venue, Date eventDate) {
-		SunTimeCalculatorAction stc = new SunTimeCalculatorAction(getAttributes(), getDBConnection());
+		SunriseSunsetAction stc = new SunriseSunsetAction(getAttributes(), getDBConnection());
 		SunTimeVO sunTime = new SunTimeVO();
 		sunTime.setLatitudeNumber(venue.getLatitude());
 		sunTime.setLongitudeNumber(venue.getLongitude());
 		sunTime.setSourceDate(eventDate == null ? new Date() : eventDate);
 		sunTime.setTimeZoneName(venue.getTimezone());
-
-		try {
-			return stc.calculateSunTimes(sunTime);
-		} catch (InvalidDataException e) {
-			log.error("unable to calculate the sun times", e);
-			return sunTime;
-		}
+		return stc.calculateSunTimes(sunTime);
 	}
 }
 

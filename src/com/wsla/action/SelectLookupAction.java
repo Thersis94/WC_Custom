@@ -9,6 +9,7 @@ import static com.wsla.action.admin.ProviderAction.REQ_PROVIDER_ID;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -52,6 +53,7 @@ import com.wsla.action.ticket.CASSelectionAction;
 import com.wsla.action.ticket.TicketListAction;
 import com.wsla.action.ticket.TicketSearchAction;
 import com.wsla.action.ticket.TicketEditAction;
+import com.wsla.common.LocaleWrapper;
 import com.wsla.common.WSLALocales;
 import com.wsla.common.WSLAConstants.WSLARole;
 import com.wsla.data.product.LocationItemMasterVO;
@@ -113,12 +115,12 @@ public class SelectLookupAction extends SBActionAdapter {
 		keyMap.put("provider", new GenericVO("getProviders", Boolean.TRUE));
 		keyMap.put("oemParts", new GenericVO("getProviderParts", Boolean.TRUE));
 		keyMap.put("providerLocations", new GenericVO("getProviderLocations", Boolean.TRUE));
-		keyMap.put("activeFlag", new GenericVO("getYesNoLookup", Boolean.FALSE));
+		keyMap.put("activeFlag", new GenericVO("getYesNoLookup", Boolean.TRUE));
 		keyMap.put("warrantyServiceTypeCode", new GenericVO("getServiceTypeCode", Boolean.FALSE));
 		keyMap.put("role", new GenericVO("getOrgRoles", Boolean.TRUE));
 		keyMap.put("locale", new GenericVO("getLocales", Boolean.FALSE));
-		keyMap.put("gender", new GenericVO("getGenders", Boolean.FALSE));
-		keyMap.put("prefix", new GenericVO("getPrefix", Boolean.FALSE));
+		keyMap.put("gender", new GenericVO("getGenders", Boolean.TRUE));
+		keyMap.put("prefix", new GenericVO("getPrefix", Boolean.TRUE));
 		keyMap.put("defect", new GenericVO("getDefects", Boolean.TRUE));
 		keyMap.put("product", new GenericVO("getProducts", Boolean.TRUE));
 		keyMap.put("productSetParts", new GenericVO("getProductSetParts", Boolean.TRUE));
@@ -140,7 +142,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		keyMap.put("billableType", new GenericVO("getBillableTypes", Boolean.FALSE));
 		keyMap.put("supportNumbers", new GenericVO("getSupportNumbers", Boolean.TRUE));
 		keyMap.put("ticketSearch", new GenericVO("ticketSearch", Boolean.TRUE));
-		keyMap.put("standing", new GenericVO("getStanding", Boolean.FALSE));
+		keyMap.put("standing", new GenericVO("getStanding", Boolean.TRUE));
 	}
 
 	/**
@@ -236,11 +238,17 @@ public class SelectLookupAction extends SBActionAdapter {
 	 * Load a yes no list
 	 * @return
 	 */
-	public List<GenericVO> getYesNoLookup() {
+	public List<GenericVO> getYesNoLookup(ActionRequest req) {
+		LocaleWrapper lw = new LocaleWrapper(req);
 		List<GenericVO> yesNo = new ArrayList<>();
-
-		yesNo.add(new GenericVO("1","Yes"));
-		yesNo.add(new GenericVO("0","No"));
+		
+		if (lw.getLocale().equals(new Locale("es", "MX"))) {
+			yesNo.add(new GenericVO("1","Sí"));
+			yesNo.add(new GenericVO("0","No"));
+		} else {
+			yesNo.add(new GenericVO("1","Yes"));
+			yesNo.add(new GenericVO("0","No"));
+		}
 
 		return yesNo;
 	}
@@ -439,13 +447,13 @@ public class SelectLookupAction extends SBActionAdapter {
 	 * @return
 	 */
 	public List<GenericVO> getStatusCodes(ActionRequest req) {
-		Locale locale = new ResourceBundleManagerAction().getUserLocale(req);
+		LocaleWrapper lw = new LocaleWrapper(req);
 		List<GenericVO> data = new ArrayList<>(64);
 		StatusCodeAction sca = new StatusCodeAction(getDBConnection(), getAttributes());
-		List<StatusCodeVO> codes = sca.getStatusCodes(req.getParameter("roleId"), locale, null);
+		List<StatusCodeVO> codes = sca.getStatusCodes(req.getParameter("roleId"), lw.getLocale(), null);
 		
 		for(StatusCodeVO sc : codes) {
-			data.add(new GenericVO(sc.getStatusCode(), sc.getStatusName()));
+			data.add(new GenericVO(sc.getStatusCode(), sc.getStatusName().trim()));
 		}
 
 		return data;
@@ -468,11 +476,18 @@ public class SelectLookupAction extends SBActionAdapter {
 	 * Gets the supported genders for the app
 	 * @return
 	 */
-	public List<GenericVO> getGenders() {
+	public List<GenericVO> getGenders(ActionRequest req) {
+		LocaleWrapper lw = new LocaleWrapper(req);
 		List<GenericVO> data = new ArrayList<>(8);
-		data.add(new GenericVO("F", "Female"));
-		data.add(new GenericVO("M", "Male"));
-
+		
+		if (lw.getLocale().equals(new Locale("es", "MX"))) {
+			data.add(new GenericVO("F", "Mujer"));
+			data.add(new GenericVO("M", "Hombre"));
+		} else {
+			data.add(new GenericVO("F", "Female"));
+			data.add(new GenericVO("M", "Male"));
+		}
+		
 		return data;
 	}
 
@@ -514,12 +529,20 @@ public class SelectLookupAction extends SBActionAdapter {
 	 * Retruns a list of user prefixes
 	 * @return
 	 */
-	public List<GenericVO> getPrefix() {
+	public List<GenericVO> getPrefix(ActionRequest req) {
+		LocaleWrapper lw = new LocaleWrapper(req);
 		List<GenericVO> selectList = new ArrayList<>(8);
-		selectList.add(new GenericVO("Mr.", "Mr."));
-		selectList.add(new GenericVO("Mrs.", "Mrs."));
-		selectList.add(new GenericVO("Ms", "Ms."));
-		selectList.add(new GenericVO("Miss", "Miss"));
+		
+		if (lw.getLocale().equals(new Locale("es", "MX"))) {
+			selectList.add(new GenericVO("Mr.", "Señor"));
+			selectList.add(new GenericVO("Mrs.", "Señora"));
+			selectList.add(new GenericVO("Miss", "Srta."));
+		} else {
+			selectList.add(new GenericVO("Mr.", "Mr."));
+			selectList.add(new GenericVO("Mrs.", "Mrs."));
+			selectList.add(new GenericVO("Ms", "Ms."));
+			selectList.add(new GenericVO("Miss", "Miss"));
+		}
 
 		return selectList;
 	}
@@ -833,12 +856,23 @@ public class SelectLookupAction extends SBActionAdapter {
 	 * Gets the standing list
 	 * @return
 	 */
-	public List<GenericVO> getStanding() {
+	public List<GenericVO> getStanding(ActionRequest req) {
+		LocaleWrapper lw = new LocaleWrapper(req);
 		List<GenericVO> data = new ArrayList<>();
 		for(Standing standing : Standing.values()) {
-			data.add(new GenericVO(standing.name(), StringUtil.capitalize(standing.name())));
+			String value = standing.name();
+			if (lw.getLocale().equals(new Locale("es", "MX"))) {
+				if (standing.equals(Standing.GOOD)) value="Bueno";
+				else if (standing.equals(Standing.CRITICAL)) value="Crítico";
+				else value="Retrasado";
+			}
+			
+			data.add(new GenericVO(standing.name(), StringUtil.capitalize(value)));
 		}
 		
+		// Sort the collection by the value
+		Collections.sort(data, (a, b) -> ((String)a.getValue()).compareTo(((String)b.getValue())));
+
 		return data;
 	}
 }

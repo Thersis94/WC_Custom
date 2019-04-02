@@ -7,8 +7,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.quartz.JobDataMap;
 import org.quartz.JobExecutionContext;
@@ -94,6 +96,11 @@ public class WeatherAlertJob extends AbstractSMTJob {
 				
 				// Save the forecast data to the db, since we are in the "recording" period
 				String forecastId = saveCurrentConditions(venueTour);
+				
+				// No alerts need to be sent if the event is not in progress
+				LocalDateTime now = new Date().toInstant().atZone(ZoneId.of(venueTour.getTimezone())).toLocalDateTime();
+				if (!venueTour.isEventInProgress(java.sql.Timestamp.valueOf(now)))
+					continue;
 				
 				// Get thresholds for the tour venue
 				VenueTourAttributeWidget vta = new VenueTourAttributeWidget(attributes, dbConnection);
@@ -236,9 +243,15 @@ public class WeatherAlertJob extends AbstractSMTJob {
 		DBProcessor dbp = new DBProcessor(dbConnection);
 		List<MemberVO> members = dbp.executeSelect(sql.toString(), params, new MemberVO());
 		
-		// Send the alerts to the members
+		// Add the mobile numbers into a set in case of duplicates
+		Set<String> mobileNumbers = new HashSet<>();
 		for (MemberVO member: members) {
-			sendSmsMessage(message, member.getPhoneNumber());
+			mobileNumbers.add(member.getPhoneNumber());
+		}
+		
+		// Send the alerts to the members
+		for (String mobileNumber: mobileNumbers) {
+			sendSmsMessage(message, mobileNumber);
 		}
 	}
 	
