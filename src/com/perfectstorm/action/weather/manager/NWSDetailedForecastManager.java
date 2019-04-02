@@ -264,5 +264,6 @@ public class NWSDetailedForecastManager implements ForecastManagerInterface {
 		// Parse the data into an object
 		return gson.fromJson(new String(gridData), WeatherDetailVO.class);
 	}
+
 }
 

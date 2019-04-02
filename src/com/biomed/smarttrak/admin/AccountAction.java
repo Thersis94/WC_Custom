@@ -9,13 +9,12 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
+import com.biomed.smarttrak.action.AdminControllerAction;
 // WC_Custom
 import com.biomed.smarttrak.vo.AccountVO;
 import com.biomed.smarttrak.vo.AccountVO.Status;
 import com.biomed.smarttrak.vo.UserVO;
 import com.biomed.smarttrak.vo.UserVO.AssigneeSection;
-import com.biomed.smarttrak.action.AdminControllerAction;
-
 // SMTBaseLibs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -27,7 +26,6 @@ import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
-import com.siliconmtn.util.user.HumanNameIntfc;
 import com.siliconmtn.util.user.NameComparator;
 // WebCrescendo
 import com.smt.sitebuilder.action.SBActionAdapter;
@@ -73,7 +71,7 @@ public class AccountAction extends SBActionAdapter {
 		
 		//if this is the add form, no account information to fetch
 		if( (accountId != null && !"ADD".equals(accountId)) || req.hasParameter(CHANGE_ACCOUNT)){
-			List<Object> accounts = fetchAccounts(req, accountId, schema);
+			List<AccountVO> accounts = fetchAccounts(req, accountId, schema);
 			putModuleData(accounts);
 		}
 
@@ -89,8 +87,8 @@ public class AccountAction extends SBActionAdapter {
 	 * @param schema
 	 * @return
 	 */
-	protected List<Object> fetchAccounts(ActionRequest req, String accountId, String schema){
-		List<Object> accounts = null;
+	protected List<AccountVO> fetchAccounts(ActionRequest req, String accountId, String schema){
+		List<AccountVO> accounts = null;
 		if (req.hasParameter(CHANGE_ACCOUNT)) {
 			req.getSession().removeAttribute(SESS_ACCOUNT);
 		} else { 
@@ -119,13 +117,13 @@ public class AccountAction extends SBActionAdapter {
 	 * @param accountId
 	 * @return
 	 */
-	private List<Object> loadAccounts(String schema, String accountId) {
+	private List<AccountVO> loadAccounts(String schema, String accountId) {
 		String sql = formatRetrieveQuery(accountId, schema);
 		List<Object> params = new ArrayList<>();
 		if (accountId != null) params.add(accountId);
 
 		DBProcessor db = new DBProcessor(dbConn, schema);
-		List<Object>  accounts = db.executeSelect(sql, params, new AccountVO());
+		List<AccountVO>  accounts = db.executeSelect(sql, params, new AccountVO());
 		log.debug("loaded " + accounts.size() + " accounts");
 
 		//decrypt the owner profiles
@@ -141,11 +139,11 @@ public class AccountAction extends SBActionAdapter {
 	 * @param req
 	 */
 	protected void loadSelectedAccount(String accountId, ActionRequest req) {
-		List<Object> accts = loadAccounts((String)getAttributes().get(Constants.CUSTOM_DB_SCHEMA), accountId);
+		List<AccountVO> accts = loadAccounts((String)getAttributes().get(Constants.CUSTOM_DB_SCHEMA), accountId);
 		if (accts == null || accts.isEmpty())
 			return;
 		
-		AccountVO  acct = (AccountVO) accts.get(0);
+		AccountVO  acct = accts.get(0);
 		setSelectedAccount(acct, req);
 	}
 
@@ -214,7 +212,7 @@ public class AccountAction extends SBActionAdapter {
 		params.add(AdminControllerAction.STAFF_ROLE_LEVEL);
 		
 		DBProcessor db = new DBProcessor(dbConn, schema);
-		List<Object>  accounts = db.executeSelect(sql, params, new AccountVO());
+		List<AccountVO>  accounts = db.executeSelect(sql, params, new AccountVO());
 		log.debug("loaded " + accounts.size() + " managers");
 
 		//decrypt the owner profiles
@@ -259,9 +257,8 @@ public class AccountAction extends SBActionAdapter {
 	 * loop and decrypt owner names, which came from the profile table
 	 * @param accounts
 	 */
-	@SuppressWarnings("unchecked")
-	protected void decryptNames(List<Object> data) {
-		new NameComparator().decryptNames((List<? extends HumanNameIntfc>)(List<?>)data, (String)getAttribute(Constants.ENCRYPT_KEY));
+	protected void decryptNames(List<AccountVO> data) {
+		new NameComparator().decryptNames(data, (String)getAttribute(Constants.ENCRYPT_KEY));
 	}
 
 
@@ -271,7 +268,7 @@ public class AccountAction extends SBActionAdapter {
 	 */
 	protected String formatRetrieveQuery(String accountId, String schema) {
 		StringBuilder sql = new StringBuilder(600);
-		sql.append("select a.account_id, a.company_id, a.account_nm, a.type_id, ");
+		sql.append("select a.account_id, a.company_id, a.account_nm, a.type_id, a.enterprise_flg, a.complimentary_flg, ");
 		sql.append("a.start_dt, a.expiration_dt, a.owner_profile_id, a.address_txt, ");
 		sql.append("a.address2_txt, a.city_nm, a.state_cd, a.zip_cd, a.country_cd, a.company_url, a.coowner_profile_id, ");
 		sql.append("a.status_no, a.create_dt, a.update_dt, a.fd_auth_flg, a.ga_auth_flg, a.mkt_auth_flg, ");
