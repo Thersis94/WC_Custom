@@ -3,6 +3,7 @@
  */
 package com.biomed.smarttrak.vo;
 
+import java.io.Serializable;
 import java.util.Date;
 
 import com.siliconmtn.db.orm.Column;
@@ -20,8 +21,12 @@ import com.siliconmtn.db.orm.Table;
  * @since Feb 15, 2017
  ****************************************************************************/
 @Table(name="biomedgps_update_section")
-public class UpdateXRVO {
+public class UpdateXRVO implements Serializable {
 
+	/**
+	 *
+	 */
+	private static final long serialVersionUID = 1L;
 	private String updateSectionXrId;
 	private String sectionId;
 	private String updateId;

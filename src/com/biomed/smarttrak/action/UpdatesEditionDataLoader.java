@@ -14,7 +14,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.biomed.smarttrak.action.AdminControllerAction.Section;
-import com.biomed.smarttrak.admin.UpdatesWeeklyReportAction;
+import com.biomed.smarttrak.admin.UpdatesManageReportAction;
 //WC Custom
 import com.biomed.smarttrak.vo.UpdateVO;
 import com.biomed.smarttrak.vo.UpdateXRVO;
@@ -88,7 +88,7 @@ public class UpdatesEditionDataLoader extends SimpleActionAdapter {
 		Date endDt = !StringUtil.isEmpty(emailDate) ? Convert.formatDate(Convert.DATE_SLASH_SHORT_PATTERN, emailDate) : null;
 		if (endDt == null) endDt = Calendar.getInstance().getTime();
 
-		int days = UpdatesWeeklyReportAction.TIME_RANGE_WEEKLY.equalsIgnoreCase(timeRangeCd) ? 7 : dailyRange;
+		int days = UpdatesManageReportAction.TIME_RANGE_WEEKLY.equalsIgnoreCase(timeRangeCd) ? 7 : dailyRange;
 
 		//if today is monday and the range is 1 (daily), we'll need to rollback to Friday as a start date (days=3)
 		if (days == 1) {

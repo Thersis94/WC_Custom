@@ -9,6 +9,7 @@ import static com.wsla.action.admin.ProviderAction.REQ_PROVIDER_ID;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -141,7 +142,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		keyMap.put("billableType", new GenericVO("getBillableTypes", Boolean.FALSE));
 		keyMap.put("supportNumbers", new GenericVO("getSupportNumbers", Boolean.TRUE));
 		keyMap.put("ticketSearch", new GenericVO("ticketSearch", Boolean.TRUE));
-		keyMap.put("standing", new GenericVO("getStanding", Boolean.FALSE));
+		keyMap.put("standing", new GenericVO("getStanding", Boolean.TRUE));
 	}
 
 	/**
@@ -446,13 +447,13 @@ public class SelectLookupAction extends SBActionAdapter {
 	 * @return
 	 */
 	public List<GenericVO> getStatusCodes(ActionRequest req) {
-		Locale locale = new ResourceBundleManagerAction().getUserLocale(req);
+		LocaleWrapper lw = new LocaleWrapper(req);
 		List<GenericVO> data = new ArrayList<>(64);
 		StatusCodeAction sca = new StatusCodeAction(getDBConnection(), getAttributes());
-		List<StatusCodeVO> codes = sca.getStatusCodes(req.getParameter("roleId"), locale, null);
+		List<StatusCodeVO> codes = sca.getStatusCodes(req.getParameter("roleId"), lw.getLocale(), null);
 		
 		for(StatusCodeVO sc : codes) {
-			data.add(new GenericVO(sc.getStatusCode(), sc.getStatusName()));
+			data.add(new GenericVO(sc.getStatusCode(), sc.getStatusName().trim()));
 		}
 
 		return data;
@@ -480,8 +481,8 @@ public class SelectLookupAction extends SBActionAdapter {
 		List<GenericVO> data = new ArrayList<>(8);
 		
 		if (lw.getLocale().equals(new Locale("es", "MX"))) {
-			data.add(new GenericVO("F", "Female"));
-			data.add(new GenericVO("M", "Hembra"));
+			data.add(new GenericVO("F", "Mujer"));
+			data.add(new GenericVO("M", "Hombre"));
 		} else {
 			data.add(new GenericVO("F", "Female"));
 			data.add(new GenericVO("M", "Male"));
@@ -535,8 +536,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		if (lw.getLocale().equals(new Locale("es", "MX"))) {
 			selectList.add(new GenericVO("Mr.", "Señor"));
 			selectList.add(new GenericVO("Mrs.", "Señora"));
-			selectList.add(new GenericVO("Ms", "Sra"));
-			selectList.add(new GenericVO("Miss", "Perder"));
+			selectList.add(new GenericVO("Miss", "Srta."));
 		} else {
 			selectList.add(new GenericVO("Mr.", "Mr."));
 			selectList.add(new GenericVO("Mrs.", "Mrs."));
@@ -856,12 +856,23 @@ public class SelectLookupAction extends SBActionAdapter {
 	 * Gets the standing list
 	 * @return
 	 */
-	public List<GenericVO> getStanding() {
+	public List<GenericVO> getStanding(ActionRequest req) {
+		LocaleWrapper lw = new LocaleWrapper(req);
 		List<GenericVO> data = new ArrayList<>();
 		for(Standing standing : Standing.values()) {
-			data.add(new GenericVO(standing.name(), StringUtil.capitalize(standing.name())));
+			String value = standing.name();
+			if (lw.getLocale().equals(new Locale("es", "MX"))) {
+				if (standing.equals(Standing.GOOD)) value="Bueno";
+				else if (standing.equals(Standing.CRITICAL)) value="Crítico";
+				else value="Retrasado";
+			}
+			
+			data.add(new GenericVO(standing.name(), StringUtil.capitalize(value)));
 		}
 		
+		// Sort the collection by the value
+		Collections.sort(data, (a, b) -> ((String)a.getValue()).compareTo(((String)b.getValue())));
+
 		return data;
 	}
 }

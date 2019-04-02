@@ -596,6 +596,7 @@ public class CompanyManagementAction extends ManagementAction {
 			req.getSession().setAttribute("hierarchyTree", t.preorderList());
 		}
 		req.getSession().setAttribute("companyName", company.getCompanyName());
+		req.getSession().setAttribute("shortCompanyName", company.getShortName());
 		req.getSession().setAttribute("companyNameParam", StringEncoder.urlEncode(company.getCompanyName()));
 
 		addInvestors(company);
