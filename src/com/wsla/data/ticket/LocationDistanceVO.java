@@ -6,7 +6,7 @@ import com.siliconmtn.db.orm.Column;
 /****************************************************************************
  * <b>Title</b>: LocationDistanceVO.java
  * <b>Project</b>: WC_Custom
- * <b>Description: </b> TODO Put Something Here
+ * <b>Description: </b> used to hold a location and a distance used for selecting cas and retail
  * <b>Copyright:</b> Copyright (c) 2019
  * <b>Company:</b> Silicon Mountain Technologies
  * 
