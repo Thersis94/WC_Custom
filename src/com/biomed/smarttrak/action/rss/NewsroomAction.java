@@ -5,7 +5,9 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.solr.common.SolrDocument;
 
@@ -13,10 +15,12 @@ import com.biomed.smarttrak.action.rss.RSSDataAction.ArticleStatus;
 import com.biomed.smarttrak.action.rss.util.SmarttrakRSSImporter;
 import com.biomed.smarttrak.action.rss.vo.RSSArticleFilterVO;
 import com.biomed.smarttrak.action.rss.vo.RSSArticleVO;
+import com.biomed.smarttrak.action.rss.vo.RSSBucketVO;
 import com.biomed.smarttrak.action.rss.vo.RSSFeedSegment;
 import com.biomed.smarttrak.admin.AccountAction;
 import com.biomed.smarttrak.admin.UpdatesAction;
 import com.biomed.smarttrak.util.RSSArticleIndexer;
+import com.biomed.smarttrak.vo.AccountVO;
 import com.biomed.smarttrak.vo.UserVO.AssigneeSection;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -24,15 +28,12 @@ import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
-import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.search.SolrAction;
 import com.smt.sitebuilder.action.search.SolrResponseVO;
-import com.smt.sitebuilder.action.user.ProfileManager;
-import com.smt.sitebuilder.action.user.ProfileManagerFactory;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
@@ -71,6 +72,15 @@ public class NewsroomAction extends SBActionAdapter {
 		super(actionInit);
 	}
 
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#list(com.siliconmtn.action.ActionRequest)
+	 */
+	@Override
+	public void list(ActionRequest req) throws ActionException {
+		super.retrieve(req);
+	}
+
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		if(req.hasParameter("isBucket") && req.hasParameter(BUCKET_ID)) {
@@ -78,7 +88,7 @@ public class NewsroomAction extends SBActionAdapter {
 			loadManagers(req);
 		} else if(req.hasParameter("isBucket")) {
 			loadBuckets(req);
-			loadSegmentGroupArticles(req);
+			loadMyCounts(req);
 		} else if(req.hasParameter(FEED_GROUP_ID) && !req.hasParameter("isConsole")) {
 			//Get the Filtered Updates according to Request.
 			getFilteredArticles(req);
@@ -92,6 +102,8 @@ public class NewsroomAction extends SBActionAdapter {
 				log.debug("DB Count " + articles.size());
 				if(!articles.isEmpty()) {
 					this.putModuleData(articles, articles.size(), false);
+				} else {
+					this.putModuleData(Collections.emptyList(), 0, false);
 				}
 			} else {
 				this.putModuleData(Collections.emptyList(), 0, false);
@@ -99,9 +111,17 @@ public class NewsroomAction extends SBActionAdapter {
 
 			//Load Managers for assigning rss articles.
 			loadManagers(req);
-		} else if (!req.hasParameter("statusCd")) {
+		} else if(StringUtil.isEmpty(req.getParameter("statusCd"))){
 			loadSegmentGroupArticles(req);
+			loadMyCounts(req);
 		}
+	}
+
+	/**
+	 * @param req
+	 */
+	private void loadMyCounts(ActionRequest req) {
+		req.setParameter("myBucketCount", "0");
 	}
 
 	/**
@@ -196,7 +216,6 @@ public class NewsroomAction extends SBActionAdapter {
 	private void setSolrParams(ActionRequest req) {
 		int rpp = Convert.formatInteger(req.getParameter("limit"), 10);
 		req.setParameter("rpp", StringUtil.checkVal(rpp));
-
 		if(req.hasParameter(UpdatesAction.SEARCH)) 
 			req.setParameter("searchData", req.getParameter(UpdatesAction.SEARCH));
 
@@ -223,7 +242,6 @@ public class NewsroomAction extends SBActionAdapter {
 
 		req.setParameter("fq", fq.toArray(new String[fq.size()]), true);
 		req.setParameter("allowCustom", "true");
-//		req.setParameter("fieldOverride", SearchDocumentHandler.PUBLISH_DATE);
 	}
 
 	/**
@@ -296,37 +314,51 @@ public class NewsroomAction extends SBActionAdapter {
 	 * names on the view.
 	 * @param req
 	 */
+	@SuppressWarnings("unchecked")
 	private void loadBuckets(ActionRequest req) {
-		List<String> bucketIds = new ArrayList<>();
-		try(PreparedStatement ps = dbConn.prepareStatement(loadBucketSql())) {
-			ResultSet rs = ps.executeQuery();
-			while(rs.next()) {
-				bucketIds.add(rs.getString("bucket_id"));
+		//Load list of Profile Data from list of bucket(profile) ids.
+		loadManagers(req);
+		List<AccountVO> bucketUsers = (List<AccountVO>)req.getAttribute(AccountAction.MANAGERS);
+		Map<String, Integer> bucketCounts = loadBucketCounts();
+		List<RSSBucketVO> buckets = new ArrayList<>();
+		for(AccountVO a: bucketUsers) {
+			int numArticles = 0;
+			if(bucketCounts.containsKey(a.getOwnerProfileId())) {
+				numArticles = bucketCounts.get(a.getOwnerProfileId());
 			}
-		} catch (SQLException e) {
-			log.error("Error loading Buckets", e);
+			buckets.add(new RSSBucketVO(a, numArticles));
 		}
 
-		//Load list of Profile Data from list of bucket(profile) ids.
-		ProfileManager pm = ProfileManagerFactory.getInstance(attributes);
-		List<UserDataVO> buckets;
-		try {
-			buckets = pm.searchProfile(dbConn, bucketIds);
-			req.setAttribute("buckets", buckets);
-		} catch (DatabaseException e) {
+		req.setAttribute("buckets", buckets);
+	}
+
+	/**
+	 * Load the number of articles tied to a bucket Id (User)
+	 */
+	private Map<String, Integer> loadBucketCounts() {
+		Map<String, Integer> counts = new HashMap<>();
+
+		try(PreparedStatement ps = dbConn.prepareStatement(buildBucketCountSql())) {
+			ResultSet rs = ps.executeQuery();
+			while(rs.next()) {
+				counts.put(rs.getString("bucket_id"), rs.getInt("article_count"));
+			}
+		} catch (SQLException e) {
 			log.error("Error Processing Code", e);
 		}
+		return counts;
 	}
 
 	/**
 	 * Sql returns distinct bucketIds.
 	 * @return
 	 */
-	private String loadBucketSql() {
-		StringBuilder sql = new StringBuilder(150);
-		sql.append("select distinct bucket_id from ");
+	private String buildBucketCountSql() {
+		StringBuilder sql = new StringBuilder(200);
+		sql.append("select count(bucket_id) as article_count, bucket_id from ");
 		sql.append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
-		sql.append("biomedgps_rss_filtered_article where bucket_id is not null");
+		sql.append("biomedgps_rss_filtered_article where bucket_id is not null ");
+		sql.append("group by bucket_id");
 		return sql.toString();
 	}
 
