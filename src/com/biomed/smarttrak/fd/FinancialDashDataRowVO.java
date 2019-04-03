@@ -71,7 +71,7 @@ public class FinancialDashDataRowVO implements Serializable {
 		setRegionCd(util.getStringVal("REGION_CD", rs));
 		setGraphColor(util.getStringVal("GRAPH_COLOR", rs));
 
-		setColumns(util, rs, dashboard);
+		setColumns(util, rs, dashboard, false);
 	}
 
 	/**
@@ -152,7 +152,7 @@ public class FinancialDashDataRowVO implements Serializable {
 	 * @param rs
 	 * @throws SQLException 
 	 */
-	public void setColumns(DBUtil util, ResultSet rs, FinancialDashVO dashboard) throws SQLException {
+	public void setColumns(DBUtil util, ResultSet rs, FinancialDashVO dashboard, boolean isUpdate) throws SQLException {
 		int maxYear = util.getIntVal("YEAR_NO", rs);
 		int year = dashboard.getCurrentYear();
 
@@ -173,10 +173,10 @@ public class FinancialDashDataRowVO implements Serializable {
 				String quarterString = null;
 				// If we are in the current year always compar the the current year
 				// so that unreported quarters don't get used for the year to date comparison.
-				if (year == maxYear && currQtr >= dashboard.getCurrentQtr()) {
+				if (year == maxYear && yearIdx == 0 && currQtr >= dashboard.getCurrentQtr()) {
 					quarterString = qtr + "-" + maxYear;
 				}
-				addColumn(qtr, yearIdx, maxYear, util, rs);
+				addColumn(qtr, yearIdx, maxYear, util, rs, quarterString == null, isUpdate);
 				incrementTotal(cyTotals, yearIdx, util.getIntVal(colName, rs), null);
 				incrementTotal(ytdTotals, yearIdx, util.getIntVal(colName, rs), quarterString);
 				calculateInactivity(qtr, yearIdx, util, rs, dashboard.getColHeaders(), qtr + "-" + (maxYear-yearIdx), dashboard.showEmpty());
@@ -184,8 +184,8 @@ public class FinancialDashDataRowVO implements Serializable {
 			}
 		}
 
-		this.addSummaryColumns(cyTotals, maxYear, FinancialDashBaseAction.CALENDAR_YEAR, ids);
-		this.addSummaryColumns(ytdTotals, maxYear, FinancialDashBaseAction.YEAR_TO_DATE, ids);
+		this.addSummaryColumns(cyTotals, maxYear, FinancialDashBaseAction.CALENDAR_YEAR, ids, isUpdate);
+		this.addSummaryColumns(ytdTotals, maxYear, FinancialDashBaseAction.YEAR_TO_DATE, ids, isUpdate);
 
 	}
 
@@ -278,12 +278,23 @@ public class FinancialDashDataRowVO implements Serializable {
 	 * @param val
 	 * @param pctDiff
 	 */
-	public void addColumn(String colId, int val, Double pctDiff, String revenueId) {
-		FinancialDashDataColumnVO col = new FinancialDashDataColumnVO();
-		col.setDollarValue(val);
-		col.setPctDiff(pctDiff);
-		col.setColId(colId);
-		col.setRevenueId(revenueId);
+	public void addColumn(String colId, int val, int pVal, String revenueId, boolean adjustImcomplete, boolean isUpdate) {
+		FinancialDashDataColumnVO col;
+		if (isUpdate) {
+			col =columns.get(colId);
+			col.setDollarValue(col.getDollarValue() + val);
+			if (!adjustImcomplete || val != 0) {
+				col.setPDollarValue(col.getPDollarValue() +pVal);
+			}
+		} else {
+			col = new FinancialDashDataColumnVO();
+			col.setDollarValue(val);
+			if (!adjustImcomplete || val != 0) {
+				col.setPDollarValue(pVal);
+			}
+			col.setColId(colId);
+			col.setRevenueId(revenueId);
+		}
 		addColumn(colId, col);
 	}
 
@@ -305,21 +316,17 @@ public class FinancialDashDataRowVO implements Serializable {
 	 * @param maxYear - the most recent year in the query
 	 * @param util
 	 * @param rs
+	 * @param b 
 	 */
-	private void addColumn(String qtr, int yearIdx, int maxYear, DBUtil util, ResultSet rs) {
+	private void addColumn(String qtr, int yearIdx, int maxYear, DBUtil util, ResultSet rs, boolean adjustImcomplete, boolean isUpdate) {
 		int dollarValue = util.getIntVal(qtr + "_" + yearIdx, rs);
 		int pyDollarValue = util.getIntVal(qtr + "_" + (yearIdx + 1), rs);
-
-		Double pctChange = null;
-		if (pyDollarValue > 0) {
-			pctChange = (double) (dollarValue - pyDollarValue) / pyDollarValue;
-		}
 
 		// Subtracting the year index from the most recent year in the query,
 		// gives the year for that column. One row in the returned data could
 		// represent data from more than one year.
 		String columnId = qtr + "-" + (maxYear - yearIdx);
-		addColumn(columnId, dollarValue, pctChange, util.getStringVal("REVENUE_ID_" + yearIdx, rs));
+		addColumn(columnId, dollarValue, pyDollarValue, util.getStringVal("REVENUE_ID_" + yearIdx, rs), adjustImcomplete, isUpdate);
 
 		// Checks for potential delta between overlay and base data 
 		checkOverlayDelta(columnId, qtr, yearIdx, rs);
@@ -389,25 +396,19 @@ public class FinancialDashDataRowVO implements Serializable {
 	 * @param totals
 	 * @param maxYear - the most recent year from the query
 	 */
-	private void addSummaryColumns(Map<Integer, Integer> totals, int maxYear, String columnPrefix, Map<Integer, String> ids) {
+	private void addSummaryColumns(Map<Integer, Integer> totals, int maxYear, String columnPrefix, Map<Integer, String> ids, boolean isUpdate) {
 		for (int i = 0; i < totals.size() - 1; i++) {
 			Integer cyTotal = totals.get(i);
 			Integer pyTotal = totals.get(i + 1);
 
-			Double pctChange = null;
-			if (pyTotal > 0) {
-				pctChange = (double) (cyTotal - pyTotal) / pyTotal;
-			}
-
 			// Each iteration signifies one year earlier
-			addColumn(columnPrefix + "-" + (maxYear - i), cyTotal, pctChange, ids.get(i));
+			addColumn(columnPrefix + "-" + (maxYear - i), cyTotal, pyTotal, ids.get(i), false, isUpdate);
 		}
 
 		// Add the last totals column, which has no py
 		int last = totals.size() - 1;
 		Integer cyTotal = totals.get(last);
-		Double pctChange = null;
-		addColumn(columnPrefix + "-" + (maxYear - last), cyTotal, pctChange, ids.get(last));
+		addColumn(columnPrefix + "-" + (maxYear - last), cyTotal, 0, ids.get(last), false, isUpdate);
 	}
 
 	/**

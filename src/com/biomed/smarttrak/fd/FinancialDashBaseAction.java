@@ -355,20 +355,8 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 		DisplayType dt = dash.getColHeaders().getDisplayType();
 		StringBuilder sql = new StringBuilder(500);
 		sql.append("sum(r.Q1_NO) as Q1_0, sum(r.Q2_NO) as Q2_0, sum(r.Q3_NO) as Q3_0, sum(r.Q4_NO) as Q4_0, ");
-		
-		// Market summation needs to handle skipping empty data from the current quarter in the current year
-		// in the comparison year so as to prevent the appearance of large losses in areas that have not yet been reported
-		if (TableType.MARKET == dash.getTableType() && dash.getColHeaders().getCalendarYear() == dash.getCurrentYear()) {
-			for (int i = 1; i <= 4; i++) {
-				if (i == dash.getCurrentQtr()) continue;
-				sql.append("sum(r2.Q").append(i).append("_NO) as Q").append(i).append("_1, ");
-			}
-			sql.append("sum(case when r.Q").append(dash.getCurrentQtr()).append("_NO > 0 then r2.Q").append(dash.getCurrentQtr());
-			sql.append("_NO else 0 end) as Q").append(dash.getCurrentQtr()).append("_1 ");
-		} else {
-			sql.append("sum(r2.Q1_NO) as Q1_1, sum(r2.Q2_NO) as Q2_1, sum(r2.Q3_NO) as Q3_1, sum(r2.Q4_NO) as Q4_1 "); // Needed for all column display types to get percent change from prior year
-		}
-		
+		sql.append("sum(r2.Q1_NO) as Q1_1, sum(r2.Q2_NO) as Q2_1, sum(r2.Q3_NO) as Q3_1, sum(r2.Q4_NO) as Q4_1 "); // Needed for all column display types to get percent change from prior year
+
 		// Add in additional years of data as required by the FD display type
 		int dataYears = getDataYears(dt, dash.getCurrentYear());
 		for (int yr = 3; yr <= dataYears; yr++) {
@@ -447,8 +435,11 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 		
 		sql.append("group by ROW_ID, ROW_NM, r.YEAR_NO ");
 
-		if (TableType.COMPANY == dash.getTableType())
-			sql.append(", c.GRAPH_COLOR ");
+		if (TableType.COMPANY == dash.getTableType()) {
+			sql.append(", c.GRAPH_COLOR, r.section_id ");
+		} else {
+			sql.append(", r.COMPANY_ID ");
+		}
 
 
 		// Handle edit mode specific columns in the group by

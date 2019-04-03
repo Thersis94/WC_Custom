@@ -15,6 +15,7 @@ import com.biomed.smarttrak.util.SmarttrakTree;
 import com.biomed.smarttrak.vo.SectionVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.Node;
+import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBModuleVO;
@@ -121,18 +122,25 @@ public class FinancialDashVO extends SBModuleVO {
 	 * @param rs
 	 */
 	public void setData(ResultSet rs, SmarttrakTree sections, DashType dashType) {
-		FinancialDashDataRowVO row;
+		FinancialDashDataRowVO row = null;
 
 		boolean allSameQuarter = checkAllSameQuarter(sections);
+		String rowId = "";
+		DBUtil util = new DBUtil();
 		try {
 			while (rs.next()) {
-				row = new FinancialDashDataRowVO(rs, this);
+				if (row == null || !rowId.equals(rs.getString("row_id"))) {
+					row = new FinancialDashDataRowVO(rs, this);
+					rowId = row.getPrimaryKey();
+					addRow(row);
 
-				//If this is the Public View, calculate Labels.
-				if(DashType.COMMON.equals(dashType)) {
-					row.setReportingPending(sections, currentQtr, currentYear, allSameQuarter);
+					//If this is the Public View, calculate Labels.
+					if(DashType.COMMON.equals(dashType)) {
+						row.setReportingPending(sections, currentQtr, currentYear, allSameQuarter);
+					}
+				} else {
+					row.setColumns(util, rs, this, true);
 				}
-				addRow(row);
 			}
 		} catch (SQLException sqle) {
 			log.error("Unable to set financial dashboard row data", sqle);
