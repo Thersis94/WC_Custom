@@ -6,13 +6,18 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 // Log4j 1.2.17
 import org.apache.log4j.Logger;
 
 // MTS Libs
 import com.mts.publication.data.CategoryVO;
+import com.mts.publication.data.DocumentCategoryVO;
 import com.mts.publication.data.IssueVO;
 import com.mts.publication.data.MTSDocumentVO;
 
@@ -24,6 +29,7 @@ import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.RandomAlphaNumeric;
 import com.siliconmtn.util.StringUtil;
+import com.smt.sitebuilder.action.content.DocumentVO;
 
 /****************************************************************************
  * <b>Title</b>: DataMigrationUtil.java
@@ -41,12 +47,17 @@ import com.siliconmtn.util.StringUtil;
 public class DataMigrationUtil {
 
 	private static final Logger log = Logger.getLogger(DataMigrationUtil.class);
+	private Map<String, String> userMap = new HashMap<>();
+	private Map<String, String> catMap = new HashMap<>();
+	private Set<String> missingCats = new HashSet<>();
+	private static final String CUSTOM_SCHEMA = "custom.";
 	
 	/**
 	 * 
 	 */
 	public DataMigrationUtil() {
 		super();
+		assignMaps();
 	}
 
 	/**
@@ -69,22 +80,77 @@ public class DataMigrationUtil {
 		//dmu.migrateIssues(srcConn, destConn);
 		
 		// Migrate the articles
-		dmu.migrateArticles(srcConn, destConn);
-
+		List<MTSDocumentVO> docs = dmu.migrateArticles(srcConn);
+		for(MTSDocumentVO doc : docs) {
+			DBProcessor db = new DBProcessor(destConn);
+			// Assign the SB Action entry
+			SBActionVO avo = new SBActionVO(doc);
+			db.insert(avo);
+			
+			// Assign the wc document entry
+			DocumentVO dvo = (DocumentVO)doc;
+			db.insert(dvo);
+			
+			// Assign the MTS Document info
+			db = new DBProcessor(destConn, CUSTOM_SCHEMA);
+			db.insert(dvo);
+			
+			for (DocumentCategoryVO dcvo : doc.getCategories()) {
+				db.insert(dcvo);
+			}
+		}
+		
+		
+		log.info(dmu.missingCats.size());
+		
 		srcConn.close();
 		destConn.close();
 		log.info("Migration Completed");
 	}
 	
+	/**
+	 * Assigns the categories and users for mapping
+	 */
+	public void assignMaps() {
+		// User Mapping
+		userMap.put("kayleen brown", "MTS_USER_1");
+		userMap.put("david filmore", "MTS_USER_2");
+		userMap.put("tracy neilssien", "MTS_USER_6");
+		userMap.put("tracy schaaf", "MTS_USER_6");
+		userMap.put("nancy dvorin", "MTS_USER_3");
+		userMap.put("david cassak", "MTS_USER_7");
+		userMap.put("stephen levin", "MTS_USER_8");
+		userMap.put("wendy diller", "MTS_USER_9");
+		userMap.put("mary stuart", "MTS_USER_10");
+		userMap.put("mary thompson", "MTS_USER_11");
+		userMap.put("colin miller", "MTS_USER_12");
+		
+		// Category mapping
+		catMap.put("business strategies", "BUS_STRAT");
+		catMap.put("emerging markets", "EMERG_MARKETS");
+		catMap.put("executive interviews", "EXECUTIVE_INTERVIEWS");
+		catMap.put("investors & dealmaking", "INVENT_DEALS");
+		catMap.put("perspective & commentary", "PERSPECTIVE_COMM");
+		catMap.put("providers & payors", "PROVIDER_PAYER");
+		catMap.put("regulatory & reimbursement", "REG_REIMBURS");
+		catMap.put("startups to watch", "STARTUP_WATCH");
+	}
 	
-	public void migrateArticles(Connection srcConn, Connection destConn) 
+	/**
+	 * 
+	 * @param srcConn
+	 * @param destConn
+	 * @throws SQLException
+	 * @throws com.siliconmtn.db.util.DatabaseException
+	 */
+	public List<MTSDocumentVO> migrateArticles(Connection srcConn) 
 	throws SQLException, com.siliconmtn.db.util.DatabaseException {
 		StringBuilder sql = new StringBuilder(128);
 		
 		// Get the articles
 		sql.append("select  * ");
 		sql.append("from wp_1fvbn80q5v_posts where post_type = 'article' ");
-		sql.append("limit 10 ");
+		sql.append("limit 100 ");
 		List<MTSDocumentVO> docs = new ArrayList<>();
 		try (PreparedStatement ps = srcConn.prepareStatement(sql.toString()); ResultSet rs = ps.executeQuery()) {
 			while (rs.next()) {
@@ -94,7 +160,7 @@ public class DataMigrationUtil {
 				doc.setActionGroupId(rs.getString("ID"));
 				doc.setDocumentId(rs.getString("ID"));
 				doc.setDocumentSourceCode("CUSTOMER_IMPORT");
-				//doc.setDocument(rs.getString("post_content"));
+				doc.setDocument(rs.getString("post_content"));
 				doc.setFileType("html");
 				doc.setUniqueCode(RandomAlphaNumeric.generateRandom(6));
 				doc.setOrganizationId("MTS");
@@ -108,41 +174,62 @@ public class DataMigrationUtil {
 				doc.setPublishDate(rs.getDate("post_date"));
 				doc.setFileSize(StringUtil.checkVal(doc.getDocument()).length());
 				
-				this.parseArticle(doc);
+				// Parse the title
+				this.parseArticleTitle(doc);
+				
+				// Load the other categories
 				docs.add(doc);
 			}
 		}
 		
-		// Assign the SB Action entry
-		
-		
-		// Assign the wc document entry
-		
-		
-		// Assign the MTS Document info
-		
-		
-		// Assign the categories
-		
-		
+		return docs;
 	}
 	
-	
-	public void parseArticle(MTSDocumentVO doc) {
-		log.info(doc.getActionName());
+	/**
+	 * Grabs the category and the title and the author
+	 * @param doc
+	 */
+	public void parseArticleTitle(MTSDocumentVO doc) {
+		
 		String title = doc.getActionName();
 		int idx = title.indexOf('–');
+		if (idx < 0) idx = title.indexOf('—');
 		if (idx < 0) idx = title.indexOf('-');
-		
+
 		// Get the first section for the cat
-		String cat = "";
-		if (idx > -1) cat = StringUtil.removeNonAlphaNumeric(title.substring(0, idx), false);
+		if (idx > -1) {
+			String cat = StringUtil.removeNonAlphaNumeric(title.substring(0, idx), false).toLowerCase().trim();
+			String catCode = catMap.get(cat);
+			if (catCode != null) {
+				DocumentCategoryVO dcat = new DocumentCategoryVO();
+				dcat.setCategoryCode(catCode);
+				dcat.setDocumentId(doc.getActionId());
+				doc.addCategory(dcat);
+			} else {
+				if (! StringUtil.isEmpty(cat)) missingCats.add(cat);
+			}
+		}
 		
 		// Get the title
-		if (title.contains("“") || title.contains("\"")) {
-			int lastIdx = title.lastIndexOf('"') > -1 ? title.lastIndexOf('"') : title.lastIndexOf('“');
-			String artTitle = title.substring(idx, title.lastIndexOf('"'));
-			log.info("*** " + artTitle);
+		String pTitle = "";
+		if (title.indexOf(" by ") > -1) {
+			pTitle = title.substring(idx + 2);
+			int eIdx = pTitle.lastIndexOf("by");
+			if (eIdx > -1) {
+				pTitle = pTitle.substring(0, eIdx).trim();
+				
+			}
+		} else {
+			pTitle = title;
+		}
+		
+		doc.setActionName(StringUtil.removeNonAlphaNumeric(pTitle, false));
+
+		// Get the author
+		int aidx = title.lastIndexOf(" by ");
+		if (aidx > -1) {
+			String author = StringUtil.checkVal(title.substring(aidx + 4));
+			doc.setAuthorId(userMap.get(author.trim().toLowerCase()));
 		}
 	}
 	
@@ -197,7 +284,7 @@ public class DataMigrationUtil {
 				issues.add(issue);
 				
 				log.info("Number of issues: " + issues.size());
-				DBProcessor db = new DBProcessor(destConn, "custom.");
+				DBProcessor db = new DBProcessor(destConn, CUSTOM_SCHEMA);
 				db.executeBatch(issues, true);
 			}
 		}
@@ -223,7 +310,8 @@ public class DataMigrationUtil {
 			while (rs.next()) {
 				CategoryVO cat = new CategoryVO();
 				cat.setCategoryCode(rs.getString("term_id"));
-				cat.setGroupCode(rs.getString("term_id"));
+				cat.setGroupCode("MARKETS");
+				cat.setParentCode("MARKETS");
 				cat.setSlug(rs.getString("slug"));
 				cat.setDescription(rs.getString("description"));
 				cat.setName(rs.getString("name"));
@@ -232,7 +320,7 @@ public class DataMigrationUtil {
 			}
 			
 			log.info("Number of entries: " + cats.size());
-			DBProcessor db = new DBProcessor(destConn, "custom.");
+			DBProcessor db = new DBProcessor(destConn, CUSTOM_SCHEMA);
 			db.executeBatch(cats, true);
 		}
 	}
