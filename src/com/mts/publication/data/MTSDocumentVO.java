@@ -66,6 +66,13 @@ public class MTSDocumentVO extends DocumentVO {
 	public MTSDocumentVO(ResultSet rs) {
 		super(rs);
 	}
+	/**
+	 * 
+	 * @return
+	 */
+	public DocumentVO getCoreDocument() {
+		return this;
+	}
 
 	/**
 	 * @return the documentId

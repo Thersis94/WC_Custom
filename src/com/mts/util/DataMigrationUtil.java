@@ -15,6 +15,8 @@ import java.util.Set;
 // Log4j 1.2.17
 import org.apache.log4j.Logger;
 
+import com.mts.publication.data.AssetVO;
+import com.mts.publication.data.AssetVO.AssetType;
 // MTS Libs
 import com.mts.publication.data.CategoryVO;
 import com.mts.publication.data.DocumentCategoryVO;
@@ -50,7 +52,26 @@ public class DataMigrationUtil {
 	private Map<String, String> userMap = new HashMap<>();
 	private Map<String, String> catMap = new HashMap<>();
 	private Set<String> missingCats = new HashSet<>();
+	private List<DocumentCategoryVO> categories = new ArrayList<>();
+	private List<AssetVO> assets = new ArrayList<>();
+	
+	// Static Constants
 	private static final String CUSTOM_SCHEMA = "custom.";
+	private static final String ISSUE_KEY = "_yoast_wpseo_primary_issue";
+	private static final String PRI_CATEGORY_KEY = "_yoast_wpseo_primary_article_category";
+	private static final String ARTICLE_PDF = "article_pdf";
+	private static final String ISSUE_COVER_IMAGE = "issue_cover_image";
+	private static final String ISSUE_PDF = "issue_pdf";
+	private static final String MTS_ORG = "MTS";
+	private static final String MTS_DOC_FOLDER = "MED_TECH_STRATEGIST";
+	
+	// Turn on/off items to process
+	private static final boolean PROC_CAT = false;
+	private static final boolean PROC_DOCS = true;
+	private static final boolean PROC_DOC_CAT = false;
+	private static final boolean PROC_ASSET = false;
+	private static final boolean PROC_ISSUES = false;
+	private static final boolean PROC_ART = true;
 	
 	/**
 	 * 
@@ -74,34 +95,38 @@ public class DataMigrationUtil {
 		log.info("Dest Conn: " + ! destConn.isClosed());
 		
 		// Migrate the cats
-		//dmu.migrateCategories(srcConn, destConn);
+		if (PROC_CAT) dmu.migrateCategories(srcConn, destConn);
 
 		// Migrate the issues
-		//dmu.migrateIssues(srcConn, destConn);
+		if (PROC_ISSUES) dmu.migrateIssues(srcConn, destConn);
 		
 		// Migrate the articles
-		List<MTSDocumentVO> docs = dmu.migrateArticles(srcConn);
+		List<MTSDocumentVO> docs = new ArrayList<>();
+		if (PROC_ART) docs = dmu.migrateArticles(srcConn);
+		DBProcessor dbCore = new DBProcessor(destConn, "core.");
+		DBProcessor dbCustom = new DBProcessor(destConn, CUSTOM_SCHEMA);
+		
 		for(MTSDocumentVO doc : docs) {
-			DBProcessor db = new DBProcessor(destConn);
 			// Assign the SB Action entry
 			SBActionVO avo = new SBActionVO(doc);
-			db.insert(avo);
+			if (PROC_DOCS) dbCore.insert(avo);
+			log.info("SB Action written");
 			
 			// Assign the wc document entry
-			DocumentVO dvo = (DocumentVO)doc;
-			db.insert(dvo);
+			DocumentVO dvo = doc.getCoreDocument();
+			if (PROC_DOCS) dbCore.insert(dvo);
+			log.info("Core.document written");
 			
 			// Assign the MTS Document info
-			db = new DBProcessor(destConn, CUSTOM_SCHEMA);
-			db.insert(dvo);
-			
-			for (DocumentCategoryVO dcvo : doc.getCategories()) {
-				db.insert(dcvo);
-			}
+			if (PROC_DOCS) dbCustom.insert(doc);
+			log.info("MTS Document written");
 		}
 		
+		// Add the categories and assets
+		if (PROC_DOC_CAT) dbCustom.executeBatch(dmu.categories, true);
+		if (PROC_ASSET) dbCustom.executeBatch(dmu.assets, true);
 		
-		log.info(dmu.missingCats.size());
+		log.info("Number Docs: " + docs.size());
 		
 		srcConn.close();
 		destConn.close();
@@ -144,13 +169,13 @@ public class DataMigrationUtil {
 	 * @throws com.siliconmtn.db.util.DatabaseException
 	 */
 	public List<MTSDocumentVO> migrateArticles(Connection srcConn) 
-	throws SQLException, com.siliconmtn.db.util.DatabaseException {
+	throws SQLException {
 		StringBuilder sql = new StringBuilder(128);
 		
 		// Get the articles
 		sql.append("select  * ");
 		sql.append("from wp_1fvbn80q5v_posts where post_type = 'article' ");
-		sql.append("limit 100 ");
+		sql.append("limit 30 ");
 		List<MTSDocumentVO> docs = new ArrayList<>();
 		try (PreparedStatement ps = srcConn.prepareStatement(sql.toString()); ResultSet rs = ps.executeQuery()) {
 			while (rs.next()) {
@@ -161,9 +186,10 @@ public class DataMigrationUtil {
 				doc.setDocumentId(rs.getString("ID"));
 				doc.setDocumentSourceCode("CUSTOMER_IMPORT");
 				doc.setDocument(rs.getString("post_content"));
+				doc.setDocumentFolderId(MTS_DOC_FOLDER);
 				doc.setFileType("html");
 				doc.setUniqueCode(RandomAlphaNumeric.generateRandom(6));
-				doc.setOrganizationId("MTS");
+				doc.setOrganizationId(MTS_ORG);
 				doc.setModuleTypeId("DOCUMENT");
 				doc.setActionDesc(rs.getString("post_title"));
 				doc.setActionName(rs.getString("post_title"));
@@ -178,11 +204,88 @@ public class DataMigrationUtil {
 				this.parseArticleTitle(doc);
 				
 				// Load the other categories
-				docs.add(doc);
+				getArticleMetaData(srcConn, doc);
+				
+				// Add to the document collection
+				if (! StringUtil.isEmpty(doc.getIssueId())) docs.add(doc);
 			}
 		}
 		
 		return docs;
+	}
+	
+	/**
+	 * Gets the article meta data (PDF, Category, etc ..)
+	 * @param srcConn
+	 * @param doc
+	 * @throws SQLException
+	 */
+	public void getArticleMetaData(Connection srcConn, MTSDocumentVO doc) throws SQLException {
+		String s = "select meta_key, meta_value from wp_1fvbn80q5v_postmeta where post_id = ?";
+		
+		try(PreparedStatement ps = srcConn.prepareStatement(s)) {
+			ps.setString(1, doc.getActionId());
+			
+			ResultSet rs = ps.executeQuery();
+			while (rs.next()) {
+				AssetVO avo = new AssetVO();
+				DocumentCategoryVO dcat = new DocumentCategoryVO();
+				
+				switch (rs.getString(1)) {
+					case ISSUE_KEY:
+						doc.setIssueId(rs.getString(2));
+						break;
+					case PRI_CATEGORY_KEY:
+						dcat.setCategoryCode(rs.getString(2));
+						dcat.setDocumentId(doc.getActionId());
+						categories.add(dcat);
+						break;
+					case ARTICLE_PDF:
+						avo.setObjectReferenceId(doc.getDocumentId());
+						avo.setDocumentAssetId(rs.getString(2));
+						avo.setAssetType(AssetType.PDF_DOC);
+						assets.add(avo);
+						break;
+					default:
+						break;
+				}
+			}
+		}
+	}
+	
+	/**
+	 * 
+	 * @param srcConn
+	 * @param issue
+	 * @throws SQLException
+	 */
+	public void getIssueMetaData(Connection srcConn, IssueVO issue) throws SQLException {
+		String s = "select meta_key, meta_value from wp_1fvbn80q5v_termmeta where term_id = ?";
+		
+		try(PreparedStatement ps = srcConn.prepareStatement(s)) {
+			ps.setString(1, issue.getIssueId());
+			
+			ResultSet rs = ps.executeQuery();
+			while (rs.next()) {
+				AssetVO avo = new AssetVO();
+				switch (rs.getString(1)) {
+					case ISSUE_COVER_IMAGE:
+						avo.setObjectReferenceId(issue.getIssueId());
+						avo.setDocumentAssetId(rs.getString(2));
+						avo.setAssetType(AssetType.COVER_IMG);
+						assets.add(avo);
+						break;
+					case ISSUE_PDF:
+						avo.setObjectReferenceId(issue.getIssueId());
+						avo.setDocumentAssetId(rs.getString(2));
+						avo.setAssetType(AssetType.PDF_DOC);
+						assets.add(avo);
+						break;
+					default:
+						break;
+				}
+			}
+		}
 	}
 	
 	/**
@@ -204,7 +307,7 @@ public class DataMigrationUtil {
 				DocumentCategoryVO dcat = new DocumentCategoryVO();
 				dcat.setCategoryCode(catCode);
 				dcat.setDocumentId(doc.getActionId());
-				doc.addCategory(dcat);
+				categories.add(dcat);
 			} else {
 				if (! StringUtil.isEmpty(cat)) missingCats.add(cat);
 			}
@@ -241,7 +344,7 @@ public class DataMigrationUtil {
 	 * @throws com.siliconmtn.db.util.DatabaseException
 	 */
 	public void migrateIssues(Connection srcConn, Connection destConn) 
-	throws SQLException, com.siliconmtn.db.util.DatabaseException {
+	throws SQLException {
 		StringBuilder sql = new StringBuilder(128);
 		sql.append("select * from wp_1fvbn80q5v_term_taxonomy a ");
 		sql.append("inner join wp_1fvbn80q5v_terms b on a.term_id = b.term_id ");
@@ -276,17 +379,27 @@ public class DataMigrationUtil {
 				}
 				
 				issue.setIssueId(rs.getString("term_id"));
-				issue.setPublicationId("MED_TECH_STRATEGIST");
+				issue.setPublicationId(MTS_DOC_FOLDER);
 				issue.setName(name);
 				issue.setEditorId("MTS_USER_3");
 				issue.setSeoPath(rs.getString("slug"));
 				issue.setApprovalFlag(1);
-				issues.add(issue);
 				
-				log.info("Number of issues: " + issues.size());
-				DBProcessor db = new DBProcessor(destConn, CUSTOM_SCHEMA);
-				db.executeBatch(issues, true);
+				// Add the Issue Metadata
+				getIssueMetaData(srcConn, issue);
+				
+				issues.add(issue);
 			}
+		}
+		
+		
+		log.info("Number of issues: " + issues.size());
+		DBProcessor db = new DBProcessor(destConn, CUSTOM_SCHEMA);
+		
+		try {
+			db.executeBatch(issues, true);
+		} catch (Exception e) {
+			throw new SQLException(e);
 		}
 	}
 	
@@ -298,7 +411,7 @@ public class DataMigrationUtil {
 	 * @throws com.siliconmtn.db.util.DatabaseException
 	 */
 	public void migrateCategories(Connection srcConn, Connection destConn) 
-	throws SQLException, com.siliconmtn.db.util.DatabaseException {
+	throws SQLException {
 		StringBuilder sql = new StringBuilder(128);
 		sql.append("select * from wp_1fvbn80q5v_term_taxonomy a ");
 		sql.append("inner join wp_1fvbn80q5v_terms b on a.term_id = b.term_id ");
@@ -321,7 +434,11 @@ public class DataMigrationUtil {
 			
 			log.info("Number of entries: " + cats.size());
 			DBProcessor db = new DBProcessor(destConn, CUSTOM_SCHEMA);
-			db.executeBatch(cats, true);
+			try {
+				db.executeBatch(cats, true);
+			} catch (Exception e) {
+				throw new SQLException(e);
+			}
 		}
 	}
 	
@@ -331,14 +448,21 @@ public class DataMigrationUtil {
 	 * @throws InvalidDataException 
 	 * @throws DatabaseException 
 	 */
-	public Connection getSourceConnection() throws DatabaseException, InvalidDataException {
+	public Connection getSourceConnection() throws DatabaseException {
 		DatabaseConnection dc = new DatabaseConnection();
 		dc.setDriverClass("com.mysql.cj.jdbc.Driver");
 		dc.setUrl("jdbc:mysql://playstation:3306/medtechinno?useUnicode=true&characterEncoding=UTF8&zeroDateTimeBehavior=convertToNull&useOldAliasMetadataBehavior=true");
 		dc.setUserName("smtdev");
 		dc.setPassword("smtrul3s");
-
-		return dc.getConnection();
+		Connection conn = null;
+		
+		try {
+			conn = dc.getConnection();
+		} catch (Exception e) {
+			throw new DatabaseException(e);
+		}
+		
+		return conn;
 	}
 
 	/**
@@ -347,14 +471,21 @@ public class DataMigrationUtil {
 	 * @throws InvalidDataException 
 	 * @throws DatabaseException 
 	 */
-	public Connection getDestConnection() throws DatabaseException, InvalidDataException {
+	public Connection getDestConnection() throws DatabaseException {
 		DatabaseConnection dc = new DatabaseConnection();
 		dc.setDriverClass("org.postgresql.Driver");
 		dc.setUrl("jdbc:postgresql://sonic:5432/webcrescendo_wsla5_sb?defaultRowFetchSize=25&amp;prepareThreshold=3");
 		dc.setUserName("ryan_user_sb");
 		dc.setPassword("sqll0gin");
-
-		return dc.getConnection();
+		Connection conn = null;
+		
+		try {
+			conn = dc.getConnection();
+		} catch (Exception e) {
+			throw new DatabaseException(e);
+		}
+		
+		return conn;
 	}
 }
 
