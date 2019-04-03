@@ -134,7 +134,7 @@ public class BasePortalAction extends SBActionAdapter {
 		ProfileManager pm = ProfileManagerFactory.getInstance(attributes);
 		
 		// Ensure we don't attempt to add the same user twice
-		if (isInsert && !StringUtil.isEmpty(user.getEmail()) && !StringUtil.isEmpty(getUserIdFromEmail(user.getEmail())))
+		if (isInsert && hasAuth && !StringUtil.isEmpty(getUserIdFromEmail(user.getEmail())))
 			throw new ActionException("User already exists");
 
 		//transpose some data between the UserVO and UserDataVO
@@ -339,6 +339,9 @@ public class BasePortalAction extends SBActionAdapter {
 	 * @throws SQLException
 	 */
 	public String getUserIdFromEmail(String emailAddress) {
+		if (StringUtil.isEmpty(emailAddress))
+			return null;
+		
 		String sql = StringUtil.join("select user_id from ", getCustomSchema(), "wsla_user where email_address_txt = ?");
 		log.debug(sql);
 		
