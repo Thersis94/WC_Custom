@@ -96,7 +96,7 @@ public class NewsroomAction extends SBActionAdapter {
 			ModuleVO mod = (ModuleVO) attributes.get(Constants.MODULE_DATA);
 			SolrResponseVO resp = (SolrResponseVO)mod.getActionData();
 			List<Object> params = getIdsFromDocs(resp);
-			
+
 			if(!params.isEmpty()) {
 				List<RSSArticleVO> articles = loadDetails(params);
 				log.debug("DB Count " + articles.size());
@@ -111,7 +111,7 @@ public class NewsroomAction extends SBActionAdapter {
 
 			//Load Managers for assigning rss articles.
 			loadManagers(req);
-		} else if(StringUtil.isEmpty(req.getParameter("statusCd"))){
+		} else if(!req.hasParameter("amid")) {
 			loadSegmentGroupArticles(req);
 			loadMyCounts(req);
 		}
@@ -216,8 +216,6 @@ public class NewsroomAction extends SBActionAdapter {
 	private void setSolrParams(ActionRequest req) {
 		int rpp = Convert.formatInteger(req.getParameter("limit"), 10);
 		req.setParameter("rpp", StringUtil.checkVal(rpp));
-		if(req.hasParameter(UpdatesAction.SEARCH)) 
-			req.setParameter("searchData", req.getParameter(UpdatesAction.SEARCH));
 
 		//build a list of filter queries
 		List<String> fq = new ArrayList<>();
@@ -294,7 +292,7 @@ public class NewsroomAction extends SBActionAdapter {
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("biomedgps_rss_filtered_article af ");
 		sql.append("on a.rss_article_id = af.rss_article_id ");
 		sql.append(DBUtil.WHERE_CLAUSE);
-		sql.append("create_dt < current_date - ? and article_status_cd != 'K' ");
+		sql.append("af.create_dt < current_date - ? and article_status_cd != 'K' ");
 		if(hasGroupId)
 			sql.append("and af.feed_group_id = ? ");
 
