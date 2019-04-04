@@ -28,6 +28,7 @@ import com.siliconmtn.db.DatabaseConnection;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
+import com.siliconmtn.util.ClassUtils;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.RandomAlphaNumeric;
 import com.siliconmtn.util.StringUtil;
@@ -113,7 +114,7 @@ public class DataMigrationUtil {
 			log.info("SB Action written");
 			
 			// Assign the wc document entry
-			DocumentVO dvo = doc.getCoreDocument();
+			DocumentVO dvo = (DocumentVO)ClassUtils.cloneBean(doc, true);
 			if (PROC_DOCS) dbCore.insert(dvo);
 			log.info("Core.document written");
 			

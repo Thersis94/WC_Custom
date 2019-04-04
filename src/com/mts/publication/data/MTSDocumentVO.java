@@ -6,7 +6,9 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+// MTS Libs
 import com.mts.subscriber.data.MTSUserVO;
+
 // SMT Base Libs
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.BeanSubElement;
@@ -27,7 +29,7 @@ import com.smt.sitebuilder.action.content.DocumentVO;
  * @updates:
  ****************************************************************************/
 @Table(name="mts_document")
-public class MTSDocumentVO extends DocumentVO {
+public class MTSDocumentVO extends DocumentVO  implements Cloneable {
 
 	/**
 	 * 
@@ -45,7 +47,7 @@ public class MTSDocumentVO extends DocumentVO {
 	private List<AssetVO> assets = new ArrayList<>();
 	private List<DocumentCategoryVO> categories = new ArrayList<>();
 	private MTSUserVO author;
-	
+
 	/**
 	 * 
 	 */
@@ -65,13 +67,6 @@ public class MTSDocumentVO extends DocumentVO {
 	 */
 	public MTSDocumentVO(ResultSet rs) {
 		super(rs);
-	}
-	/**
-	 * 
-	 * @return
-	 */
-	public DocumentVO getCoreDocument() {
-		return this;
 	}
 
 	/**
