@@ -45,7 +45,8 @@ public enum LedgerSummary {
 	HARVEST_AFTER_RECEIPT ("This unit is ready for harvesting"),
 	REPAIR_AFTER_RECEIPT ("A new ticket has been opened to repair the unit"), 
 	RETAIL_OWNED_ASSET_NOT_REQUIRED ("This ticket is retail owned and does not require a photo of the pop or sn"), 
-	RESOLVED_DURING_CALL("End users issues were resolved by the call center employee");
+	RESOLVED_DURING_CALL("End users issues were resolved by the call center employee"),
+	ASSETS_BYPASSED("It was Determined that Assests were not needed at call time.");
 	
 	public final String summary;
 	LedgerSummary(String summary) { this.summary = summary; }
