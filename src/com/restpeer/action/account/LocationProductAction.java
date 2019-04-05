@@ -81,7 +81,7 @@ public class LocationProductAction extends SBActionAdapter {
 		StringBuilder sql = new StringBuilder(162);
 		sql.append("select a.*, b.*, c.parent_nm ");
 		sql.append("from ").append(getCustomSchema()).append("rp_product a ");
-		sql.append("inner join rp_location_product_xr b ");
+		sql.append("inner join ").append(getCustomSchema()).append("rp_location_product_xr b ");
 		sql.append("on a.product_cd = b.product_cd ");
 		sql.append("inner join ( ");
 		sql.append("select product_cd, initcap(category_cd) || ', ' || product_nm as parent_nm ");

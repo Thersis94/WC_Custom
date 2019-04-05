@@ -81,8 +81,8 @@ public class MobileRestWidget extends SimpleActionAdapter {
 		StringBuilder sql = new StringBuilder(384);
 		sql.append("select *, core.geoCalcDistance(cast(? as numeric), cast(? as numeric), ");
 		sql.append("b.latitude_no, b.longitude_no, 'mi') as distance  ");
-		sql.append("from rp_member a ");
-		sql.append("inner join rp_member_location b on a.member_id = b.member_id ");
+		sql.append("from ").append(getCustomSchema()).append("rp_member a ");
+		sql.append("inner join ").append(getCustomSchema()).append("rp_member_location b on a.member_id = b.member_id ");
 		sql.append("where member_type_cd = 'KITCHEN' ");
 		sql.append("order by distance limit 10 ");
 		log.debug(sql.length() + "|" + sql);
