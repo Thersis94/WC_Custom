@@ -71,7 +71,7 @@ public class FinancialDashDataRowVO implements Serializable {
 		setRegionCd(util.getStringVal("REGION_CD", rs));
 		setGraphColor(util.getStringVal("GRAPH_COLOR", rs));
 
-		setColumns(util, rs, dashboard, false);
+		setColumns(util, rs, dashboard);
 	}
 
 	/**
@@ -152,13 +152,9 @@ public class FinancialDashDataRowVO implements Serializable {
 	 * @param rs
 	 * @throws SQLException 
 	 */
-	public void setColumns(DBUtil util, ResultSet rs, FinancialDashVO dashboard, boolean isUpdate) throws SQLException {
+	public void setColumns(DBUtil util, ResultSet rs, FinancialDashVO dashboard) throws SQLException {
 		int maxYear = util.getIntVal("YEAR_NO", rs);
 		int year = dashboard.getCurrentYear();
-
-		Map<Integer, Integer> cyTotals = new HashMap<>(); // calendar year totals without adjustment
-		Map<Integer, Integer> ytdTotals = new HashMap<>(); // totals with adjustments when the current year is not complete
-		Map<Integer, String> ids = new HashMap<>();
 
 		ResultSetMetaData rsmd = rs.getMetaData();
 		int colCount = rsmd.getColumnCount();
@@ -173,20 +169,32 @@ public class FinancialDashDataRowVO implements Serializable {
 				String quarterString = null;
 				// If we are in the current year always compar the the current year
 				// so that unreported quarters don't get used for the year to date comparison.
-				if (year == maxYear && yearIdx == 0 && currQtr >= dashboard.getCurrentQtr()) {
+				if (year == maxYear && yearIdx == 0 && currQtr > dashboard.getCurrentQtr()) {
 					quarterString = qtr + "-" + maxYear;
 				}
-				addColumn(qtr, yearIdx, maxYear, util, rs, quarterString == null, isUpdate);
-				incrementTotal(cyTotals, yearIdx, util.getIntVal(colName, rs), null);
-				incrementTotal(ytdTotals, yearIdx, util.getIntVal(colName, rs), quarterString);
+				addColumn(qtr, yearIdx, maxYear, util, rs, quarterString == null);
+
+				addSummaryColumn(util, qtr, maxYear, yearIdx, rs, FinancialDashBaseAction.CALENDAR_YEAR, quarterString == null);
+				addSummaryColumn(util, qtr, maxYear, yearIdx, rs, FinancialDashBaseAction.YEAR_TO_DATE, quarterString == null);
 				calculateInactivity(qtr, yearIdx, util, rs, dashboard.getColHeaders(), qtr + "-" + (maxYear-yearIdx), dashboard.showEmpty());
-				ids.put(yearIdx, util.getStringVal("REVENUE_ID_" + yearIdx, rs));
 			}
 		}
-
-		this.addSummaryColumns(cyTotals, maxYear, FinancialDashBaseAction.CALENDAR_YEAR, ids, isUpdate);
-		this.addSummaryColumns(ytdTotals, maxYear, FinancialDashBaseAction.YEAR_TO_DATE, ids, isUpdate);
-
+	}
+	
+	/**
+	 * Create or update the requested summary column with the current row data
+	 * @param util
+	 * @param qtr
+	 * @param maxYear
+	 * @param yearIdx
+	 * @param rs
+	 * @param columnPrefix
+	 * @param adjust
+	 */
+	private void addSummaryColumn(DBUtil util, String qtr, int maxYear,  int yearIdx, ResultSet rs, String columnPrefix, boolean adjust) {
+		int dollarValue = util.getIntVal(qtr + "_" + yearIdx, rs);
+		int pyDollarValue = util.getIntVal(qtr + "_" + (yearIdx + 1), rs);
+		addColumn(columnPrefix + "-" + (maxYear - yearIdx), dollarValue, pyDollarValue, util.getStringVal("REVENUE_ID_" + yearIdx, rs), adjust);
 	}
 
 	/**
@@ -278,9 +286,9 @@ public class FinancialDashDataRowVO implements Serializable {
 	 * @param val
 	 * @param pctDiff
 	 */
-	public void addColumn(String colId, int val, int pVal, String revenueId, boolean adjustImcomplete, boolean isUpdate) {
+	public void addColumn(String colId, int val, int pVal, String revenueId, boolean adjustImcomplete) {
 		FinancialDashDataColumnVO col;
-		if (isUpdate) {
+		if (columns.containsKey(colId)) {
 			col =columns.get(colId);
 			col.setDollarValue(col.getDollarValue() + val);
 			if (adjustImcomplete || val != 0) {
@@ -318,7 +326,7 @@ public class FinancialDashDataRowVO implements Serializable {
 	 * @param rs
 	 * @param b 
 	 */
-	private void addColumn(String qtr, int yearIdx, int maxYear, DBUtil util, ResultSet rs, boolean adjustImcomplete, boolean isUpdate) {
+	private void addColumn(String qtr, int yearIdx, int maxYear, DBUtil util, ResultSet rs, boolean adjustImcomplete) {
 		int dollarValue = util.getIntVal(qtr + "_" + yearIdx, rs);
 		int pyDollarValue = util.getIntVal(qtr + "_" + (yearIdx + 1), rs);
 
@@ -326,7 +334,7 @@ public class FinancialDashDataRowVO implements Serializable {
 		// gives the year for that column. One row in the returned data could
 		// represent data from more than one year.
 		String columnId = qtr + "-" + (maxYear - yearIdx);
-		addColumn(columnId, dollarValue, pyDollarValue, util.getStringVal("REVENUE_ID_" + yearIdx, rs), adjustImcomplete, isUpdate);
+		addColumn(columnId, dollarValue, pyDollarValue, util.getStringVal("REVENUE_ID_" + yearIdx, rs), adjustImcomplete);
 
 		// Checks for potential delta between overlay and base data 
 		checkOverlayDelta(columnId, qtr, yearIdx, rs);
@@ -391,27 +399,6 @@ public class FinancialDashDataRowVO implements Serializable {
 	}
 
 	/**
-	 * Creates the summary YTD/CY columns.
-	 * 
-	 * @param totals
-	 * @param maxYear - the most recent year from the query
-	 */
-	private void addSummaryColumns(Map<Integer, Integer> totals, int maxYear, String columnPrefix, Map<Integer, String> ids, boolean isUpdate) {
-		for (int i = 0; i < totals.size() - 1; i++) {
-			Integer cyTotal = totals.get(i);
-			Integer pyTotal = totals.get(i + 1);
-
-			// Each iteration signifies one year earlier
-			addColumn(columnPrefix + "-" + (maxYear - i), cyTotal, pyTotal, ids.get(i), true, isUpdate);
-		}
-
-		// Add the last totals column, which has no py
-		int last = totals.size() - 1;
-		Integer cyTotal = totals.get(last);
-		addColumn(columnPrefix + "-" + (maxYear - last), cyTotal, 0, ids.get(last), true, isUpdate);
-	}
-
-	/**
 	 * Increments the totals for the summary YTD/CY columns.
 	 * 
 	 * @param totals
@@ -429,7 +416,7 @@ public class FinancialDashDataRowVO implements Serializable {
 		// four quarters of sales in the current year from being compared
 		// to a previous year's full compliment of profits.
 		int addDollarValue = dollarValue;
-		if (adjustForIncompleteYear && yearIdx > 0 && columns.get(curYrColId).getDollarValue() == 0) {
+		if (adjustForIncompleteYear && columns.get(curYrColId).getDollarValue() == 0) {
 			addDollarValue = 0;
 		}
 

@@ -139,7 +139,7 @@ public class FinancialDashVO extends SBModuleVO {
 						row.setReportingPending(sections, currentQtr, currentYear, allSameQuarter);
 					}
 				} else {
-					row.setColumns(util, rs, this, true);
+					row.setColumns(util, rs, this);
 				}
 			}
 		} catch (SQLException sqle) {
