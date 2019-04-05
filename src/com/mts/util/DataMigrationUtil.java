@@ -114,6 +114,7 @@ public class DataMigrationUtil {
 			
 			// Assign the wc document entry
 			DocumentVO dvo = doc.getCoreDocument();
+			
 			if (PROC_DOCS) dbCore.insert(dvo);
 			log.info("Core.document written");
 			
@@ -208,6 +209,7 @@ public class DataMigrationUtil {
 				
 				// Add to the document collection
 				if (! StringUtil.isEmpty(doc.getIssueId())) docs.add(doc);
+				else log.info(doc.getActionName() + "\t" + doc.getDirectAccessPath());
 			}
 		}
 		
