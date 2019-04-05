@@ -28,6 +28,7 @@ import com.siliconmtn.db.DatabaseConnection;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
+import com.siliconmtn.util.ClassUtils;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.RandomAlphaNumeric;
 import com.siliconmtn.util.StringUtil;
@@ -91,43 +92,50 @@ public class DataMigrationUtil {
 		Connection srcConn = dmu.getSourceConnection();
 		Connection destConn = dmu.getDestConnection();
 		
-		log.info("Source Conn: " + ! srcConn.isClosed());
-		log.info("Dest Conn: " + ! destConn.isClosed());
-		
 		// Migrate the cats
 		if (PROC_CAT) dmu.migrateCategories(srcConn, destConn);
-
+		log.info("Categories Processed");
+		
 		// Migrate the issues
 		if (PROC_ISSUES) dmu.migrateIssues(srcConn, destConn);
+		log.info("Issues Processed");
 		
 		// Migrate the articles
 		List<MTSDocumentVO> docs = new ArrayList<>();
 		if (PROC_ART) docs = dmu.migrateArticles(srcConn);
 		DBProcessor dbCore = new DBProcessor(destConn, "core.");
+		dbCore.setGenerateExecutedSQL(true);
 		DBProcessor dbCustom = new DBProcessor(destConn, CUSTOM_SCHEMA);
-		
+		dbCustom.setGenerateExecutedSQL(true);
 		for(MTSDocumentVO doc : docs) {
-			// Assign the SB Action entry
-			SBActionVO avo = new SBActionVO(doc);
-			if (PROC_DOCS) dbCore.insert(avo);
-			log.info("SB Action written");
-			
-			// Assign the wc document entry
-			DocumentVO dvo = doc.getCoreDocument();
-			
-			if (PROC_DOCS) dbCore.insert(dvo);
-			log.info("Core.document written");
-			
-			// Assign the MTS Document info
-			if (PROC_DOCS) dbCustom.insert(doc);
-			log.info("MTS Document written");
+			try {
+				// Assign the SB Action entry
+				SBActionVO avo = new SBActionVO(doc);
+				if (PROC_DOCS) dbCore.insert(avo);
+				
+				// Assign the wc document entry
+				DocumentVO dvo = (DocumentVO)ClassUtils.cloneBean(doc, true);
+				if (PROC_DOCS) dbCore.insert(dvo);
+				
+				// Assign the MTS Document info
+				if (PROC_DOCS) dbCustom.insert(doc);
+			} catch (Exception e) {
+				log.error("------------------------------");
+				log.error("Core: " + dbCore.getExecutedSql());
+				log.error("------------------------------");
+				log.error("Custom: " + dbCustom.getExecutedSql());
+				log.error("------------------------------");
+				log.error("Unable to add documents: " + doc.getActionId() + "|" + doc.getActionName(), e);
+			}
 		}
+		log.info("Documents Processed: " + docs.size());
 		
 		// Add the categories and assets
 		if (PROC_DOC_CAT) dbCustom.executeBatch(dmu.categories, true);
-		if (PROC_ASSET) dbCustom.executeBatch(dmu.assets, true);
+		log.info("Document Categories Processed");
 		
-		log.info("Number Docs: " + docs.size());
+		if (PROC_ASSET) dbCustom.executeBatch(dmu.assets, true);
+		log.info("Assets Processed");
 		
 		srcConn.close();
 		destConn.close();
@@ -176,7 +184,7 @@ public class DataMigrationUtil {
 		// Get the articles
 		sql.append("select  * ");
 		sql.append("from wp_1fvbn80q5v_posts where post_type = 'article' ");
-		sql.append("limit 30 ");
+		//sql.append("limit 30 ");
 		List<MTSDocumentVO> docs = new ArrayList<>();
 		try (PreparedStatement ps = srcConn.prepareStatement(sql.toString()); ResultSet rs = ps.executeQuery()) {
 			while (rs.next()) {
@@ -209,7 +217,7 @@ public class DataMigrationUtil {
 				
 				// Add to the document collection
 				if (! StringUtil.isEmpty(doc.getIssueId())) docs.add(doc);
-				else log.info(doc.getActionName() + "\t" + doc.getDirectAccessPath());
+				//else log.info(doc.getActionId() + "\t" + doc.getActionName() + "\t" + doc.getDirectAccessPath());
 			}
 		}
 		
