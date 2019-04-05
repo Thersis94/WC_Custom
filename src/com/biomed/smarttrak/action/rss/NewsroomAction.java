@@ -18,7 +18,6 @@ import com.biomed.smarttrak.action.rss.vo.RSSArticleVO;
 import com.biomed.smarttrak.action.rss.vo.RSSBucketVO;
 import com.biomed.smarttrak.action.rss.vo.RSSFeedSegment;
 import com.biomed.smarttrak.admin.AccountAction;
-import com.biomed.smarttrak.admin.UpdatesAction;
 import com.biomed.smarttrak.util.RSSArticleIndexer;
 import com.biomed.smarttrak.vo.AccountVO;
 import com.biomed.smarttrak.vo.UserVO.AssigneeSection;
@@ -55,8 +54,9 @@ public class NewsroomAction extends SBActionAdapter {
 	public static final String GROUP_DATA = "groupData";
 	public static final String BUCKET_DATA = "bucketData";
 	public static final String BUCKET_ID = "bucketId";
+	public static final String STATUS_CD = "statusCd";
 	private static final String FEED_GROUP_ID = "feedGroupId";
-	private static final String RSS_ARTICLE_FILTER_ID = "rssArticleFilterId";
+	private static final String MY_BUCKET_COUNT = "myBucketCount";
 
 	/**
 	 * 
@@ -81,9 +81,14 @@ public class NewsroomAction extends SBActionAdapter {
 		super.retrieve(req);
 	}
 
+	/**
+	 * 
+	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		if(req.hasParameter("isBucket") && req.hasParameter(BUCKET_ID)) {
+		if(req.hasParameter("bulkAction") && req.getBooleanParameter("bulkAction")) {
+			processBulkRequest(req);
+		} else if(req.hasParameter("isBucket") && req.hasParameter(BUCKET_ID)) {
 			loadBucketArticles(req);
 			loadManagers(req);
 		} else if(req.hasParameter("isBucket")) {
@@ -118,10 +123,95 @@ public class NewsroomAction extends SBActionAdapter {
 	}
 
 	/**
+	 * Method for handling bulk Feed Article Requests.  Likely
+	 * @param req
+	 */
+	private void processBulkRequest(ActionRequest req) throws ActionException {
+		if(req.hasParameter(BUCKET_ID) || req.hasParameter(STATUS_CD)) {
+			String [] ids = req.getParameterValues("ids");
+			boolean hasBucketId = req.hasParameter(BUCKET_ID);
+			String bucketId = null;
+			//BucketId may be present on the request for updating.
+			if(hasBucketId) {
+				bucketId = StringUtil.checkVal(req.getParameter(BUCKET_ID), null);
+
+				//Articles can be removed from a bucket.  Allow for removal here.
+				if("null".equals(bucketId)) {
+					bucketId = null;
+				}
+			}
+
+			int i = 1;
+			try(PreparedStatement ps = dbConn.prepareStatement(buildBulkActionSql(req, ids))) {
+				if(hasBucketId) {
+					ps.setString(i++, bucketId);
+				}
+				if(req.hasParameter(STATUS_CD))
+					ps.setString(i++, req.getParameter(STATUS_CD));
+
+				ps.setTimestamp(i++, Convert.getCurrentTimestamp());
+				for(String id : ids) {
+					ps.setString(i++, id);
+				}
+			} catch (SQLException e) {
+				log.error("Error Processing Code", e);
+			}
+
+			writeToSolr(ids);
+		} else {
+			throw new ActionException("Unable to process request.");
+		}
+	}
+
+	/**
+	 * Manage Bulk Actions from the front end.
+	 * @param req
+	 * @param ids
+	 * @return
+	 */
+	private String buildBulkActionSql(ActionRequest req, String[] ids) {
+		StringBuilder sql = new StringBuilder(200);
+		sql.append("update ").append(getCustomSchema()).append("biomedgps_rss_article_filter set ");
+		if(req.hasParameter(BUCKET_ID)) {
+			sql.append("bucket_id = ? ");
+		}
+
+		if(req.hasParameter(STATUS_CD)) {
+			if(req.hasParameter(BUCKET_ID)) {
+				sql.append(", ");
+			}
+			sql.append("status_cd = ? ");
+		}
+
+		sql.append(", update_dt = ? ");
+		sql.append(DBUtil.WHERE_CLAUSE).append(" rss_article_filter_id in (");
+		DBUtil.preparedStatmentQuestion(ids.length, sql);
+		sql.append(")");
+		return sql.toString();
+	}
+
+	/**
+	 * Manage Loading Current Users Bucket Count.
 	 * @param req
 	 */
 	private void loadMyCounts(ActionRequest req) {
-		req.setParameter("myBucketCount", "0");
+		String profileId = ((UserDataVO)req.getSession().getAttribute(Constants.USER_DATA)).getProfileId();
+		StringBuilder sql = new StringBuilder(200);
+		sql.append("select count(bucket_id) from ").append(getCustomSchema());
+		sql.append("biomedgps_rss_filtered_article ").append(DBUtil.WHERE_CLAUSE);
+		sql.append("bucket_id = ?");
+		try(PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, profileId);
+			ResultSet rs = ps.executeQuery();
+			if(rs.next()) {
+				req.setParameter(MY_BUCKET_COUNT, rs.getString("count"));
+			} else {
+				req.setParameter(MY_BUCKET_COUNT, "0");
+			}
+		} catch(Exception e) {
+			log.error("Unable to retrtieve Users Saved Article Count.", e);
+			req.setParameter(MY_BUCKET_COUNT, "0");
+		}
 	}
 
 	/**
@@ -222,12 +312,7 @@ public class NewsroomAction extends SBActionAdapter {
 		String feedGroupId = req.getParameter(FEED_GROUP_ID);
 		String bucketId = req.getParameter(BUCKET_ID);
 
-		if(req.hasParameter(RSS_ARTICLE_FILTER_ID)) {
-			StringBuilder id = new StringBuilder(req.getParameter(RSS_ARTICLE_FILTER_ID));
-			fq.add(SearchDocumentHandler.DOCUMENT_ID + ":" + id);
-		}
-
-		String statusCd = req.getParameter("statusCd", ArticleStatus.N.name());
+		String statusCd = req.getParameter(STATUS_CD, ArticleStatus.N.name());
 		if(!"ALL".equals(statusCd)) {
 			fq.add("articleStatus_s:" + statusCd);
 		}
@@ -461,9 +546,10 @@ public class NewsroomAction extends SBActionAdapter {
 				}
 			}
 			fields.add("rss_article_filter_id");
-			dbp.executeSqlUpdate(getUpdateArticleSql(hasBucketId), rss, fields);
 
-			writeToSolr(rss);
+			dbp.executeSqlUpdate(getUpdateArticleSql(hasBucketId), rss, fields);
+			writeToSolr(rss.getArticleFilterId());
+
 		} catch (Exception e) {
 			log.error("Error updating article status Code", e);
 			throw new ActionException(e);
@@ -474,10 +560,10 @@ public class NewsroomAction extends SBActionAdapter {
 	 * Save an UpdatesVO to solr.
 	 * @param u
 	 */
-	protected void writeToSolr(RSSArticleFilterVO rss) {
+	protected void writeToSolr(String... ids) {
 		RSSArticleIndexer idx = RSSArticleIndexer.makeInstance(getAttributes());
 		idx.setDBConnection(dbConn);
-		idx.indexItems(rss.getArticleFilterId());
+		idx.indexItems(ids);
 	}
 
 	/**
