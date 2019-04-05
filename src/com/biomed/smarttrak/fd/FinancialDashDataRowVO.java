@@ -283,13 +283,13 @@ public class FinancialDashDataRowVO implements Serializable {
 		if (isUpdate) {
 			col =columns.get(colId);
 			col.setDollarValue(col.getDollarValue() + val);
-			if (!adjustImcomplete || val != 0) {
+			if (adjustImcomplete || val != 0) {
 				col.setPDollarValue(col.getPDollarValue() +pVal);
 			}
 		} else {
 			col = new FinancialDashDataColumnVO();
 			col.setDollarValue(val);
-			if (!adjustImcomplete || val != 0) {
+			if (adjustImcomplete || val != 0) {
 				col.setPDollarValue(pVal);
 			}
 			col.setColId(colId);
@@ -402,13 +402,13 @@ public class FinancialDashDataRowVO implements Serializable {
 			Integer pyTotal = totals.get(i + 1);
 
 			// Each iteration signifies one year earlier
-			addColumn(columnPrefix + "-" + (maxYear - i), cyTotal, pyTotal, ids.get(i), false, isUpdate);
+			addColumn(columnPrefix + "-" + (maxYear - i), cyTotal, pyTotal, ids.get(i), true, isUpdate);
 		}
 
 		// Add the last totals column, which has no py
 		int last = totals.size() - 1;
 		Integer cyTotal = totals.get(last);
-		addColumn(columnPrefix + "-" + (maxYear - last), cyTotal, 0, ids.get(last), false, isUpdate);
+		addColumn(columnPrefix + "-" + (maxYear - last), cyTotal, 0, ids.get(last), true, isUpdate);
 	}
 
 	/**
