@@ -95,18 +95,20 @@ public class VenueAction extends SimpleActionAdapter {
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		String venueTourId = req.getParameter("venueTourId");
+		String radarCode = req.getParameter("radarCode");
+		String radarTypeCode = req.getParameter("radarTypeCode");
 		boolean isJson = req.getBooleanParameter("json");
 
 		try {
 			if (isJson && req.hasParameter("getForecast")) {
-				VenueTourVO venueTour = getVenueTour(req.getParameter("venueTourId"));
+				VenueTourVO venueTour = getVenueTour(venueTourId);
 				putModuleData(getForecast(venueTour, req.getDateParameter("eventDate")));
 
 			} else if (isJson && req.hasParameter("refreshRadar")) {
-				putModuleData(getRadarMetaData(req.getParameter("radarCode"), req.getParameter("radarTypeCode"), req.getParameter("venueTourId")));
+				putModuleData(getRadarMetaData(radarCode, radarTypeCode, venueTourId));
 
 			} else if (isJson) {
-				putModuleData(getFullVenueTour(venueTourId, req.getParameter("radarTypeCode")));
+				putModuleData(getFullVenueTour(venueTourId, radarTypeCode));
 			}
 		} catch (Exception e) {
 			log.error("Unable to retrieve venue tour event: " + venueTourId, e);
