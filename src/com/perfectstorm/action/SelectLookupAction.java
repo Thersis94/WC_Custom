@@ -248,9 +248,10 @@ public class SelectLookupAction extends SBActionAdapter {
 		// Get the data from the action
 		CustomerAction ca = new CustomerAction(getDBConnection(), getAttributes());
 		String customerType = req.getParameter("customerType");
+		String memberId = req.getParameter("memberId");
 		BSTableControlVO bst = new BSTableControlVO(req, CustomerVO.class);
 		bst.setLimit(req.getIntegerParameter("acReturn", 1000));
-		GridDataVO<CustomerVO> data = ca.getCustomers(bst, customerType);
+		GridDataVO<CustomerVO> data = ca.getCustomers(bst, customerType, memberId);
 		
 		// Store the id and name to a generic vo
 		List<GenericVO> customers = new ArrayList<>(data.getTotal());
