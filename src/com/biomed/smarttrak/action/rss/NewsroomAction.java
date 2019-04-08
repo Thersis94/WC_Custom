@@ -377,7 +377,7 @@ public class NewsroomAction extends SBActionAdapter {
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("biomedgps_rss_filtered_article af ");
 		sql.append("on a.rss_article_id = af.rss_article_id ");
 		sql.append(DBUtil.WHERE_CLAUSE);
-		sql.append("af.create_dt < current_date - ? and article_status_cd != 'K' ");
+		sql.append("af.create_dt > current_date - ? and article_status_cd != 'K' ");
 		if(hasGroupId)
 			sql.append("and af.feed_group_id = ? ");
 

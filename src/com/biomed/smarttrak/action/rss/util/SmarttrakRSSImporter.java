@@ -211,9 +211,6 @@ public class SmarttrakRSSImporter extends CommandLineUtil {
 		try {
 			index.purgeItems(loadFlushIds(), true);
 
-			//commit the changes using a softCommit, and wait for Solr to finish before sending it more stuff
-			server.commit(true, true, true);
-
 		} catch (Exception ae) {
 			log.error("Unable to Flush Feeds", ae);
 		}
@@ -229,7 +226,6 @@ public class SmarttrakRSSImporter extends CommandLineUtil {
 	private void closeSolrServer() {
 		//do a hardCommit to finalize the index
 		try {
-			server.commit();
 			server.close();
 			log.info("solr conn closed");
 		} catch (Exception e) {
