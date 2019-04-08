@@ -9,6 +9,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.ResourceBundle;
 
+import com.siliconmtn.action.ActionException;
 // SMT Base Libs
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
@@ -131,6 +132,10 @@ public class BasePortalAction extends SBActionAdapter {
 		UserDataVO profile = user.getProfile();
 		boolean isInsert = StringUtil.isEmpty(profile.getProfileId());
 		ProfileManager pm = ProfileManagerFactory.getInstance(attributes);
+		
+		// Ensure we don't attempt to add the same user twice
+		if (isInsert && hasAuth && !StringUtil.isEmpty(getUserIdFromEmail(user.getEmail())))
+			throw new ActionException("User already exists");
 
 		//transpose some data between the UserVO and UserDataVO
 		configureProfile(user, profile);
@@ -231,14 +236,15 @@ public class BasePortalAction extends SBActionAdapter {
 	public String saveAuthenticationRecord(UserDataVO profile) throws com.siliconmtn.exception.DatabaseException {
 		UserLogin login = new UserLogin(getDBConnection(), getAttributes());
 		String authId = login.checkAuth(profile.getEmailAddress()); //lookup authId using the NEW email address
+
 		//if we find an authId using the NEW email, see if it matches the old authId (if we had one)
-		if (!StringUtil.checkVal(authId).equals(profile.getAuthenticationId())) {
+		if (!StringUtil.checkVal(authId).equals(StringUtil.checkVal(profile.getAuthenticationId()))) {
 			//edit the existing record, we have a changed email address
 			//note use of the pre-existing authenticationId
-			authId = login.saveAuthRecord(profile.getAuthenticationId(), profile.getEmailAddress(), UserLogin.DUMMY_PSWD, 0);
+			authId = login.saveAuthRecord(profile.getAuthenticationId(), profile.getEmailAddress(), UserLogin.DUMMY_PSWD, 0, false);
 		} else if (StringUtil.isEmpty(authId)) {
 			//add a record, there wasn't one prior
-			authId = login.saveAuthRecord(null, profile.getEmailAddress(), RandomAlphaNumeric.generateRandom(10), 1);
+			authId = login.saveAuthRecord(null, profile.getEmailAddress(), RandomAlphaNumeric.generateRandom(10), 1, false);
 		} //the 'else' here is that the auth record does not need modification or creation - do nothing
 
 		return authId;
@@ -323,5 +329,24 @@ public class BasePortalAction extends SBActionAdapter {
 
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		return db.executeSelect(sql.toString(), Arrays.asList(roleId), new UserVO());
+	}
+
+	/**
+	 * Searches for a user by email address
+	 * 
+	 * @param emailAddress
+	 * @return
+	 * @throws SQLException
+	 */
+	public String getUserIdFromEmail(String emailAddress) {
+		if (StringUtil.isEmpty(emailAddress))
+			return null;
+		
+		String sql = StringUtil.join("select user_id from ", getCustomSchema(), "wsla_user where email_address_txt = ?");
+		log.debug(sql);
+		
+		DBProcessor dbp = new DBProcessor(getDBConnection());
+		List<UserVO> data = dbp.executeSelect(sql, Arrays.asList(emailAddress), new UserVO());
+		return data != null && !data.isEmpty() ? data.get(0).getUserId() : null;
 	}
 }
