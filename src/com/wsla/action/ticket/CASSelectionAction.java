@@ -15,6 +15,7 @@ import com.siliconmtn.gis.GeocodeLocation;
 
 // WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
+import com.wsla.data.ticket.LocationDistanceVO;
 
 /****************************************************************************
  * <b>Title</b>: CASSelectionAction.java
@@ -67,18 +68,13 @@ public class CASSelectionAction extends SBActionAdapter {
 		vals.add(gLoc.getLatitude());
 		vals.add(gLoc.getLongitude());
 		vals.add(locale.contains("US") ? "MI" : "KM");
-		vals.add(gLoc.getLatitude());
-		vals.add(gLoc.getLongitude());
-		vals.add(locale.contains("US") ? "MI" : "KM");
 		
 		log.debug(vals);
 		StringBuilder sql = new StringBuilder(768);
 		sql.append("select cast(geoCalcDistance(cast(? as numeric), cast(? as numeric), ");
 		sql.append("latitude_no, longitude_no, ?) as int) as distance, ");
 		sql.append("location_id as key, ");
-		sql.append("location_nm  || ' (' || cast(geoCalcDistance(cast(? as numeric), ");
-		sql.append("cast(? as numeric), latitude_no, longitude_no, ?) as int) || ' ");
-		sql.append(locale.contains("US") ? "MI" : "KM").append(")' as value ");
+		sql.append("location_nm as value ");
 		sql.append("from ").append(getCustomSchema()).append("wsla_provider a ");
 		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("wsla_provider_location b ");
 		sql.append("on a.provider_id = b.provider_id ");
@@ -89,7 +85,13 @@ public class CASSelectionAction extends SBActionAdapter {
 		log.debug(sql.toString()+"|"+vals);
 		
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
-		return db.executeSelect(sql.toString(), vals, new GenericVO());
+		List<LocationDistanceVO> items = db.executeSelect(sql.toString(), vals, new LocationDistanceVO());
+		List<GenericVO> data = new ArrayList<>();
+		for (LocationDistanceVO item : items) {
+			String value = item.getValue() + " (" + item.getDistance() + " " + (locale.contains("US") ? "MI" : "KM") + ")";
+			data.add(new GenericVO(item.getKey(), value));
+		}
+		return data;
 	}
 	
 	/**
@@ -115,4 +117,3 @@ public class CASSelectionAction extends SBActionAdapter {
 		return locs.isEmpty() ? null : locs.get(0);
 	}
 }
-
