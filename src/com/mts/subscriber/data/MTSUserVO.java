@@ -7,6 +7,7 @@ import java.sql.ResultSet;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
+import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.user.UserVO;
 
 /****************************************************************************
@@ -55,6 +56,14 @@ public class MTSUserVO extends UserVO {
 	 */
 	public MTSUserVO(ResultSet rs) {
 		super(rs);
+	}
+	
+	/**
+	 * Gets the user name concatenated
+	 * @return
+	 */
+	public String getFullName() {
+		return StringUtil.checkVal(getFirstName()) + " " + StringUtil.checkVal(getLastName());
 	}
 
 	/*

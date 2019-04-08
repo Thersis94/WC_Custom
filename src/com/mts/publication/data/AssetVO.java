@@ -23,7 +23,7 @@ import com.siliconmtn.db.orm.Table;
  * @since Apr 2, 2019
  * @updates:
  ****************************************************************************/
-@Table(name="mts_asset_type")
+@Table(name="mts_document_asset")
 public class AssetVO extends BeanDataVO {
 	
 	/**
@@ -49,12 +49,15 @@ public class AssetVO extends BeanDataVO {
 	
 	// Members
 	private String documentAssetId;
-	private String objectReferenceId;
+	private String objectKeyId;
 	private String documentName;
 	private String documentPath;
 	private String thumbnailPath;
 	private AssetType assetType;
 	private Date createDate;
+	
+	// Helpers
+	private String assetTypeName;
 
 	/**
 	 * 
@@ -80,7 +83,7 @@ public class AssetVO extends BeanDataVO {
 	/**
 	 * @return the documentAssetId
 	 */
-	@Column(name="document_asset_id")
+	@Column(name="document_asset_id", isPrimaryKey=true)
 	public String getDocumentAssetId() {
 		return documentAssetId;
 	}
@@ -89,8 +92,8 @@ public class AssetVO extends BeanDataVO {
 	 * @return the objectReferenceId
 	 */
 	@Column(name="object_key_id")
-	public String getObjectReferenceId() {
-		return objectReferenceId;
+	public String getObjectKeyId() {
+		return objectKeyId;
 	}
 
 	/**
@@ -126,6 +129,14 @@ public class AssetVO extends BeanDataVO {
 	}
 
 	/**
+	 * @return the assetTypeName
+	 */
+	@Column(name="type_nm", isReadOnly=true)
+	public String getAssetTypeName() {
+		return assetTypeName;
+	}
+
+	/**
 	 * @return the createDate
 	 */
 	@Column(name="create_dt", isInsertOnly=true, isAutoGen=true)
@@ -143,8 +154,8 @@ public class AssetVO extends BeanDataVO {
 	/**
 	 * @param objectReferenceId the objectReferenceId to set
 	 */
-	public void setObjectReferenceId(String objectReferenceId) {
-		this.objectReferenceId = objectReferenceId;
+	public void setObjectKeyId(String objectKeyId) {
+		this.objectKeyId = objectKeyId;
 	}
 
 	/**
@@ -180,6 +191,13 @@ public class AssetVO extends BeanDataVO {
 	 */
 	public void setCreateDate(Date createDate) {
 		this.createDate = createDate;
+	}
+
+	/**
+	 * @param assetTypeName the assetTypeName to set
+	 */
+	public void setAssetTypeName(String assetTypeName) {
+		this.assetTypeName = assetTypeName;
 	}
 
 }

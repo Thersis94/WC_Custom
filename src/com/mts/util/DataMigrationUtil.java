@@ -251,7 +251,7 @@ public class DataMigrationUtil {
 						categories.add(dcat);
 						break;
 					case ARTICLE_PDF:
-						avo.setObjectReferenceId(doc.getDocumentId());
+						avo.setObjectKeyId(doc.getDocumentId());
 						avo.setDocumentAssetId(rs.getString(2));
 						avo.setAssetType(AssetType.PDF_DOC);
 						assets.add(avo);
@@ -280,13 +280,13 @@ public class DataMigrationUtil {
 				AssetVO avo = new AssetVO();
 				switch (rs.getString(1)) {
 					case ISSUE_COVER_IMAGE:
-						avo.setObjectReferenceId(issue.getIssueId());
+						avo.setObjectKeyId(issue.getIssueId());
 						avo.setDocumentAssetId(rs.getString(2));
 						avo.setAssetType(AssetType.COVER_IMG);
 						assets.add(avo);
 						break;
 					case ISSUE_PDF:
-						avo.setObjectReferenceId(issue.getIssueId());
+						avo.setObjectKeyId(issue.getIssueId());
 						avo.setDocumentAssetId(rs.getString(2));
 						avo.setAssetType(AssetType.PDF_DOC);
 						assets.add(avo);

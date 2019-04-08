@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+import com.mts.subscriber.data.MTSUserVO;
 // SMT Base Libs
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.parser.BeanDataVO;
@@ -43,6 +44,7 @@ public class PublicationVO extends BeanDataVO {
 	
 	// Numeric Members
 	private int approvalFlag;
+	private long numberIssues;
 	
 	// Date Members
 	private Date initialPublicationDate;
@@ -52,6 +54,7 @@ public class PublicationVO extends BeanDataVO {
 	// Sub-Beans
 	private List<IssueVO> issues = new ArrayList<>();
 	private List<AssetVO> assets = new ArrayList<>();
+	private MTSUserVO editor;
 	
 	/**
 	 * 
@@ -169,6 +172,21 @@ public class PublicationVO extends BeanDataVO {
 	}
 
 	/**
+	 * @return the numberIssues
+	 */
+	@Column(name="issue_no", isReadOnly=true)
+	public long getNumberIssues() {
+		return numberIssues;
+	}
+
+	/**
+	 * @return the editor
+	 */
+	public MTSUserVO getEditor() {
+		return editor;
+	}
+
+	/**
 	 * @param publicationId the publicationId to set
 	 */
 	public void setPublicationId(String publicationId) {
@@ -264,6 +282,21 @@ public class PublicationVO extends BeanDataVO {
 	@BeanSubElement
 	public void addAsset(AssetVO asset) {
 		this.assets.add(asset);
+	}
+
+	/**
+	 * @param numberIssues the numberIssues to set
+	 */
+	public void setNumberIssues(long numberIssues) {
+		this.numberIssues = numberIssues;
+	}
+
+	/**
+	 * @param editor the editor to set
+	 */
+	@BeanSubElement
+	public void setEditor(MTSUserVO editor) {
+		this.editor = editor;
 	}
 }
 
