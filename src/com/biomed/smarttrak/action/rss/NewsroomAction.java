@@ -103,7 +103,7 @@ public class NewsroomAction extends SBActionAdapter {
 			List<Object> params = getIdsFromDocs(resp);
 
 			if(!params.isEmpty()) {
-				List<RSSArticleVO> articles = loadDetails(params);
+				List<RSSArticleVO> articles = loadDetails(params, req);
 				log.debug("DB Count " + articles.size());
 				if(!articles.isEmpty()) {
 					this.putModuleData(articles, articles.size(), false);
@@ -218,16 +218,16 @@ public class NewsroomAction extends SBActionAdapter {
 	 * @param params
 	 * @return
 	 */
-	private List<RSSArticleVO> loadDetails(List<Object> vals) {
+	private List<RSSArticleVO> loadDetails(List<Object> vals, ActionRequest req) {
 		DBProcessor dbp = new DBProcessor(dbConn, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
-		return dbp.executeSelect(loadFilteredArticleSql(vals.size()), vals, new RSSArticleVO());
+		return dbp.executeSelect(loadFilteredArticleSql(vals.size(), req), vals, new RSSArticleVO());
 	}
 
 	/**
 	 * @param size
 	 * @return
 	 */
-	private String loadFilteredArticleSql(int size) {
+	private String loadFilteredArticleSql(int size, ActionRequest req) {
 		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(750);
 		sql.append(DBUtil.SELECT_CLAUSE).append("a.rss_article_id, a.rss_entity_id, ");
@@ -241,7 +241,21 @@ public class NewsroomAction extends SBActionAdapter {
 		sql.append("on a.rss_article_id = af.rss_article_id ");
 		sql.append("where af.rss_article_filter_id in (");
 		DBUtil.preparedStatmentQuestion(size, sql);
-		sql.append(") order by a.create_dt desc ");
+		sql.append(") order by ");
+		if(req.hasParameter("fieldSort")) {
+			switch(req.getParameter("fieldSort")) {
+				case "title":
+					sql.append("filter_title_txt ");
+					break;
+				case "publishDate":
+				default:
+					sql.append("a.create_dt ");
+					break;
+			}
+		} else {
+			sql.append("a.create_dt ");
+		}
+		sql.append(StringUtil.checkVal(req.getParameter("sortDirection"), "desc"));
 		return sql.toString();
 	}
 
