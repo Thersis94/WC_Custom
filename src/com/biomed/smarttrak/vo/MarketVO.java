@@ -218,6 +218,17 @@ public class MarketVO extends AuthorVO {
 	public void addSection(SectionVO section) {
 		sections.add(section);
 	}
+	
+	public void setSectionParentId (String parentId) {
+		if (marketSection == null)
+			marketSection = new SectionVO();
+		marketSection.setParentId(parentId);
+	}
+
+	@Column(name="section_parent_id", isReadOnly=true)
+	public String getSectionParentId() {
+		return marketSection.getParentId();
+	}
 
 	public void setSectionId (String id) {
 		if (marketSection == null)

@@ -42,7 +42,7 @@ public class UpdateListTitleAction extends ListAction {
 	public void retrieve(ActionRequest req) throws ActionException {
 		if(req.hasParameter("ajaxListType")) {
 			String listType = req.getParameter("ajaxListType");
-			String searchTerm = req.getParameter("term");
+			String searchTerm = req.getParameter("term", "");
 			boolean isAutoComplete = Convert.formatBoolean(req.getParameter("autoComplete"));
 
 			List<UpdateTitleVO> vals = getUpdateTitleList(listType, searchTerm, isAutoComplete);

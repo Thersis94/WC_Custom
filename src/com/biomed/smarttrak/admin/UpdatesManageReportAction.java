@@ -3,7 +3,9 @@ package com.biomed.smarttrak.admin;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import com.biomed.smarttrak.action.UpdatesEditionAction;
 import com.biomed.smarttrak.util.UpdateIndexer;
@@ -11,6 +13,8 @@ import com.biomed.smarttrak.vo.UpdateVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.data.Node;
+import com.siliconmtn.data.Tree;
 import com.siliconmtn.util.Convert;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -27,15 +31,15 @@ import com.smt.sitebuilder.common.constants.Constants;
  * @version 1.0
  * @since Mar 1, 2017
  ****************************************************************************/
-public class UpdatesWeeklyReportAction extends UpdatesEditionAction {
+public class UpdatesManageReportAction extends UpdatesEditionAction {
 	public static final String TIME_RANGE_DAILY = "daily";
 	public static final String TIME_RANGE_WEEKLY = "weekly";
 
-	public UpdatesWeeklyReportAction() {
+	public UpdatesManageReportAction() {
 		super();
 	}
 
-	public UpdatesWeeklyReportAction(ActionInitVO actionInit) {
+	public UpdatesManageReportAction(ActionInitVO actionInit) {
 		super(actionInit);
 	}
 
@@ -154,11 +158,54 @@ public class UpdatesWeeklyReportAction extends UpdatesEditionAction {
 	@Override
 	@SuppressWarnings("unchecked")
 	protected List<UpdateVO> fetchUpdates(ActionRequest req) throws ActionException {
-		UpdatesWeeklyReportDataLoader loader = new UpdatesWeeklyReportDataLoader();
+		UpdatesManageReportDataLoader loader = new UpdatesManageReportDataLoader();
 		loader.setDBConnection(getDBConnection());
 		loader.setAttributes(getAttributes());
 		loader.retrieve(req);
 		ModuleVO mod = (ModuleVO) loader.getAttribute(Constants.MODULE_DATA);
 		return (List<UpdateVO>) mod.getActionData();
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * @see com.biomed.smarttrak.action.UpdatesEditionAction#packageDataForDisplay(com.siliconmtn.data.Tree, java.util.List)
+	 */
+	@Override
+	protected void packageDataForDisplay(Tree t, List<UpdateVO> updates) {
+		Map<String, Map<String, List<UpdateVO>>> dataMap = new LinkedHashMap<>();
+
+		for (Node n : t.getRootNode().getChildren()) {
+			Map<String, List<UpdateVO>> children = new LinkedHashMap<>();
+
+			packageRootNode(n, children);
+
+			//Only add Node if we actually have children.
+			if (!children.isEmpty())
+				dataMap.put(n.getNodeName(), children);
+		}
+
+		putModuleData(dataMap, dataMap.size(), false);
+	}
+
+	/**
+	 * abstraction to simplify complex method
+	 * @param n
+	 * @param children
+	 */
+	@SuppressWarnings("unchecked")
+	private void packageRootNode(Node n, Map<String, List<UpdateVO>> children) {
+		//Look for Updates tied to the Root Node.
+		Object o = n.getUserObject();
+		if(o != null && o instanceof List && !((List<?>)o).isEmpty()) {
+			children.put("root", (List<UpdateVO>)o);
+		}
+		if (n.getTotalChildren() == 0) return;
+
+		//Look for Updates on the Child Nodes.
+		for(Node c : n.getChildren()) {
+			if(c.getTotalChildren() > 0) {
+				children.put(c.getNodeName(), (List<UpdateVO>)c.getUserObject());
+			}
+		}
 	}
 }

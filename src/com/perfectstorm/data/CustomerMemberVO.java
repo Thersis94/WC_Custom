@@ -3,6 +3,7 @@ package com.perfectstorm.data;
 // JDK 1.8.x
 import java.sql.ResultSet;
 
+import com.perfectstorm.data.CustomerVO.CustomerType;
 // SMT Base Libs
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.Column;
@@ -33,6 +34,10 @@ public class CustomerMemberVO extends MemberVO {
 	private String customerMemberId;
 	private String customerId;
 	private int defaultFlag;
+	
+	// Helpers
+	private String customerName;
+	private CustomerType typeCode;
 
 	/**
 	 * 
@@ -107,5 +112,35 @@ public class CustomerMemberVO extends MemberVO {
 	 */
 	public void setDefaultFlag(int defaultFlag) {
 		this.defaultFlag = defaultFlag;
+	}
+
+	/**
+	 * @return the customerName
+	 */
+	@Column(name="customer_nm", isReadOnly=true)
+	public String getCustomerName() {
+		return customerName;
+	}
+
+	/**
+	 * @param customerName the customerName to set
+	 */
+	public void setCustomerName(String customerName) {
+		this.customerName = customerName;
+	}
+
+	/**
+	 * @return the typeCode
+	 */
+	@Column(name="customer_type_cd", isReadOnly=true)
+	public CustomerType getTypeCode() {
+		return typeCode;
+	}
+
+	/**
+	 * @param typeCode the typeCode to set
+	 */
+	public void setTypeCode(CustomerType typeCode) {
+		this.typeCode = typeCode;
 	}
 }

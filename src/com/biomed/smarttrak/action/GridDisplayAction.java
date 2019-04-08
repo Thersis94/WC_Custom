@@ -1,5 +1,6 @@
 package com.biomed.smarttrak.action;
 
+import java.math.BigDecimal;
 // JDK 1.8
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -8,33 +9,29 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import java.math.BigDecimal;
 
 // App Libs
 import com.biomed.smarttrak.admin.GridChartAction;
 import com.biomed.smarttrak.admin.vo.GridDetailVO;
 import com.biomed.smarttrak.admin.vo.GridVO;
 import com.biomed.smarttrak.vo.grid.BiomedExcelReport;
-
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.report.chart.SMTChartDetailVO;
-import com.siliconmtn.data.report.chart.SMTChartVO;
 import com.siliconmtn.data.report.chart.SMTChartFactory;
 import com.siliconmtn.data.report.chart.SMTChartFactory.ProviderType;
 import com.siliconmtn.data.report.chart.SMTChartIntfc;
 import com.siliconmtn.data.report.chart.SMTChartOptionFactory;
 import com.siliconmtn.data.report.chart.SMTChartOptionFactory.ChartType;
 import com.siliconmtn.data.report.chart.SMTChartOptionIntfc;
+import com.siliconmtn.data.report.chart.SMTChartVO;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
-
 // WC Libs
 import com.smt.sitebuilder.action.SimpleActionAdapter;
-import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
 
 /********************************************************************
@@ -328,6 +325,9 @@ public class GridDisplayAction extends SimpleActionAdapter {
 		if (display && Convert.formatBoolean(req.getParameter(LOAD_TABLE))) display = false;
 		GridVO grid = getGridData(gridId, display);
 		
+		if (req.hasParameter("customTitle"))
+			grid.setTitle(req.getParameter("customTitle"));
+		
 		// If this grid has legacy data load that instead.
 		if (!StringUtil.isEmpty(grid.getLegacyId()) && Convert.formatBoolean(req.getParameter(LOAD_TABLE))) 
 			grid = getGridData(grid.getLegacyId(), display);
@@ -377,10 +377,11 @@ public class GridDisplayAction extends SimpleActionAdapter {
 		for(String grid : grids) {
 			String[] vals = grid.split("\\|");
 			Map<String, String> values = new HashMap<>(3);
-			for (String s : vals)log.debug(s);
+			
 			values.put("type", vals[1]);
 			if (vals.length >= 3) values.put("columns", vals[2]);
 			if (vals.length >= 4) values.put("labelType", vals[3]);
+			if (vals.length >= 5) values.put("customTitle", vals[4]);
 			items.put(vals[0], values);
 		}
 
@@ -398,6 +399,8 @@ public class GridDisplayAction extends SimpleActionAdapter {
 			// Figure out which is which and assign to the id
 			String id = grid.getGridId();
 			if (items.get(grid.getGridId()) == null)  id = grid.getSlug();
+			if (!StringUtil.isEmpty(items.get(id).get("customTitle")))
+				grid.setTitle(items.get(id).get("customTitle")); 
 
 			// Parse pout the passed in data and format for calling each chart
 			ChartType ct = ChartType.valueOf(items.get(id).get("type") + "");
@@ -715,10 +718,7 @@ public class GridDisplayAction extends SimpleActionAdapter {
 		gca.setAttributes(getAttributes());
 		gca.setDBConnection(getDBConnection());
 
-		gca.retrieveData(gridId, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA), display);
-		ModuleVO mod = (ModuleVO) attributes.get(Constants.MODULE_DATA);
-
-		return (GridVO) mod.getActionData();
+		return gca.retrieveData(gridId, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA), display);
 	}
 
 }

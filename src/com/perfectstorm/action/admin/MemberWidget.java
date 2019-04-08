@@ -9,7 +9,6 @@ import java.util.Map;
 
 // PS Libs
 import com.perfectstorm.data.MemberVO;
-
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -54,7 +53,7 @@ public class MemberWidget extends SBActionAdapter {
 	 * Key to access the widget through the controller
 	 */
 	public static final String AJAX_KEY = "member";
-	
+
 	/**
 	 * 
 	 */
@@ -68,7 +67,7 @@ public class MemberWidget extends SBActionAdapter {
 	public MemberWidget(ActionInitVO actionInit) {
 		super(actionInit);
 	}
-	
+
 	/**
 	 * 
 	 * @param dbConn
@@ -79,7 +78,7 @@ public class MemberWidget extends SBActionAdapter {
 		this.dbConn = dbConn;
 		this.attributes = attributes;
 	}
-	
+
 	/*
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.action.ActionRequest)
@@ -89,7 +88,7 @@ public class MemberWidget extends SBActionAdapter {
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		this.setModuleData(getMembers(site, new BSTableControlVO(req, MemberVO.class)));
 	}
-	
+
 	/**
 	 * Gets the list of members and the customer associations
 	 * @param bst
@@ -98,11 +97,11 @@ public class MemberWidget extends SBActionAdapter {
 	public GridDataVO<MemberVO> getMembers(SiteVO site, BSTableControlVO bst) {
 		List<Object> vals = new ArrayList<>();
 		vals.add(site.getSiteId());
-		
+
 		StringBuilder sql = new StringBuilder(832);
 		sql.append("select alias_nm, gender_cd, prefix_nm, a.profile_id, authentication_id, a.member_id, a.first_nm, ");
-		sql.append(" a.last_nm, a.email_address_txt, a.phone_number_txt, locale_txt,");
-		sql.append(" r.role_id, role_nm, profile_role_id,string_agg(customer_nm, ',') as customers_txt ");
+		sql.append(" a.last_nm, a.email_address_txt, a.phone_number_txt, locale_txt, send_sms_flg, ");
+		sql.append(" r.role_id, role_nm, profile_role_id,string_agg(customer_nm, ', ') as customers_txt ");
 		sql.append("from ").append(getCustomSchema()).append("ps_member a ");
 		sql.append("inner join profile p on a.profile_id = p.profile_id ");
 		sql.append("inner join profile_role pr on p.profile_id = pr.profile_id ");
@@ -116,11 +115,11 @@ public class MemberWidget extends SBActionAdapter {
 		sql.append("a.last_nm, a.email_address_txt, a.phone_number_txt, locale_txt, ");
 		sql.append("r.role_id, role_nm, profile_role_id order by a.last_nm ");
 		log.info(sql.length() + "|" + sql + "|" + vals);
-		
+
 		DBProcessor db = new DBProcessor(getDBConnection());
 		return db.executeSQLWithCount(sql.toString(), vals, new MemberVO(), bst);
 	}
-	
+
 	/**
 	 * Performs a fuzzy lookup
 	 * @param customerId
@@ -136,7 +135,7 @@ public class MemberWidget extends SBActionAdapter {
 		sql.append("and (lower(first_nm) like ? or lower(last_nm) like ? ");
 		sql.append("or lower(email_address_txt) like ? or phone_number_txt like ?) ");
 		sql.append("order by last_nm, first_nm ");
-				
+
 		// Add the params
 		List<Object> vals = new ArrayList<>();
 		vals.add(customerId);
@@ -145,12 +144,12 @@ public class MemberWidget extends SBActionAdapter {
 		vals.add(bst.getLikeSearch().toLowerCase());
 		vals.add(bst.getLikeSearch().toLowerCase());
 		log.debug(sql.length() + "|" + sql + "|" + vals);
-		
+
 		// Execute the search
 		DBProcessor db = new DBProcessor(dbConn);
 		return db.executeSQLWithCount(sql.toString(), vals, new MemberVO(), bst);
 	}
-	
+
 	/*
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.action.ActionRequest)
@@ -167,7 +166,7 @@ public class MemberWidget extends SBActionAdapter {
 		try {
 			// Save the profile
 			this.saveMember(site, member, true, true);
-			
+
 			// Save the member
 			db.save(member);
 			putModuleData(member);
@@ -176,7 +175,7 @@ public class MemberWidget extends SBActionAdapter {
 			putModuleData(member, 1, false, e.getLocalizedMessage(), true);
 		}
 	}
-	
+
 	/**
 	 * Saves the user information and associated profile.
 	 * @param site SMT Site information.  Needed to set proper roles and authentication
@@ -199,8 +198,8 @@ public class MemberWidget extends SBActionAdapter {
 		configureProfile(member, profile);
 
 		//create or update the auth record before saving the profile
-		if (hasAuth && StringUtil.isEmpty(profile.getAuthenticationId()))
-			profile.setAuthenticationId(addAuthenticationRecord(member));
+		if (hasAuth)
+			profile.setAuthenticationId(saveAuthenticationRecord(profile));
 
 		// Update / add the profile.
 		ProfileManager pm = ProfileManagerFactory.getInstance(attributes);
@@ -230,7 +229,7 @@ public class MemberWidget extends SBActionAdapter {
 
 		db.save(member);
 	}
-	
+
 	/**
 	 * Adds the auth record for a new user.  Checks for the existence (in case 
 	 * there is a record for that user) 
@@ -239,16 +238,23 @@ public class MemberWidget extends SBActionAdapter {
 	 * @throws DatabaseException
 	 * @throws com.siliconmtn.exception.DatabaseException 
 	 */
-	public String addAuthenticationRecord(MemberVO member) 
-	throws com.siliconmtn.exception.DatabaseException {
+	public String saveAuthenticationRecord(UserDataVO profile)
+			throws com.siliconmtn.exception.DatabaseException {
 		UserLogin login = new UserLogin(getDBConnection(), getAttributes());
-		String authId = login.checkAuth(member.getEmailAddress());
-		if (StringUtil.isEmpty(authId))
-			authId = login.saveAuthRecord(null, member.getEmailAddress(), RandomAlphaNumeric.generateRandom(10), 1);
+		String authId = login.checkAuth(profile.getEmailAddress()); //lookup authId using the NEW email address
+		//if we find an authId using the NEW email, see if it matches the old authId (if we had one)
+		if (!StringUtil.checkVal(authId).equals(profile.getAuthenticationId())) {
+			//edit the existing record, we have a changed email address
+			//note use of the pre-existing authenticationId
+			authId = login.saveAuthRecord(profile.getAuthenticationId(), profile.getEmailAddress(), UserLogin.DUMMY_PSWD, 0);
+		} else if (StringUtil.isEmpty(authId)) {
+			//add a record, there wasn't one prior
+			authId = login.saveAuthRecord(null, profile.getEmailAddress(), RandomAlphaNumeric.generateRandom(10), 1);
+		} //the 'else' here is that the auth record does not need modification or creation - do nothing
 
 		return authId;
 	}
-	
+
 	/**
 	 * Transpose certain data from UserVO to UserDataVO for saving to the WC core
 	 * @param member
@@ -267,13 +273,17 @@ public class MemberWidget extends SBActionAdapter {
 		}
 
 		// Replace (recreate) the phone#s now that we have established a country code
-		if (! StringUtil.isEmpty(profile.getMobilePhone()))
+		if (! StringUtil.isEmpty(profile.getMobilePhone())) {
 			profile.addPhone(new PhoneVO(PhoneVO.MOBILE_PHONE, profile.getMobilePhone(), profile.getCountryCode()));
+			//if the UserVO doesn't have a main phone, use mobile from the profile data
+			if (StringUtil.isEmpty(member.getPhoneNumber()))
+				member.setPhoneNumber(profile.getMobilePhone());
+		}
 
 		if (! StringUtil.isEmpty(profile.getWorkPhone()))
 			profile.addPhone(new PhoneVO(PhoneVO.WORK_PHONE, profile.getWorkPhone(), profile.getCountryCode()));
 	}
-	
+
 	/**
 	 * Checks for the existence of a user id based upon a profile id
 	 * @param profileId
@@ -295,7 +305,7 @@ public class MemberWidget extends SBActionAdapter {
 		}
 		return null;
 	}
-	
+
 	/**
 	 * Updates or saves the profile role value for the user
 	 * @param site
@@ -305,7 +315,7 @@ public class MemberWidget extends SBActionAdapter {
 	 * @throws com.siliconmtn.exception.DatabaseException
 	 */
 	protected SBUserRole saveRole(SiteVO site, MemberVO member) 
-	throws com.siliconmtn.exception.DatabaseException {
+			throws com.siliconmtn.exception.DatabaseException {
 		SBUserRole role = new SBUserRole();
 		role.setOrganizationId(site.getOrganizationId());
 		role.setSiteId(StringUtil.checkVal(site.getAliasPathParentId(), site.getSiteId())); //use parent site
