@@ -83,35 +83,35 @@ public class ProductExplorer extends SBActionAdapter {
 	 * solr equivalents
 	 */
 	private enum SearchField {
-		PRODUCT(CONTAINS_SEARCH, SearchDocumentHandler.TITLE, "Product Name", true),
-		STATE(BEGIN_SEARCH, "search_state_s", "State", false),
-		COUNTRY(EXACT_SEARCH, SearchDocumentHandler.COUNTRY, "Country", false),
-		COMPANY(CONTAINS_SEARCH, "companysearch_s", "Company Name", false),
-		SEGMENT(EXACT_SEARCH, SearchDocumentHandler.SECTION, "Segment", false),
-		MARKET(EXACT_SEARCH, "target_market_ss", "Target Market", false),
-		INDICATION(EXACT_SEARCH, "indication_ss", "Indication", false),
-		TECH(EXACT_SEARCH, "technology_ss", "Technology", false),
-		APPROACH(EXACT_SEARCH, "approach_ss", "Approach", false),
-		CLASSIFICATION(EXACT_SEARCH, "classification_ss", "Classification", false),
-		INTREG(EXACT_SEARCH, "intregionnm_ss", "International Region", false),
-		INTPATH(EXACT_SEARCH, "intpathnm_ss", "International Path", false),
-		INTSTATUS(EXACT_SEARCH, "intstatusnm_ss", "International Status", false),
-		USPATH(EXACT_SEARCH, "uspathnm_ss", "US Path", false),
-		USSTATUS(EXACT_SEARCH, "usstatusnm_ss", "US Status", false),
-		ALLY(CONTAINS_SEARCH, "allysearch_ss", "Ally", false),
-		OWNERSHIP(EXACT_SEARCH, "ownership_s", "Owner", false),
-		ID(EXACT_SEARCH, SearchDocumentHandler.DOCUMENT_ID, "Product Id", false);
+		PRODUCT(CONTAINS_SEARCH, SearchDocumentHandler.TITLE, "Product Name", 2),
+		STATE(BEGIN_SEARCH, "search_state_s", "State", 1),
+		COUNTRY(EXACT_SEARCH, SearchDocumentHandler.COUNTRY, "Country", 1),
+		COMPANY(CONTAINS_SEARCH, "companysearch_s", "Company Name", 3),
+		SEGMENT(EXACT_SEARCH, SearchDocumentHandler.SECTION, "Segment", 1),
+		MARKET(EXACT_SEARCH, "target_market_ss", "Target Market", 1),
+		INDICATION(EXACT_SEARCH, "indication_ss", "Indication", 1),
+		TECH(EXACT_SEARCH, "technology_ss", "Technology", 1),
+		APPROACH(EXACT_SEARCH, "approach_ss", "Approach", 1),
+		CLASSIFICATION(EXACT_SEARCH, "classification_ss", "Classification", 1),
+		INTREG(EXACT_SEARCH, "intregionnm_ss", "International Region", 1),
+		INTPATH(EXACT_SEARCH, "intpathnm_ss", "International Path", 1),
+		INTSTATUS(EXACT_SEARCH, "intstatusnm_ss", "International Status", 1),
+		USPATH(EXACT_SEARCH, "uspathnm_ss", "US Path", 1),
+		USSTATUS(EXACT_SEARCH, "usstatusnm_ss", "US Status", 1),
+		ALLY(CONTAINS_SEARCH, "allysearch_ss", "Ally", 1),
+		OWNERSHIP(EXACT_SEARCH, "ownership_s", "Owner", 1),
+		ID(EXACT_SEARCH, SearchDocumentHandler.DOCUMENT_ID, "Product Id", 1);
 
 		private int searchType;
 		private String solrField;
 		private String fieldName;
-		private boolean querySearch;
+		private int searchFormat;
 
-		SearchField(int searchType, String solrField, String fieldName, boolean querySearch) {
+		SearchField(int searchType, String solrField, String fieldName, int searchFormat) {
 			this.searchType = searchType;
 			this.solrField = solrField;
 			this.fieldName = fieldName;
-			this.querySearch = querySearch;
+			this.searchFormat = searchFormat;
 		}
 
 		public String getSolrField() {
@@ -126,8 +126,8 @@ public class ProductExplorer extends SBActionAdapter {
 			return searchType;
 		}
 		
-		public boolean isQuerySearch() {
-			return querySearch;
+		public int getSearchFormat() {
+			return searchFormat;
 		}
 	}
 
@@ -447,8 +447,10 @@ public class ProductExplorer extends SBActionAdapter {
 			if (!enumNames.contains(name) || StringUtil.isEmpty(req.getParameter(name))) continue;
 
 			SearchField search = SearchField.valueOf(name);
-			if (search.isQuerySearch()) {
+			if (search.getSearchFormat() == 2) {
 				qData.setSearchData(buildQueryValue(req.getParameter(name), search, qData.getSearchData()));
+			} else if (search.getSearchFormat() == 3) {
+				buildSplitValues(req.getParameterValues(name), search, qData);
 			} else {
 				String value = buildValues(req.getParameterValues(name), search.getSearchType());
 				qData.addSolrField(new SolrFieldVO(FieldType.FILTER, search.getSolrField(), value, BooleanType.AND));
@@ -456,6 +458,21 @@ public class ProductExplorer extends SBActionAdapter {
 		}
 	}
 
+
+	/**
+	 * Build out split values where we need to ensure that user 
+	 * generated values all need to be met by the queried field.
+	 * @param parameterValues
+	 * @param search
+	 * @param qData
+	 */
+	private void buildSplitValues(String[] parameterValues, SearchField search, SolrActionVO qData) {
+		for (String s : parameterValues) {
+			for (String split : s.split(" "))  {
+				qData.addSolrField(new SolrFieldVO(FieldType.FILTER, search.getSolrField(), getSearchValue(split.toLowerCase(), search.searchType), BooleanType.AND));
+			}
+		}
+	}
 
 	/**
 	 * Create a searchData value that can be used with fields whose values can contain 
