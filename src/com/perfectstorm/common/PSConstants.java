@@ -32,6 +32,11 @@ public class PSConstants {
 		public String getRoleId() {	return roleId; }
 		public String getRoleName() {	return roleName; }
 	}
+	
+	/**
+	 * Default radar type
+	 */
+	public static final String RADAR_TYPE = "N0R";
 
 	private PSConstants() {
 		//don't need a constructor - static class
