@@ -12,7 +12,6 @@ import java.util.Map;
 import org.apache.solr.common.SolrDocument;
 
 import com.biomed.smarttrak.action.rss.RSSDataAction.ArticleStatus;
-import com.biomed.smarttrak.action.rss.util.SmarttrakRSSImporter;
 import com.biomed.smarttrak.action.rss.vo.RSSArticleFilterVO;
 import com.biomed.smarttrak.action.rss.vo.RSSArticleVO;
 import com.biomed.smarttrak.action.rss.vo.RSSBucketVO;
@@ -29,6 +28,7 @@ import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.EnumUtil;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.search.SolrAction;
@@ -86,7 +86,10 @@ public class NewsroomAction extends SBActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		if(req.hasParameter("bulkAction") && req.getBooleanParameter("bulkAction")) {
+		if(req.hasParameter("reloadCounts")) {
+			List<RSSFeedSegment> segments = loadSegmentGroupArticles(req);
+			this.putModuleData(segments, segments.size(), false);
+		} else if(req.hasParameter("bulkAction") && req.getBooleanParameter("bulkAction")) {
 			processBulkRequest(req);
 		} else if(req.hasParameter("isBucket") && req.hasParameter(BUCKET_ID)) {
 			loadBucketArticles(req);
@@ -94,6 +97,7 @@ public class NewsroomAction extends SBActionAdapter {
 		} else if(req.hasParameter("isBucket")) {
 			loadBuckets(req);
 			loadMyCounts(req);
+			loadManagers(req);
 		} else if(req.hasParameter(FEED_GROUP_ID) && !req.hasParameter("isConsole")) {
 			//Get the Filtered Updates according to Request.
 			getFilteredArticles(req);
@@ -117,8 +121,9 @@ public class NewsroomAction extends SBActionAdapter {
 			//Load Managers for assigning rss articles.
 			loadManagers(req);
 		} else if(!req.hasParameter("amid")) {
-			loadSegmentGroupArticles(req);
+			req.setAttribute("segments", loadSegmentGroupArticles(req));
 			loadMyCounts(req);
+			loadManagers(req);
 		}
 	}
 
@@ -352,11 +357,6 @@ public class NewsroomAction extends SBActionAdapter {
 		boolean hasFilteredArticleId = rssFilteredArticleIds != null && !rssFilteredArticleIds.isEmpty();
 		boolean hasGroupId = !StringUtil.isEmpty(feedGroupId);
 
-		/* 
-		 * When running a full index, limit to articles within valid time range.  
-		 * No sense grabbing articles that are about to be or could be wiped while indexing.
-		 */
-		vals.add(SmarttrakRSSImporter.MAX_KEEP_DAYS);
 		if(hasGroupId) {
 			vals.add(feedGroupId);
 		}
@@ -371,7 +371,9 @@ public class NewsroomAction extends SBActionAdapter {
 		}
 
 		DBProcessor dbp = new DBProcessor(dbConn, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
-		return dbp.executeSelect(loadFilterArticleSql(hasGroupId, hasFilteredArticleId ? rssFilteredArticleIds.size() : 0), vals, new RSSArticleFilterVO());
+		dbp.setGenerateExecutedSQL(true);
+		List<SolrDocumentVO>  vos = dbp.executeSelect(loadFilterArticleSql(hasGroupId, hasFilteredArticleId ? rssFilteredArticleIds.size() : 0), vals, new RSSArticleFilterVO());
+		return vos;
 	}
 
 	/**
@@ -390,8 +392,7 @@ public class NewsroomAction extends SBActionAdapter {
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("biomedgps_rss_article a ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("biomedgps_rss_filtered_article af ");
 		sql.append("on a.rss_article_id = af.rss_article_id ");
-		sql.append(DBUtil.WHERE_CLAUSE);
-		sql.append("af.create_dt > current_date - ? and article_status_cd != 'K' ");
+		sql.append(DBUtil.WHERE_1_CLAUSE);
 		if(hasGroupId)
 			sql.append("and af.feed_group_id = ? ");
 
@@ -501,31 +502,39 @@ public class NewsroomAction extends SBActionAdapter {
 	 * Load Segment Group Articles for the Feed Landing Page.
 	 * @param req
 	 * @return 
+	 * @return 
 	 */
-	protected void loadSegmentGroupArticles(ActionRequest req) {
+	protected List<RSSFeedSegment> loadSegmentGroupArticles(ActionRequest req) {
 		List<Object> vals = new ArrayList<>();
-		vals.add(ArticleStatus.N.name());
+		boolean filterStatus = req.hasParameter(STATUS_CD) && !"ALL".equals(req.getParameter(STATUS_CD)); 
+		if(filterStatus) {
+			vals.add(EnumUtil.safeValueOf(ArticleStatus.class, req.getParameter(STATUS_CD), ArticleStatus.N).name());
+		}
 		DBProcessor dbp = new DBProcessor(dbConn, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
-		req.setAttribute("segments", dbp.executeSelect(loadSegmentGroupArticlesSql(), vals, new RSSFeedSegment()));
+		return dbp.executeSelect(loadSegmentGroupArticlesSql(filterStatus), vals, new RSSFeedSegment());
 	}
 
 	/**
 	 * Helper method builds the Segment Group Article Count Sql Query.
 	 * @return
 	 */
-	private String loadSegmentGroupArticlesSql() {
+	private String loadSegmentGroupArticlesSql(boolean filterStatus) {
 		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
-		StringBuilder sql = new StringBuilder(900);
+		StringBuilder sql = new StringBuilder(1000);
 		sql.append("select a.feed_segment_id, a.feed_group_id, a.feed_group_nm, ");
-		sql.append("b.FEED_SEGMENT_NM, cast(Count(distinct d.rss_article_id) as int) as article_count, s.section_nm, b.section_id from ");
+		sql.append("b.FEED_SEGMENT_NM, coalesce(d.article_count, 0) as article_count, s.section_nm, b.section_id from ");
 		sql.append(schema).append("BIOMEDGPS_FEED_GROUP a ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("BIOMEDGPS_FEED_SEGMENT b ");
 		sql.append("on a.FEED_SEGMENT_ID = b.FEED_SEGMENT_ID ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("BIOMEDGPS_SECTION s ");
 		sql.append("on b.section_id = s.section_id and s.parent_id = 'MASTER_ROOT' ");
-		sql.append("left outer join ").append(schema).append("biomedgps_rss_filtered_article d ");
-		sql.append("on a.feed_group_id = d.feed_group_id and d.article_status_cd = ? ");
-		sql.append("group by a.feed_segment_id, a.feed_group_id, a.feed_group_nm, b.feed_segment_id, s.section_nm, s.order_no ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(" (select cast(count(feed_group_id) as int) as article_count, feed_group_id from ");
+		sql.append(getCustomSchema()).append("biomedgps_rss_filtered_article ");
+		if(filterStatus)
+			sql.append("where article_status_cd= ? ");
+		sql.append("group by feed_group_id) as d ");
+		sql.append("on a.feed_group_id = d.feed_group_id ");
+		sql.append("group by a.feed_segment_id, a.feed_group_id, a.feed_group_nm, b.feed_segment_id, s.section_nm, s.order_no, d.article_count ");
 		sql.append("order by s.order_no, b.order_no, FEED_GROUP_NM");
 		log.debug(sql.toString());
 		return sql.toString();

@@ -52,7 +52,7 @@ public class NewsroomConsoleAction extends NewsroomAction {
 		} else {
 			req.setAttribute("filters", loadNonGroupedFilters(req));
 			req.setAttribute("sources", loadSources(req));
-			loadSegmentGroupArticles(req);
+			req.setAttribute("segments", loadSegmentGroupArticles(req));
 		}
 	}
 
