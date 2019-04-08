@@ -178,7 +178,7 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 		if("attr_credit_memo".equalsIgnoreCase(req.getParameter("attributeCode"))) {
 			log.debug(" save the attribute id in credit memo table");
 			saveMemoAssetId(req.getParameter("creditMemoId"), td.getDataEntryId(), req.getDoubleParameter("refundAmount"), req.getParameter("approvedBy"));
-			
+			addLedger(td.getTicketId(), user.getUserId(), null, LedgerSummary.CREDIT_MEMO_APPROVED.summary, null);
 		}
 	}
 	
