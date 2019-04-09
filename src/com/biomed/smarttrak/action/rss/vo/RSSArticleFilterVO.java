@@ -26,7 +26,7 @@ import com.smt.sitebuilder.util.solr.SolrDocumentVO;
  * @version 3.3.1
  * @since Oct 3, 2017
  ****************************************************************************/
-@Table(name="biomedgps_rss_article_filter")
+@Table(name="biomedgps_rss_filtered_article")
 public class RSSArticleFilterVO extends SolrDocumentVO implements AutoPopulateIntfc {
 
 	private String articleFilterId;
@@ -38,6 +38,7 @@ public class RSSArticleFilterVO extends SolrDocumentVO implements AutoPopulateIn
 	private int matchCount;
 	private ArticleStatus articleStatus;
 	private Date createDt;
+	private int completeFlg;
 
 	//Temp Variables
 	private String articleUrl;
@@ -147,6 +148,12 @@ public class RSSArticleFilterVO extends SolrDocumentVO implements AutoPopulateIn
 		return createDt;
 	}
 
+	@SolrField(name="completeFlag_i")
+	@Column(name="complete_flg")
+	public int getCompleteFlg() {
+		return completeFlg;
+	}
+
 	/**
 	 * @param articleFilterId the articleFilterId to set.
 	 */
@@ -198,6 +205,10 @@ public class RSSArticleFilterVO extends SolrDocumentVO implements AutoPopulateIn
 	public void setCreateDt(Date createDt) {
 		this.createDt = createDt;
 		this.setPublishDate(createDt);
+	}
+
+	public void setCompleteFlg(int completeFlg) {
+		this.completeFlg = completeFlg;
 	}
 
 	/**

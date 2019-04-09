@@ -332,8 +332,16 @@ public class NewsroomAction extends SBActionAdapter {
 		String bucketId = req.getParameter(BUCKET_ID);
 
 		String statusCd = req.getParameter(STATUS_CD, ArticleStatus.N.name());
-		if(!"ALL".equals(statusCd)) {
+
+		/*
+		 * If filtering by complete articles, ignore status, only look at the flag.
+		 * Otherwise if we're not looking for all, apply status.
+		 */
+		if("C".equals(statusCd)) {
+			fq.add("completeFlag_i:1");
+		} else if(!"ALL".equals(statusCd)) {
 			fq.add("articleStatus_s:" + statusCd);
+			fq.add("completeFlag_i:0");
 		}
 		if (!StringUtil.isEmpty(feedGroupId))
 			fq.add("feedGroupId_s:" + feedGroupId);
@@ -388,7 +396,8 @@ public class NewsroomAction extends SBActionAdapter {
 		sql.append("a.attribute1_txt, a.publish_dt, a.create_dt, af.rss_article_filter_id, ");
 		sql.append("af.feed_group_id, af.article_status_cd, af.bucket_id, af.match_no, ");
 		sql.append("coalesce(af.filter_title_txt, a.title_txt, 'Untitled') as filter_title_txt, ");
-		sql.append("coalesce(af.filter_article_txt, a.article_txt, 'No Article Available') as filter_article_txt ");
+		sql.append("coalesce(af.filter_article_txt, a.article_txt, 'No Article Available') as filter_article_txt, ");
+		sql.append("af.complete_flg ");
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("biomedgps_rss_article a ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("biomedgps_rss_filtered_article af ");
 		sql.append("on a.rss_article_id = af.rss_article_id ");
@@ -506,19 +515,22 @@ public class NewsroomAction extends SBActionAdapter {
 	 */
 	protected List<RSSFeedSegment> loadSegmentGroupArticles(ActionRequest req) {
 		List<Object> vals = new ArrayList<>();
-		boolean filterStatus = req.hasParameter(STATUS_CD) && !"ALL".equals(req.getParameter(STATUS_CD)); 
-		if(filterStatus) {
+		String statusCd = req.getParameter(STATUS_CD);
+		if("C".equals(statusCd)) {
+			vals.add(1);
+		} else if(!"ALL".equals(statusCd)) {
 			vals.add(EnumUtil.safeValueOf(ArticleStatus.class, req.getParameter(STATUS_CD), ArticleStatus.N).name());
+			vals.add(0);
 		}
 		DBProcessor dbp = new DBProcessor(dbConn, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
-		return dbp.executeSelect(loadSegmentGroupArticlesSql(filterStatus), vals, new RSSFeedSegment());
+		return dbp.executeSelect(loadSegmentGroupArticlesSql(statusCd), vals, new RSSFeedSegment());
 	}
 
 	/**
 	 * Helper method builds the Segment Group Article Count Sql Query.
 	 * @return
 	 */
-	private String loadSegmentGroupArticlesSql(boolean filterStatus) {
+	private String loadSegmentGroupArticlesSql(String statusCd) {
 		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(1000);
 		sql.append("select a.feed_segment_id, a.feed_group_id, a.feed_group_nm, ");
@@ -530,8 +542,13 @@ public class NewsroomAction extends SBActionAdapter {
 		sql.append("on b.section_id = s.section_id and s.parent_id = 'MASTER_ROOT' ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(" (select cast(count(feed_group_id) as int) as article_count, feed_group_id from ");
 		sql.append(getCustomSchema()).append("biomedgps_rss_filtered_article ");
-		if(filterStatus)
-			sql.append("where article_status_cd= ? ");
+
+		if("C".equals(statusCd)) {
+			sql.append("where complete_flg = ? ");
+		} else if(!"ALL".equals(statusCd)) {
+			sql.append("where article_status_cd = ? and complete_flg = ? ");
+		}
+
 		sql.append("group by feed_group_id) as d ");
 		sql.append("on a.feed_group_id = d.feed_group_id ");
 		sql.append("group by a.feed_segment_id, a.feed_group_id, a.feed_group_nm, b.feed_segment_id, s.section_nm, s.order_no, d.article_count ");
@@ -542,7 +559,54 @@ public class NewsroomAction extends SBActionAdapter {
 
 	@Override
 	public void build(ActionRequest req) throws ActionException {
-		updateArticle(req);
+		if("C".equals(req.getParameter("articleStatus"))) {
+			markComplete(req);
+		} else {
+			updateArticle(req);
+		}
+	}
+
+	/**
+	 * Marks articles as completed.  Complete Articles get the completeFlag set
+	 * on their record and do not appear in standard filters.  When an article is
+	 * flagged as complete, all filtered articles related to the same article
+	 * are flagged at the same time.
+	 * @param req
+	 * @throws ActionException
+	 */
+	private void markComplete(ActionRequest req) throws ActionException {
+		DBProcessor dbp = new DBProcessor(dbConn, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
+		RSSArticleFilterVO rss = new RSSArticleFilterVO(req);
+		List<String> articleIds = new ArrayList<>();
+		String sql = StringUtil.join("select rss_article_filter_id from ", getCustomSchema(), "biomedgps_rss_filtered_article where rss_article_id = ?");
+		try {
+
+			//Populate VO so we can get the articleId
+			dbp.getByPrimaryKey(rss);
+
+			//Load the List of articles that will be affected.
+			try(PreparedStatement ps = dbConn.prepareStatement(sql)) {
+				ps.setString(1, rss.getRssArticleId());
+				ResultSet rs = ps.executeQuery();
+				while(rs.next()) {
+					articleIds.add(rs.getString("rss_article_filter_id"));
+				}
+			}
+
+			//Perform update and set complete_flg = 1
+			sql = StringUtil.join("update ", getCustomSchema(), "biomedgps_rss_filtered_article set complete_flg = 1 where rss_article_id = ?");
+			try(PreparedStatement ps = dbConn.prepareStatement(sql)) {
+				ps.setString(1, rss.getRssArticleId());
+				ps.executeUpdate();
+			}
+
+			//Update Records in solr.
+			writeToSolr(articleIds.toArray(new String [articleIds.size()]));
+
+		} catch (Exception e) {
+			log.error("Error updating article status Code", e);
+			throw new ActionException(e);
+		}
 	}
 
 	/**
