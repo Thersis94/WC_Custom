@@ -93,6 +93,14 @@ public class RSSArticleIndexer extends SMTAbstractIndex {
 		SolrClient server = makeServer();
 		try (SolrActionUtil util = new SolrActionUtil(server)) {
 				util.addDocuments(getDocuments(null, Arrays.asList(itemIds)));
+
+				/*
+				 * Called from within the feeds tool.  
+				 * Need to call commit so that UI Can update properly.  Waiting for
+				 * the auto-commit results in articles that have been updated showing up in a refresh
+				 * with improper status after solr loads articles and the db populates with data.
+				 */
+				server.commit();
 		} catch (Exception e) {
 			log.error("Failed to index Update with id=" + itemIds, e);
 		}
