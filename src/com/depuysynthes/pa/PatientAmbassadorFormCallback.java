@@ -86,10 +86,8 @@ public class PatientAmbassadorFormCallback extends SBActionAdapter {
 	 * Check the response value for 'has replaced joint' and builds a custom redirect depending 
 	 * upon the response.  We format the redirect here instead of relying on FormFacadeAction's 
 	 * more generic redirect builder so that we can to pass a custom parameter back to the JSTL.
-	 * We use this custom parameter to tailor the form submission response when:
-	 * 1) the requestor is from a visitor who does not have a DePuy Synthes implant
-	 * - OR -  
-	 * 2) the requestor is from a visitor who has an DePuy Synthes ATTUNE knee implant. 
+	 * We use this custom parameter to tailor the form submission response when the requestor 
+	 * is from a visitor who does not have a DePuy Synthes implant.
 	 * @param req
 	 */
 	private void formatRedirect(ActionRequest req) {
