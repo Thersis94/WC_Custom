@@ -11,6 +11,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.biomed.smarttrak.action.AdminControllerAction;
 //WC_Custom
 import com.biomed.smarttrak.util.BiomedChangeLogUtil;
 import com.biomed.smarttrak.util.BiomedInsightIndexer;
@@ -293,13 +294,11 @@ public class InsightAction extends ManagementAction {
 	 */
 	public List<InsightVO> loadForSolr(String ...insightIds) {
 		EnumMap<Fields, String> insightParamsMap = new EnumMap<>(Fields.class);
-		insightParamsMap.put(Fields.STATUS_CD,  InsightVO.InsightStatusCd.P.name());
 		insightParamsMap.put(Fields.ID_BYPASS, "true");
 
 		String sql = formatSolrRetrieveQuery(insightIds.length, customDbSchema, insightParamsMap);
 		List<Object> params = new ArrayList<>();
 		for (String id : insightIds) params.add(id);
-		params.add(InsightVO.InsightStatusCd.P.name());
 		return getFromDatabase(params, sql, false);
 	}
 
@@ -379,6 +378,12 @@ public class InsightAction extends ManagementAction {
 			vo.setQsPath((String)getAttribute(Constants.QS_PATH));
 			if(!isTitleBypass && authorTitles.containsKey(vo.getCreatorProfileId())) {
 				vo.setCreatorTitle(authorTitles.get(vo.getCreatorProfileId()));
+			}
+			
+			if (!"P".equals(vo.getStatusCd())) {
+				vo.addRole(AdminControllerAction.STAFF_ROLE_LEVEL);
+			} else {
+				vo.addRole(AdminControllerAction.DEFAULT_ROLE_LEVEL); //any logged in ST user can see this.
 			}
 
 			ProfileDocumentAction pda = new ProfileDocumentAction();
@@ -538,13 +543,12 @@ public class InsightAction extends ManagementAction {
 	 * @param numIds
 	 */
 	private static void generateSolrWhereClauseOfQuery(StringBuilder sql, int numIds) {
-		sql.append("where ");
 		if (numIds > 0) {
+			sql.append("where ");
 			sql.append("a.insight_id in (");
 			DBUtil.preparedStatmentQuestion(numIds, sql);
-			sql.append(") and ");
+			sql.append(") ");
 		}
-		sql.append("a.status_cd=?");
 	}
 
 	/**
