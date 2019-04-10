@@ -55,8 +55,10 @@ public class RSSArticleIndexer extends SMTAbstractIndex {
 			ga.setAttributes(getAttributes());
 			List<RSSFeedGroupVO> groups = ga.loadGroupXrs(null, null, null);
 
-			for(RSSFeedGroupVO g : groups)
+			for(RSSFeedGroupVO g : groups) {
+				log.info(String.format("Processing Feed Group %s.", g.getFeedGroupId()));
 				util.addDocuments(getDocuments(g.getFeedGroupId(), null));
+			}
 		} catch (Exception e) {
 			log.error("Failed to index Updates", e);
 		}
@@ -81,7 +83,9 @@ public class RSSArticleIndexer extends SMTAbstractIndex {
 		NewsroomAction na = new NewsroomAction();
 		na.setDBConnection(new SMTDBConnection(dbConn));
 		na.setAttributes(getAttributes());
-		return na.loadAllArticles(feedGroupId, documentIds);
+		List<SolrDocumentVO> vos = na.loadAllArticles(feedGroupId, documentIds);
+		log.info(String.format("Loaded %d RSS Articles.", vos.size()));
+		return vos;
 	}
 
 	/* (non-Javadoc)

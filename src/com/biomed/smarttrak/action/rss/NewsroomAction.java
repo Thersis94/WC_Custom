@@ -310,7 +310,9 @@ public class NewsroomAction extends SBActionAdapter {
 
 		DBProcessor dbp = new DBProcessor(dbConn, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		dbp.setGenerateExecutedSQL(true);
-		return dbp.executeSelect(loadFilterArticleSql(hasGroupId, hasFilteredArticleId ? rssFilteredArticleIds.size() : 0), vals, new RSSArticleFilterVO());
+		List<SolrDocumentVO> docs = dbp.executeSelect(loadFilterArticleSql(hasGroupId, hasFilteredArticleId ? rssFilteredArticleIds.size() : 0), vals, new RSSArticleFilterVO());
+		log.info(dbp.getExecutedSql());
+		return docs;
 	}
 
 	/**
