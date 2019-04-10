@@ -12,8 +12,6 @@ import com.siliconmtn.action.ActionRequest;
 
 //WebCrescendo libs
 import com.smt.sitebuilder.action.SimpleActionAdapter;
-import com.smt.sitebuilder.common.ModuleVO;
-import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
  * Title: ToolsFacadeAction.java <p/>
@@ -59,9 +57,6 @@ public class ToolsFacadeAction extends SimpleActionAdapter {
 	public void retrieve (ActionRequest req) throws ActionException {
 		FacadeType type = getFacadeType(req.getParameter("facadeType"));
 
-		if (FacadeType.PRODUCT_EXPLORER.equals(type))
-			configurePEData();
-
 		//load action and execute retrieve
 		ActionControllerFactoryImpl.loadAction(type.getClassName(), this).retrieve(req);
 	}
@@ -75,25 +70,9 @@ public class ToolsFacadeAction extends SimpleActionAdapter {
 	public void build(ActionRequest req) throws ActionException {
 		FacadeType type = getFacadeType(req.getParameter("facadeType"));
 
-		if (FacadeType.PRODUCT_EXPLORER.equals(type))
-			configurePEData();
-
 		//load the action and execute build
 		ActionControllerFactoryImpl.loadAction(type.getClassName(), this).build(req);
 	}
-
-
-	/**
-	 * Configures data required to run Product Explorer for public site
-	 */
-	protected void configurePEData() {
-		//set proper action id to process solr request correctly for action
-		ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
-		String actionId = mod.getIntroText();
-		mod.setAttribute(ModuleVO.ATTRIBUTE_1, actionId);
-		setAttribute(Constants.MODULE_DATA, mod);
-	}
-
 
 	/**
 	 * Retrieves the facade type based on string passed
