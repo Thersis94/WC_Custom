@@ -17,8 +17,8 @@ import com.biomed.smarttrak.security.SmarttrakRoleVO;
 import com.biomed.smarttrak.util.BiomedLinkCheckerUtil;
 import com.biomed.smarttrak.util.SmarttrakTree;
 import com.biomed.smarttrak.vo.InsightVO;
+import com.biomed.smarttrak.vo.InsightVO.InsightStatusCd;
 import com.biomed.smarttrak.vo.UserVO;
-
 //SMT Baselibs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -31,7 +31,6 @@ import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.user.HumanNameIntfc;
 import com.siliconmtn.util.user.NameComparator;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
-
 //WebCrescendo
 import com.smt.sitebuilder.action.search.SolrAction;
 import com.smt.sitebuilder.action.search.SolrFieldVO.FieldType;
@@ -168,6 +167,7 @@ public class InsightAction extends SimpleActionAdapter {
 		String[] fqs = new String[0];
 		List<String> data = new ArrayList<>(Arrays.asList(fqs));
 		data.add(SearchDocumentHandler.MODULE_TYPE + ":" + vo.getTypeCd());
+
 		req.setParameter("fq", data.toArray(new String[data.size()]), true);
 
 		// have to temp remove the req param so it doesn't get picked up as an document id request
@@ -240,6 +240,8 @@ public class InsightAction extends SimpleActionAdapter {
 				data.add(SearchDocumentHandler.MODULE_TYPE + ":" + s);
 			}
 		}
+
+		data.add(StringUtil.join("status_s:", InsightStatusCd.P.name()));
 
 		// put the new list of filter queries back on the request
 		req.setParameter("fq", data.toArray(new String[data.size()]), true);
