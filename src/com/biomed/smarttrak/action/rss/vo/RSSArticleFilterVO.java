@@ -174,7 +174,7 @@ public class RSSArticleFilterVO extends SolrDocumentVO implements AutoPopulateIn
 	 */
 	public void setFilterArticleTxt(String filterArticleTxt) {
 		this.filterArticleTxt = filterArticleTxt;
-		this.setSummary(filterArticleTxt);
+		super.setContents(filterArticleTxt);
 	}
 
 	/**
