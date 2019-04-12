@@ -1,5 +1,8 @@
 package com.mts.publication.action;
 
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 // JDK 1.8.x
 import java.util.ArrayList;
 import java.util.List;
@@ -58,9 +61,43 @@ public class IssueArticleAction extends SBActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		String issueId = req.getParameter("issueId");
-		BSTableControlVO bst = new BSTableControlVO(req, MTSDocumentVO.class);
-		setModuleData(getArticles(issueId, bst));
+		try {
+			if (req.hasParameter("documentId")) {
+				setModuleData(getDocument(req.getParameter("documentId")));
+			} else {
+				String issueId = req.getParameter("issueId");
+				BSTableControlVO bst = new BSTableControlVO(req, MTSDocumentVO.class);
+				setModuleData(getArticles(issueId, bst));
+			}
+		} catch (Exception e) {
+			setModuleData(null, 0, e.getLocalizedMessage());
+		}
+	}
+	
+	/**
+	 * Retrieves the document to be edited
+	 * @param documentId
+	 * @return
+	 * @throws SQLException
+	 */
+	public MTSDocumentVO getDocument(String documentId) throws SQLException {
+		StringBuilder sql = new StringBuilder(192);
+		sql.append("select * from custom.mts_document a ");
+		sql.append("inner join sb_action b on a.document_id = b.action_id ");
+		sql.append("inner join document c on b.action_id = c.action_id ");
+		sql.append("where document_id = ? ");
+		log.debug(sql.length() + "|" + sql);
+		
+		MTSDocumentVO doc = new MTSDocumentVO();
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, documentId);
+			
+			try (ResultSet rs = ps.executeQuery()) {
+				if (rs.next()) doc = new MTSDocumentVO(rs);
+			}
+		}
+		
+		return doc;
 	}
 	
 	/**
@@ -75,7 +112,7 @@ public class IssueArticleAction extends SBActionAdapter {
 		sql.append("where issue_id = ? ");
 		sql.append("order by action_nm ");
 
-		log.info(sql.length() + "|" + sql + "|" + issueId);
+		log.debug(sql.length() + "|" + sql + "|" + issueId);
 		
 		// Add the params
 		List<Object> vals = new ArrayList<>();

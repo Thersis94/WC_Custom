@@ -120,11 +120,8 @@ public class DataMigrationUtil {
 				// Assign the MTS Document info
 				if (PROC_DOCS) dbCustom.insert(doc);
 			} catch (Exception e) {
-				log.error("------------------------------");
 				log.error("Core: " + dbCore.getExecutedSql());
-				log.error("------------------------------");
 				log.error("Custom: " + dbCustom.getExecutedSql());
-				log.error("------------------------------");
 				log.error("Unable to add documents: " + doc.getActionId() + "|" + doc.getActionName(), e);
 			}
 		}
@@ -184,7 +181,7 @@ public class DataMigrationUtil {
 		// Get the articles
 		sql.append("select  * ");
 		sql.append("from wp_1fvbn80q5v_posts where post_type = 'article' ");
-		//sql.append("limit 30 ");
+		
 		List<MTSDocumentVO> docs = new ArrayList<>();
 		try (PreparedStatement ps = srcConn.prepareStatement(sql.toString()); ResultSet rs = ps.executeQuery()) {
 			while (rs.next()) {
@@ -197,7 +194,7 @@ public class DataMigrationUtil {
 				doc.setDocument(rs.getString("post_content"));
 				doc.setDocumentFolderId(MTS_DOC_FOLDER);
 				doc.setFileType("html");
-				doc.setUniqueCode(RandomAlphaNumeric.generateRandom(6));
+				doc.setUniqueCode(RandomAlphaNumeric.generateRandom(6).toUpperCase());
 				doc.setOrganizationId(MTS_ORG);
 				doc.setModuleTypeId("DOCUMENT");
 				doc.setActionDesc(rs.getString("post_title"));
@@ -217,7 +214,7 @@ public class DataMigrationUtil {
 				
 				// Add to the document collection
 				if (! StringUtil.isEmpty(doc.getIssueId())) docs.add(doc);
-				//else log.info(doc.getActionId() + "\t" + doc.getActionName() + "\t" + doc.getDirectAccessPath());
+				else log.info(doc.getActionId() + "\t" + doc.getActionName() + "\t" + doc.getDirectAccessPath());
 			}
 		}
 		

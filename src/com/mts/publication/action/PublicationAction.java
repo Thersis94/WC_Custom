@@ -56,7 +56,7 @@ public class PublicationAction extends SBActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		
+		log.info("*****");
 		setModuleData(getPublications());
 	}
 	
