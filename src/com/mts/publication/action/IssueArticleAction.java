@@ -21,6 +21,8 @@ import com.siliconmtn.db.orm.*;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.content.DocumentAction;
 
+import opennlp.tools.util.StringUtil;
+
 /****************************************************************************
  * <b>Title</b>: IssueArticleAction.java
  * <b>Project</b>: WC_Custom
@@ -61,10 +63,12 @@ public class IssueArticleAction extends SBActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
+		log.info("*******");
 		try {
 			if (req.hasParameter("documentId")) {
 				setModuleData(getDocument(req.getParameter("documentId")));
 			} else {
+				log.info("******* Else");
 				String issueId = req.getParameter("issueId");
 				BSTableControlVO bst = new BSTableControlVO(req, MTSDocumentVO.class);
 				setModuleData(getArticles(issueId, bst));
@@ -105,19 +109,23 @@ public class IssueArticleAction extends SBActionAdapter {
 	 * @return
 	 */
 	public GridDataVO<MTSDocumentVO> getArticles(String issueId, BSTableControlVO bst) {
+		// Add the params
+		List<Object> vals = new ArrayList<>();
+		
+		// Build the sql
 		StringBuilder sql = new StringBuilder(184);
 		sql.append("select * from custom.mts_document a ");
 		sql.append("inner join sb_action b on a.action_id = b.action_id ");
 		sql.append("left outer join custom.mts_user c on a.author_id = c.user_id ");
-		sql.append("where issue_id = ? ");
+		sql.append("where 1=1 ");
+		if (!StringUtil.isEmpty(issueId)) {
+			sql.append("and issue_id = ? ");
+			vals.add(issueId);
+		}
 		sql.append("order by action_nm ");
-
-		log.debug(sql.length() + "|" + sql + "|" + issueId);
+		log.info(sql.length() + "|" + sql + "|" + issueId);
 		
-		// Add the params
-		List<Object> vals = new ArrayList<>();
-		vals.add(issueId);
-		
+		// Get the articles
 		DBProcessor db = new DBProcessor(getDBConnection());
 		return db.executeSQLWithCount(sql.toString(), vals, new MTSDocumentVO(), bst);
 	}
