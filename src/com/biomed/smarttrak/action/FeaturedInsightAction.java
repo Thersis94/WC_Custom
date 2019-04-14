@@ -143,6 +143,10 @@ public class FeaturedInsightAction extends InsightAction {
 		ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
 		actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
 
+		// Prevent changes to the fq field from poisoning other solr widgets on the same page.
+		String[] fq = null;
+		if (req.hasParameter("fq"))req.getParameterValues("fq").clone();
+		
 		//build the solr action
 		executeSolrRequest(req);
 
@@ -159,6 +163,8 @@ public class FeaturedInsightAction extends InsightAction {
 		}
 		//change out results sets
 		transposeResults(solVo, authorizedFeatures.subList(0, Convert.formatInteger((String) mod.getAttribute(ModuleVO.ATTRIBUTE_2),10)));
+		
+		req.setParameter("fq", fq, true);
 	}
 	
 	
