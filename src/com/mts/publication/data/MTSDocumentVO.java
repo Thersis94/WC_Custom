@@ -47,7 +47,12 @@ public class MTSDocumentVO extends DocumentVO {
 	private List<AssetVO> assets = new ArrayList<>();
 	private List<DocumentCategoryVO> categories = new ArrayList<>();
 	private MTSUserVO author;
-
+	
+	// Helpers
+	private String issueName;
+	private String publicationId;
+	private String publicationName;
+	
 	/**
 	 * 
 	 */
@@ -121,6 +126,30 @@ public class MTSDocumentVO extends DocumentVO {
 	@Column(name="author_id")
 	public String getAuthorId() {
 		return authorId;
+	}
+
+	/**
+	 * @return the issueName
+	 */
+	@Column(name="issue_nm", isReadOnly=true)
+	public String getIssueName() {
+		return issueName;
+	}
+
+	/**
+	 * @return the publicationId
+	 */
+	@Column(name="publication_id", isReadOnly=true)
+	public String getPublicationId() {
+		return publicationId;
+	}
+
+	/**
+	 * @return the publicationName
+	 */
+	@Column(name="publication_nm", isReadOnly=true)
+	public String getPublicationName() {
+		return publicationName;
 	}
 
 	/**
@@ -201,6 +230,27 @@ public class MTSDocumentVO extends DocumentVO {
 	@BeanSubElement
 	public void setAuthor(MTSUserVO author) {
 		this.author = author;
+	}
+
+	/**
+	 * @param issueName the issueName to set
+	 */
+	public void setIssueName(String issueName) {
+		this.issueName = issueName;
+	}
+
+	/**
+	 * @param publicationId the publicationId to set
+	 */
+	public void setPublicationId(String publicationId) {
+		this.publicationId = publicationId;
+	}
+
+	/**
+	 * @param publicationName the publicationName to set
+	 */
+	public void setPublicationName(String publicationName) {
+		this.publicationName = publicationName;
 	}
 
 }

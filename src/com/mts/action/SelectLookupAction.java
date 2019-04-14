@@ -10,15 +10,24 @@ import java.util.Map;
 
 // MTS Imports
 import com.mts.admin.action.UserAction;
+import com.mts.publication.action.IssueAction;
+import com.mts.publication.action.PublicationAction;
 import com.mts.publication.data.AssetVO.AssetType;
+import com.mts.publication.data.CategoryVO;
+import com.mts.publication.data.IssueVO;
+import com.mts.publication.data.PublicationVO;
 import com.mts.subscriber.data.MTSUserVO;
 
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.common.html.BSTableControlVO;
 import com.siliconmtn.data.GenericVO;
+import com.siliconmtn.db.orm.DBProcessor;
+import com.siliconmtn.db.orm.GridDataVO;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
 
 /****************************************************************************
@@ -63,6 +72,8 @@ public class SelectLookupAction extends SBActionAdapter {
 		keyMap.put("users", new GenericVO("getUsers", Boolean.TRUE));
 		keyMap.put("editors", new GenericVO("getEditors", Boolean.FALSE));
 		keyMap.put("assetTypes", new GenericVO("getAssetTypes", Boolean.FALSE));
+		keyMap.put("publications", new GenericVO("getPublications", Boolean.FALSE));
+		keyMap.put("issues", new GenericVO("getIssues", Boolean.TRUE));
 	}
 
 	/**
@@ -166,7 +177,19 @@ public class SelectLookupAction extends SBActionAdapter {
 	 * @return
 	 */
 	public List<GenericVO> getCategories() {
-		List<GenericVO> data = new ArrayList<>(16);
+		List<GenericVO> data = new ArrayList<>(64);
+		StringBuilder sql = new StringBuilder(128);
+		sql.append("select * from ").append(getCustomSchema());
+		sql.append("mts_category order by group_cd, parent_cd desc");
+		
+		DBProcessor db = new DBProcessor(getDBConnection());
+		List<CategoryVO> cats = db.executeSelect(sql.toString(), null, new CategoryVO());
+		for (CategoryVO cat : cats) {
+			if (StringUtil.isEmpty(cat.getParentCode())) 
+				data.add(new GenericVO(null, cat.getName()));
+			else 
+				data.add(new GenericVO(cat.getCategoryCode(), cat.getName()));
+		}
 		
 		return data;
 	}
@@ -199,7 +222,7 @@ public class SelectLookupAction extends SBActionAdapter {
 	}
 	
 	/**
-	 * 
+	 * gets a lit of asset types for uploading of assets
 	 * @return
 	 */
 	public List<GenericVO> getAssetTypes() {
@@ -210,6 +233,42 @@ public class SelectLookupAction extends SBActionAdapter {
 		}
 		
 		Collections.sort(data, (a, b) -> ((String)a.getValue()).compareTo((String)b.getValue()));
+		
+		return data;
+	}
+	
+	/**
+	 * gets a list of publications
+	 * @return
+	 */
+	public List<GenericVO> getPublications() {
+		List<GenericVO> data = new ArrayList<>(16);
+		
+		PublicationAction pa = new PublicationAction(getDBConnection(), getAttributes());
+		List<PublicationVO> pubs = pa.getPublications();
+		for (PublicationVO pub : pubs) {
+			if (pub.getNumberIssues() > 0) 
+				data.add(new GenericVO(pub.getPublicationId(), pub.getName()));
+		}
+		
+		return data;
+	}
+	
+	/**
+	 * Gets a list of issues for a given publication
+	 * @return
+	 */
+	public List<GenericVO> getIssues(ActionRequest req) {
+		List<GenericVO> data = new ArrayList<>(16);
+		BSTableControlVO bst = new BSTableControlVO(req, IssueVO.class);
+		bst.setLimit(1000);
+		String publicationId = req.getParameter("publicationId");
+		
+		IssueAction ia = new IssueAction(getDBConnection(), getAttributes());
+		GridDataVO<IssueVO> issues = ia.getIssues(publicationId, bst);
+		for (IssueVO issue : issues.getRowData()) {
+			data.add(new GenericVO(issue.getIssueId(), issue.getName()));
+		}
 		
 		return data;
 	}

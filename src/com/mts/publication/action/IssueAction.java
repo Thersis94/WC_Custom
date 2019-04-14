@@ -3,6 +3,7 @@ package com.mts.publication.action;
 // JDK 1.8.x
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 // MTS Libs
 import com.mts.publication.data.IssueVO;
@@ -14,7 +15,7 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.common.html.BSTableControlVO;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.*;
-
+import com.siliconmtn.db.pool.SMTDBConnection;
 //WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
 
@@ -50,6 +51,17 @@ public class IssueAction extends SBActionAdapter {
 	 */
 	public IssueAction(ActionInitVO actionInit) {
 		super(actionInit);
+	}
+	
+	/**
+	 * 
+	 * @param dbConn
+	 * @param attributes
+	 */
+	public IssueAction(SMTDBConnection dbConn, Map<String, Object> attributes) {
+		super();
+		setDBConnection(dbConn);
+		setAttributes(attributes);
 	}
 	
 	/*

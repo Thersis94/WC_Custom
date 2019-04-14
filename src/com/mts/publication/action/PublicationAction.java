@@ -2,6 +2,7 @@ package com.mts.publication.action;
 
 // JDK 1.8.x
 import java.util.List;
+import java.util.Map;
 
 // MTS Libs
 import com.mts.publication.data.PublicationVO;
@@ -12,7 +13,7 @@ import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.*;
-
+import com.siliconmtn.db.pool.SMTDBConnection;
 //WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
 
@@ -50,13 +51,23 @@ public class PublicationAction extends SBActionAdapter {
 		super(actionInit);
 	}
 	
+	/**
+	 * 
+	 * @param dbConn
+	 * @param attributes
+	 */
+	public PublicationAction(SMTDBConnection dbConn, Map<String, Object> attributes) {
+		super();
+		setDBConnection(dbConn);
+		setAttributes(attributes);
+	}
+	
 	/*
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.action.ActionRequest)
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		log.info("*****");
 		setModuleData(getPublications());
 	}
 	
