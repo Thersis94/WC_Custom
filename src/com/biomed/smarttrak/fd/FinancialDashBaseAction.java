@@ -435,8 +435,11 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 		
 		sql.append("group by ROW_ID, ROW_NM, r.YEAR_NO ");
 
-		if (TableType.COMPANY == dash.getTableType())
-			sql.append(", c.GRAPH_COLOR ");
+		if (TableType.COMPANY == dash.getTableType()) {
+			sql.append(", c.GRAPH_COLOR, r.section_id ");
+		} else {
+			sql.append(", r.COMPANY_ID ");
+		}
 
 
 		// Handle edit mode specific columns in the group by
