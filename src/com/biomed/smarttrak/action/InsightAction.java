@@ -106,10 +106,15 @@ public class InsightAction extends SimpleActionAdapter {
 			transposeModData(mod, vo);
 
 		} else {
+			// Prevent changes to the fq field from poisoning other solr widgets on the same page.
+			String[] fq = req.getParameterValues("fq");
+			
 			transposeRequest(req);
 			sa.retrieve(req);
 			mod = (ModuleVO) sa.getAttribute(Constants.MODULE_DATA);
 			sortFacets(mod.getActionData(), req);
+			
+			req.setParameter("fq", fq, true);
 		}
 	}
 
