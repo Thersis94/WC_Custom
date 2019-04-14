@@ -107,8 +107,7 @@ public class InsightAction extends SimpleActionAdapter {
 
 		} else {
 			// Prevent changes to the fq field from poisoning other solr widgets on the same page.
-			String[] fq = null;
-			if (req.hasParameter("fq"))req.getParameterValues("fq").clone();
+			String[] fq = req.getParameterValues("fq");
 			
 			transposeRequest(req);
 			sa.retrieve(req);

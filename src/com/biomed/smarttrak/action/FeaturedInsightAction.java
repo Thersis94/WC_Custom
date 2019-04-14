@@ -258,8 +258,7 @@ public class FeaturedInsightAction extends InsightAction {
 	 */
 	private void executeSolrRequest(ActionRequest req) throws ActionException {
 		// Prevent changes to the fq field from poisoning other solr widgets on the same page.
-		String[] fq = null;
-		if (req.hasParameter("fq"))req.getParameterValues("fq").clone();
+		String[] fq = req.getParameterValues("fq");
 		
 		//making a new solr action
 		SolrAction sa = new SmarttrakSolrAction(actionInit);
