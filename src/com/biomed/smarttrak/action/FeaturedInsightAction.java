@@ -257,7 +257,9 @@ public class FeaturedInsightAction extends InsightAction {
 	 * @throws ActionException 
 	 */
 	private void executeSolrRequest(ActionRequest req) throws ActionException {
-
+		// Prevent changes to the fq field from poisoning other solr widgets on the same page.
+		String[] fq = req.getParameterValues("fq");
+		
 		//making a new solr action
 		SolrAction sa = new SmarttrakSolrAction(actionInit);
 		sa.setDBConnection(dbConn);
@@ -266,6 +268,8 @@ public class FeaturedInsightAction extends InsightAction {
 		//transform some incoming reqParams to where Solr expects to see them
 		transposeRequest(req);
 		sa.retrieve(req);
+		
+		req.setParameter("fq", fq, true);
 	}
 
 	/**

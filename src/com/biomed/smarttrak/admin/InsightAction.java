@@ -18,7 +18,6 @@ import com.biomed.smarttrak.util.BiomedInsightIndexer;
 import com.biomed.smarttrak.util.SmarttrakSolrUtil;
 import com.biomed.smarttrak.util.SmarttrakTree;
 import com.biomed.smarttrak.vo.InsightVO;
-import com.biomed.smarttrak.vo.InsightVO.InsightStatusCd;
 import com.biomed.smarttrak.vo.InsightXRVO;
 import com.biomed.smarttrak.vo.UserVO;
 //SMT baselibs
@@ -654,8 +653,6 @@ public class InsightAction extends ManagementAction {
 			log.debug("deleting " + ivo);
 			ivo.setStatusCd(InsightVO.InsightStatusCd.D.name());
 			updateStatus(db, ivo);
-			publishChangeToSolr(ivo);
-
 		} else {
 			if (req.hasParameter("listSave")) {
 				updateFeatureOrder(ivo, db);
@@ -665,9 +662,8 @@ public class InsightAction extends ManagementAction {
 				saveInsight(db, ivo, StringUtil.isEmpty(req.getParameter(INSIGHT_ID)));
 				saveProfileDoc(req, ivo);
 			}
-			publishChangeToSolr(ivo);
 		}
-
+		writeToSolr(ivo);
 		req.setParameter(INSIGHT_ID, ivo.getInsightId());
 	}
 
@@ -748,24 +744,6 @@ public class InsightAction extends ManagementAction {
 			return insights.get(0);
 
 		return ivo;
-	}
-
-	/**
-	 * write to or removes from solr based on status code
-	 * @param ivo
-	 */
-	private void publishChangeToSolr(InsightVO ivo) {
-		log.debug("saving status chagne in solr");
-		//Add to Solr if published
-
-		if(InsightStatusCd.P.toString().equals(ivo.getStatusCd())) {
-			writeToSolr(ivo);
-		}
-
-		if(InsightStatusCd.D.toString().equals(ivo.getStatusCd())){
-			log.debug("writing to solar ");
-			deleteFromSolr(ivo);
-		}
 	}
 
 	/**
