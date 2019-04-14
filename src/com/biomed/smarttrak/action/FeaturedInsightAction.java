@@ -143,10 +143,6 @@ public class FeaturedInsightAction extends InsightAction {
 		ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
 		actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
 
-		// Prevent changes to the fq field from poisoning other solr widgets on the same page.
-		String[] fq = null;
-		if (req.hasParameter("fq"))req.getParameterValues("fq").clone();
-		
 		//build the solr action
 		executeSolrRequest(req);
 
@@ -163,8 +159,6 @@ public class FeaturedInsightAction extends InsightAction {
 		}
 		//change out results sets
 		transposeResults(solVo, authorizedFeatures.subList(0, Convert.formatInteger((String) mod.getAttribute(ModuleVO.ATTRIBUTE_2),10)));
-		
-		req.setParameter("fq", fq, true);
 	}
 	
 	
@@ -263,7 +257,10 @@ public class FeaturedInsightAction extends InsightAction {
 	 * @throws ActionException 
 	 */
 	private void executeSolrRequest(ActionRequest req) throws ActionException {
-
+		// Prevent changes to the fq field from poisoning other solr widgets on the same page.
+		String[] fq = null;
+		if (req.hasParameter("fq"))req.getParameterValues("fq").clone();
+		
 		//making a new solr action
 		SolrAction sa = new SmarttrakSolrAction(actionInit);
 		sa.setDBConnection(dbConn);
@@ -272,6 +269,8 @@ public class FeaturedInsightAction extends InsightAction {
 		//transform some incoming reqParams to where Solr expects to see them
 		transposeRequest(req);
 		sa.retrieve(req);
+		
+		req.setParameter("fq", fq, true);
 	}
 
 	/**
