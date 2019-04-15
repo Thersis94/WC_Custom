@@ -23,7 +23,7 @@ import com.biomed.smarttrak.vo.LocationVO;
 import com.biomed.smarttrak.vo.ProductVO;
 import com.biomed.smarttrak.vo.SectionVO;
 import com.biomed.smarttrak.action.AdminControllerAction.LinkType;
-
+import com.biomed.smarttrak.action.AdminControllerAction.Status;
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -89,7 +89,7 @@ public class CompanyAction extends SimpleActionAdapter {
 			if (role == null)
 				SecurityController.throwAndRedirect(req);
 
-			CompanyVO vo = retrieveCompany(req.getParameter("reqParam_1"), role, false);
+			CompanyVO vo = retrieveCompany(req.getParameter("reqParam_1"), role, false, false);
 			if (StringUtil.isEmpty(vo.getCompanyId())){
 				PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
 				sbUtil.manualRedirect(req,page.getFullPath());
@@ -111,7 +111,7 @@ public class CompanyAction extends SimpleActionAdapter {
 	 * @param companyId
 	 * @throws ActionException
 	 */
-	public CompanyVO retrieveCompany(String companyId, SmarttrakRoleVO role, boolean bypassProducts) throws ActionException {
+	public CompanyVO retrieveCompany(String companyId, SmarttrakRoleVO role, boolean bypassProducts, boolean allowAll) throws ActionException {
 		StringBuilder sql = new StringBuilder(275);
 		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		sql.append("SELECT c.*, parent.COMPANY_NM as PARENT_NM, d.SYMBOL_TXT ");
@@ -120,10 +120,12 @@ public class CompanyAction extends SimpleActionAdapter {
 		sql.append("ON c.PARENT_ID = parent.COMPANY_ID ");
 		sql.append("LEFT JOIN CURRENCY d on d.CURRENCY_TYPE_ID = c.CURRENCY_TYPE_ID ");
 		sql.append("WHERE c.COMPANY_ID = ? ");
+		if (!allowAll) sql.append("and c.STATUS_NO = ? ");
 
 		DBProcessor db = new DBProcessor(dbConn, (String)attributes.get(Constants.CUSTOM_DB_SCHEMA));
 		List<Object> params = new ArrayList<>();
 		params.add(companyId);
+		if (!allowAll) params.add(Status.P.toString());
 		CompanyVO company;
 		try {
 			List<Object> results = db.executeSelect(sql.toString(), params, new CompanyVO());
