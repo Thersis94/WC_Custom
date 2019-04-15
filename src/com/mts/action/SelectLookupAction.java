@@ -13,7 +13,6 @@ import com.mts.admin.action.UserAction;
 import com.mts.publication.action.IssueAction;
 import com.mts.publication.action.PublicationAction;
 import com.mts.publication.data.AssetVO.AssetType;
-import com.mts.publication.data.CategoryVO;
 import com.mts.publication.data.IssueVO;
 import com.mts.publication.data.PublicationVO;
 import com.mts.subscriber.data.MTSUserVO;
@@ -24,11 +23,13 @@ import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.common.html.BSTableControlVO;
 import com.siliconmtn.data.GenericVO;
-import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.orm.GridDataVO;
 import com.siliconmtn.util.Convert;
-import com.siliconmtn.util.StringUtil;
+
+// WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
+import com.smt.sitebuilder.action.metadata.MetadataVO;
+import com.smt.sitebuilder.action.metadata.OrgMetadataAction;
 
 /****************************************************************************
  * <b>Title</b>: SelectLookupAction.java
@@ -178,19 +179,17 @@ public class SelectLookupAction extends SBActionAdapter {
 	 */
 	public List<GenericVO> getCategories() {
 		List<GenericVO> data = new ArrayList<>(64);
-		StringBuilder sql = new StringBuilder(128);
-		sql.append("select * from ").append(getCustomSchema());
-		sql.append("mts_category order by group_cd, parent_cd desc");
+		OrgMetadataAction oma = new OrgMetadataAction(getDBConnection(), getAttributes());
+		List<MetadataVO> items = oma.getOrgMetadata("MTS", null, false);
 		
-		DBProcessor db = new DBProcessor(getDBConnection());
-		List<CategoryVO> cats = db.executeSelect(sql.toString(), null, new CategoryVO());
-		for (CategoryVO cat : cats) {
-			if (StringUtil.isEmpty(cat.getParentCode())) 
-				data.add(new GenericVO(null, cat.getName()));
-			else 
-				data.add(new GenericVO(cat.getCategoryCode(), cat.getName()));
+		for (MetadataVO md : items) {
+			data.add(new GenericVO(null, md.getFieldName()));
+			
+			for (MetadataVO option : md.getOptions()) {
+				data.add(new GenericVO(option.getMetadataId(), option.getFieldName()));
+			}
 		}
-		
+	
 		return data;
 	}
 
