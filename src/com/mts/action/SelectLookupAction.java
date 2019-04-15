@@ -23,7 +23,7 @@ import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.common.html.BSTableControlVO;
 import com.siliconmtn.data.GenericVO;
-import com.siliconmtn.db.orm.GridDataVO;
+import com.siliconmtn.db.orm.*;
 import com.siliconmtn.util.Convert;
 
 // WC Libs
@@ -138,13 +138,14 @@ public class SelectLookupAction extends SBActionAdapter {
 	 * @return
 	 */
 	public List<GenericVO> getRoles() {
-		List<GenericVO> data = new ArrayList<>(8);
-		/*
-		for (RPRole val : RPConstants.RPRole.values()) {
-			data.add(new GenericVO(val.getRoleId(), val.getRoleName()));
-		}
-		*/
-		return data;
+
+		StringBuilder sql = new StringBuilder(128);
+		sql.append("select role_id as key, role_nm as value from role ");
+		sql.append("where role_id = '100' or organization_id = 'MTS' "); 
+		sql.append("order by role_nm ");
+		
+		DBProcessor db = new DBProcessor(getDBConnection());
+		return db.executeSelect(sql.toString(), null, new GenericVO());
 	}
 	
 	/**

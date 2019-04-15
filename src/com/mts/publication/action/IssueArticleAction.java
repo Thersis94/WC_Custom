@@ -173,9 +173,9 @@ public class IssueArticleAction extends SBActionAdapter {
 		
 		// Filter by tool bar category filter
 		if (! StringUtil.isEmpty(req.getParameter("filterCategoryId"))) {
-			sql.append("and a.document_id in (select document_id from ");
-			sql.append(getCustomSchema()).append("mts_category_document_xr ");
-			sql.append("where category_cd = ?) ");
+			sql.append("and a.document_id in (select action_id from ");
+			sql.append("widget_meta_data_xr ");
+			sql.append("where widget_meta_data_id = ?) ");
 			vals.add(req.getParameter("filterCategoryId"));
 		}
 	}

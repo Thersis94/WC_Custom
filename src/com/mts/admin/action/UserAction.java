@@ -17,8 +17,9 @@ import com.siliconmtn.common.html.BSTableControlVO;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.*;
 import com.siliconmtn.db.pool.SMTDBConnection;
+
 //WC Libs
-import com.smt.sitebuilder.action.SBActionAdapter;
+import com.smt.sitebuilder.action.user.UserBaseWidget;
 
 /****************************************************************************
  * <b>Title</b>: UserAction.java
@@ -33,12 +34,12 @@ import com.smt.sitebuilder.action.SBActionAdapter;
  * @updates:
  ****************************************************************************/
 
-public class UserAction extends SBActionAdapter {
+public class UserAction extends UserBaseWidget {
 	
 	/**
 	 * Ajax Controller key for this action
 	 */
-	public static final String AJAX_KEY = "issue";
+	public static final String AJAX_KEY = "users";
 	
 	/**
 	 * 
@@ -72,6 +73,8 @@ public class UserAction extends SBActionAdapter {
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		
+		BSTableControlVO bst = new BSTableControlVO(req, MTSUserVO.class);
+		setModuleData(getAllUsers(bst));
 	}
 	
 	/**
@@ -80,10 +83,11 @@ public class UserAction extends SBActionAdapter {
 	 */
 	public GridDataVO<MTSUserVO> getAllUsers(BSTableControlVO bst) {
 		StringBuilder sql = new StringBuilder(128);
-		sql.append(DBUtil.SELECT_FROM_STAR).append(getCustomSchema()).append("mts_user ");
-		sql.append("where role_id in ('100', 'AUTHOR') ");
+		sql.append(DBUtil.SELECT_FROM_STAR).append(getCustomSchema()).append("mts_user a ");
+		sql.append(DBUtil.INNER_JOIN).append("role b on a.role_id = b.role_id ");
+		sql.append("where 1=1 ");
 		sql.append("order by last_nm, first_nm ");
-		log.debug(sql.length() + "|" + sql);
+		log.info(sql.length() + "|" + sql);
 		
 		// Add the params
 		List<Object> vals = new ArrayList<>();
@@ -107,15 +111,5 @@ public class UserAction extends SBActionAdapter {
 		DBProcessor db = new DBProcessor(getDBConnection());
 		return db.executeSelect(sql.toString(), vals, new MTSUserVO());
 	}
-	
-	/*
-	 * (non-Javadoc)
-	 * @see com.smt.sitebuilder.action.SBActionAdapter#update(com.siliconmtn.action.ActionRequest)
-	 */
-	@Override
-	public void update(ActionRequest req) throws ActionException {
-		
-	}
-
 }
 

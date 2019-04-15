@@ -1,6 +1,8 @@
 package com.mts.action;
 
+import com.mts.admin.action.UserAction;
 import com.mts.publication.action.AssetAction;
+import com.mts.publication.action.CategoryAction;
 import com.mts.publication.action.IssueAction;
 import com.mts.publication.action.IssueArticleAction;
 import com.mts.publication.action.PublicationAction;
@@ -71,7 +73,8 @@ public class AjaxControllerFacadeAction extends FacadeActionAdapter {
 		actionMap.put(IssueAction.AJAX_KEY, IssueAction.class);
 		actionMap.put(AssetAction.AJAX_KEY, AssetAction.class);
 		actionMap.put(IssueArticleAction.AJAX_KEY, IssueArticleAction.class);
-		
+		actionMap.put(CategoryAction.AJAX_KEY, CategoryAction.class);
+		actionMap.put(UserAction.AJAX_KEY, UserAction.class);
 	}
 
 	/*
