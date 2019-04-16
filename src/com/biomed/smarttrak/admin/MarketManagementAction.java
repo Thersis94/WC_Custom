@@ -301,6 +301,7 @@ public class MarketManagementAction extends ManagementAction {
 			} else {
 				req.setParameter(ACTION_TARGET, ActionTarget.MARKETATTRIBUTE.toString());
 			}
+			req.setParameter("attributeTypeCd", attr.getAttributeTypeCd());
 		}
 
 		req.setParameter("rootNode", attr.getAttributeId());

@@ -471,6 +471,7 @@ public class CompanyManagementAction extends ManagementAction {
 			} else {
 				req.setParameter(ACTION_TYPE, ActionType.COMPANYATTRIBUTE.toString());
 			}
+			req.setParameter("attributeTypeCd", attr.getAttributeTypeName());
 		}
 		if (!req.hasParameter("attributeTypeName"))
 			req.setParameter("attributeTypeName", attr.getAttributeTypeName());

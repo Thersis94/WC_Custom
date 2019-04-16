@@ -153,12 +153,12 @@ public class LinkReportAction extends SimpleActionAdapter {
 		if (Section.COMPANY.name().equals(vo.getSection())) {
 			sec = Section.COMPANY.getPageURL();
 			actionType="companyAdmin&companyId=";
-			contentType="&attributeTypeCd=HTML&actionTarget=UNKNOWNATTRIBUTE&companyAttributeId=";
+			contentType="&actionTarget=UNKNOWNATTRIBUTE&companyAttributeId=";
 			nameType="&companyName=";
 		} else if (Section.PRODUCT.name().equals(vo.getSection())) {
 			sec = Section.PRODUCT.getPageURL();
 			actionType="productAdmin&productId=";
-			contentType="&actionTarget=UNKNOWNATTRIBUTE&attributeTypeCd=HTML&productAttributeId=";
+			contentType="&actionTarget=UNKNOWNATTRIBUTE&productAttributeId=";
 			nameType="&productName=";
 		} else if (Section.INSIGHT.name().equals(vo.getSection())) {
 			sec = Section.INSIGHT.getPageURL();
@@ -169,7 +169,7 @@ public class LinkReportAction extends SimpleActionAdapter {
 		} else if (Section.MARKET.name().equals(vo.getSection())) {
 			sec = Section.MARKET.getPageURL();
 			actionType="marketAdmin&marketId=";
-			contentType="&actionTarget=UNKNOWNATTRIBUTE&attributeTypeCd=HTML&marketAttributeId=";
+			contentType="&actionTarget=UNKNOWNATTRIBUTE&marketAttributeId=";
 			nameType="&marketName=";
 		} else {
 			//updates - they don't have a page - just link to the homepage /qs/<id>

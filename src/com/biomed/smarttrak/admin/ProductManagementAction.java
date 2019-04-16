@@ -515,6 +515,7 @@ public class ProductManagementAction extends ManagementAction {
 			} else {
 				req.setParameter(ACTION_TARGET, ActionTarget.PRODUCTATTRIBUTE.toString());
 			}
+			req.setParameter("attributeTypeCd", attr.getAttributeTypeCd());
 		}
 		req.setParameter("rootNode", attr.getAttributeId());
 	}
