@@ -13,6 +13,7 @@ import com.biomed.smarttrak.admin.AccountAction;
 import com.biomed.smarttrak.admin.AccountNotesAction;
 import com.biomed.smarttrak.admin.AccountPermissionAction;
 import com.biomed.smarttrak.admin.AccountUserAction;
+import com.biomed.smarttrak.admin.AdminSiteSearchAction;
 import com.biomed.smarttrak.admin.AuditLogAction;
 import com.biomed.smarttrak.admin.CRMAction;
 import com.biomed.smarttrak.admin.CompanyManagementAction;
@@ -243,6 +244,7 @@ public class AdminControllerAction extends SimpleActionAdapter {
 		ACTIONS.put("feeds", CustomRSSFacadeAction.class);
 		ACTIONS.put("dashboard", DashboardAction.class);
 		ACTIONS.put("smartSearch", SmartSearchAction.class);
+		ACTIONS.put("siteSearch", AdminSiteSearchAction.class);
 		ACTIONS.put("feature", FeaturedInsightsAction.class);
 		ACTIONS.put("dupCheck", DuplicateItemCheckerAction.class);
 		ACTIONS.put(DEFAULT_ACTION, com.biomed.smarttrak.action.UpdatesAction.class);

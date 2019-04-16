@@ -288,7 +288,7 @@ public class ProductManagementAction extends ManagementAction {
 		ProductAction pa = new ProductAction(actionInit);
 		pa.setDBConnection(dbConn);
 		pa.setAttributes(attributes);
-		super.putModuleData(pa.retrieveProduct(req.getParameter("productId"), AdminControllerAction.STAFF_ROLE_LEVEL));
+		super.putModuleData(pa.retrieveProduct(req.getParameter("productId"), AdminControllerAction.STAFF_ROLE_LEVEL, true));
 	}
 
 

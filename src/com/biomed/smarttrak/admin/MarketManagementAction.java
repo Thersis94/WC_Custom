@@ -222,7 +222,7 @@ public class MarketManagementAction extends ManagementAction {
 		MarketAction ma = new MarketAction(actionInit);
 		ma.setDBConnection(dbConn);
 		ma.setAttributes(attributes);
-		super.putModuleData(ma.retrieveFromDB(req.getParameter(MARKET_ID), req, true));
+		super.putModuleData(ma.retrieveFromDB(req.getParameter(MARKET_ID), req, true, true));
 	}
 
 

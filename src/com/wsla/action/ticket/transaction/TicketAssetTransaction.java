@@ -16,7 +16,10 @@ import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
+import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.EnumUtil;
+import com.siliconmtn.util.StringUtil;
+import com.smt.sitebuilder.common.constants.Constants;
 // WC Libs
 import com.wsla.action.ticket.BaseTransactionAction;
 import com.wsla.action.ticket.CASSelectionAction;
@@ -80,17 +83,48 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 	@Override
 	public void build(ActionRequest req) throws ActionException {
 		try {
+			
+			//if request is a bypass only bypass
+			if(req.hasParameter("isBypass")) {
+				TicketVO ticket = new TicketEditAction(getDBConnection(), getAttributes()).getBaseTicket(StringUtil.checkVal(req.getParameter("ticketId")));
+				UserDataVO profile = (UserDataVO)req.getSession().getAttribute(Constants.USER_DATA);
+				UserVO user = (UserVO)profile.getUserExtendedInfo();
+				byPassAsset(ticket, user, req);
+			}
+			//if request is an approvale only approve
 			if (req.hasParameter("isApproval")) {
 				approveAsset(req);
-			} else {
+			} 
+			
+			//if its not a bypass or an approval save
+			if(!req.hasParameter("isBypass") && !req.hasParameter("isApproval")) {
 				saveAsset(req);
 			}
+			
+			
 		} catch (InvalidDataException | DatabaseException e) {
 			log.error("Unable to save asset", e);
 			putModuleData("", 0, false, e.getLocalizedMessage(), true);
 		}
 	}
 	
+	/**
+	 * used to by pass having to save assets
+	 * @param req 
+	 * @param req
+	 */
+	private void byPassAsset(TicketVO ticket, UserVO user, ActionRequest req) {
+		
+		try {
+			addLedger(ticket.getTicketId(), user.getUserId(), ticket.getStatusCode(), LedgerSummary.ASSETS_BYPASSED.summary, null);
+			finalizeApproval(req, true, true);
+		} catch (DatabaseException e) {
+			log.error("could not change status ",e);
+			putModuleData(ticket, 0, false, e.getLocalizedMessage(), true);
+		}
+		
+	}
+
 	/**
 	 * Saves a file asset loaded into the system
 	 * @param req
@@ -354,9 +388,17 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 		StatusCode status = isApproved ? StatusCode.USER_DATA_COMPLETE : StatusCode.USER_CALL_DATA_INCOMPLETE;
 		String summary = isApproved ? LedgerSummary.ASSET_APPROVED.summary : LedgerSummary.ASSET_REJECTED.summary;
 		
+		//if its not approved we need to capture the text added in for the rejection.  
+		//	which is stored in ticket data meta value 1
+		if (!isApproved && req.hasParameter("metaValue1")) {
+			summary = summary + ": " + StringUtil.checkVal(req.getStringParameter("metaValue1"));
+		}
+		
 		// Update the status based on approval or rejection.
 		TicketVO ticket = new TicketVO(req);
 		UserVO user = (UserVO) getAdminUser(req).getUserExtendedInfo();
+		
+		
 		TicketLedgerVO ledger = changeStatus(ticket.getTicketId(), user.getUserId(), status, summary, null);
 		buildNextStep(ledger.getStatusCode(), null, false);
 		if (!isApproved) return;

@@ -133,11 +133,18 @@ public class TourVenueWidget extends SBActionAdapter {
 	 * @return
 	 */
 	private List<VenueTourVO> getAllEvents(Double latitude, Double longitude) {
+		boolean useGeocode = latitude != null && longitude != null;
 		String schema = getCustomSchema();
 		StringBuilder sql = new StringBuilder(250);
-		sql.append("select *, core.geoCalcDistance(cast(? as numeric), cast(? as numeric), b.latitude_no, ");
-		sql.append("b.longitude_no, 'mi') as distance from ");
-		sql.append(schema).append("ps_venue_tour_xr a ");
+		sql.append("select *, ");
+		if (useGeocode) {
+			sql.append("core.geoCalcDistance(cast(? as numeric), cast(? as numeric), b.latitude_no, ");
+			sql.append("b.longitude_no, 'mi') as distance ");
+		} else {
+			sql.append("0 as distance ");
+		}
+		
+		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("ps_venue_tour_xr a ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("ps_venue b on a.venue_id=b.venue_id ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("ps_tour c on a.tour_id = c.tour_id ");
 		sql.append(DBUtil.WHERE_CLAUSE).append("a.event_dt >= ? ");
@@ -145,8 +152,10 @@ public class TourVenueWidget extends SBActionAdapter {
 
 		// Add the params
 		List<Object> vals = new ArrayList<>();
-		vals.add(latitude);
-		vals.add(longitude);
+		if (useGeocode) {
+			vals.add(latitude);
+			vals.add(longitude);
+		}
 		vals.add(Convert.formatStartDate(Convert.formatDate(new Date(), Calendar.DAY_OF_YEAR, -1)));
 
 		// execute the sql
