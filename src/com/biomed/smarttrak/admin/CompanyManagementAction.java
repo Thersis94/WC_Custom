@@ -258,7 +258,7 @@ public class CompanyManagementAction extends ManagementAction {
 		CompanyAction ca = new CompanyAction(actionInit);
 		ca.setDBConnection(dbConn);
 		ca.setAttributes(attributes);
-		putModuleData(ca.retrieveCompany(req.getParameter(COMPANY_ID), role, true));
+		putModuleData(ca.retrieveCompany(req.getParameter(COMPANY_ID), role, true, true));
 	}
 
 

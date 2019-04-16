@@ -73,23 +73,31 @@ public class CustomerMemberAction extends SBActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		setModuleData(getCustomerMembers(req.getParameter("customerId")));
+		setModuleData(getCustomerMembers(req.getParameter("customerId"), req.getParameter("memberId")));
 	}
 	
 	/**
 	 * Gets the attributes
 	 * @return
 	 */
-	public List<CustomerMemberVO> getCustomerMembers(String customerId) {
+	public List<CustomerMemberVO> getCustomerMembers(String customerId, String memberId) {
 		List<Object> vals = new ArrayList<>();
-		vals.add(customerId);
 		
 		StringBuilder sql = new StringBuilder(128);
-		sql.append("select * from ").append(getCustomSchema()).append("ps_customer_member_xr a ");
-		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("ps_member b ");
-		sql.append("on a.member_id = b.member_id ");
-		sql.append(DBUtil.WHERE_CLAUSE).append("customer_id = ? ");
-		sql.append("order by last_nm, first_nm");
+		sql.append(DBUtil.SELECT_FROM_STAR).append(getCustomSchema()).append("ps_customer_member_xr a ");
+		
+		if (!StringUtil.isEmpty(customerId)) {
+			sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("ps_member b on a.member_id = b.member_id ");
+			sql.append(DBUtil.WHERE_CLAUSE).append("customer_id = ? ");
+			sql.append(DBUtil.ORDER_BY).append("last_nm, first_nm");
+			vals.add(customerId);
+		} else {
+			sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("ps_customer b on a.customer_id = b.customer_id ");
+			sql.append(DBUtil.WHERE_CLAUSE).append("member_id = ? ");
+			sql.append(DBUtil.ORDER_BY).append("customer_nm");
+			vals.add(memberId);
+		}
+		
 		log.debug(sql.length() + "|" + sql);
 		
 		DBProcessor db = new DBProcessor(getDBConnection());
@@ -105,9 +113,10 @@ public class CustomerMemberAction extends SBActionAdapter {
 		CustomerMemberVO custMem = new CustomerMemberVO(req);
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		try {
-			if (req.getBooleanParameter("isDelete")) db.delete(custMem);
-			else if (!StringUtil.isEmpty(req.getParameter("customerMemberId"))){
-				assignDefaultMember(req.getParameter("customerId"), req.getParameter("customerMemberId"));
+			if (req.getBooleanParameter("isDelete")) {
+				db.delete(custMem);
+			} else if (!StringUtil.isEmpty(req.getParameter("customerMemberId"))){
+				assignDefaultMember(req.getParameter("customerMemberId"));
 			} else {
 				db.insert(custMem);
 			}
@@ -121,21 +130,22 @@ public class CustomerMemberAction extends SBActionAdapter {
 	
 	/**
 	 * 
-	 * @param customerId
 	 * @param customerMemberId
 	 * @throws SQLException 
 	 */
-	public void assignDefaultMember(String customerId, String customerMemberId) 
+	public void assignDefaultMember(String customerMemberId) 
 	throws SQLException {
 		// Clear out all of the default flags
 		StringBuilder sql = new StringBuilder(96);
 		sql.append("update ").append(getCustomSchema()).append("ps_customer_member_xr ");
-		sql.append("set default_flg = 0 where customer_id = ?");
+		sql.append("set default_flg = 0 where customer_id = (");
+		sql.append("select customer_id from ").append(getCustomSchema());
+		sql.append("ps_customer_member_xr where customer_member_id = ?)");
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			ps.setString(1, customerId);
+			ps.setString(1, customerMemberId);
 			ps.executeUpdate();
 		}
-		log.debug(sql + "|" + customerId);
+		log.debug(sql + "|" + customerMemberId);
 		
 		// Update the default
 		sql = new StringBuilder(96);

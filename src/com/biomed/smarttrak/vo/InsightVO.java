@@ -403,6 +403,7 @@ public class InsightVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntf
 	/**
 	 * @return the statusCd
 	 */
+	@SolrField(name="status_s")
 	@Column(name="status_cd")
 	public String getStatusCd() {
 		return statusCd;

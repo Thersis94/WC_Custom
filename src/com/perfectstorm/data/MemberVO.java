@@ -43,6 +43,7 @@ public class MemberVO extends BeanDataVO {
 	private String emailAddress;
 	private String phoneNumber;
 	private String locale;
+	private int sendSmsFlag;
 	private Date createDate;
 	private Date updateDate;
 	
@@ -369,6 +370,21 @@ public class MemberVO extends BeanDataVO {
 	 */
 	public void setAliasName(String aliasName) {
 		this.aliasName = aliasName;
+	}
+
+	/**
+	 * @return the sendSmsFlag
+	 */
+	@Column(name="send_sms_flg")
+	public int getSendSmsFlag() {
+		return sendSmsFlag;
+	}
+
+	/**
+	 * @param sendSmsFlag the sendSmsFlag to set
+	 */
+	public void setSendSmsFlag(int sendSmsFlag) {
+		this.sendSmsFlag = sendSmsFlag;
 	}
 
 }

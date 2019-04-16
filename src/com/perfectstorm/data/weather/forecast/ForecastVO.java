@@ -33,6 +33,7 @@ public class ForecastVO extends BeanDataVO {
 	
 	// Base forecast data
 	private Date startDate;
+	private Date localStartDate;
 	private Date endDate;
 	private String forecastName;
 	private boolean isDaytime;
@@ -99,6 +100,20 @@ public class ForecastVO extends BeanDataVO {
 	 */
 	public void setStartDate(Date startDate) {
 		this.startDate = startDate;
+	}
+
+	/**
+	 * @return the localStartDate
+	 */
+	public Date getLocalStartDate() {
+		return localStartDate;
+	}
+
+	/**
+	 * @param localStartDate the localStartDate to set
+	 */
+	public void setLocalStartDate(Date localStartDate) {
+		this.localStartDate = localStartDate;
 	}
 
 	/**

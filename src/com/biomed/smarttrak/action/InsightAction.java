@@ -9,6 +9,7 @@ import java.util.List;
 import org.apache.solr.client.solrj.SolrQuery.ORDER;
 
 import com.biomed.smarttrak.action.AdminControllerAction.Section;
+import com.biomed.smarttrak.action.AdminControllerAction.Status;
 //WC customs
 import com.biomed.smarttrak.admin.AccountUserAction;
 import com.biomed.smarttrak.admin.SectionHierarchyAction;
@@ -17,8 +18,8 @@ import com.biomed.smarttrak.security.SmarttrakRoleVO;
 import com.biomed.smarttrak.util.BiomedLinkCheckerUtil;
 import com.biomed.smarttrak.util.SmarttrakTree;
 import com.biomed.smarttrak.vo.InsightVO;
+import com.biomed.smarttrak.vo.InsightVO.InsightStatusCd;
 import com.biomed.smarttrak.vo.UserVO;
-
 //SMT Baselibs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -31,7 +32,6 @@ import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.user.HumanNameIntfc;
 import com.siliconmtn.util.user.NameComparator;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
-
 //WebCrescendo
 import com.smt.sitebuilder.action.search.SolrAction;
 import com.smt.sitebuilder.action.search.SolrFieldVO.FieldType;
@@ -83,7 +83,7 @@ public class InsightAction extends SimpleActionAdapter {
 			if (role == null)
 				SecurityController.throwAndRedirect(req);
 
-			InsightVO vo = getInsightById(StringUtil.checkVal(req.getParameter(REQ_PARAM_1)));
+			InsightVO vo = getInsightById(StringUtil.checkVal(req.getParameter(REQ_PARAM_1)), Convert.formatBoolean(req.getParameter("preview")));
 			if (vo == null) {
 				sbUtil.manualRedirect(req, page.getFullPath());
 				return;
@@ -107,10 +107,15 @@ public class InsightAction extends SimpleActionAdapter {
 			transposeModData(mod, vo);
 
 		} else {
+			// Prevent changes to the fq field from poisoning other solr widgets on the same page.
+			String[] fq = req.getParameterValues("fq");
+			
 			transposeRequest(req);
 			sa.retrieve(req);
 			mod = (ModuleVO) sa.getAttribute(Constants.MODULE_DATA);
 			sortFacets(mod.getActionData(), req);
+			
+			req.setParameter("fq", fq, true);
 		}
 	}
 
@@ -168,6 +173,7 @@ public class InsightAction extends SimpleActionAdapter {
 		String[] fqs = new String[0];
 		List<String> data = new ArrayList<>(Arrays.asList(fqs));
 		data.add(SearchDocumentHandler.MODULE_TYPE + ":" + vo.getTypeCd());
+
 		req.setParameter("fq", data.toArray(new String[data.size()]), true);
 
 		// have to temp remove the req param so it doesn't get picked up as an document id request
@@ -241,6 +247,8 @@ public class InsightAction extends SimpleActionAdapter {
 			}
 		}
 
+		data.add(StringUtil.join("status_s:", InsightStatusCd.P.name()));
+
 		// put the new list of filter queries back on the request
 		req.setParameter("fq", data.toArray(new String[data.size()]), true);
 	}
@@ -253,7 +261,7 @@ public class InsightAction extends SimpleActionAdapter {
 	 * @return
 	 */
 	@SuppressWarnings("unchecked")
-	protected InsightVO getInsightById(String insightId) {
+	protected InsightVO getInsightById(String insightId, boolean allowAll) {
 		String schema = (String) getAttributes().get(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sb = new StringBuilder(350);
 		sb.append("select a.*, p.first_nm, p.last_nm, b.section_id ");
@@ -261,10 +269,12 @@ public class InsightAction extends SimpleActionAdapter {
 		sb.append("inner join profile p on a.creator_profile_id=p.profile_id ");
 		sb.append("left outer join ").append(schema).append("biomedgps_insight_section b on a.insight_id=b.insight_id ");
 		sb.append("where a.insight_id = ? ");
+		if (!allowAll) sb.append("and status_cd = ? ");
 		log.debug("sql: " + sb + "|" + insightId);
 
 		List<Object> params = new ArrayList<>();
 		params.add(insightId);
+		if (!allowAll) params.add(Status.P.toString());
 
 		DBProcessor db = new DBProcessor(dbConn, schema);
 		List<Object> insight = db.executeSelect(sb.toString(), params, new InsightVO());

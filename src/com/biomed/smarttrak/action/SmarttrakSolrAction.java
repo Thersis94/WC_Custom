@@ -37,6 +37,7 @@ public class SmarttrakSolrAction extends SolrAction {
 		super(actionInit);
 	}
 
+	
 	/*
 	 * overrides the superclass method to make a decision about WHICH role ACL we should use for the given query.
 	 * Fall-back through a series of settings - 1) explicitly set 2) by Section URL 3) Default to Browse.
