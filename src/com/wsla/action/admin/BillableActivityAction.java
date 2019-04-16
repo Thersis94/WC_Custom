@@ -9,8 +9,10 @@ import java.util.Map;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.common.html.BSTableControlVO;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
+import com.siliconmtn.db.orm.GridDataVO;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
@@ -18,6 +20,7 @@ import com.siliconmtn.util.StringUtil;
 // WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.wsla.data.ticket.BillableActivityVO;
+
 
 /****************************************************************************
  * <b>Title</b>: BillableActivityAction.java
@@ -37,6 +40,8 @@ public class BillableActivityAction extends SBActionAdapter {
 	 * Key for the Ajax Controller to utilize when calling this class
 	 */
 	public static final String AJAX_KEY = "billable";
+	//used as the parent id for all of the misc. activities
+	public static final String MISC_ACT_CODE = "MISC_ACTIVITY";
 	
 	/**
 	 * 
@@ -69,26 +74,45 @@ public class BillableActivityAction extends SBActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		setModuleData(getCodes(null));
+		BSTableControlVO bst = new BSTableControlVO(req, BillableActivityVO.class);
+		setModuleData(getCodes(null, req.getBooleanParameter("isMiscActivites"), bst));
 	}
 	
 	/**
-	 * Gets the complete list of codes
+	 * Gets the complete or filtered list of codes
 	 * @return
 	 */
-	public List<BillableActivityVO> getCodes(String btc) {
+	public GridDataVO<BillableActivityVO> getCodes(String btc, boolean isMiscActivites, BSTableControlVO bst) {
 		List<Object> vals = new ArrayList<>();
 		StringBuilder sql = new StringBuilder(80);
 		sql.append(DBUtil.SELECT_FROM_STAR).append(getCustomSchema()).append("wsla_billable_activity ");
+		sql.append("where 1=1 ");
 		if (! StringUtil.isEmpty(btc)) {
-			sql.append("where billable_type_cd = ? ");
+			sql.append("and billable_type_cd = ? ");
 			vals.add(btc);
 		}
-		sql.append("order by activity_nm");
-		log.debug(sql.length() + "|" + sql);
+		if(isMiscActivites) {
+			sql.append("and parent_id = ? ");
+			vals.add(MISC_ACT_CODE);
+		}else {
+			sql.append("and (parent_id != ? or parent_id is null) ");
+			vals.add(MISC_ACT_CODE);
+		}
 		
+		if(!StringUtil.isEmpty(bst.getSearch())) {
+			sql.append("and lower(activity_nm) like ? ");
+			vals.add(bst.getLikeSearch());
+		}
+		sql.append(bst.getSQLOrderBy("activity_nm", "asc"));
+		log.debug(sql.length() + "|" + sql);
 		DBProcessor db = new DBProcessor(getDBConnection());
-		return db.executeSelect(sql.toString(), vals, new BillableActivityVO());
+		db.setGenerateExecutedSQL(log.isDebugEnabled());
+		
+		GridDataVO<BillableActivityVO> data = db.executeSQLWithCount(sql.toString(), vals, new BillableActivityVO(), bst);
+		
+		log.debug("@ " + data);
+				
+		return data;
 	}
 
 	/*

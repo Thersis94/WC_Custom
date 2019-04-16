@@ -61,6 +61,8 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 	 */
 	public static final String PROOF_PURCHASE = "attr_proofPurchase";
 	public static final String SERIAL_NO = "attr_serialNumberImage";
+	public static final String EQUIPMENT_IMAGE = "attr_unitImage";
+	public static final int STATUS_NOT_FOUND = 2;
 	
 	/**
 	 * 
@@ -178,7 +180,7 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 		if("attr_credit_memo".equalsIgnoreCase(req.getParameter("attributeCode"))) {
 			log.debug(" save the attribute id in credit memo table");
 			saveMemoAssetId(req.getParameter("creditMemoId"), td.getDataEntryId(), req.getDoubleParameter("refundAmount"), req.getParameter("approvedBy"));
-			
+			addLedger(td.getTicketId(), user.getUserId(), null, LedgerSummary.CREDIT_MEMO_APPROVED.summary, null);
 		}
 	}
 	
@@ -233,7 +235,8 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 		// Retailers aren't required to submit a POP.
 		ProductOwner owner = getProductOwnerType(td.getTicketId());
 		int popApproval = getDefaultPopApprovalLevel(owner);
-		int snApproval = 2;
+		int snApproval = STATUS_NOT_FOUND;
+		int eqImageApproval = STATUS_NOT_FOUND;
 		
 		// Determine the approval levels for each asset type requiring approval
 		for (TicketDataVO asset : assets) {
@@ -244,11 +247,15 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 				popApproval = getApprovalLevel(popApproval, approvalLevel);
 			else if (SERIAL_NO.equals(attributeCode))
 				snApproval = getApprovalLevel(snApproval, approvalLevel);
+			else if (EQUIPMENT_IMAGE.equals(attributeCode))
+				eqImageApproval = getApprovalLevel(eqImageApproval, approvalLevel);
 		}
 		
-		// Approval is not needed if both are approved or at least one hasn't been submitted
+		// Approval is not needed if all three are approved or at least one hasn't been submitted
 		int approvedLevel = ApprovalCode.APPROVED.getLevel();
-		if ((popApproval == approvedLevel && snApproval == approvedLevel) || popApproval == 2 || snApproval == 2)
+		boolean approvalLevelCheck = getApproveLevelCheck(popApproval,snApproval, eqImageApproval, approvedLevel);
+		boolean pendingLevelCheck = getPendingCheck(popApproval,snApproval, eqImageApproval);
+		if (approvalLevelCheck || pendingLevelCheck)
 			return false;
 		
 		// Approval is needed when one or both are in the UNKNOWN state
@@ -256,6 +263,29 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 		return popApproval == unknownApprovalLevel || snApproval == unknownApprovalLevel;
 	}
 	
+	/**
+	 * checking that the images have a known status
+	 * @param popApproval
+	 * @param snApproval
+	 * @param eqImageApproval
+	 * @return
+	 */
+	private boolean getPendingCheck(int popApproval, int snApproval, int eqImageApproval) {
+		return (popApproval == STATUS_NOT_FOUND || snApproval == STATUS_NOT_FOUND || eqImageApproval == STATUS_NOT_FOUND);
+	}
+
+	/**
+	 * checking if the images have an approved status
+	 * @param popApproval
+	 * @param snApproval
+	 * @param eqImageApproval
+	 * @param approvedLevel
+	 * @return
+	 */
+	private boolean getApproveLevelCheck(int popApproval, int snApproval, int eqImageApproval, int approvedLevel) {
+		return (popApproval == approvedLevel && snApproval == approvedLevel && eqImageApproval == approvedLevel) ;
+	}
+
 	/**
 	 * Determines the current owner type
 	 * 
@@ -309,8 +339,8 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 		td.setUpdateDate(new Date());
 		saveApproval(td);
 
-		// Ticket status is only managed when approving/rejecting a POP or SN
-		if (PROOF_PURCHASE.equals(td.getAttributeCode()) || SERIAL_NO.equals(td.getAttributeCode())) 
+		// Ticket status is only managed when approving/rejecting a POP, SN or equipment image
+		if (PROOF_PURCHASE.equals(td.getAttributeCode()) || SERIAL_NO.equals(td.getAttributeCode()) || EQUIPMENT_IMAGE.equals(td.getAttributeCode())) 
 			manageTicketApproval(td.getTicketId(), req);
 	}
 	
@@ -344,10 +374,13 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 		}
 		
 		// Manage the status based on approval
-		if (approvals.get(PROOF_PURCHASE) != null && approvals.get(SERIAL_NO) != null) {
+		if (approvals.get(PROOF_PURCHASE) != null && approvals.get(SERIAL_NO) != null && approvals.get(EQUIPMENT_IMAGE) != null) {
+			
 			boolean popHasApproval = !approvals.get(PROOF_PURCHASE).isRejected();
 			boolean snHasApproval = !approvals.get(SERIAL_NO).isRejected();
-			finalizeApproval(req, popHasApproval && snHasApproval, true);
+			boolean eiHasApproval = !approvals.get(EQUIPMENT_IMAGE).isRejected();
+			
+			finalizeApproval(req, popHasApproval && snHasApproval && eiHasApproval , true);
 		}
 	}
 	
