@@ -55,6 +55,7 @@ public class CompanyManagementAction extends ManagementAction {
 	public static final String ACTION_TYPE = "actionTarget";
 	public static final String COMPANY_ID = "companyId";
 	public static final String CONTENT_ATTRIBUTE_ID = "LVL1_1";
+	public static final String TYPE_CD = "attributeTypeCd";
 
 
 	private enum ActionType {
@@ -202,7 +203,7 @@ public class CompanyManagementAction extends ManagementAction {
 	 * @throws ActionException 
 	 */
 	private void retrieveArchives(ActionRequest req) throws ActionException {
-		String attributeType = req.getParameter("attributeTypeCd");
+		String attributeType = req.getParameter(TYPE_CD);
 		String companyAttributeGroupId = req.getParameter("companyAttributeGroupId");
 		List<Object> params = new ArrayList<>();
 
@@ -314,7 +315,7 @@ public class CompanyManagementAction extends ManagementAction {
 	protected void companyAttributeRetrieve(ActionRequest req, ActionType type) {
 		if (req.hasParameter("companyAttributeId"))
 			retrieveAttribute(req, type);
-		if ("HTML".equals(req.getParameter("attributeTypeCd")))
+		if ("HTML".equals(req.getParameter(TYPE_CD)))
 			retrieveAttributes(req);
 	}
 
@@ -399,9 +400,9 @@ public class CompanyManagementAction extends ManagementAction {
 			sql.append("WHERE lower(ATTRIBUTE_NM) like ? ");
 			params.add("%" + req.getParameter("searchData").toLowerCase() + "%");
 		}
-		if (req.hasParameter("attributeTypeCd")) {
+		if (req.hasParameter(TYPE_CD)) {
 			sql.append("WHERE TYPE_NM = ? ");
-			params.add(req.getParameter("attributeTypeCd"));
+			params.add(req.getParameter(TYPE_CD));
 		}
 
 		sql.append("ORDER BY DISPLAY_ORDER_NO ");
@@ -419,7 +420,7 @@ public class CompanyManagementAction extends ManagementAction {
 		// If all attributes of a type is being requested set it as a request attribute since it is
 		// being used to supplement the attribute xr editing.
 		// Search data should not be turned into a tree after a search as requisite nodes may be missing
-		if (req.hasParameter("attributeTypeCd")) {
+		if (req.hasParameter(TYPE_CD)) {
 			req.getSession().setAttribute("attributeList", new Tree(orderedResults).getPreorderList());
 		} else if (req.hasParameter("searchData")) {
 			super.putModuleData(orderedResults, orderedResults.size(), false);
@@ -471,6 +472,7 @@ public class CompanyManagementAction extends ManagementAction {
 			} else {
 				req.setParameter(ACTION_TYPE, ActionType.COMPANYATTRIBUTE.toString());
 			}
+			req.setParameter(TYPE_CD, attr.getAttributeTypeName());
 		}
 		if (!req.hasParameter("attributeTypeName"))
 			req.setParameter("attributeTypeName", attr.getAttributeTypeName());
@@ -616,7 +618,7 @@ public class CompanyManagementAction extends ManagementAction {
 		if ("alliance".equals(jsonType))
 			addAlliances(company);
 		if ("attribute".equals(jsonType))
-			addAttributes(company, req.getParameter("attributeTypeCd"));
+			addAttributes(company, req.getParameter(TYPE_CD));
 
 		getActiveSections(company);
 		loadAuthors(req); //load list of BiomedGPS Staff for the "Author" drop-down

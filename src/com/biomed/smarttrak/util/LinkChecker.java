@@ -230,6 +230,8 @@ public class LinkChecker extends CommandLineUtil {
 			if (vo.getHtml().contains("<")) {
 				checkLinksInHtml(urls, vo);
 			} else if (vo.getHtml().contains("/") || vo.getHtml().contains(".")) {
+				boolean isRecent = recentlyChecked.contains(StringUtil.checkVal(vo.getHtml()).replaceAll("http(s)?://", ""));
+				if (StringUtil.isEmpty(vo.getHtml()) || isRecent || vo.getHtml().startsWith("javascript:")) continue;
 				urls.add(LinkVO.makeForUrl(vo.getSection(), vo.getObjectId(), vo.getHtml(), vo.getContentId()));
 			}
 		}

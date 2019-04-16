@@ -75,6 +75,7 @@ public class MarketManagementAction extends ManagementAction {
 	public static final String GRAPH_ID = "GRID";
 	public static final String CONTENT_ATTRIBUTE_ID = "CONTENT";
 	public static final String MARKET_ID = "marketId";
+	public static final String TYPE_CD = "attributeTypeCd";
 
 	private enum ActionTarget {
 		MARKET, MARKETATTRIBUTE, UNKNOWNATTRIBUTE, ATTRIBUTE, SECTION, MARKETGRAPH, MARKETLINK, MARKETATTACH, PREVIEW, ARCHIVE, MARKETATTRIBUTEARCHIVEUPDATE
@@ -301,6 +302,7 @@ public class MarketManagementAction extends ManagementAction {
 			} else {
 				req.setParameter(ACTION_TARGET, ActionTarget.MARKETATTRIBUTE.toString());
 			}
+			req.setParameter(TYPE_CD, attr.getAttributeTypeCd());
 		}
 
 		req.setParameter("rootNode", attr.getAttributeId());
@@ -319,9 +321,9 @@ public class MarketManagementAction extends ManagementAction {
 			sql.append("WHERE lower(ATTRIBUTE_NM) like ? ");
 			params.add("%" + req.getParameter("searchData").toLowerCase() + "%");
 		}
-		if (req.hasParameter("attributeTypeCd")) {
+		if (req.hasParameter(TYPE_CD)) {
 			sql.append("WHERE TYPE_CD = ? ");
-			params.add(req.getParameter("attributeTypeCd"));
+			params.add(req.getParameter(TYPE_CD));
 		}
 		sql.append("ORDER BY ORDER_NO ");
 		log.debug(sql);
