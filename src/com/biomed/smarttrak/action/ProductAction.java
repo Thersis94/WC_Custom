@@ -107,7 +107,7 @@ public class ProductAction extends SimpleActionAdapter {
 		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_COMPANY c ");
 		sql.append("ON c.COMPANY_ID = p.COMPANY_ID ");
 		sql.append("WHERE PRODUCT_ID = ? ");
-		if (!allowAll) sql.append(" and status_no = ? ");
+		if (!allowAll) sql.append(" and p.status_no = ? ");
 
 		List<Object> params = new ArrayList<>();
 		params.add(productId);
