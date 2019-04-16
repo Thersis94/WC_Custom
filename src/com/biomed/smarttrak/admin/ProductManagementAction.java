@@ -56,6 +56,8 @@ public class ProductManagementAction extends ManagementAction {
 	public static final String DETAILS_ID = "DETAILS_ROOT";
 
 	public static final String CONTENT_ATTRIBUTE_ID = "CONTENT";
+	
+	public static final String TYPE_CD = "attributeTypeCd";
 
 	private enum ActionTarget {
 		PRODUCT, PRODUCTATTRIBUTE, ATTRIBUTE, PRODUCTLINK, PRODUCTATTACH,
@@ -223,7 +225,7 @@ public class ProductManagementAction extends ManagementAction {
 				attributeRetrieve(req);
 				break;
 			case ATTRIBUTELIST:
-				super.putModuleData(getProductAttributes(req.getParameter("productId"), req.getParameter("attributeTypeCd")));
+				super.putModuleData(getProductAttributes(req.getParameter("productId"), req.getParameter(TYPE_CD)));
 				break;
 			case ALLIANCE:
 				allianceRetrieve(req);
@@ -248,7 +250,7 @@ public class ProductManagementAction extends ManagementAction {
 	 * @throws ActionException 
 	 */
 	private void retrieveArchives(ActionRequest req) {
-		String attributeType = req.getParameter("attributeTypeCd");
+		String attributeType = req.getParameter(TYPE_CD);
 		String productAttributeGroupId = req.getParameter("productAttributeGroupId");
 		List<Object> params = new ArrayList<>();
 
@@ -515,7 +517,7 @@ public class ProductManagementAction extends ManagementAction {
 			} else {
 				req.setParameter(ACTION_TARGET, ActionTarget.PRODUCTATTRIBUTE.toString());
 			}
-			req.setParameter("attributeTypeCd", attr.getAttributeTypeCd());
+			req.setParameter(TYPE_CD, attr.getAttributeTypeCd());
 		}
 		req.setParameter("rootNode", attr.getAttributeId());
 	}
@@ -533,9 +535,9 @@ public class ProductManagementAction extends ManagementAction {
 			sql.append("WHERE lower(ATTRIBUTE_NM) like ? ");
 			params.add("%" + req.getParameter(DBUtil.TABLE_SEARCH).toLowerCase() + "%");
 		}
-		if (req.hasParameter("attributeTypeCd")) {
+		if (req.hasParameter(TYPE_CD)) {
 			sql.append("WHERE TYPE_CD = ? ");
-			params.add(req.getParameter("attributeTypeCd"));
+			params.add(req.getParameter(TYPE_CD));
 		}
 
 		sql.append("ORDER BY ORDER_NO ");
@@ -732,7 +734,7 @@ public class ProductManagementAction extends ManagementAction {
 		if ("alliance".equals(jsonType)) {
 			addAlliances(product);
 		}  else if ("attribute".equals(jsonType)) {
-			addAttributes(product, req.getParameter("attributeTypeCd"));
+			addAttributes(product, req.getParameter(TYPE_CD));
 		} else if ("regulation".equals(jsonType)) {
 			addRegulations(product);
 		} else {
