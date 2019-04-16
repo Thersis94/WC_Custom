@@ -468,7 +468,7 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 		product.addOrganization(ORG_ID);
 		if (1 == rs.getInt("PUBLIC_FLG")) {
 			product.addRole(SecurityController.PUBLIC_ROLE_LEVEL);
-		} else if ("E".equals(rs.getString("STATUS_NO"))) {
+		} else if (!"P".equals(rs.getString("STATUS_NO"))) {
 			product.addRole(AdminControllerAction.STAFF_ROLE_LEVEL);
 		} else {
 			product.addRole(AdminControllerAction.DEFAULT_ROLE_LEVEL); //any logged in ST user can see this.
@@ -557,7 +557,7 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 		sql.append("ON ps.SECTION_ID = s.SECTION_ID ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(customDb).append("BIOMEDGPS_COMPANY c ");
 		sql.append("ON c.COMPANY_ID = p.COMPANY_ID ");
-		sql.append("WHERE p.STATUS_NO not in ('A','D') ");
+		sql.append("WHERE 1=1 ");
 		if (id != null) sql.append("and p.PRODUCT_ID = ? ");
 		sql.append("ORDER BY p.PRODUCT_ID ");
 		log.info(sql);

@@ -29,7 +29,6 @@ import org.apache.poi.ss.util.CellUtil;
 import com.biomed.smarttrak.fd.FinancialDashVO.CountryType;
 import com.biomed.smarttrak.util.SmarttrakTree;
 import com.siliconmtn.data.Node;
-import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.AbstractSBReportVO;
 
@@ -273,18 +272,9 @@ public class FinancialDashReportVO extends AbstractSBReportVO {
 	protected void addTotalRow(FinancialDashDataRowVO totals, DataRowType rowType) {
 		for (Entry<String, FinancialDashDataColumnVO> entry : totals.getColumns().entrySet()) {
 			int cyValue = entry.getValue().getDollarValue();
-			
-			// Get the key for the previous year data so we can calculate total percent difference
-			String[] keyParts = entry.getKey().split("-");
-			String pyKey = keyParts[0] + "-" + (Convert.formatInteger(keyParts[1]) - 1);
-			
-			// Calculate total percent difference from previous year
-			FinancialDashDataColumnVO pyData = totals.getColumns().get(pyKey);
-			if (pyData != null) {
-				int pyValue = pyData.getDollarValue();
-				if (pyValue > 0) {
-					entry.getValue().setPctDiff((double) (cyValue - pyValue) / pyValue);
-				}
+			int pyValue = entry.getValue().getPDollarValue();
+			if (pyValue > 0) {
+				entry.getValue().setPctDiff((double) (cyValue - pyValue) / pyValue);
 			}
 		}
 		
@@ -392,6 +382,7 @@ public class FinancialDashReportVO extends AbstractSBReportVO {
 		for (Entry<String, FinancialDashDataColumnVO> entry : newData.getColumns().entrySet()) {
 			FinancialDashDataColumnVO columnTotal = runningTotals.getColumns().get(entry.getKey());
 			columnTotal.setDollarValue(columnTotal.getDollarValue() + entry.getValue().getDollarValue());
+			columnTotal.setPDollarValue(columnTotal.getPDollarValue() + entry.getValue().getPDollarValue());
 		}
 	}
 	
