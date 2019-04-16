@@ -58,7 +58,11 @@ public class LinkChecker extends CommandLineUtil {
 	 * This enum is what we iterate when the script runs.
 	 */
 	enum Table {
-		COMPANY_ATTR_XR(COMPANIES, true,"select i.company_id, value_txt, company_attribute_id from custom.BIOMEDGPS_COMPANY_ATTRIBUTE_XR i left join custom.BIOMEDGPS_COMPANY c on c.company_id = i.company_id left join custom.biomedgps_product p on p.company_id = i.company_id where i.status_no = ? and c.status_no = ? and i.company_id = '193' group by i.company_id, value_txt, company_attribute_id having count(p.product_id)>0");
+		COMPANY_ATTR_XR(COMPANIES, true,"select i.company_id, value_txt, company_attribute_id from custom.BIOMEDGPS_COMPANY_ATTRIBUTE_XR i left join custom.BIOMEDGPS_COMPANY c on c.company_id = i.company_id left join custom.biomedgps_product p on p.company_id = i.company_id where i.status_no = ? and c.status_no = ? group by i.company_id, value_txt, company_attribute_id having count(p.product_id)>0"),
+		PROD_ATTR_XR(PRODUCTS, true,"select i.product_id, value_txt, product_attribute_id from custom.BIOMEDGPS_PRODUCT_ATTRIBUTE_XR i left join custom.BIOMEDGPS_PRODUCT p on p.product_id = i.product_id where i.status_no = ? and p.status_no = ?"),
+		MKRT_ATTR_XR(MARKETS, true,"select i.market_id, value_txt, market_attribute_id from custom.BIOMEDGPS_MARKET_ATTRIBUTE_XR i left join custom.BIOMEDGPS_MARKET m on m.market_id = i.market_id where i.status_no = ? and m.status_no = ?"),
+		ANALYSIS_ABS(ANALYSIS, false,"select insight_id, abstract_txt, 'Abstract' from custom.BIOMEDGPS_INSIGHT where status_cd = ?"),
+		ANALYSIS_MAIN(ANALYSIS, false,"select insight_id, content_txt, 'Article' from custom.BIOMEDGPS_INSIGHT where status_cd = ?");
 
 		String selectSql;
 		String section;
