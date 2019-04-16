@@ -244,8 +244,10 @@ public class LinkChecker extends CommandLineUtil {
 		Matcher m = pat.matcher(vo.getHtml());
 		String  u;
 		while (m.find()) {
-			++found;
 			u = m.group(3);
+			if (u.startsWith("javascript:")) continue;
+			
+			++found;
 			//remove html encoding
 			if (!StringUtil.isEmpty(u) && u.length() > 4)
 				u = encoder.decodeValue(u);
