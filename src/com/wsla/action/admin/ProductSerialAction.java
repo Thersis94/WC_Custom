@@ -26,6 +26,7 @@ import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.util.StringUtil;
+import com.smt.sitebuilder.action.BatchImport;
 import com.wsla.action.ticket.BaseTransactionAction;
 import com.wsla.action.ticket.TicketEditAction;
 import com.wsla.common.WSLAConstants;
@@ -451,7 +452,7 @@ public class ProductSerialAction extends BatchImport {
 	/**
 	 * Remove any entries that are already in the system (compare by serial#)
 	 * (non-Javadoc)
-	 * @see com.wsla.action.admin.BatchImport#validateBatchImport(com.siliconmtn.action.ActionRequest, java.util.ArrayList)
+	 * @see com.smt.sitebuilder.action.BatchImport#validateBatchImport(com.siliconmtn.action.ActionRequest, java.util.ArrayList)
 	 */
 	@Override
 	protected void validateBatchImport(ActionRequest req,
@@ -482,7 +483,7 @@ public class ProductSerialAction extends BatchImport {
 	/**
 	 * give some additional default values to the records about to be inserted
 	 * (non-Javadoc)
-	 * @see com.wsla.action.admin.BatchImport#transposeBatchImport(com.siliconmtn.action.ActionRequest, java.util.ArrayList)
+	 * @see com.smt.sitebuilder.action.BatchImport#transposeBatchImport(com.siliconmtn.action.ActionRequest, java.util.ArrayList)
 	 */
 	@Override
 	protected void transposeBatchImport(ActionRequest req, ArrayList<? extends Object> entries)
@@ -502,7 +503,7 @@ public class ProductSerialAction extends BatchImport {
 	/**
 	 * Insert the new serial# records, then create warranty records for each
 	 * (non-Javadoc)
-	 * @see com.wsla.action.admin.BatchImport#saveBatchImport(com.siliconmtn.action.ActionRequest, java.util.ArrayList)
+	 * @see com.smt.sitebuilder.action.BatchImport#saveBatchImport(com.siliconmtn.action.ActionRequest, java.util.ArrayList)
 	 */
 	@Override
 	protected void saveBatchImport(ActionRequest req, ArrayList<? extends Object> entries)
