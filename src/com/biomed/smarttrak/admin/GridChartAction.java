@@ -461,6 +461,11 @@ public class GridChartAction extends SBActionAdapter {
 				// so the table row ids can be updated
 				String gridDetailId = StringUtil.checkVal(detail.getGridDetailId());
 				if (gridDetailId.startsWith("BIO_")) detail.setGridDetailId(null);
+				
+				for (int i = 0; i < grid.getSeriesTxtFlg().length; i++) {
+					if ( grid.getSeriesTxtFlg()[i] == 1) continue;
+					detail.getValues()[i] = prepareThousands(detail.getValues()[i]);
+				}
 
 				// Save the data.  If the data is an insert, add to the column xref
 				db.save(detail);
@@ -470,6 +475,21 @@ public class GridChartAction extends SBActionAdapter {
 			log.error("unable to save the grid data", e);
 			throw e;
 		}
+	}
+
+	/**
+	 * Ensure that any value with a known money prefix has thousands seperators
+	 * @param string
+	 */
+	private String prepareThousands(String val) {
+		String nonAlpha = StringUtil.removeNonNumericExceptDecimal(val);
+		// Ensure that we have a value
+		if (StringUtil.isEmpty(nonAlpha) || val.contains(",") ||
+				val.length() - nonAlpha.length() > 10) return val;
+		String prefix = val.substring(0, val.indexOf(nonAlpha.charAt(0)));
+		int decimalIdx = nonAlpha.indexOf('.');
+		String formattedNum = String.format("%,d", Convert.formatInteger(decimalIdx > -1? nonAlpha.substring(0, decimalIdx) : nonAlpha));
+		return prefix + formattedNum + (decimalIdx > -1?nonAlpha.substring(decimalIdx):"");
 	}
 
 	/**
