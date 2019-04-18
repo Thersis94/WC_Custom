@@ -13,7 +13,6 @@ import com.biomed.smarttrak.action.AdminControllerAction.Section;
 import com.biomed.smarttrak.action.AdminControllerAction.Status;
 import com.biomed.smarttrak.action.AdminControllerAction;
 import com.biomed.smarttrak.action.CompanyAction;
-import com.biomed.smarttrak.security.SmarttrakRoleVO;
 import com.biomed.smarttrak.util.BiomedCompanyIndexer;
 import com.biomed.smarttrak.util.BiomedProductIndexer;
 import com.biomed.smarttrak.util.ManagementActionUtil;
@@ -258,7 +257,7 @@ public class CompanyManagementAction extends ManagementAction {
 		CompanyAction ca = new CompanyAction(actionInit);
 		ca.setDBConnection(dbConn);
 		ca.setAttributes(attributes);
-		putModuleData(ca.retrieveCompany(req.getParameter(COMPANY_ID), role, true));
+		putModuleData(ca.retrieveCompany(req.getParameter(COMPANY_ID), role, true, true));
 	}
 
 
