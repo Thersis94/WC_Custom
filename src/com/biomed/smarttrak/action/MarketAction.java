@@ -12,6 +12,7 @@ import java.util.Map.Entry;
 //Solr core
 import org.apache.solr.common.SolrDocument;
 
+import com.biomed.smarttrak.action.AdminControllerAction.Status;
 // WC_Custom
 import com.biomed.smarttrak.admin.SectionHierarchyAction;
 import com.biomed.smarttrak.security.SecurityController;
@@ -91,7 +92,7 @@ public class MarketAction extends SimpleActionAdapter {
 			if (role == null)
 				SecurityController.throwAndRedirect(req);
 
-			MarketVO vo = retrieveFromDB(req.getParameter(SolrAction.REQ_PARAM_1), req, true);
+			MarketVO vo = retrieveFromDB(req.getParameter(SolrAction.REQ_PARAM_1), req, true, false);
 
 			if (StringUtil.isEmpty(vo.getMarketName())){
 				PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
@@ -143,7 +144,7 @@ public class MarketAction extends SimpleActionAdapter {
 	 * @param marketId
 	 * @throws ActionException
 	 */
-	public MarketVO retrieveFromDB(String marketId, ActionRequest req, boolean loadGraphs) throws ActionException {
+	public MarketVO retrieveFromDB(String marketId, ActionRequest req, boolean loadGraphs, boolean allowAll) throws ActionException {
 		DBProcessor db = new DBProcessor(dbConn, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		if (marketId.startsWith("MARKET_"))
 			marketId = marketId.replace("MARKET_", "");
@@ -152,6 +153,7 @@ public class MarketAction extends SimpleActionAdapter {
 		try {
 			SmarttrakRoleVO role = (SmarttrakRoleVO)req.getSession().getAttribute(Constants.ROLE_DATA);
 			db.getByPrimaryKey(market);
+			if (!allowAll && !Status.P.toString().equals(market.getStatusNo())) return new MarketVO();
 			addAttributes(market, role.getRoleLevel());
 			addSections(market);
 			if (loadGraphs) addGraphs(market, req);
