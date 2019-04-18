@@ -9,6 +9,7 @@ import java.util.List;
 import org.apache.solr.client.solrj.SolrQuery.ORDER;
 
 import com.biomed.smarttrak.action.AdminControllerAction.Section;
+import com.biomed.smarttrak.action.AdminControllerAction.Status;
 //WC customs
 import com.biomed.smarttrak.admin.AccountUserAction;
 import com.biomed.smarttrak.admin.SectionHierarchyAction;
@@ -82,7 +83,7 @@ public class InsightAction extends SimpleActionAdapter {
 			if (role == null)
 				SecurityController.throwAndRedirect(req);
 
-			InsightVO vo = getInsightById(StringUtil.checkVal(req.getParameter(REQ_PARAM_1)));
+			InsightVO vo = getInsightById(StringUtil.checkVal(req.getParameter(REQ_PARAM_1)), Convert.formatBoolean(req.getParameter("preview")));
 			if (vo == null) {
 				sbUtil.manualRedirect(req, page.getFullPath());
 				return;
@@ -260,7 +261,7 @@ public class InsightAction extends SimpleActionAdapter {
 	 * @return
 	 */
 	@SuppressWarnings("unchecked")
-	protected InsightVO getInsightById(String insightId) {
+	protected InsightVO getInsightById(String insightId, boolean allowAll) {
 		String schema = (String) getAttributes().get(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sb = new StringBuilder(350);
 		sb.append("select a.*, p.first_nm, p.last_nm, b.section_id ");
@@ -268,10 +269,12 @@ public class InsightAction extends SimpleActionAdapter {
 		sb.append("inner join profile p on a.creator_profile_id=p.profile_id ");
 		sb.append("left outer join ").append(schema).append("biomedgps_insight_section b on a.insight_id=b.insight_id ");
 		sb.append("where a.insight_id = ? ");
+		if (!allowAll) sb.append("and status_cd = ? ");
 		log.debug("sql: " + sb + "|" + insightId);
 
 		List<Object> params = new ArrayList<>();
 		params.add(insightId);
+		if (!allowAll) params.add(Status.P.toString());
 
 		DBProcessor db = new DBProcessor(dbConn, schema);
 		List<Object> insight = db.executeSelect(sb.toString(), params, new InsightVO());

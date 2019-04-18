@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.TreeMap;
 
+import com.biomed.smarttrak.action.AdminControllerAction.Status;
 // WC Custom
 import com.biomed.smarttrak.admin.SectionHierarchyAction;
 import com.biomed.smarttrak.security.SecurityController;
@@ -79,7 +80,7 @@ public class ProductAction extends SimpleActionAdapter {
 			if (role == null)
 				SecurityController.throwAndRedirect(req);
 
-			ProductVO vo = retrieveProduct(req.getParameter("reqParam_1"), role.getRoleLevel());
+			ProductVO vo = retrieveProduct(req.getParameter("reqParam_1"), role.getRoleLevel(), false);
 
 			if (StringUtil.isEmpty(vo.getProductId())) {
 				PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
@@ -98,7 +99,7 @@ public class ProductAction extends SimpleActionAdapter {
 		}
 	}
 
-	public ProductVO retrieveProduct(String productId, int roleLevel) throws ActionException {
+	public ProductVO retrieveProduct(String productId, int roleLevel, boolean allowAll) throws ActionException {
 		ProductVO product;
 		StringBuilder sql = new StringBuilder(100);
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
@@ -106,9 +107,11 @@ public class ProductAction extends SimpleActionAdapter {
 		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_COMPANY c ");
 		sql.append("ON c.COMPANY_ID = p.COMPANY_ID ");
 		sql.append("WHERE PRODUCT_ID = ? ");
+		if (!allowAll) sql.append(" and p.status_no = ? ");
 
 		List<Object> params = new ArrayList<>();
 		params.add(productId);
+		if (!allowAll) params.add(Status.P.toString());
 		DBProcessor db = new DBProcessor(dbConn);
 		List<Object> results = db.executeSelect(sql.toString(), params, new ProductVO());
 		if (results.isEmpty()) return new ProductVO();
