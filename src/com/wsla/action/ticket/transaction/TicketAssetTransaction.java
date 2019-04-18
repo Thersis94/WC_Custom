@@ -338,10 +338,25 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 		TicketDataVO td = new TicketDataVO(req);
 		td.setUpdateDate(new Date());
 		saveApproval(td);
+		
+		//Write ledger entry for each rejection or approval here.
+		boolean isApproved = td.getApprovalCode() == ApprovalCode.APPROVED;
+		String summary = isApproved ? LedgerSummary.ASSET_APPROVED.summary : LedgerSummary.ASSET_REJECTED.summary;
+		
+		//if its not approved we need to capture the text added in for the rejection.  
+		//	which is stored in ticket data meta value 1
+		if (!isApproved && req.hasParameter("metaValue1")) {
+			summary = summary + ": " + StringUtil.checkVal(req.getStringParameter("metaValue1"));
+		}
+		
+		UserVO user = (UserVO) getAdminUser(req).getUserExtendedInfo();
+		addLedger(td.getTicketId(), user.getUserId() , null, summary, null);
 
 		// Ticket status is only managed when approving/rejecting a POP, SN or equipment image
-		if (PROOF_PURCHASE.equals(td.getAttributeCode()) || SERIAL_NO.equals(td.getAttributeCode()) || EQUIPMENT_IMAGE.equals(td.getAttributeCode())) 
+		if (PROOF_PURCHASE.equals(td.getAttributeCode()) || SERIAL_NO.equals(td.getAttributeCode()) || EQUIPMENT_IMAGE.equals(td.getAttributeCode())) {
 			manageTicketApproval(td.getTicketId(), req);
+		}
+			
 	}
 	
 	/**
@@ -419,7 +434,7 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 	 */
 	public void finalizeApproval(ActionRequest req, boolean isApproved, boolean isNewTicketAssignment) throws DatabaseException {
 		StatusCode status = isApproved ? StatusCode.USER_DATA_COMPLETE : StatusCode.USER_CALL_DATA_INCOMPLETE;
-		String summary = isApproved ? LedgerSummary.ASSET_APPROVED.summary : LedgerSummary.ASSET_REJECTED.summary;
+		String summary = isApproved ? LedgerSummary.FINAL_ASSET_APPROVED.summary : LedgerSummary.FINAL_ASSET_REJECTED.summary;
 		
 		//if its not approved we need to capture the text added in for the rejection.  
 		//	which is stored in ticket data meta value 1
