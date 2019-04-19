@@ -73,7 +73,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		keyMap.put("users", new GenericVO("getUsers", Boolean.TRUE));
 		keyMap.put("editors", new GenericVO("getEditors", Boolean.FALSE));
 		keyMap.put("assetTypes", new GenericVO("getAssetTypes", Boolean.FALSE));
-		keyMap.put("publications", new GenericVO("getPublications", Boolean.FALSE));
+		keyMap.put("publications", new GenericVO("getPublications", Boolean.TRUE));
 		keyMap.put("issues", new GenericVO("getIssues", Boolean.TRUE));
 	}
 
@@ -241,14 +241,21 @@ public class SelectLookupAction extends SBActionAdapter {
 	 * gets a list of publications
 	 * @return
 	 */
-	public List<GenericVO> getPublications() {
+	public List<GenericVO> getPublications(ActionRequest req) {
 		List<GenericVO> data = new ArrayList<>(16);
+		
+		// Get params
+		boolean hasIssues = req.getBooleanParameter("hasIssues");
+		boolean hidePublic = req.getBooleanParameter("hidePublic");
 		
 		PublicationAction pa = new PublicationAction(getDBConnection(), getAttributes());
 		List<PublicationVO> pubs = pa.getPublications();
 		for (PublicationVO pub : pubs) {
-			if (pub.getNumberIssues() > 0) 
-				data.add(new GenericVO(pub.getPublicationId(), pub.getName()));
+			boolean addRecord = true;
+			
+			if (hasIssues && pub.getNumberIssues() == 0) addRecord = false;
+			if (hidePublic && pub.getPublicFlag() == 1) addRecord = false;
+			if (addRecord) data.add(new GenericVO(pub.getPublicationId(), pub.getName()));
 		}
 		
 		return data;

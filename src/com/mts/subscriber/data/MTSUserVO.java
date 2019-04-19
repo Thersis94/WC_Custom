@@ -35,8 +35,13 @@ public class MTSUserVO extends UserVO {
 	private String imagePath;
 	private String title;
 	private String companyName;
+	private String secondaryUserId;
+	private String twitterName;
+	private String linkedinName;
+	private String facebookName;
 	private int activeFlag;
-
+	private int yearsExperience;
+	
 	/**
 	 * 
 	 */
@@ -117,6 +122,46 @@ public class MTSUserVO extends UserVO {
 	}
 
 	/**
+	 * @return the secondaryUserId
+	 */
+	@Column(name="sec_user_id")
+	public String getSecondaryUserId() {
+		return secondaryUserId;
+	}
+
+	/**
+	 * @return the twitterName
+	 */
+	@Column(name="twitter_txt")
+	public String getTwitterName() {
+		return twitterName;
+	}
+
+	/**
+	 * @return the linkedinName
+	 */
+	@Column(name="linkedin_txt")
+	public String getLinkedinName() {
+		return linkedinName;
+	}
+
+	/**
+	 * @return the facebookName
+	 */
+	@Column(name="facebook_txt")
+	public String getFacebookName() {
+		return facebookName;
+	}
+
+	/**
+	 * @return the yearsExperience
+	 */
+	@Column(name="yrs_experience_no")
+	public int getYearsExperience() {
+		return yearsExperience;
+	}
+
+	/**
 	 * @param cv the cv to set
 	 */
 	public void setCv(String cv) {
@@ -149,6 +194,41 @@ public class MTSUserVO extends UserVO {
 	 */
 	public void setActiveFlag(int activeFlag) {
 		this.activeFlag = activeFlag;
+	}
+
+	/**
+	 * @param secondaryUserId the secondaryUserId to set
+	 */
+	public void setSecondaryUserId(String secondaryUserId) {
+		this.secondaryUserId = secondaryUserId;
+	}
+
+	/**
+	 * @param twitterName the twitterName to set
+	 */
+	public void setTwitterName(String twitterName) {
+		this.twitterName = twitterName;
+	}
+
+	/**
+	 * @param linkedinName the linkedinName to set
+	 */
+	public void setLinkedinName(String linkedinName) {
+		this.linkedinName = linkedinName;
+	}
+
+	/**
+	 * @param facebookName the facebookName to set
+	 */
+	public void setFacebookName(String facebookName) {
+		this.facebookName = facebookName;
+	}
+
+	/**
+	 * @param yearsExperience the yearsExperience to set
+	 */
+	public void setYearsExperience(int yearsExperience) {
+		this.yearsExperience = yearsExperience;
 	}
 
 }

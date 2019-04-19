@@ -4,7 +4,7 @@ package com.mts.admin.action;
 import java.util.List;
 import java.util.Map;
 import java.util.ArrayList;
-
+import java.util.Arrays;
 
 // MTS Libs
 import com.mts.subscriber.data.MTSUserVO;
@@ -17,7 +17,7 @@ import com.siliconmtn.common.html.BSTableControlVO;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.*;
 import com.siliconmtn.db.pool.SMTDBConnection;
-
+import com.siliconmtn.db.util.DatabaseException;
 //WC Libs
 import com.smt.sitebuilder.action.user.UserBaseWidget;
 
@@ -68,6 +68,43 @@ public class UserAction extends UserBaseWidget {
 	
 	/*
 	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.action.ActionRequest)
+	 */
+	@Override
+	public void build(ActionRequest req) throws ActionException {
+		MTSUserVO user = new MTSUserVO(req);
+		if (req.getBooleanParameter("isAuthor")) {
+			try {
+				updateAuthor(user);
+				setModuleData(user);
+			} catch(Exception e) {
+				setModuleData(user, 1, e.getLocalizedMessage());
+				log.error("unable to save author info", e);
+			}
+		}
+	}
+	
+	/**
+	 * Updates the author portion of the user table
+	 * @param user
+	 * @throws DatabaseException
+	 */
+	public void updateAuthor(MTSUserVO user) throws DatabaseException {
+		String[] cols = new String[]{ 
+			"user_id", "img_path", "twitter_txt", "facebook_txt", 
+			"linkedin_txt", "yrs_experience_no", "cv_desc"
+		};
+		
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		try {
+			db.update(user, Arrays.asList(cols));
+		} catch (Exception e) {
+			throw new DatabaseException("Unable to save author info", e);
+		}
+	}
+	
+	/*
+	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.action.ActionRequest)
 	 */
 	@Override
@@ -87,7 +124,7 @@ public class UserAction extends UserBaseWidget {
 		sql.append(DBUtil.INNER_JOIN).append("role b on a.role_id = b.role_id ");
 		sql.append("where 1=1 ");
 		sql.append("order by last_nm, first_nm ");
-		log.info(sql.length() + "|" + sql);
+		log.debug(sql.length() + "|" + sql);
 		
 		// Add the params
 		List<Object> vals = new ArrayList<>();

@@ -44,6 +44,7 @@ public class PublicationVO extends BeanDataVO {
 	
 	// Numeric Members
 	private int approvalFlag;
+	private int publicFlag;
 	private long numberIssues;
 	
 	// Date Members
@@ -187,6 +188,14 @@ public class PublicationVO extends BeanDataVO {
 	}
 
 	/**
+	 * @return the publicFlag
+	 */
+	@Column(name="public_flg")
+	public int getPublicFlag() {
+		return publicFlag;
+	}
+
+	/**
 	 * @param publicationId the publicationId to set
 	 */
 	public void setPublicationId(String publicationId) {
@@ -297,6 +306,13 @@ public class PublicationVO extends BeanDataVO {
 	@BeanSubElement
 	public void setEditor(MTSUserVO editor) {
 		this.editor = editor;
+	}
+
+	/**
+	 * @param publicFlag the publicFlag to set
+	 */
+	public void setPublicFlag(int publicFlag) {
+		this.publicFlag = publicFlag;
 	}
 }
 
