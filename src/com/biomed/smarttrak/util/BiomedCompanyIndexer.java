@@ -401,7 +401,7 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 		company.addOrganization(ORG_ID);
 		if (1 == rs.getInt("PUBLIC_FLG")) {
 			company.addRole(SecurityController.PUBLIC_ROLE_LEVEL);
-		} else if ("E".equals(rs.getString("STATUS_NO"))) {
+		} else if (!"P".equals(rs.getString("STATUS_NO"))) {
 			company.addRole(AdminControllerAction.STAFF_ROLE_LEVEL);
 		} else {
 			company.addRole(AdminControllerAction.DEFAULT_ROLE_LEVEL); //any logged in ST user can see this.
@@ -432,7 +432,7 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 		sql.append("ON cs.COMPANY_ID = c.COMPANY_ID ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(customDb).append("BIOMEDGPS_COMPANY c2 ");
 		sql.append("ON c2.COMPANY_ID = c.PARENT_ID ");
-		sql.append("WHERE c.STATUS_NO not in ('A','D','I') and p.STATUS_NO not in ('A', 'D', 'E') ");
+		sql.append("WHERE 1=1 ");
 		if (id != null) sql.append("and c.COMPANY_ID = ? ");
 		sql.append("GROUP BY c.COMPANY_ID, c.COMPANY_NM, a.SECTION_ID, c.STATUS_NO, ");
 		sql.append("c.stock_abbr_txt, p.COMPANY_ID, c2.COMPANY_NM, c.CREATE_DT, c.UPDATE_DT ");

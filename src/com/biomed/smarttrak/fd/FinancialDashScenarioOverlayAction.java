@@ -190,7 +190,7 @@ public class FinancialDashScenarioOverlayAction extends FinancialDashBaseAction 
 		// Usinig coalesce here to "prefer" the overlay data over the standard data where applicable
 		sql.append("sum(coalesce(o.Q1_NO, r.Q1_NO)) as Q1_0, sum(coalesce(o.Q2_NO, r.Q2_NO)) as Q2_0, sum(coalesce(o.Q3_NO, r.Q3_NO)) as Q3_0, sum(coalesce(o.Q4_NO, r.Q4_NO)) as Q4_0, ");
 		sql.append("sum(coalesce(o2.Q1_NO, r2.Q1_NO)) as Q1_1, sum(coalesce(o2.Q2_NO, r2.Q2_NO)) as Q2_1, sum(coalesce(o2.Q3_NO, r2.Q3_NO)) as Q3_1, sum(coalesce(o2.Q4_NO, r2.Q4_NO)) as Q4_1 "); // Needed for all column display types to get percent change from prior year
-		
+
 		// Add in additional years of data as required by the FD display type
 		int dataYears = getDataYears(dt, dash.getCurrentYear());
 		for (int yr = 3; yr <= dataYears; yr++) {
