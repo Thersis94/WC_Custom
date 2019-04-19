@@ -2,9 +2,12 @@ package com.mts.subscriber.data;
 
 // JDK 1.8.x
 import java.sql.ResultSet;
+import java.util.ArrayList;
+import java.util.List;
 
 // SMT Base Libs
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
 import com.siliconmtn.util.StringUtil;
@@ -41,6 +44,9 @@ public class MTSUserVO extends UserVO {
 	private String facebookName;
 	private int activeFlag;
 	private int yearsExperience;
+	
+	// Sub Beans
+	private List<SubscriptionUserVO> subscriptions = new ArrayList<>();;	
 	
 	/**
 	 * 
@@ -231,5 +237,28 @@ public class MTSUserVO extends UserVO {
 		this.yearsExperience = yearsExperience;
 	}
 
+	/**
+	 * @return the subscriptions
+	 */
+	public List<SubscriptionUserVO> getSubscriptions() {
+		return subscriptions;
+	}
+
+	/**
+	 * @param subscriptions the subscriptions to set
+	 */
+	public void setSubscriptions(List<SubscriptionUserVO> subscriptions) {
+		this.subscriptions = subscriptions;
+	}
+
+	/**
+	 * 
+	 * @param subscription
+	 */
+	@BeanSubElement
+	public void addSubscription(SubscriptionUserVO subscription) {
+		if (subscription.isValid())
+			this.subscriptions.add(subscription);
+	}
 }
 

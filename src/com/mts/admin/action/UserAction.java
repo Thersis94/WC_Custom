@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 // MTS Libs
+import com.mts.subscriber.action.SubscriptionAction;
 import com.mts.subscriber.data.MTSUserVO;
 
 // SMT Base Libs
@@ -19,6 +20,7 @@ import com.siliconmtn.db.orm.*;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.util.StringUtil;
+
 //WC Libs
 import com.smt.sitebuilder.action.user.UserBaseWidget;
 import com.smt.sitebuilder.common.SiteVO;
@@ -91,11 +93,29 @@ public class UserAction extends UserBaseWidget {
 			}
 
 			updateUser(user, cols);
+			if (! req.getBooleanParameter("isAuthor")) updateSubscriptions(req, user);
 			setModuleData(user);
 		} catch(Exception e) {
 			setModuleData(user, 1, e.getLocalizedMessage());
 			log.error("unable to save author info", e);
 		}
+	}
+	
+	/**
+	 * Updates the subscriptions for a given user
+	 * @param req
+	 * @param user
+	 * @throws DatabaseException
+	 */
+	private void updateSubscriptions(ActionRequest req, MTSUserVO user) 
+	throws DatabaseException {
+		List<String> subs = new ArrayList<>();
+		String[] subscriptions = req.getParameterValues("subscriptions");
+		if (subscriptions != null && subscriptions.length > 0)
+			subs = Arrays.asList(subscriptions);
+		
+		SubscriptionAction sa = new SubscriptionAction(getDBConnection(), getAttributes());
+		sa.assignSubscriptions(user.getUserId(), subs);
 	}
 	
 	/**
@@ -155,14 +175,17 @@ public class UserAction extends UserBaseWidget {
 		List<Object> vals = new ArrayList<>();
 		
 		StringBuilder sql = new StringBuilder(448);
-		sql.append("select a.*, c.role_nm, b.profile_role_id, d.authentication_id from ");
-		sql.append(getCustomSchema()).append("mts_user a ");
+		sql.append("select a.*, c.role_nm, b.profile_role_id, d.authentication_id, e.publication_id ");
+		sql.append(DBUtil.FROM_CLAUSE).append(getCustomSchema()).append("mts_user a ");
 		sql.append(DBUtil.INNER_JOIN).append("profile_role b ");
 		sql.append("on a.profile_id = b.profile_id and site_id = 'MTS_2' ");
 		sql.append(DBUtil.INNER_JOIN).append("role c ");
 		sql.append("on b.role_id = c.role_id ");
 		sql.append(DBUtil.INNER_JOIN).append("profile d ");
 		sql.append("on a.profile_id = d.profile_id ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(getCustomSchema());
+		sql.append("mts_subscription_publication_xr e ");
+		sql.append("on a.user_id = e.user_id ");
 		sql.append("where 1=1 ");
 		
 		// Filter by Roles
@@ -181,7 +204,7 @@ public class UserAction extends UserBaseWidget {
 		}
 		
 		sql.append(bst.getSQLOrderBy("a.last_nm", "asc"));
-		log.debug(sql.length() + "|" + sql + "|" + bst.getLikeSearch());
+		log.info(sql.length() + "|" + sql + "|" + bst.getLikeSearch());
 		
 		// Query
 		DBProcessor db = new DBProcessor(getDBConnection());

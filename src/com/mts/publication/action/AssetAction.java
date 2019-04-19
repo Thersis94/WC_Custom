@@ -1,5 +1,7 @@
 package com.mts.publication.action;
 
+import java.nio.file.Files;
+import java.nio.file.Paths;
 // JDK 1.8.x
 import java.util.ArrayList;
 import java.util.List;
@@ -15,6 +17,7 @@ import com.siliconmtn.db.orm.*;
 
 //WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
+import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
  * <b>Title</b>: AssetAction.java
@@ -87,6 +90,10 @@ public class AssetAction extends SBActionAdapter {
 	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
+		if (req.getBooleanParameter("isDelete")) {
+			delete(req);
+			return;
+		}
 		
 		AssetVO asset = new AssetVO(req);
 		asset.setDocumentName(req.getParameter("fileName"));
@@ -102,5 +109,29 @@ public class AssetAction extends SBActionAdapter {
 		}
 	}
 
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#delete(com.siliconmtn.action.ActionRequest)
+	 */
+	@Override
+	public void delete(ActionRequest req) throws ActionException {
+		AssetVO avo = new AssetVO(req);
+		String path = getAttribute(Constants.BINARY_PATH) + "/file_transfer" + avo.getDocumentPath();
+		
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		try {
+			// Delete the item from the DB
+			db.delete(avo);
+			
+			// Delete the item from the file path
+			Files.deleteIfExists(Paths.get(path));
+			log.info("Delete file: " + path);
+			
+			setModuleData(avo);
+		} catch(Exception e) {
+			log.error("Unable to remove asset", e);
+			setModuleData(avo, 0, e.getLocalizedMessage());
+		}
+	}
 }
 
