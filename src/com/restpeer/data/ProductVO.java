@@ -12,6 +12,7 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.parser.BeanDataVO;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
+import com.smt.sitebuilder.action.commerce.BillingType;
 
 /****************************************************************************
  * <b>Title</b>: ProductVO.java
@@ -30,23 +31,6 @@ public class ProductVO extends BeanDataVO {
 	/**
 	 * 
 	 */
-	public enum UnitMeasure {
-		MONTHLY("Monthly"),
-		NONE("N/A"),
-		WEEKLY("Weekly"),
-		SINGLE("One Time Event");
-		
-		private String uomName;
-		UnitMeasure(String uomName) { 
-			this.uomName = uomName;
-		}
-
-		public String getUomName() {	return uomName; }
-	}
-	
-	/**
-	 * 
-	 */
 	private static final long serialVersionUID = -149669378203475527L;
 	
 	// Members
@@ -61,7 +45,7 @@ public class ProductVO extends BeanDataVO {
 	private int hoursWeek;
 	private int orderNumber;
 	private DataType dataType;
-	private UnitMeasure uom;
+	private BillingType billingType;
 	private Date createDate;
 	private Date updateDate;
 	
@@ -107,11 +91,11 @@ public class ProductVO extends BeanDataVO {
 	}
 
 	/**
-	 * @return the uom
+	 * @return the billingType
 	 */
 	@Column(name="unit_measure_cd")
-	public UnitMeasure getUom() {
-		return uom;
+	public BillingType getBillingType() {
+		return billingType;
 	}
 
 	/**
@@ -233,10 +217,10 @@ public class ProductVO extends BeanDataVO {
 	}
 
 	/**
-	 * @param uom the uom to set
+	 * @param billingType the billingType to set
 	 */
-	public void setUom(UnitMeasure uom) {
-		this.uom = uom;
+	public void setBillingType(BillingType billingType) {
+		this.billingType = billingType;
 	}
 
 	/**

@@ -64,7 +64,7 @@ public class LocationUserVO extends RPUserVO {
 	/**
 	 * @return the memberLocationId
 	 */
-	@Column(name="member_location_id")
+	@Column(name="dealer_location_id")
 	public String getMemberLocationId() {
 		return memberLocationId;
 	}

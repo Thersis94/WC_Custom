@@ -9,6 +9,7 @@ import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
 import com.siliconmtn.util.StringUtil;
+import com.smt.sitebuilder.action.dealer.DealerAttributeVO;
 
 /****************************************************************************
  * <b>Title</b>: LocationAttributeVO.java
@@ -23,7 +24,7 @@ import com.siliconmtn.util.StringUtil;
  * @updates:
  ****************************************************************************/
 @Table(name="rp_location_attribute_xr")
-public class LocationAttributeVO extends AttributeVO {
+public class LocationAttributeVO extends DealerAttributeVO {
 
 	/**
 	 * 

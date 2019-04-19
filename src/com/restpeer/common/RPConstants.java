@@ -33,6 +33,18 @@ public class RPConstants {
 	}
 	
 	/**
+	 * Custom Dealer Attribute Group Codes
+	 */
+	public enum AttributeGroupCode {
+		ADD_ONS("Facility Add Ons"),
+		KITCHEN_INFO("Kitchen Info");
+		
+		private String codeName;
+		private AttributeGroupCode(String codeName) { this.codeName = codeName; }
+		public String getCodeName() { return codeName; }
+	}
+
+	/**
 	 * 
 	 */
 	public enum DataType {

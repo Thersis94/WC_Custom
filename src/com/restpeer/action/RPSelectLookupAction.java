@@ -1,43 +1,34 @@
 package com.restpeer.action;
 
 // JDK 1.8.x
-import java.lang.reflect.Method;
 import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
-import com.restpeer.action.admin.AttributeWidget;
-// PS Imports
-import com.restpeer.action.admin.CategoryWidget;
 import com.restpeer.action.admin.MemberWidget;
 import com.restpeer.action.admin.ProductWidget;
 import com.restpeer.action.admin.UserWidget;
 import com.restpeer.common.RPConstants;
+import com.restpeer.common.RPConstants.AttributeGroupCode;
 import com.restpeer.common.RPConstants.DataType;
 import com.restpeer.common.RPConstants.RPRole;
-import com.restpeer.data.ProductVO.UnitMeasure;
 import com.restpeer.data.RPUserVO;
-import com.restpeer.data.AttributeVO;
-import com.restpeer.data.AttributeVO.GroupCode;
-import com.restpeer.data.CategoryVO;
 import com.restpeer.data.MemberVO;
 import com.restpeer.data.MemberVO.MemberType;
 import com.restpeer.data.ProductVO;
 
 // SMT Base Libs
-import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.common.html.BSTableControlVO;
 import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.orm.GridDataVO;
-import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
-import com.smt.sitebuilder.action.SBActionAdapter;
+
+// WC3
+import com.smt.sitebuilder.action.commerce.SelectLookupAction;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.security.SBUserRole;
 
@@ -46,8 +37,7 @@ import com.smt.sitebuilder.security.SBUserRole;
  * <b>Project</b>: WC_Custom
  * <b>Description: </b> Provides a mechanism for looking up key/values for select lists.
  * Each type will return a collection of GenericVOs, which will automatically be
- * available in a select picker
- * as listType
+ * available in a select picker as listType.
  * <b>Copyright:</b> Copyright (c) 2019
  * <b>Company:</b> Silicon Mountain Technologies
  * 
@@ -56,34 +46,12 @@ import com.smt.sitebuilder.security.SBUserRole;
  * @since Feb 4, 2019
  * @updates:
  ****************************************************************************/
-public class SelectLookupAction extends SBActionAdapter {
+public class RPSelectLookupAction extends SelectLookupAction {
 
-	/**
-	 * Key to be passed to utilize this action
-	 */
-	public static final String SELECT_KEY = "selectType";
-
-	/**
-	 * Req value passed form a BS Table search
-	 */
-	public static final String REQ_SEARCH = "search";
-
-		/**
-	 * Assigns the keys for the select type to method mapping.  In the generic vo
-	 * the key is the method name.  The value is a boolean which indicates whether
-	 * or not the request object is needed in that method 
-	 */
-	private static Map<String, GenericVO> keyMap = new HashMap<>(16);
 	static {
-		keyMap.put("activeFlag", new GenericVO("getYesNoLookup", Boolean.FALSE));
-		keyMap.put("role", new GenericVO("getRoles", Boolean.FALSE));
-		keyMap.put("prefix", new GenericVO("getPrefix", Boolean.FALSE));
-		keyMap.put("gender", new GenericVO("getGenders", Boolean.FALSE));
-		keyMap.put("category", new GenericVO("getCategories", Boolean.FALSE));
-		keyMap.put("uom", new GenericVO("getUnitMeasures", Boolean.FALSE));
-		keyMap.put("attributes", new GenericVO("getAttributeValues", Boolean.TRUE));
+		keyMap.put("uom", new GenericVO("getBillingTypes", Boolean.FALSE));
+
 		keyMap.put("attrType", new GenericVO("getAttributeTypes", Boolean.FALSE));
-		keyMap.put("attrGroup", new GenericVO("getAttributeGroups", Boolean.FALSE));
 		keyMap.put("members", new GenericVO("getMembers", Boolean.TRUE));
 		keyMap.put("memberType", new GenericVO("getMemberTypes", Boolean.FALSE));
 		keyMap.put("memberLocations", new GenericVO("getMemberLocations", Boolean.TRUE));
@@ -94,63 +62,22 @@ public class SelectLookupAction extends SBActionAdapter {
 	/**
 	 * 
 	 */
-	public SelectLookupAction() {
+	public RPSelectLookupAction() {
 		super();
 	}
 
 	/**
 	 * @param actionInit
 	 */
-	public SelectLookupAction(ActionInitVO actionInit) {
+	public RPSelectLookupAction(ActionInitVO actionInit) {
 		super(actionInit);
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * @see com.smt.sitebuilder.action.SBActionAdapter#list(com.siliconmtn.action.ActionRequest)
+	/**
+	 * Loads the supported roles by this app
+	 * @return
 	 */
 	@Override
-	public void retrieve(ActionRequest req) throws ActionException {
-		String listType = req.getStringParameter(SELECT_KEY);
-		GenericVO vo = keyMap.get(listType);
-		
-		// If the key is not found, throw a json error
-		if (vo == null) {
-			putModuleData(null, 0, false, "List Type Not Found in KeyMap", true);
-			return;
-		}
-
-		try {
-			if (Convert.formatBoolean(vo.getValue())) {
-				Method method = this.getClass().getMethod(vo.getKey().toString(), req.getClass());
-				putModuleData(method.invoke(this, req));
-			} else {
-				Method method = this.getClass().getMethod(vo.getKey().toString());
-				putModuleData(method.invoke(this));
-			}
-
-		} catch (Exception e) {
-			log.error("Unable to retrieve list: " + listType, e);
-		}
-	}
-
-	/**
-	 * Load a yes no list
-	 * @return
-	 */
-	public List<GenericVO> getYesNoLookup() {
-		List<GenericVO> yesNo = new ArrayList<>();
-
-		yesNo.add(new GenericVO("1","Yes"));
-		yesNo.add(new GenericVO("0","No"));
-
-		return yesNo;
-	}
-
-	/**
-	 * Gets the supported locales for the app
-	 * @return
-	 */
 	public List<GenericVO> getRoles() {
 		List<GenericVO> data = new ArrayList<>(8);
 		
@@ -162,78 +89,27 @@ public class SelectLookupAction extends SBActionAdapter {
 	}
 	
 	/**
-	 * Retruns a list of user prefixes
+	 * Creates the list of attribute groups 
 	 * @return
 	 */
-	public List<GenericVO> getPrefix() {
-		List<GenericVO> selectList = new ArrayList<>(8);
-		selectList.add(new GenericVO("Mr.", "Mr."));
-		selectList.add(new GenericVO("Mrs.", "Mrs."));
-		selectList.add(new GenericVO("Ms", "Ms."));
-		selectList.add(new GenericVO("Miss", "Miss"));
-
-		return selectList;
-	}
-	
-	/**
-	 * Gets the supported genders for the app
-	 * @return
-	 */
-	public List<GenericVO> getGenders() {
-		List<GenericVO> data = new ArrayList<>(8);
-		data.add(new GenericVO("F", "Female"));
-		data.add(new GenericVO("M", "Male"));
-
-		return data;
-	}
-	
-	/**
-	 * Gets a list of attribute categories
-	 * @return
-	 */
-	public List<GenericVO> getCategories() {
-		List<GenericVO> data = new ArrayList<>(16);
-		CategoryWidget cw = new CategoryWidget(dbConn, attributes);
-		List<CategoryVO> cats = cw.getCategories(); 
+	@Override
+	public List<GenericVO> getAttributeGroups() {
+		List<GenericVO> data = super.getAttributeGroups();
 		
-		for (CategoryVO cat : cats) {
-			data.add(new GenericVO(cat.getCategoryCode(), cat.getName()));
+		for (AttributeGroupCode gc : AttributeGroupCode.values()) {
+			data.add(new GenericVO(gc, gc.getCodeName()));
 		}
 		
+		Collections.sort(data, (a, b) -> ((String)a.getValue()).compareTo((String)b.getValue()));
 		return data;
 	}
 	
-	/**
-	 * Creates the list of uom
-	 * @return
-	 */
-	public List<GenericVO> getUnitMeasures() {
-		List<GenericVO> data = new ArrayList<>(16);
-		
-		for (UnitMeasure uom : UnitMeasure.values()) {
-			data.add(new GenericVO(uom, uom.getUomName()));
-		}
-		
-		return data;
-	}
 	
-	/**
-	 * Gets a list of attribute codes.  Optionally may pass a groupCode to filter by that
-	 * @param req
-	 * @return
-	 */
-	public List<GenericVO> getAttributeValues(ActionRequest req) {
-		List<GenericVO> data = new ArrayList<>(16);
-		
-		AttributeWidget aw = new AttributeWidget(getDBConnection(), getAttributes());
-		List<AttributeVO> attrs = aw.getAttributeData(req.getParameter("groupCode"));
-		
-		for (AttributeVO attr : attrs) {
-			data.add(new GenericVO(attr.getAttributeCode(), attr.getName()));
-		}
-		
-		return data;
-	}
+	
+	
+	
+	
+	
 	/**
 	 * Creates the list of attribute types (list, single, etc ...)
 	 * @return
@@ -248,21 +124,6 @@ public class SelectLookupAction extends SBActionAdapter {
 		// Sort the collection by the value
 		Collections.sort(data, (a, b) -> ((String)a.getValue()).compareTo(((String)a.getValue())));
 		
-		return data;
-	}
-	
-	/**
-	 * Creates the list of attribute groups 
-	 * @return
-	 */
-	public List<GenericVO> getAttributeGroups() {
-		List<GenericVO> data = new ArrayList<>(16);
-		
-		for (GroupCode gc : GroupCode.values()) {
-			data.add(new GenericVO(gc, gc.getCodeName()));
-		}
-		
-		Collections.sort(data, (a, b) -> ((String)a.getValue()).compareTo((String)b.getValue()));
 		return data;
 	}
 	/**
