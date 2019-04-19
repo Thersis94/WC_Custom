@@ -1,0 +1,125 @@
+package com.mts.publication.action;
+
+// JDK 1.8.x
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+// MTS Libs
+import com.mts.publication.data.IssueVO;
+
+// SMT Base Libs
+import com.siliconmtn.action.ActionException;
+import com.siliconmtn.action.ActionInitVO;
+import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.common.html.BSTableControlVO;
+import com.siliconmtn.db.DBUtil;
+import com.siliconmtn.db.orm.*;
+import com.siliconmtn.db.pool.SMTDBConnection;
+//WC Libs
+import com.smt.sitebuilder.action.SBActionAdapter;
+
+/****************************************************************************
+ * <b>Title</b>: IssueAction.java
+ * <b>Project</b>: WC_Custom
+ * <b>Description: </b> Widget to manage MTS issues for a given publication
+ * <b>Copyright:</b> Copyright (c) 2019
+ * <b>Company:</b> Silicon Mountain Technologies
+ * 
+ * @author James Camire
+ * @version 3.0
+ * @since Apr 8, 2019
+ * @updates:
+ ****************************************************************************/
+
+public class IssueAction extends SBActionAdapter {
+	
+	/**
+	 * Ajax Controller key for this action
+	 */
+	public static final String AJAX_KEY = "issue";
+	
+	/**
+	 * 
+	 */
+	public IssueAction() {
+		super();
+	}
+
+	/**
+	 * @param actionInit
+	 */
+	public IssueAction(ActionInitVO actionInit) {
+		super(actionInit);
+	}
+	
+	/**
+	 * 
+	 * @param dbConn
+	 * @param attributes
+	 */
+	public IssueAction(SMTDBConnection dbConn, Map<String, Object> attributes) {
+		super();
+		setDBConnection(dbConn);
+		setAttributes(attributes);
+	}
+	
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.action.ActionRequest)
+	 */
+	@Override
+	public void retrieve(ActionRequest req) throws ActionException {
+		String pubId = req.getParameter("publicationId");
+		BSTableControlVO bst = new BSTableControlVO(req, IssueVO.class);
+		setModuleData(getIssues(pubId, bst));
+	}
+	
+	/**
+	 * 
+	 * @return
+	 */
+	public GridDataVO<IssueVO> getIssues(String pubId, BSTableControlVO bst) {
+		StringBuilder sql = new StringBuilder(352);
+		sql.append("select coalesce(article_count, 0) as article_no, a.*, b.*  from ");
+		sql.append(getCustomSchema()).append("mts_issue a ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(getCustomSchema()).append("mts_user b ");
+		sql.append("on a.editor_id = b.user_id ");
+		sql.append("left outer join ( ");
+		sql.append("select issue_id, count(*) as article_count ");
+		sql.append("from ").append(getCustomSchema()).append("mts_document ");
+		sql.append("group by issue_id ");
+		sql.append(") c on a.issue_id = c.issue_id ");
+		sql.append("where publication_id = ? ");
+		sql.append("order by issue_dt desc, issue_nm ");
+		log.debug(sql.length() + "|" + sql);
+		
+		// Add the params
+		List<Object> vals = new ArrayList<>();
+		vals.add(pubId);
+		
+		DBProcessor db = new DBProcessor(getDBConnection());
+		return db.executeSQLWithCount(sql.toString(), vals, new IssueVO(), bst);
+	}
+	
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#update(com.siliconmtn.action.ActionRequest)
+	 */
+	@Override
+	public void build(ActionRequest req) throws ActionException {
+		
+		IssueVO issue = new IssueVO(req);
+		
+		try {
+			DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+			db.save(issue);
+			putModuleData(issue);
+		} catch (Exception e) {
+			log.error("Unable to save publication info", e);
+			putModuleData(issue, 1, false, e.getLocalizedMessage(), true);
+		}
+	}
+
+}
+
