@@ -25,6 +25,7 @@ import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
+import com.smt.sitebuilder.action.BatchImport;
 import com.wsla.data.product.ProductCategoryAssociationVO;
 
 // WSLA Libs
@@ -210,7 +211,7 @@ public class ProductMasterAction extends BatchImport {
 	/**
 	 * Remove any entries that are already in the system (compare to provider's other SKUs)
 	 * (non-Javadoc)
-	 * @see com.wsla.action.admin.BatchImport#validateBatchImport(com.siliconmtn.action.ActionRequest, java.util.ArrayList)
+	 * @see com.smt.sitebuilder.action.BatchImport#validateBatchImport(com.siliconmtn.action.ActionRequest, java.util.ArrayList)
 	 */
 	@Override
 	protected void validateBatchImport(ActionRequest req,

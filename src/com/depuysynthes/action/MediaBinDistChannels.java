@@ -33,12 +33,13 @@ public class MediaBinDistChannels {
 	/**
 	 * enum containing all the constants.  These are driven by DS/Mediabin
 	 * and should never change once the org is added to WC.
+	 * Changed DSI and Huddle to -1 so they're not ingested (from EXP file), w/o breaking code. -JM- 04.18.19
 	 */
 	public enum DistChannel {
 		INTDS("INTDS.com", 2, "DPY_SYN_EMEA"),
 		USDS("USDS.com", 1, "DPY_SYN"),
-		DSI("DSI.com", 1, "DPY_SYN_INST"),
-		DSHuddle("DSHuddle.com", 1, "DPY_SYN_HUDDLE"),
+		DSI("DSI.com", -1, "DPY_SYN_INST"),
+		DSHuddle("DSHuddle.com", -1, "DPY_SYN_HUDDLE"),
 		SHOWPAD("Showpad EMEA", 3, "DPY_SYN_EMEA");
 
 		private String orgId;
