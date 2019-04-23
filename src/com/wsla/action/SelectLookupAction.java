@@ -777,13 +777,17 @@ public class SelectLookupAction extends SBActionAdapter {
 	 */
 	public List<GenericVO> getBillableCodes(ActionRequest req) {
 		String btc = req.getParameter("billableTypeCode");
+		boolean isMisc = req.getBooleanParameter("isMiscActivites");
+		BSTableControlVO bst = new BSTableControlVO(req, BillableActivityVO.class);
+		bst.setLimit(1000);
 
 		// Get the codes
-		List<BillableActivityVO> codes = new BillableActivityAction(dbConn, attributes).getCodes(btc);
+		BillableActivityAction ba = new BillableActivityAction(dbConn, attributes);
+		GridDataVO<BillableActivityVO> codes = ba.getCodes(btc, isMisc, bst);
 		List<GenericVO> data = new ArrayList<>();
 
 		// Loop the codes and convert to Generic
-		for (BillableActivityVO code : codes) {
+		for (BillableActivityVO code : codes.getRowData()) {
 			if (code.getActiveFlag() == 0) continue;
 			data.add(new GenericVO(code.getBillableActivityCode(), code.getActivityName()));
 		}

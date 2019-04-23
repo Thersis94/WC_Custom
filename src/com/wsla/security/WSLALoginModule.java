@@ -11,8 +11,10 @@ import com.siliconmtn.common.constants.GlobalConfig;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.http.filter.fileupload.Constants;
+import com.siliconmtn.security.AuthenticationException;
 import com.siliconmtn.security.UserDataVO;
 import com.smt.sitebuilder.security.DBLoginModule;
+
 // WC Custom Libs
 import com.wsla.data.ticket.UserVO;
 
@@ -53,6 +55,20 @@ public class WSLALoginModule extends DBLoginModule {
 
 		user.setUserExtendedInfo(getWSLAUser(user.getProfileId()));
 		return user;
+	}
+	
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.security.DBLoginModule#authenticateUser(java.lang.String, java.lang.String)
+	 */
+	@Override
+	public UserDataVO authenticateUser(String user, String pwd) throws AuthenticationException {
+		UserDataVO uvo = super.authenticateUser(user, pwd);
+		
+		//catching the edge case of a user in wc3 not being a registered user in wsla
+		if (uvo.getUserExtendedInfo() == null) throw new AuthenticationException("User is a user of the site, but not registered as a WSLA user");
+		
+		return uvo;
 	}
 
 	/**

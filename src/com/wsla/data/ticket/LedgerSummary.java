@@ -39,13 +39,17 @@ public enum LedgerSummary {
 	REFUND_REJECTED ("Refund or replacement has been Rejected"),
 	HARVEST_COMPETE ("Harvesting of this unit is complete. Set up for shipment of SN plate. Parts harvested: "),
 	ASSET_LOADED ("User loaded an asset to the service order"),
-	ASSET_REJECTED ("User assets were rejected"),
-	ASSET_APPROVED ("User assets were approved"),
+	ASSET_REJECTED ("A user asset was rejected"),
+	ASSET_APPROVED ("A user asset was approved"),
+	FINAL_ASSET_REJECTED ("One of the user assets was rejected"),
+	FINAL_ASSET_APPROVED ("All User assets were approved"),
 	REPAIR_TYPE ("Unit Repair Type"),
 	HARVEST_AFTER_RECEIPT ("This unit is ready for harvesting"),
 	REPAIR_AFTER_RECEIPT ("A new ticket has been opened to repair the unit"), 
 	RETAIL_OWNED_ASSET_NOT_REQUIRED ("This ticket is retail owned and does not require a photo of the pop or sn"), 
 	RESOLVED_DURING_CALL("End users issues were resolved by the call center employee"),
+	CREDIT_MEMO_CREATED("Credit Memo Created"),
+	CREDIT_MEMO_APPROVED("Credit Memo Was approved"),
 	ASSETS_BYPASSED("It was Determined that Assests were not needed at call time.");
 	
 	public final String summary;
