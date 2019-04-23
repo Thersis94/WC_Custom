@@ -18,6 +18,7 @@ public class FinancialDashDataColumnVO implements Serializable {
 	private static final long serialVersionUID = 6516888074396410665L;
 	private String colId;
 	private int dollarValue;
+	private int pDollarValue;
 	private Double pctDiff;
 	private ValueDisplayType valueDisplay;
 	private boolean delta;
@@ -59,6 +60,9 @@ public class FinancialDashDataColumnVO implements Serializable {
 	 * @return the pctDiff
 	 */
 	public Double getPctDiff() {
+		if (pctDiff == null && pDollarValue > 0) {
+			pctDiff = (double) (dollarValue - pDollarValue) / pDollarValue;
+		}
 		return pctDiff;
 	}
 	
@@ -84,6 +88,20 @@ public class FinancialDashDataColumnVO implements Serializable {
 	 */
 	public void setDollarValue(int dollarValue) {
 		this.dollarValue = dollarValue;
+	}
+
+	/**
+	 * @return the pDollarValue
+	 */
+	public int getPDollarValue() {
+		return pDollarValue;
+	}
+
+	/**
+	 * @param pDollarValue the pDollarValue to set
+	 */
+	public void setPDollarValue(int pDollarValue) {
+		this.pDollarValue = pDollarValue;
 	}
 
 	/**
