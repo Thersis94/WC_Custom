@@ -5,7 +5,6 @@ import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.io.mail.EmailMessageVO;
-import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.form.FormAction;
 import com.smt.sitebuilder.action.form.FormActionVO;
@@ -32,7 +31,6 @@ import com.smt.sitebuilder.util.MessageSender;
  ****************************************************************************/
 public class PatientAmbassadorFormCallback extends SBActionAdapter {
 
-	private static final String ATTUNE_IMPLANT_STORY_VALUE = "attune";
 	public PatientAmbassadorFormCallback() {
 		super();
 	}
@@ -88,27 +86,16 @@ public class PatientAmbassadorFormCallback extends SBActionAdapter {
 	 * Check the response value for 'has replaced joint' and builds a custom redirect depending 
 	 * upon the response.  We format the redirect here instead of relying on FormFacadeAction's 
 	 * more generic redirect builder so that we can to pass a custom parameter back to the JSTL.
-	 * We use this custom parameter to tailor the form submission response when:
-	 * 1) the requestor is from a visitor who does not have a DePuy Synthes implant
-	 * - OR -  
-	 * 2) the requestor is from a visitor who has an DePuy Synthes ATTUNE knee implant. 
+	 * We use this custom parameter to tailor the form submission response when the requestor 
+	 * is from a visitor who does not have a DePuy Synthes implant.
 	 * @param req
 	 */
 	private void formatRedirect(ActionRequest req) {
 		String fieldVal = TransactionParserIntfc.FORM_FIELD_PREFIX + PatientAmbassadorStoriesTool.PAFConst.HAS_REPLACED_ID.getId();
 		String hasReplacedJoint = req.getParameter(fieldVal);
-		boolean isAttuneStory = false;
 
 		if ("yes".equalsIgnoreCase(hasReplacedJoint)) {
-			// check implant name
-			fieldVal = req.getParameter(TransactionParserIntfc.FORM_FIELD_PREFIX + PatientAmbassadorStoriesTool.PAFConst.IMPLANT_NM_ID.getId());
-			String implantNm = StringUtil.checkVal(fieldVal).toLowerCase();
-			// if implant is ATTUNE, set flag, otherwise return.
-			if (implantNm.startsWith(ATTUNE_IMPLANT_STORY_VALUE)) {
-				isAttuneStory = true;
-			} else {
-				return;
-			}
+			return;
 		}
 
 		StringBuilder redir = new StringBuilder(300);
@@ -119,11 +106,7 @@ public class PatientAmbassadorFormCallback extends SBActionAdapter {
 		redir.append(page.getRequestURI()).append("?page=");
 		redir.append(req.getParameter("page"));
 		redir.append("&fsi=").append(req.getParameter("fsi"));
-		if (isAttuneStory) {
-			redir.append("&submitAttuneStory=").append("true");
-		} else {
-			redir.append("&submitNotDSJoint=").append("true");
-		}
+		redir.append("&submitNotDSJoint=").append("true");
 
 		req.setParameter(Constants.REDIRECT_URL, redir.toString(), true);
 	}

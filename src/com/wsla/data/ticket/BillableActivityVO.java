@@ -49,6 +49,7 @@ public class BillableActivityVO extends BeanDataVO {
 	private String activityName;
 	private BillableTypeCode billableTypeCode;
 	private int activeFlag;
+	private String parentId;
 	private Date createDate;
 	
 	/**
@@ -110,6 +111,21 @@ public class BillableActivityVO extends BeanDataVO {
 	@Column(name="create_dt", isInsertOnly=true, isAutoGen=true)
 	public Date getCreateDate() {
 		return createDate;
+	}
+
+	/**
+	 * @return the parentId
+	 */
+	@Column(name="parent_id")
+	public String getParentId() {
+		return parentId;
+	}
+
+	/**
+	 * @param parentId the parentId to set
+	 */
+	public void setParentId(String parentId) {
+		this.parentId = parentId;
 	}
 
 	/**

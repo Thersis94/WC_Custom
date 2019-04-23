@@ -147,8 +147,11 @@ public class RefundReplacementTransaction extends BaseTransactionAction {
 	 */
 	private void handleRefundRequest(RefundReplacementVO rrvo, UserVO user) {
 		try {
+			changeStatus(rrvo.getTicketId(), user.getUserId(), StatusCode.REFUND_REQUEST, null, null);
 			createCreditMemo(rrvo);
+			addLedger(rrvo.getTicketId(), user.getUserId(), null , LedgerSummary.CREDIT_MEMO_CREATED.summary, null);
 			processDispostion(rrvo, user);
+			
 		} catch (Exception e) {
 			log.error("could not create credit memo or process dispostion", e);
 			putModuleData(rrvo, 0, false, e.getLocalizedMessage(), true);
