@@ -3,6 +3,7 @@ package com.mts.subscriber.data;
 // JDK 1.8.x
 import java.sql.ResultSet;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 // SMT Base Libs
@@ -46,7 +47,10 @@ public class MTSUserVO extends UserVO {
 	private int yearsExperience;
 	
 	// Sub Beans
-	private List<SubscriptionUserVO> subscriptions = new ArrayList<>();;	
+	private List<SubscriptionUserVO> subscriptions = new ArrayList<>();
+	
+	// Helpers
+	private Date lastLogin;
 	
 	/**
 	 * 
@@ -259,6 +263,21 @@ public class MTSUserVO extends UserVO {
 	public void addSubscription(SubscriptionUserVO subscription) {
 		if (subscription.isValid())
 			this.subscriptions.add(subscription);
+	}
+
+	/**
+	 * @return the lastLogin
+	 */
+	@Column(name="last_login_dt", isReadOnly=true)
+	public Date getLastLogin() {
+		return lastLogin;
+	}
+
+	/**
+	 * @param lastLogin the lastLogin to set
+	 */
+	public void setLastLogin(Date lastLogin) {
+		this.lastLogin = lastLogin;
 	}
 }
 

@@ -162,8 +162,8 @@ public class IssueArticleAction extends SBActionAdapter {
 		// Filter by the search bar text input
 		if (bst.hasSearch()) {
 			sql.append("and (lower(action_nm) like ? or lower(action_desc) = ?) ");
-			vals.add(bst.getLikeSearch());
-			vals.add(bst.getLikeSearch());
+			vals.add(bst.getLikeSearch().toLowerCase());
+			vals.add(bst.getLikeSearch().toLowerCase());
 		}
 		
 		// Filter by tool bar publication filter

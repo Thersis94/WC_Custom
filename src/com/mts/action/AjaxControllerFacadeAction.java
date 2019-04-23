@@ -5,6 +5,7 @@ import com.mts.publication.action.AssetAction;
 import com.mts.publication.action.CategoryAction;
 import com.mts.publication.action.IssueAction;
 import com.mts.publication.action.IssueArticleAction;
+import com.mts.publication.action.MTSDocumentAction;
 import com.mts.publication.action.PublicationAction;
 
 // RP Libs
@@ -75,6 +76,7 @@ public class AjaxControllerFacadeAction extends FacadeActionAdapter {
 		actionMap.put(IssueArticleAction.AJAX_KEY, IssueArticleAction.class);
 		actionMap.put(CategoryAction.AJAX_KEY, CategoryAction.class);
 		actionMap.put(UserAction.AJAX_KEY, UserAction.class);
+		actionMap.put(MTSDocumentAction.AJAX_KEY, MTSDocumentAction.class);
 	}
 
 	/*

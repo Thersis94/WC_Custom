@@ -174,8 +174,8 @@ public class UserAction extends UserBaseWidget {
 		// Add the params
 		List<Object> vals = new ArrayList<>();
 		
-		StringBuilder sql = new StringBuilder(448);
-		sql.append("select a.*, c.role_nm, b.profile_role_id, d.authentication_id, e.publication_id ");
+		StringBuilder sql = new StringBuilder(768);
+		sql.append("select last_login_dt, a.*, c.role_nm, b.profile_role_id, d.authentication_id, e.publication_id ");
 		sql.append(DBUtil.FROM_CLAUSE).append(getCustomSchema()).append("mts_user a ");
 		sql.append(DBUtil.INNER_JOIN).append("profile_role b ");
 		sql.append("on a.profile_id = b.profile_id and site_id = 'MTS_2' ");
@@ -186,6 +186,12 @@ public class UserAction extends UserBaseWidget {
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(getCustomSchema());
 		sql.append("mts_subscription_publication_xr e ");
 		sql.append("on a.user_id = e.user_id ");
+		sql.append("left outer join ( ");
+		sql.append("select authentication_id, max(login_dt) as last_login_dt ");
+		sql.append("from authentication_log ");
+		sql.append("where site_id in ('MTS_1', 'MTS_2') ");
+		sql.append("group by authentication_id ");
+		sql.append(") g on d.authentication_id = g.authentication_id "); 
 		sql.append("where 1=1 ");
 		
 		// Filter by Roles
@@ -204,7 +210,7 @@ public class UserAction extends UserBaseWidget {
 		}
 		
 		sql.append(bst.getSQLOrderBy("a.last_nm", "asc"));
-		log.info(sql.length() + "|" + sql + "|" + bst.getLikeSearch());
+		log.debug(sql.length() + "|" + sql + "|" + bst.getLikeSearch());
 		
 		// Query
 		DBProcessor db = new DBProcessor(getDBConnection());

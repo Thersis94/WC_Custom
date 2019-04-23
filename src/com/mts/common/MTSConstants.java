@@ -31,13 +31,28 @@ public class MTSConstants {
 		public String getRoleId() {	return roleId; }
 		public String getRoleName() {	return roleName; }
 	}
-
-	private MTSConstants() {
-		//don't need a constructor - static class
-	}
 	
 	/**
 	 * Site org ID
 	 */
 	public static final String ORGANIZATON_ID = "MTS";
+	
+	/**
+	 * Root folder to utilize when creating a new publication as all articles
+	 * will go in the same folder
+	 */
+	public static final String ROOT_FOLDER_ID = "MTS_PUBLICATIONS";
+	
+	/**
+	 * Root folder path to utilize when creating a new publication as all articles
+	 * will go in the same folder
+	 */
+	public static final String ROOT_FOLDER_PATH = "/content/pubs/";
+	
+	/**
+	 * 
+	 */
+	private MTSConstants() {
+		// don't need a constructor - static class
+	}
 }
