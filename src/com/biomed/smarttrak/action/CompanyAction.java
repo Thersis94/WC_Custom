@@ -299,15 +299,21 @@ public class CompanyAction extends SimpleActionAdapter {
 	 * @param company
 	 */
 	protected void addAlliances(CompanyVO company) {
-		StringBuilder sql = new StringBuilder(450);
+		StringBuilder sql = new StringBuilder(650);
 		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
-		sql.append("SELECT * FROM ").append(customDb).append("BIOMEDGPS_COMPANY_ALLIANCE_XR cax ");
+		sql.append("SELECT cax.company_alliance_xr_id, cax.alliance_type_id, c.short_nm_txt, cax.reference_txt, c.company_nm, at.type_nm, ");
+		sql.append("at.alliance_type_id, case when c.status_no = 'P' and COUNT(p.product_id) > 0 then cax.rel_company_id else '' end as rel_company_id");
+		sql.append("FROM ").append(customDb).append("BIOMEDGPS_COMPANY_ALLIANCE_XR cax ");
 		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_ALLIANCE_TYPE at ");
 		sql.append("ON cax.ALLIANCE_TYPE_ID = at.ALLIANCE_TYPE_ID ");
 		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_COMPANY c ");
 		sql.append("ON c.COMPANY_ID = cax.REL_COMPANY_ID ");
+		sql.append("left join ").append(customDb).append("biomedgps_product p on p.company_id = c.company_id ");
 		sql.append("WHERE cax.COMPANY_ID = ? ");
+		sql.append("group by cax.company_alliance_xr_id, cax.alliance_type_id, c.short_nm_txt, cax.reference_txt, ");
+		sql.append("cax.rel_company_id, c.company_nm, at.type_nm, at.alliance_type_id, c.status_no ");
 		sql.append("ORDER BY at.TYPE_NM, c.COMPANY_NM ");
+		log.debug(sql+"|"+company.getCompanyId());
 
 		List<Object> params = new ArrayList<>();
 		params.add(company.getCompanyId());
