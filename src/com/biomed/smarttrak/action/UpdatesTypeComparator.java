@@ -35,6 +35,6 @@ public class UpdatesTypeComparator implements Comparator<UpdateVO> {
 		if (val != 0) return val;
 
 		//Same type and order - compare by date - newest first.
-		return Integer.valueOf(o2.getPublishDate().compareTo(o1.getPublishDate()));
+		return Integer.valueOf(o1.getPublishDate().compareTo(o2.getPublishDate()));
 	}
 }

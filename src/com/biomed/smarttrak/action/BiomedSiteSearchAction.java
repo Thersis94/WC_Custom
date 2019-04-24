@@ -9,7 +9,6 @@ import com.biomed.smarttrak.util.UpdateIndexer;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
-import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.search.SolrAction;
@@ -31,11 +30,6 @@ import com.smt.sitebuilder.search.SearchDocumentHandler;
  * @since Apr 11, 2017
  ****************************************************************************/
 public class BiomedSiteSearchAction extends SBActionAdapter {
-	
-	private static final String[] SMARTSEARCH_OVERRIDES = new String[]{"indexType", "allysearch_ss", "shortnm_s", "companyshortnm_s", 
-			"productnames_ss", "productshortnames_ss", "productaliasnames_ss", "companytickersearch_s", "companyaliassearch_s", 
-			"metaKeywords", "companyshortnm_s", "ticker_s", "productnames_ss", "productshortnames_ss", "productaliasnames_ss", 
-			"contents", "alias_s", "shortnmsearch_s", "companysearch_s", "parentnm_s"};
 
 	public BiomedSiteSearchAction() {
 		super();
@@ -86,21 +80,15 @@ public class BiomedSiteSearchAction extends SBActionAdapter {
 		req.setAttribute(SmarttrakSolrAction.SECTION, Section.UPDATES_EDITION);
 		actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_2));
 		resp.add(getResults(req));
-		//unclear why this is needed, but it is.  If we don't flush the FQ in gets picked-up by the 1st query.  yes, illogical!  -JM- 08.29.17
+		/*
+		 * unclear why this is needed, but it is.  If we don't flush the FQ in gets picked-up by the 1st query.  yes, illogical!  -JM- 08.29.17
+		 * 
+		 * Update - This is necessary in the use case where you're on the expanded search results page.  The action gets processed twice,
+		 * Once for the Search box in the upper right, and a second time for the main column results.  with fq being set, the results of the first
+		 * iteration are overriding hasfq check for the second.  This ensures they are clear.  -BL- 04.11.19
+		 */
 		req.setParameter("fq", null);
-		
-		// SmartSearch needs to get total results for a full search, but document information for
-		// a limited search. Do that limited search here if in a SmartSearch
-		if (Convert.formatBoolean(req.getParameter("smartSearch"))) {
-			req.setParameter("fieldOverride", SMARTSEARCH_OVERRIDES, true);
 
-			req.setAttribute(SmarttrakSolrAction.SECTION, SmarttrakSolrAction.BROWSE_SECTION);
-			actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
-			req.setParameter("pmid", mod.getPageModuleId());
-			resp.add(getResults(req));
-			req.setParameter("fieldOverride", null);
-		}
-		
 		putModuleData(resp);
 		req.setParameter("searchData", searchData, true);
 	}
