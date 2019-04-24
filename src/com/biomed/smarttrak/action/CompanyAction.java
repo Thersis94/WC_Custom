@@ -302,7 +302,7 @@ public class CompanyAction extends SimpleActionAdapter {
 		StringBuilder sql = new StringBuilder(650);
 		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		sql.append("SELECT cax.company_alliance_xr_id, cax.alliance_type_id, c.short_nm_txt, cax.reference_txt, c.company_nm, at.type_nm, ");
-		sql.append("at.alliance_type_id, case when c.status_no = 'P' and COUNT(p.product_id) > 0 then cax.rel_company_id else '' end as rel_company_id");
+		sql.append("at.alliance_type_id, case when c.status_no = 'P' and COUNT(p.product_id) > 0 then cax.rel_company_id else '' end as rel_company_id ");
 		sql.append("FROM ").append(customDb).append("BIOMEDGPS_COMPANY_ALLIANCE_XR cax ");
 		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_ALLIANCE_TYPE at ");
 		sql.append("ON cax.ALLIANCE_TYPE_ID = at.ALLIANCE_TYPE_ID ");
