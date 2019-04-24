@@ -1,7 +1,7 @@
 package com.wsla.scheduler.job;
 
-import java.io.IOException;
 // JDK 1.8.x
+import java.io.IOException;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -31,6 +31,7 @@ import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
 import com.smt.sitebuilder.action.FileLoader;
 import com.smt.sitebuilder.resource.ResourceBundleLoader;
+
 // WC Libs
 import com.smt.sitebuilder.scheduler.AbstractSMTJob;
 import com.wsla.common.WSLAConstants;
@@ -85,7 +86,7 @@ public class DebitMemoJob extends AbstractSMTJob {
 		// Get a db connection
 		DatabaseConnection dbc = new DatabaseConnection();
 		dbc.setDriverClass("org.postgresql.Driver");
-		dbc.setUrl("jdbc:postgresql://sonic:5432/webcrescendo_wsla_sb?defaultRowFetchSize=25&amp;prepareThreshold=3");
+		dbc.setUrl("jdbc:postgresql://sonic:5432/webcrescendo_wsla5_sb?defaultRowFetchSize=25&amp;prepareThreshold=3");
 		dbc.setUserName("ryan_user_sb");
 		dbc.setPassword("sqll0gin");
 		job.conn = dbc.getConnection();
@@ -134,7 +135,7 @@ public class DebitMemoJob extends AbstractSMTJob {
 	public List<DebitMemoVO> processDebitMemos(String schema) {
 		// 
 		List<DebitMemoVO> memos = getGroupData(schema);
-
+		
 		for (DebitMemoVO memo : memos) {
 			try {
 				// get the credit memos
@@ -196,7 +197,7 @@ public class DebitMemoJob extends AbstractSMTJob {
 		// Create the file loader and write to the file system
 		FileLoader fl = new FileLoader(attributes);
 		fl.setPath(fs.getFullPath());
-		fl.setFileName("test.pdf");
+		fl.setFileName(fs.getStorageFileName());
 		try {
 			fl.setData(createPDF(memo));
 			fl.writeFiles();
@@ -205,7 +206,7 @@ public class DebitMemoJob extends AbstractSMTJob {
 		}
 
 		// Return the full path
-		return "/binary/file_transfer/" + fs.getCanonicalPath() + fs.getStorageFileName();
+		return "/binary/file_transfer" + fs.getCanonicalPath() + fs.getStorageFileName();
 	}
 
 	/**

@@ -28,6 +28,26 @@ import com.smt.sitebuilder.action.SBActionAdapter;
 public class SubscriptionAction extends SBActionAdapter {
 
 	/**
+	 * Enum for the subscription types
+	 */
+	public enum SubscriptionType {
+		USER("USER", "End User"),
+		CORPORATE("CORPORATE", "Corporate Account"),
+		IP("IP", "IP Address"),
+		MULTIPLE("MULTIPLE", "Multi-User Account");
+		
+		private String typeId;
+		private String typeName;
+		SubscriptionType(String typeId, String typeName) { 
+			this.typeId = typeId; 
+			this.typeName = typeName;
+		}
+		
+		public String getTypeId() {	return typeId; }
+		public String getTypeName() {	return typeName; }
+	}
+	
+	/**
 	 * 
 	 */
 	public SubscriptionAction() {

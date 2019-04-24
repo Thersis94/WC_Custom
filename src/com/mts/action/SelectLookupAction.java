@@ -15,6 +15,7 @@ import com.mts.publication.action.PublicationAction;
 import com.mts.publication.data.AssetVO.AssetType;
 import com.mts.publication.data.IssueVO;
 import com.mts.publication.data.PublicationVO;
+import com.mts.subscriber.action.SubscriptionAction.SubscriptionType;
 import com.mts.subscriber.data.MTSUserVO;
 
 // SMT Base Libs
@@ -75,6 +76,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		keyMap.put("assetTypes", new GenericVO("getAssetTypes", Boolean.FALSE));
 		keyMap.put("publications", new GenericVO("getPublications", Boolean.TRUE));
 		keyMap.put("issues", new GenericVO("getIssues", Boolean.TRUE));
+		keyMap.put("subscriptions", new GenericVO("getSubscriptions", Boolean.FALSE));
 	}
 
 	/**
@@ -280,4 +282,19 @@ public class SelectLookupAction extends SBActionAdapter {
 		return data;
 	}
 
+	/**
+	 * gets a lit of asset types for uploading of assets
+	 * @return
+	 */
+	public List<GenericVO> getSubscriptions() {
+		List<GenericVO> data = new ArrayList<>(16);
+		
+		for (SubscriptionType st : SubscriptionType.values()) {
+			data.add(new GenericVO(st.getTypeId(), st.getTypeName()));
+		}
+		
+		Collections.sort(data, (a, b) -> ((String)a.getValue()).compareTo((String)b.getValue()));
+		
+		return data;
+	}
 }

@@ -18,8 +18,8 @@ public class MTSConstants {
 	 * Defines the roles used by this site
 	 */
 	public enum MTSRole {
-		SUBSCRIBER("MEMBER", "Member"),
-		AUTHOR("KITCHEN", "Commisary / Kitchen"),
+		SUBSCRIBER("SUBSCRIBER", "MTS Subscriber"),
+		AUTHOR("AUTHOR", "MTS Author"),
 		ADMIN("100", "Site Administrators");
 		
 		private String roleId;
