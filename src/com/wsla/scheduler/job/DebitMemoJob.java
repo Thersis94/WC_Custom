@@ -1,7 +1,7 @@
 package com.wsla.scheduler.job;
 
-import java.io.IOException;
 // JDK 1.8.x
+import java.io.IOException;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -77,7 +77,7 @@ public class DebitMemoJob extends AbstractSMTJob {
 
 		// Assign the needed attributes
 		job.attributes = new HashMap<>();
-		job.attributes.put(Constants.PATH_TO_BINARY, "/Users/james/Code/git/java/WebCrescendo/binary");
+		job.attributes.put(Constants.PATH_TO_BINARY, "/home/ryan/git/WebCrescendo/binary");
 		job.attributes.put(Constants.CUSTOM_DB_SCHEMA, "custom.");
 		job.attributes.put(Constants.INCLUDE_DIRECTORY, "/WEB-INF/include/");
 		job.attributes.put("fileManagerType", "2");
@@ -85,7 +85,7 @@ public class DebitMemoJob extends AbstractSMTJob {
 		// Get a db connection
 		DatabaseConnection dbc = new DatabaseConnection();
 		dbc.setDriverClass("org.postgresql.Driver");
-		dbc.setUrl("jdbc:postgresql://sonic:5432/webcrescendo_wsla_sb?defaultRowFetchSize=25&amp;prepareThreshold=3");
+		dbc.setUrl("jdbc:postgresql://sonic:5432/webcrescendo_wsla5_sb?defaultRowFetchSize=25&amp;prepareThreshold=3");
 		dbc.setUserName("ryan_user_sb");
 		dbc.setPassword("sqll0gin");
 		job.conn = dbc.getConnection();
@@ -135,8 +135,10 @@ public class DebitMemoJob extends AbstractSMTJob {
 		// 
 		List<DebitMemoVO> memos = getGroupData(schema);
 
+		log.info(memos);
 		for (DebitMemoVO memo : memos) {
 			try {
+				log.info("*******");
 				// get the credit memos
 				this.getCreditMemos(schema, memo);
 
@@ -196,7 +198,7 @@ public class DebitMemoJob extends AbstractSMTJob {
 		// Create the file loader and write to the file system
 		FileLoader fl = new FileLoader(attributes);
 		fl.setPath(fs.getFullPath());
-		fl.setFileName("test.pdf");
+		fl.setFileName(fs.getStorageFileName());
 		try {
 			fl.setData(createPDF(memo));
 			fl.writeFiles();
@@ -205,7 +207,7 @@ public class DebitMemoJob extends AbstractSMTJob {
 		}
 
 		// Return the full path
-		return "/binary/file_transfer/" + fs.getCanonicalPath() + fs.getStorageFileName();
+		return "/binary/file_transfer" + fs.getCanonicalPath() + fs.getStorageFileName();
 	}
 
 	/**
@@ -354,4 +356,3 @@ public class DebitMemoJob extends AbstractSMTJob {
 		memo.setRetailer(prov);
 	}
 }
-
