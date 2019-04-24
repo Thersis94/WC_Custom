@@ -43,28 +43,18 @@ public class RPConstants {
 		private AttributeGroupCode(String codeName) { this.codeName = codeName; }
 		public String getCodeName() { return codeName; }
 	}
-
-	/**
-	 * 
-	 */
-	public enum DataType {
-		LIST("List of Items"),
-		ITEM ("Single Item");
-		
-		private String typeName;
-		DataType(String typeName) { 
-			this.typeName = typeName;
-		}
-
-		public String getTypeName() {	return typeName; }
-	}
-
-	private RPConstants() {
-		//don't need a constructor - static class
-	}
 	
 	/**
 	 * Site org ID
 	 */
 	public static final String ORGANIZATON_ID = "REST_PEER";
+	
+	/**
+	 * Has Schedule Product Attribute Id
+	 */
+	public static final String HAS_SCHEDULE = "RP_HAS_SCHEDULE";
+
+	private RPConstants() {
+		//don't need a constructor - static class
+	}
 }

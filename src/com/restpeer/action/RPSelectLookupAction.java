@@ -7,28 +7,32 @@ import java.util.Collections;
 import java.util.List;
 
 import com.restpeer.action.admin.MemberWidget;
-import com.restpeer.action.admin.ProductWidget;
 import com.restpeer.action.admin.UserWidget;
 import com.restpeer.common.RPConstants;
 import com.restpeer.common.RPConstants.AttributeGroupCode;
-import com.restpeer.common.RPConstants.DataType;
 import com.restpeer.common.RPConstants.RPRole;
 import com.restpeer.data.RPUserVO;
 import com.restpeer.data.MemberVO;
 import com.restpeer.data.MemberVO.MemberType;
-import com.restpeer.data.ProductVO;
 
 // SMT Base Libs
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.commerce.catalog.ProductAttributeContainer;
+import com.siliconmtn.commerce.catalog.ProductAttributeVO;
+import com.siliconmtn.commerce.catalog.ProductVO;
 import com.siliconmtn.common.html.BSTableControlVO;
 import com.siliconmtn.data.GenericVO;
+import com.siliconmtn.data.Node;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.orm.GridDataVO;
+import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
-
+import com.smt.sitebuilder.action.commerce.AjaxControllerFacadeAction;
+import com.smt.sitebuilder.action.commerce.EcommAdminVO;
 // WC3
 import com.smt.sitebuilder.action.commerce.SelectLookupAction;
+import com.smt.sitebuilder.action.commerce.product.EcommProductAction;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.security.SBUserRole;
 
@@ -49,13 +53,9 @@ import com.smt.sitebuilder.security.SBUserRole;
 public class RPSelectLookupAction extends SelectLookupAction {
 
 	static {
-		keyMap.put("uom", new GenericVO("getBillingTypes", Boolean.FALSE));
-
-		keyMap.put("attrType", new GenericVO("getAttributeTypes", Boolean.FALSE));
 		keyMap.put("members", new GenericVO("getMembers", Boolean.TRUE));
 		keyMap.put("memberType", new GenericVO("getMemberTypes", Boolean.FALSE));
 		keyMap.put("memberLocations", new GenericVO("getMemberLocations", Boolean.TRUE));
-		keyMap.put("locationProducts", new GenericVO("getLocationProducts", Boolean.FALSE));
 		keyMap.put("users", new GenericVO("getUsers", Boolean.TRUE));
 	}
 
@@ -104,28 +104,66 @@ public class RPSelectLookupAction extends SelectLookupAction {
 		return data;
 	}
 	
-	
-	
-	
-	
-	
-	
 	/**
-	 * Creates the list of attribute types (list, single, etc ...)
+	 * Gets the list of products in a hierarchy.  If the product is a high level cat,
+	 * the product code is null
+	 * @param req
 	 * @return
 	 */
-	public List<GenericVO> getAttributeTypes() {
-		List<GenericVO> data = new ArrayList<>(16);
+	@Override
+	public List<GenericVO> getLocationProducts(ActionRequest req) {
+		List<GenericVO> data = new ArrayList<>(10);
 		
-		for (DataType dt : DataType.values()) {
-			data.add(new GenericVO(dt, dt.getTypeName()));
+		// If catalogId wasn't passed, then set it to limit the search
+		if (StringUtil.isEmpty(req.getParameter("catalogId"))) {
+			EcommAdminVO ecommData = (EcommAdminVO) req.getAttribute(AjaxControllerFacadeAction.ECOMM_ADMIN_DATA);
+			req.setParameter("catalogId", ecommData.getProductCatalogId());
 		}
 		
-		// Sort the collection by the value
-		Collections.sort(data, (a, b) -> ((String)a.getValue()).compareTo(((String)a.getValue())));
+		// Build the list from the results
+		EcommProductAction pw = new EcommProductAction(getDBConnection(), getAttributes());
+		List<ProductVO> products = pw.getProducts(req, true);
+		for (ProductVO pvo : products) {
+			if (StringUtil.isEmpty(pvo.getParentId())) {
+				data.add(new GenericVO(null, pvo.getProductName()));
+			} else {
+				NumberFormat formatter = NumberFormat.getCurrencyInstance();
+				String name = pvo.getProductName() + " - " + formatter.format(pvo.getMsrpCostNo());
+				String pId = getScheduleFlag(pvo.getAttributes()) + "_" + pvo.getProductId();
+				data.add(new GenericVO(pId, name));
+			}
+		}
 		
 		return data;
 	}
+	
+	/**
+	 * Returns whether the item is schedulable.
+	 * 
+	 * @param container
+	 * @return
+	 */
+	private int getScheduleFlag(ProductAttributeContainer container) {
+		int scheduleFlag = 0;
+		if (container == null) return scheduleFlag;
+		
+		for (Node attribute : container.getRootAttributes()) {
+			ProductAttributeVO attr = (ProductAttributeVO) attribute.getUserObject();
+			if (RPConstants.HAS_SCHEDULE.equals(attr.getAttributeId())) {
+				scheduleFlag = Convert.formatInteger(attr.getValueText());
+				break;
+			}
+		}
+		
+		return scheduleFlag;
+	}
+	
+	
+	
+	
+	
+	
+	
 	/**
 	 * Creates the list of attribute types (list, single, etc ...)
 	 * @return
@@ -210,27 +248,5 @@ public class RPSelectLookupAction extends SelectLookupAction {
 		
 		DBProcessor db = new DBProcessor(getDBConnection());
 		return db.executeSelect(sql.toString(), vals, new GenericVO());
-	}
-	
-	/**
-	 * Gets the list of products in a hierarchy.  If the product is a high level cat,
-	 * the product code is null
-	 * @param req
-	 * @return
-	 */
-	public List<GenericVO> getLocationProducts() {
-		List<GenericVO> data = new ArrayList<>(10);
-		
-		ProductWidget pw = new ProductWidget(getDBConnection(), getAttributes());
-		List<ProductVO> products = pw.getProducts(null, true);
-		for (ProductVO pvo : products) {
-			String pc = pvo.getScheduleFlag() + "_" + pvo.getProductCode();
-			NumberFormat formatter = NumberFormat.getCurrencyInstance();
-			String name = pvo.getName() + " - " + formatter.format(pvo.getPrice());
-			if (StringUtil.isEmpty(pvo.getParentCode())) data.add(new GenericVO(null, pvo.getName()));
-			else data.add(new GenericVO(pc, name));
-		}
-		
-		return data;
 	}
 }
