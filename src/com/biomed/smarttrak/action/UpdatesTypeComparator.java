@@ -3,6 +3,7 @@ package com.biomed.smarttrak.action;
 import java.util.Comparator;
 
 import com.biomed.smarttrak.vo.UpdateVO;
+import com.siliconmtn.util.Convert;
 
 /****************************************************************************
  * <b>Title:</b> UpdatesTypeComparator.java<br/>
@@ -30,11 +31,15 @@ public class UpdatesTypeComparator implements Comparator<UpdateVO> {
 		int val = o1.getType().compareTo(o2.getType());
 		if (val != 0) return val;
 
+		//Compare Dates without time,  Time will throw off ordering.
+		val = Convert.formatStartDate(o1.getPublishDate()).compareTo(Convert.formatStartDate(o2.getPublishDate()));
+		if(val != 0) return val;
+
 		//Second compare by order number
 		val = Integer.valueOf(o1.getOrderNo()).compareTo(o2.getOrderNo());
 		if (val != 0) return val;
 
 		//Same type and order - compare by date - newest first.
-		return Integer.valueOf(o1.getPublishDate().compareTo(o2.getPublishDate()));
+		return o1.getPublishDate().compareTo(o2.getPublishDate());
 	}
 }

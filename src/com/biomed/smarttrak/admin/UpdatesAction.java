@@ -241,7 +241,7 @@ public class UpdatesAction extends ManagementAction {
 	 * @return
 	 */
 	private String formatDetailQuery(int size) {
-		StringBuilder sql = new StringBuilder(500);
+		StringBuilder sql = new StringBuilder(600);
 		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		sql.append("SELECT up.*, xr.*, c.company_nm, m.market_nm, p.product_nm, '");
 		sql.append(getAttribute(Constants.QS_PATH)).append("' as qs_path FROM ").append(schema).append("BIOMEDGPS_UPDATE up ");
@@ -254,7 +254,9 @@ public class UpdatesAction extends ManagementAction {
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("BIOMEDGPS_MARKET m ");
 		sql.append("on m.market_id = up.market_id ");
 		sql.append("WHERE up.UPDATE_ID in (").append(DBUtil.preparedStatmentQuestion(size)).append(") ");
-		sql.append("order by publish_dt desc, order_no asc, up.create_dt desc ");
+
+		//Order by Date(No Time), Order No, date(With Time)
+		sql.append("order by coalesce(cast(up.publish_dt as date), cast(up.create_dt as date)) desc, coalesce(up.order_no, 0), coalesce(up.publish_dt, up.create_dt) desc ");
 
 		return sql.toString();
 	}
@@ -300,7 +302,7 @@ public class UpdatesAction extends ManagementAction {
 		}
 
 		String announcementType = CookieUtil.getValue("updateAnnouncementType", req.getCookies());
-		if(!StringUtil.isEmpty(announcementType)) {
+		if(!StringUtil.isEmpty(announcementType) && !"null".equals(announcementType)) {
 			fq.add(StringUtil.join("announcement_type_i:", announcementType));
 		}
 
@@ -582,32 +584,119 @@ public class UpdatesAction extends ManagementAction {
 	protected void updateOrder(ActionRequest req) throws ActionException {
 		boolean isOlder = req.getBooleanParameter("isOlder");
 		String updateId = req.getParameter("targetId");
+		String refId = req.getParameter("refId");
 		String refPublishDt = req.getParameter("refPublishDt");
+		int orderNo = req.getIntegerParameter("refOrderNo");
 
-		Calendar refCal = Calendar.getInstance();
-		refCal.setTime(Convert.formatDate(refPublishDt));
-		Instant publishDt = refCal.toInstant();
+		List<String> orderedUpdates = loadOrderedUpdates(refPublishDt);
+		log.debug(orderedUpdates);
+		boolean isSameDay = orderedUpdates.contains(updateId) && orderedUpdates.contains(refId);
 
-		StringBuilder sql = new StringBuilder(150);
-		sql.append("UPDATE ").append(customDbSchema);
-		sql.append("BIOMEDGPS_UPDATE SET PUBLISH_DT = ? WHERE UPDATE_ID = ? ");
-
-		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			if(isOlder) {
-				publishDt = publishDt.minusMillis(1000);
-			} else {
-				publishDt = publishDt.plusMillis(1000);
-			}
-			ps.setTimestamp(1, Timestamp.from(publishDt));
-			ps.setString(2, updateId);
-			ps.executeUpdate();
+		/*
+		 * If updates are on the same day, perform the re-order.  If they're
+		 * different, adjust the publish Date and then re-call to fix ordering.
+		 */
+		if(isSameDay) {
+			adjustOrder(orderedUpdates, updateId, refId, isOlder);
+			saveOrder(orderedUpdates);
 
 			UpdateIndexer idx = UpdateIndexer.makeInstance(getAttributes());
 			idx.setDBConnection(dbConn);
-			idx.indexItems(updateId);
-		} catch (SQLException e) {
-			throw new ActionException(e);
+			idx.indexItems(orderedUpdates.toArray(new String [orderedUpdates.size()]));
+		} else if(!req.getBooleanParameter("processed")) {
+			log.debug("Different Dates Detected!");
+			Calendar refCal = Calendar.getInstance();
+			refCal.setTime(Convert.formatDate(refPublishDt));
+			Instant publishDt = refCal.toInstant();
+
+			StringBuilder sql = new StringBuilder(175);
+			sql.append("UPDATE ").append(customDbSchema);
+			sql.append("BIOMEDGPS_UPDATE SET PUBLISH_DT = ?, ORDER_NO = ? WHERE UPDATE_ID = ? ");
+
+			try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+				ps.setTimestamp(1, Timestamp.from(publishDt));
+				ps.setInt(2, ++orderNo);
+				ps.setString(3, updateId);
+				ps.executeUpdate();
+				req.setParameter("processed", "true");
+				updateOrder(req);
+			} catch (SQLException e) {
+				throw new ActionException(e);
+			}
 		}
+
+	}
+
+	/**
+	 * Save the Order No of orderedUpdates to the db.
+	 * @param orderedUpdates
+	 */
+	private void saveOrder(List<String> orderedUpdates) {
+		String sql = StringUtil.join("update ", getCustomSchema(), "biomedgps_update set order_no = ? where update_id = ?");
+		try(PreparedStatement ps = dbConn.prepareStatement(sql)) {
+			for(int i = 0; i < orderedUpdates.size(); i++) {
+				ps.setInt(1, i);
+				ps.setString(2, orderedUpdates.get(i));
+				ps.addBatch();
+			}
+
+			int[] updateCount = ps.executeBatch();
+			log.debug(String.format("Re-Ordered %d records", updateCount[1]));
+		} catch (SQLException e) {
+			log.error("Error Processing Code", e);
+		}
+	}
+
+	/**
+	 * Adjust the Order No within the list of Updates.
+	 * @param orderedUpdates
+	 * @param updateId
+	 * @param refId
+	 * @param isOlder
+	 */
+	private void adjustOrder(List<String> orderedUpdates, String updateId, String refId, boolean isOlder) {
+		int refPos = orderedUpdates.indexOf(refId);
+		int updatePos = orderedUpdates.indexOf(updateId);
+
+		/*
+		 * If the update is older relative to refPos, add it after refPos and remove
+		 * at updatePos to ensure update No is correct.
+		 * 
+		 * Otherwise add the update ad refPos which shifts everything and remove
+		 * at updatePos + 1 since updates below will be shifted by 1.
+		 */
+		if(isOlder) {
+			orderedUpdates.add(refPos + 1, updateId);
+			orderedUpdates.remove(updatePos);
+		} else {
+			orderedUpdates.add(refPos, updateId);
+			orderedUpdates.remove(updatePos + 1);
+		}
+	}
+
+	/**
+	 * Retrieve all updates for the given publish Date.
+	 * @param refPublishDt
+	 * @return
+	 */
+	private List<String> loadOrderedUpdates(String refPublishDt) {
+		List<String> orderedUpdates = new ArrayList<>();
+
+		StringBuilder sql = new StringBuilder(200);
+		sql.append("select update_id from ").append(getCustomSchema());
+		sql.append("biomedgps_update where cast(publish_dt as date) = cast(? as date) ");
+		sql.append("order by coalesce(cast(publish_dt as date), cast(create_dt as date)) desc, coalesce(order_no, 0)");
+
+		try(PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, refPublishDt);
+			ResultSet rs = ps.executeQuery();
+			while(rs.next()) {
+				orderedUpdates.add(rs.getString("UPDATE_ID"));
+			}
+		} catch(SQLException e) {
+			log.error("Problem Retrieving Updates");
+		}
+		return orderedUpdates;
 	}
 
 	/**

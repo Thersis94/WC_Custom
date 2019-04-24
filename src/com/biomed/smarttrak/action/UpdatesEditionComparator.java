@@ -33,7 +33,7 @@ public class UpdatesEditionComparator implements Comparator<UpdateVO> {
 		//same type - compare by date - newest first.
 		val = o1.getPublishDate().compareTo(o2.getPublishDate());
 		if (val != 0) return val;
-		
+
 		//same dates - compare by order - lowest # first.
 		return Integer.valueOf(o1.getOrderNo()).compareTo(o2.getOrderNo());
 	}
