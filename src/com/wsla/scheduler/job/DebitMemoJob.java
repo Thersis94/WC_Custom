@@ -94,7 +94,7 @@ public class DebitMemoJob extends AbstractSMTJob {
 		job.getResourceBundleData("en", "US", "WSLA_BUNDLE");
 
 		// Process the job
-		job.log.info("Starting ...");
+		job.log.debug("Starting ...");
 		job.processDebitMemos(StringUtil.checkVal(job.attributes.get(Constants.CUSTOM_DB_SCHEMA)));
 	}
 
@@ -132,13 +132,11 @@ public class DebitMemoJob extends AbstractSMTJob {
 	 * @return
 	 */
 	public List<DebitMemoVO> processDebitMemos(String schema) {
-		// 
 		List<DebitMemoVO> memos = getGroupData(schema);
 
-		log.info(memos);
+		log.debug(memos);
 		for (DebitMemoVO memo : memos) {
 			try {
-				log.info("*******");
 				// get the credit memos
 				this.getCreditMemos(schema, memo);
 
