@@ -290,7 +290,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		List<GenericVO> data = new ArrayList<>(16);
 		
 		for (SubscriptionType st : SubscriptionType.values()) {
-			data.add(new GenericVO(st.getTypeId(), st.getTypeName()));
+			data.add(new GenericVO(st.name(), st.getTypeName()));
 		}
 		
 		Collections.sort(data, (a, b) -> ((String)a.getValue()).compareTo((String)b.getValue()));

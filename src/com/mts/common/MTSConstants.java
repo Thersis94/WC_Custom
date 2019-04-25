@@ -38,6 +38,16 @@ public class MTSConstants {
 	public static final String ORGANIZATON_ID = "MTS";
 	
 	/**
+	 * Portal Site ID
+	 */
+	public static final String PORTAL_SITE_ID = "MTS_2";
+	
+	/**
+	 * Portal Site ID
+	 */
+	public static final String SUBSCRIBER_SITE_ID = "MTS_1";
+	
+	/**
 	 * Root folder to utilize when creating a new publication as all articles
 	 * will go in the same folder
 	 */
