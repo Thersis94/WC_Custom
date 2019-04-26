@@ -6,14 +6,11 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import com.restpeer.action.admin.MemberWidget;
 import com.restpeer.action.admin.UserWidget;
 import com.restpeer.common.RPConstants;
 import com.restpeer.common.RPConstants.AttributeGroupCode;
 import com.restpeer.common.RPConstants.RPRole;
 import com.restpeer.data.RPUserVO;
-import com.restpeer.data.MemberVO;
-import com.restpeer.data.MemberVO.MemberType;
 
 // SMT Base Libs
 import com.siliconmtn.action.ActionInitVO;
@@ -33,8 +30,6 @@ import com.smt.sitebuilder.action.commerce.EcommAdminVO;
 // WC3
 import com.smt.sitebuilder.action.commerce.SelectLookupAction;
 import com.smt.sitebuilder.action.commerce.product.EcommProductAction;
-import com.smt.sitebuilder.common.constants.Constants;
-import com.smt.sitebuilder.security.SBUserRole;
 
 /****************************************************************************
  * <b>Title</b>: SelectLookupAction.java
@@ -53,8 +48,6 @@ import com.smt.sitebuilder.security.SBUserRole;
 public class RPSelectLookupAction extends SelectLookupAction {
 
 	static {
-		keyMap.put("members", new GenericVO("getMembers", Boolean.TRUE));
-		keyMap.put("memberType", new GenericVO("getMemberTypes", Boolean.FALSE));
 		keyMap.put("memberLocations", new GenericVO("getMemberLocations", Boolean.TRUE));
 		keyMap.put("users", new GenericVO("getUsers", Boolean.TRUE));
 	}
@@ -163,40 +156,6 @@ public class RPSelectLookupAction extends SelectLookupAction {
 	
 	
 	
-	
-	/**
-	 * Creates the list of attribute types (list, single, etc ...)
-	 * @return
-	 */
-	public List<GenericVO> getMembers(ActionRequest req) {
-		List<GenericVO> data = new ArrayList<>(16);
-		
-		String roleId = ((SBUserRole)req.getSession().getAttribute(Constants.ROLE_DATA)).getRoleId();
-		String userId = "";// Add this when the login module is added
-		
-		MemberWidget mw = new MemberWidget(getDBConnection(), getAttributes());
-		List<MemberVO> members = mw.getMembers(userId, roleId, req.getParameter("memberType"));
-		
-		for (MemberVO mvo : members) {
-			data.add(new GenericVO(mvo.getMemberId(), mvo.getName()));
-		}
-		
-		return data;
-	}
-	
-	/**
-	 * Creates the list of attribute types (list, single, etc ...)
-	 * @return
-	 */
-	public List<GenericVO> getMemberTypes() {
-		List<GenericVO> data = new ArrayList<>(16);
-		
-		for (MemberType mt : MemberType.values()) {
-			data.add(new GenericVO(mt, mt.getMemberName()));
-		}
-		
-		return data;
-	}
 	
 	/**
 	 * Returns a list of users

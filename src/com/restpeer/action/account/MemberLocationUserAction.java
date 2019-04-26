@@ -8,7 +8,7 @@ import java.util.Map;
 // RP Libs
 import com.restpeer.common.RPConstants.RPRole;
 import com.restpeer.data.LocationUserVO;
-import com.restpeer.data.MemberVO.MemberType;
+import com.restpeer.common.RPConstants.MemberType;
 
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;

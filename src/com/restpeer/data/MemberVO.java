@@ -6,6 +6,8 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+import com.restpeer.common.RPConstants.MemberType;
+
 // SMT Base Libs
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.parser.BeanDataVO;
@@ -27,21 +29,6 @@ import com.siliconmtn.db.orm.Table;
 @Table(name="rp_member")
 public class MemberVO extends BeanDataVO {
 
-	/**
-	 * 
-	 */
-	public enum MemberType {
-		KITCHEN("Kitchen Facility"),
-		RESTAURANT_PEER("Restaurant Peer"),
-		CUSTOMER("Mobile Restaurateur");
-		
-		private String memberName;
-		MemberType(String memberName) { 
-			this.memberName = memberName;
-		}
-
-		public String getMemberName() {	return memberName; }
-	}
 	
 	/**
 	 * 

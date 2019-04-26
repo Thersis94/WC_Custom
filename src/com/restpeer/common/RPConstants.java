@@ -45,6 +45,25 @@ public class RPConstants {
 	}
 	
 	/**
+	 * Member Types
+	 */
+	public enum MemberType {
+		KITCHEN(13000, "Kitchen Facility"),
+		RESTAURANT_PEER(13001, "Restaurant Peer"),
+		CUSTOMER(13002, "Mobile Restaurateur");
+		
+		private String memberName;
+		private int dealerId;
+		MemberType(int dealerId, String memberName) { 
+			this.memberName = memberName;
+			this.dealerId = dealerId;
+		}
+
+		public String getMemberName() {	return memberName; }
+		public int getDealerId() {return dealerId; }
+	}
+
+	/**
 	 * Site org ID
 	 */
 	public static final String ORGANIZATON_ID = "REST_PEER";
