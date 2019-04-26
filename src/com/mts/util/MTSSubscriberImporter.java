@@ -7,11 +7,15 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 // Log4J
 import org.apache.log4j.Logger;
@@ -72,6 +76,7 @@ public class MTSSubscriberImporter {
 	private Map<String, String> countryMap = new HashMap<>();
 	private Connection conn;
 	private Map<String, Object> attributes = new HashMap<>();
+	private Set<String> existingProfiles = new HashSet<>();
 	
 	/**
 	 * 
@@ -145,6 +150,10 @@ public class MTSSubscriberImporter {
 				addProfile(user.getProfile());
 				user.setProfileId(user.getProfile().getProfileId());
 				
+				// If the user is already in the mts_user table, skip them
+				if (existingProfiles.contains(user.getProfileId())) continue;
+				else existingProfiles.add(user.getProfileId());
+				
 				// Add Site Role
 				SBUserRole role = saveRole(user);
 				user.setRoleId(role.getRoleId());
@@ -155,10 +164,24 @@ public class MTSSubscriberImporter {
 				db.insert(user);
 				db.insert(user.getSubscriptions().get(0));
 			} catch (Exception e) {
-				log.error(user.getSecondaryUserId() + "|" + user.getFullName() + "|" + e.getMessage());
+				log.error(user.getSecondaryUserId() + "|" + user.getFullName() + "|" + e.getMessage(), e);
 			}
 			
 			if ((ctr++ % 10) == 0) log.info("Records Processed: " + ctr);
+		}
+	}
+	
+	/**
+	 * Checks for current users and loads the profile ID.  this way,
+	 * if a user is loaded, we can skip the loading of their user acct
+	 * @throws SQLException
+	 */
+	public void loadCurrentUsers() throws SQLException {
+		String sql = "select profile_id from custom.mts_user";
+		try (PreparedStatement ps = conn.prepareStatement(sql)) {
+			try (ResultSet rs = ps.executeQuery()) {
+				existingProfiles.add(rs.getString(1));
+			}
 		}
 	}
 	
@@ -189,6 +212,12 @@ public class MTSSubscriberImporter {
 		role.setProfileId(user.getProfileId());
 		role.setRoleId(user.getRoleId());
 		role.setStatusId(SecurityController.STATUS_ACTIVE);
+		
+		// If the profile role id is missing, look for it
+		if (StringUtil.isEmpty(role.getProfileRoleId())) {
+			String prid = new ProfileRoleManager().checkRole(user.getProfileId(), MTSConstants.PORTAL_SITE_ID, null, null, conn);
+			if (! StringUtil.isEmpty(prid)) role.setProfileRoleId(prid);
+		}
 
 		new ProfileRoleManager().addRole(role, conn);
 		return role;
@@ -265,7 +294,7 @@ public class MTSSubscriberImporter {
 					user.setSubscriptionType(SubscriptionType.valueOf(typeMap.get(row.getCell(6).getStringCellValue().toLowerCase())));
 					user.setCreateDate(Convert.formatDate("dd-MMM-yyyy", row.getCell(7) + ""));
 					user.setExpirationDate(Convert.formatDate("dd-MMM-yyyy", row.getCell(8) + ""));
-					user.setPrintCopyFlag(Convert.formatInteger(row.getCell(10).getStringCellValue() + ""));
+					user.setPrintCopyFlag(Convert.formatBoolean(row.getCell(10).getStringCellValue()) ? 1 : 0);
 					user.setEmailAddress((row.getCell(11) != null) ? row.getCell(11).getStringCellValue() : null);
 					user.setRoleId(MTSRole.SUBSCRIBER.getRoleId());
 					user.setActiveFlag(1);

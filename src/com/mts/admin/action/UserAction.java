@@ -6,8 +6,8 @@ import java.util.Map;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-import com.mts.common.MTSConstants;
 // MTS Libs
+import com.mts.common.MTSConstants;
 import com.mts.subscriber.action.SubscriptionAction;
 import com.mts.subscriber.data.MTSUserVO;
 
@@ -261,7 +261,7 @@ public class UserAction extends UserBaseWidget {
 		sql.append("left outer join ( ");
 		sql.append("select authentication_id, max(login_dt) as last_login_dt ");
 		sql.append("from authentication_log ");
-		sql.append("where site_id in ('MTS_1', 'MTS_2') ");
+		sql.append("where site_id like 'MTS%' ");
 		sql.append("group by authentication_id ");
 		sql.append(") g on d.authentication_id = g.authentication_id "); 
 		sql.append("where 1=1 ");

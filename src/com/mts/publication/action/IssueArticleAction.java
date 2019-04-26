@@ -5,8 +5,10 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
+import com.mts.publication.data.DocumentCategoryVO;
 // MTS Libs
 import com.mts.publication.data.MTSDocumentVO;
 
@@ -100,6 +102,12 @@ public class IssueArticleAction extends SBActionAdapter {
 				if (rs.next()) doc = new MTSDocumentVO(rs);
 			}
 		}
+		
+		// Get the categories
+		log.info("AID: " + doc.getActionId());
+		String s = "select widget_meta_data_id from widget_meta_data_xr where action_id = ?";
+		DBProcessor db = new DBProcessor(getDBConnection());
+		doc.setCategories(db.executeSelect(s, Arrays.asList(doc.getActionId()), new DocumentCategoryVO()));
 		
 		return doc;
 	}

@@ -42,6 +42,7 @@ public class MTSDocumentVO extends DocumentVO {
 	private Date publishDate;
 	private String uniqueCode;
 	private String authorId;
+	private String sbActionId;
 	
 	// Sub-Beans
 	private List<AssetVO> assets = new ArrayList<>();
@@ -153,6 +154,13 @@ public class MTSDocumentVO extends DocumentVO {
 	}
 
 	/**
+	 * @param sbActionId the sbActionId to set
+	 */
+	public void setSbActionId(String sbActionId) {
+		this.sbActionId = sbActionId;
+	}
+
+	/**
 	 * @return the author
 	 */
 	public MTSUserVO getAuthor() {
@@ -253,5 +261,11 @@ public class MTSDocumentVO extends DocumentVO {
 		this.publicationName = publicationName;
 	}
 
+	/**
+	 * @return the sbActionId
+	 */
+	public String getSbActionId() {
+		return sbActionId;
+	}
 }
 

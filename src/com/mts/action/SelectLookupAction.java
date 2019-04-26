@@ -203,7 +203,17 @@ public class SelectLookupAction extends SBActionAdapter {
 	 */
 	public List<GenericVO> getUsers(ActionRequest req) {
 		List<GenericVO> data = new ArrayList<>(10);
+		String roleId = req.getParameter("roleId");
+		BSTableControlVO bst = new BSTableControlVO(req, MTSUserVO.class);
+		bst.setLimit(1000);
 		
+		UserAction ua = new UserAction(getDBConnection(), getAttributes());
+		GridDataVO<MTSUserVO> users = ua.getAllUsers(bst, roleId);
+		
+		for (MTSUserVO user : users.getRowData()) {
+			data.add(new GenericVO(user.getUserId(), user.getFullName()));
+		}
+
 		return data;
 	}
 	
