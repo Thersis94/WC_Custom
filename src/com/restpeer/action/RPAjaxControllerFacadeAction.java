@@ -5,7 +5,6 @@ import com.restpeer.action.account.LocationAttributeWidget;
 import com.restpeer.action.account.LocationProductAction;
 import com.restpeer.action.account.LocationProductScheduleAction;
 import com.restpeer.action.account.MemberLocationUserAction;
-import com.restpeer.action.admin.MemberLocationWidget;
 
 // SMT Base Libs
 import com.siliconmtn.action.ActionInitVO;
@@ -52,7 +51,6 @@ public class RPAjaxControllerFacadeAction extends AjaxControllerFacadeAction {
 		super.loadTypes();
 		actionMap.put(DEFAULT_TYPE, RPSelectLookupAction.class);
 		
-		actionMap.put(MemberLocationWidget.AJAX_KEY, MemberLocationWidget.class);
 		actionMap.put(UserWidget.AJAX_KEY, UserWidget.class);
 		actionMap.put(MemberLocationUserAction.AJAX_KEY, MemberLocationUserAction.class);
 		actionMap.put(LocationProductAction.AJAX_KEY, LocationProductAction.class);

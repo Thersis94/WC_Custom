@@ -21,7 +21,6 @@ import com.siliconmtn.commerce.catalog.ProductVO;
 import com.siliconmtn.common.html.BSTableControlVO;
 import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.data.Node;
-import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.orm.GridDataVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -48,7 +47,6 @@ import com.smt.sitebuilder.action.commerce.product.EcommProductAction;
 public class RPSelectLookupAction extends SelectLookupAction {
 
 	static {
-		keyMap.put("memberLocations", new GenericVO("getMemberLocations", Boolean.TRUE));
 		keyMap.put("users", new GenericVO("getUsers", Boolean.TRUE));
 	}
 
@@ -151,12 +149,6 @@ public class RPSelectLookupAction extends SelectLookupAction {
 		return scheduleFlag;
 	}
 	
-	
-	
-	
-	
-	
-	
 	/**
 	 * Returns a list of users
 	 * @param req
@@ -174,38 +166,5 @@ public class RPSelectLookupAction extends SelectLookupAction {
 		}
 		
 		return data;
-	}
-	
-	/**
-	 * Auto-complete lookup form member locations
-	 * @param req
-	 * @return
-	 */
-	public List<GenericVO> getMemberLocations(ActionRequest req) {
-		List<Object> vals = new ArrayList<>();
-		String memberType = StringUtil.checkVal(req.getParameter("memberType"));
-		
-		StringBuilder sql = new StringBuilder(128);
-		sql.append("select member_location_id as key, member_nm || ' - ' || location_nm as value ");
-		sql.append("from custom.rp_member a  ");
-		sql.append("inner join custom.rp_member_location b "); 
-		sql.append("on a.member_id = b.member_id where 1=1 ");
-		if(! memberType.isEmpty()) {
-			sql.append("and member_type_cd = ? ");
-			vals.add(memberType);
-		}
-		
-		BSTableControlVO bst = new BSTableControlVO(req);
-		if (bst.hasSearch()) {
-			sql.append("and (lower(member_nm) like ? or lower(location_nm) like ?) ");
-			vals.add(bst.getLikeSearch().toLowerCase());
-			vals.add(bst.getLikeSearch().toLowerCase());
-		}
-		
-		sql.append("order by member_nm, location_nm limit 10");
-		log.info(sql.length() + "|" + sql + "|" + vals);		
-		
-		DBProcessor db = new DBProcessor(getDBConnection());
-		return db.executeSelect(sql.toString(), vals, new GenericVO());
 	}
 }
