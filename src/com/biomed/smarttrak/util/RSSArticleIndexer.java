@@ -79,7 +79,7 @@ public class RSSArticleIndexer extends SMTAbstractIndex {
 	 * @return
 	 * @throws SQLException
 	 */
-	private List<SolrDocumentVO> getDocuments(String feedGroupId, List<String> documentIds) {
+	protected List<SolrDocumentVO> getDocuments(String feedGroupId, List<String> documentIds) {
 		NewsroomAction na = new NewsroomAction();
 		na.setDBConnection(new SMTDBConnection(dbConn));
 		na.setAttributes(getAttributes());
