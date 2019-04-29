@@ -14,7 +14,8 @@ package com.wsla.common;
  ****************************************************************************/
 
 public enum WSLALocales {
-	en_US("US English"), es_MX("MX Spanish");
+	en_US("US English"), es_MX("MX Espanol"), es_HN("HN Espanol"),es_CR("CR Espanol"),
+	es_GT("GT Espanol"),es_DO("DO Espanol");
 	
 	private String desc;
 	public String getDesc() { return desc;}
