@@ -8,7 +8,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import com.mts.publication.data.DocumentCategoryVO;
 // MTS Libs
 import com.mts.publication.data.MTSDocumentVO;
 
@@ -20,9 +19,11 @@ import com.siliconmtn.common.html.BSTableControlVO;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.*;
 import com.siliconmtn.util.StringUtil;
+
 //WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.content.DocumentAction;
+import com.smt.sitebuilder.action.metadata.WidgetMetadataVO;
 
 /****************************************************************************
  * <b>Title</b>: IssueArticleAction.java
@@ -104,11 +105,9 @@ public class IssueArticleAction extends SBActionAdapter {
 		}
 		
 		// Get the categories
-		log.info("AID: " + doc.getActionId());
-		String s = "select widget_meta_data_id from widget_meta_data_xr where action_id = ?";
+		String s = "select * from widget_meta_data_xr where action_id = ?";
 		DBProcessor db = new DBProcessor(getDBConnection());
-		doc.setCategories(db.executeSelect(s, Arrays.asList(doc.getActionId()), new DocumentCategoryVO()));
-		
+		doc.setCategories(db.executeSelect(s, Arrays.asList(doc.getActionId()), new WidgetMetadataVO()));
 		return doc;
 	}
 	
@@ -125,18 +124,27 @@ public class IssueArticleAction extends SBActionAdapter {
 		// Build the sql
 		StringBuilder sql = new StringBuilder(1024);
 		sql.append("select * from ( ");
-		sql.append("select action_nm, action_desc, publish_dt, b.action_id, b.pending_sync_flg, d.issue_id, c.* from custom.mts_document a "); 
+		sql.append("select action_nm, action_desc, publish_dt, b.action_id, ");
+		sql.append("b.pending_sync_flg, d.issue_id, d.publication_id, document_id, c.* ");
+		sql.append("from ").append(getCustomSchema()).append("mts_document a "); 
 		sql.append("inner join sb_action b on a.action_group_id = b.action_group_id "); 
-		sql.append("left outer join custom.mts_user c on a.author_id = c.user_id ");
-		sql.append("left outer join custom.mts_issue d on a.issue_id = d.issue_id ");
+		sql.append("left outer join ").append(getCustomSchema()).append("mts_user c ");
+		sql.append("on a.author_id = c.user_id ");
+		sql.append("left outer join ").append(getCustomSchema()).append("mts_issue d ");
+		sql.append("on a.issue_id = d.issue_id ");
 		sql.append("where pending_sync_flg > 0 ");
 		sql.append("union ");
-		sql.append("select action_nm, action_desc, publish_dt, b.action_id, b.pending_sync_flg, d.issue_id, c.* from custom.mts_document a ");
+		sql.append("select action_nm, action_desc, publish_dt, b.action_id, ");
+		sql.append("b.pending_sync_flg, d.issue_id, d.publication_id, document_id, c.* ");
+		sql.append("from ").append(getCustomSchema()).append("mts_document a ");
 		sql.append("inner join sb_action b on a.action_group_id = b.action_group_id "); 
-		sql.append("left outer join custom.mts_user c on a.author_id = c.user_id ");
-		sql.append("left outer join custom.mts_issue d on a.issue_id = d.issue_id ");
+		sql.append("left outer join ").append(getCustomSchema()).append("mts_user c ");
+		sql.append("on a.author_id = c.user_id ");
+		sql.append("left outer join ").append(getCustomSchema()).append("mts_issue d ");
+		sql.append("on a.issue_id = d.issue_id ");
 		sql.append("where b.action_group_id not in ( ");
-		sql.append("select action_group_id from sb_action where organization_id = 'MTS' group by action_group_id having count(*) > 1 ");
+		sql.append("select action_group_id from sb_action where organization_id = 'MTS' ");
+		sql.append("group by action_group_id having count(*) > 1 ");
 		sql.append(") ");
 		sql.append(") as articles ");
 		sql.append("where 1=1 ");
@@ -176,19 +184,19 @@ public class IssueArticleAction extends SBActionAdapter {
 		
 		// Filter by tool bar publication filter
 		if (! StringUtil.isEmpty(req.getParameter("filterPublicationId"))) {
-			sql.append("and d.publication_id = ? ");
+			sql.append("and publication_id = ? ");
 			vals.add(req.getParameter("filterPublicationId"));
 		}
 		
 		// Filter by tool bar Issue filter
 		if (! StringUtil.isEmpty(req.getParameter("filterIssueId"))) {
-			sql.append("and a.issue_id = ? ");
+			sql.append("and issue_id = ? ");
 			vals.add(req.getParameter("filterIssueId"));
 		}
 		
 		// Filter by tool bar category filter
 		if (! StringUtil.isEmpty(req.getParameter("filterCategoryId"))) {
-			sql.append("and a.document_id in (select action_id from ");
+			sql.append("and document_id in (select action_id from ");
 			sql.append("widget_meta_data_xr ");
 			sql.append("where widget_meta_data_id = ?) ");
 			vals.add(req.getParameter("filterCategoryId"));

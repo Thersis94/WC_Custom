@@ -68,7 +68,8 @@ public class MTSDocumentAction extends SBActionAdapter {
 	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
-		log.info("saving document .... " + req.getParameter("moduleTypeId"));
+		String origSbActionId = req.getParameter(SB_ACTION_ID);
+		
 		ModuleVO mod = (ModuleVO) attributes.get( Constants.MODULE_DATA);
 		mod.setActionId(req.getParameter("moduleTypeId"));
 		
@@ -84,15 +85,18 @@ public class MTSDocumentAction extends SBActionAdapter {
 		
 		try {
 			save(doc);
-			
+
 			// Save the categories
-			String sbActionId = req.getParameter(req.getParameter(SB_ACTION_ID), (String)req.getAttribute(SB_ACTION_ID));
+			String sbActionId = req.getParameter((String)req.getAttribute(SB_ACTION_ID), origSbActionId);
 			String userId = getAdminUser(req).getProfileId();
-			updateMetadata(sbActionId, req.getParameterValues("categories"), userId);
+			String[] cats = StringUtil.checkVal(req.getParameter("categories")).split("\\,");
+			updateMetadata(sbActionId, cats, userId);
 			
 			//Remove the redirects form the admin actions and return the data
 			req.removeAttribute(Constants.REDIRECT_REQUEST);
 			req.removeAttribute(Constants.REDIRECT_URL);
+			doc.setDocument("");
+			
 			setModuleData(doc);
 		} catch (Exception e) {
 			log.error("unable to save document", e);
@@ -130,7 +134,6 @@ public class MTSDocumentAction extends SBActionAdapter {
 	 */
 	public void updateMetadata(String actionId, String[] categories, String userId) 
 	throws DatabaseException {
-
 		// Delete any existing entries
 		String s = "delete from widget_meta_data_xr where action_id = ?";
 		try (PreparedStatement ps = dbConn.prepareStatement(s)) {
@@ -145,12 +148,12 @@ public class MTSDocumentAction extends SBActionAdapter {
 				vo.setCreateDate(new Date());
 				vo.setCreateById(userId);
 				vo.setSbActionId(actionId);
-				vo.setWidgetMetadataId(cat);
+				vo.setWidgetMetadataId(cat.replaceAll("\\s", ""));
 				cats.add(vo);
 			}
 			
 			DBProcessor db = new DBProcessor(getDBConnection());
-			db.executeBatch(cats);
+			db.executeBatch(cats, true);
 		} catch (Exception e) {
 			log.error("unable to update categories", e);
 			throw new DatabaseException(e.getLocalizedMessage(), e);

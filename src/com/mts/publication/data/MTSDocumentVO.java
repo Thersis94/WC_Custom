@@ -15,6 +15,7 @@ import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
 import com.smt.sitebuilder.action.content.DocumentVO;
+import com.smt.sitebuilder.action.metadata.WidgetMetadataVO;
 
 /****************************************************************************
  * <b>Title</b>: MTSDocumentVO.java
@@ -46,7 +47,7 @@ public class MTSDocumentVO extends DocumentVO {
 	
 	// Sub-Beans
 	private List<AssetVO> assets = new ArrayList<>();
-	private List<DocumentCategoryVO> categories = new ArrayList<>();
+	private List<WidgetMetadataVO> categories = new ArrayList<>();
 	private MTSUserVO author;
 	
 	// Helpers
@@ -101,10 +102,27 @@ public class MTSDocumentVO extends DocumentVO {
 	/**
 	 * @return the categories
 	 */
-	public List<DocumentCategoryVO> getCategories() {
+	public List<WidgetMetadataVO> getCategories() {
 		return categories;
 	}
 
+	/**
+	 * Creates a comma separated list form the collection of categories
+	 * @return
+	 */
+	public String getCatList() {
+		if (categories == null || categories.isEmpty()) return "";
+		
+		StringBuilder val = new StringBuilder(64);
+		int i=0;
+		for (WidgetMetadataVO cat : categories) {
+			if (i++ > 0) val.append(",");
+			val.append(cat.getWidgetMetadataId());
+		}
+		
+		return val.toString();
+	}
+	
 	/**
 	 * @return the publishDate
 	 */
@@ -199,7 +217,7 @@ public class MTSDocumentVO extends DocumentVO {
 	/**
 	 * @param categories the categories to set
 	 */
-	public void setCategories(List<DocumentCategoryVO> categories) {
+	public void setCategories(List<WidgetMetadataVO> categories) {
 		this.categories = categories;
 	}
 	
@@ -207,7 +225,7 @@ public class MTSDocumentVO extends DocumentVO {
 	 * @param cat Add an category to the categories set
 	 */
 	@BeanSubElement
-	public void addCategory(DocumentCategoryVO cat) {
+	public void addCategory(WidgetMetadataVO cat) {
 		this.categories.add(cat);
 	}
 
