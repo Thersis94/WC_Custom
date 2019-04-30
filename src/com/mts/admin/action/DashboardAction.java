@@ -100,7 +100,7 @@ public class DashboardAction extends SimpleActionAdapter {
 		sql.append("and site_id in (select site_id from site where organization_id = 'MTS') ");
 		sql.append("group by label_nm, year_num, month_num "); 
 		sql.append("order by year_num, month_num, serie_nm ");
-		log.info(sql.length() + ":" + sql + vals);
+		log.debug(sql.length() + ":" + sql + vals);
 		
 		// Get the data and process into a chart vo
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());

@@ -55,6 +55,7 @@ public class MTSDocumentVO extends DocumentVO {
 	private String publicationId;
 	private String publicationName;
 	
+	
 	/**
 	 * 
 	 */
@@ -76,6 +77,16 @@ public class MTSDocumentVO extends DocumentVO {
 		super(rs);
 	}
 
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBModuleVO#getApprovableFlag()
+	 */
+	@Override
+	@Column(name="approvable_flg", isReadOnly=true)
+	public Integer getApprovableFlag() {
+		return super.getApprovableFlag();
+	}
+	
 	/**
 	 * @return the documentId
 	 */

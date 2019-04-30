@@ -48,6 +48,7 @@ public class MTSDocumentAction extends SBActionAdapter {
 	 * Ajax Controller key for this action
 	 */
 	public static final String AJAX_KEY = "article";
+	
 	/**
 	 * 
 	 */

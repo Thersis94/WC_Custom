@@ -122,22 +122,24 @@ public class IssueArticleAction extends SBActionAdapter {
 		List<Object> vals = new ArrayList<>();
 		
 		// Build the sql
-		StringBuilder sql = new StringBuilder(1024);
+		StringBuilder sql = new StringBuilder(1280);
 		sql.append("select * from ( ");
-		sql.append("select action_nm, action_desc, publish_dt, b.action_id, ");
-		sql.append("b.pending_sync_flg, d.issue_id, d.publication_id, document_id, c.* ");
+		sql.append("select action_nm, action_desc, publish_dt, b.action_id, b.action_group_id, ");
+		sql.append("b.pending_sync_flg, m.approvable_flg, d.issue_id, d.publication_id, document_id, c.* ");
 		sql.append("from ").append(getCustomSchema()).append("mts_document a "); 
 		sql.append("inner join sb_action b on a.action_group_id = b.action_group_id "); 
+		sql.append("inner join module_type m on b.module_type_id = m.module_type_id "); 
 		sql.append("left outer join ").append(getCustomSchema()).append("mts_user c ");
 		sql.append("on a.author_id = c.user_id ");
 		sql.append("left outer join ").append(getCustomSchema()).append("mts_issue d ");
 		sql.append("on a.issue_id = d.issue_id ");
 		sql.append("where pending_sync_flg > 0 ");
 		sql.append("union ");
-		sql.append("select action_nm, action_desc, publish_dt, b.action_id, ");
-		sql.append("b.pending_sync_flg, d.issue_id, d.publication_id, document_id, c.* ");
+		sql.append("select action_nm, action_desc, publish_dt, b.action_id, b.action_group_id, ");
+		sql.append("b.pending_sync_flg, m.approvable_flg, d.issue_id, d.publication_id, document_id, c.* ");
 		sql.append("from ").append(getCustomSchema()).append("mts_document a ");
 		sql.append("inner join sb_action b on a.action_group_id = b.action_group_id "); 
+		sql.append("inner join module_type m on b.module_type_id = m.module_type_id "); 
 		sql.append("left outer join ").append(getCustomSchema()).append("mts_user c ");
 		sql.append("on a.author_id = c.user_id ");
 		sql.append("left outer join ").append(getCustomSchema()).append("mts_issue d ");
