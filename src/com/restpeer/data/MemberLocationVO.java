@@ -13,6 +13,7 @@ import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
 import com.siliconmtn.gis.GeocodeLocation;
 import com.siliconmtn.util.StringUtil;
+import com.smt.sitebuilder.action.dealer.LocationProfileVO;
 
 /****************************************************************************
  * <b>Title</b>: MemberLocationVO.java
@@ -45,7 +46,7 @@ public class MemberLocationVO extends GeocodeLocation {
 	// Sub-Beans
 	private List<LocationAttributeVO> attributes = new ArrayList<>();
 	private List<ProductVO> products = new ArrayList<>();
-	private List<LocationUserVO> users = new ArrayList<>();
+	private List<LocationProfileVO> users = new ArrayList<>();
 	
 	// Helpers
 	private String memberTypeCode;
@@ -155,7 +156,7 @@ public class MemberLocationVO extends GeocodeLocation {
 	/**
 	 * @return the users
 	 */
-	public List<LocationUserVO> getUsers() {
+	public List<LocationProfileVO> getUsers() {
 		return users;
 	}
 	
@@ -232,7 +233,7 @@ public class MemberLocationVO extends GeocodeLocation {
 	/**
 	 * @param users the users to set
 	 */
-	public void setUsers(List<LocationUserVO> users) {
+	public void setUsers(List<LocationProfileVO> users) {
 		this.users = users;
 	}
 
@@ -241,7 +242,7 @@ public class MemberLocationVO extends GeocodeLocation {
 	 * @param user
 	 */
 	@BeanSubElement
-	public void addUser(LocationUserVO user) {
+	public void addUser(LocationProfileVO user) {
 		this.users.add(user);
 	}
 	

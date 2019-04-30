@@ -158,7 +158,7 @@ public class RPSelectLookupAction extends SelectLookupAction {
 		List<GenericVO> data = new ArrayList<>(10);
 		BSTableControlVO bst = new BSTableControlVO(req, RPUserVO.class);
 		UserWidget uw = new UserWidget(getDBConnection(), getAttributes());
-		GridDataVO<RPUserVO> users = uw.getUsers(req.getParameter("memberLocationId"), bst);
+		GridDataVO<RPUserVO> users = uw.getUsers(req.getParameter("dealerLocationId"), bst);
 		
 		for (RPUserVO user : users.getRowData()) {
 			String name = user.getFirstName() + " " + user.getLastName();

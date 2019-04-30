@@ -50,9 +50,9 @@ public class RPAjaxControllerFacadeAction extends AjaxControllerFacadeAction {
 	protected void loadTypes() {
 		super.loadTypes();
 		actionMap.put(DEFAULT_TYPE, RPSelectLookupAction.class);
-		
-		actionMap.put(UserWidget.AJAX_KEY, UserWidget.class);
 		actionMap.put(MemberLocationUserAction.AJAX_KEY, MemberLocationUserAction.class);
+		actionMap.put(UserWidget.AJAX_KEY, UserWidget.class);
+		
 		actionMap.put(LocationProductAction.AJAX_KEY, LocationProductAction.class);
 		actionMap.put(LocationProductScheduleAction.AJAX_KEY, LocationProductScheduleAction.class);
 		actionMap.put(LocationAttributeWidget.AJAX_KEY, LocationAttributeWidget.class);
