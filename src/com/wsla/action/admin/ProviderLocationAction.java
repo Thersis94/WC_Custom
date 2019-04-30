@@ -171,18 +171,14 @@ public class ProviderLocationAction extends BatchImport {
 	 * @throws SQLException 
 	 */
 	private void updateProviderLocations(String toProvider, String fromProvider) throws SQLException {
-		
 		StringBuilder sql = new StringBuilder(128);
 		sql.append("update ").append(getCustomSchema()).append("wsla_provider_location ");
 		sql.append("set provider_id =? ");
 		sql.append("where provider_id = ?");
-
+		log.debug("sql " + sql.toString() + "|"+toProvider+ "|" +fromProvider);
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-
 			ps.setString(1, toProvider);
 			ps.setString(2, fromProvider);
-
-			log.debug("sql " + sql.toString() + "|"+toProvider+ "|" +fromProvider);
 			ps.executeUpdate();
 		}
 	}
