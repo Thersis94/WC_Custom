@@ -8,6 +8,7 @@ import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
@@ -177,9 +178,7 @@ public class UpdatesAction extends ManagementAction {
 			SolrResponseVO resp = (SolrResponseVO)mod.getActionData();
 			count = (int) resp.getTotalResponses();
 			if (count > 0 && resp.getResultDocuments().size() > 0) {
-
 				List<Object> params = getIdsFromDocs(resp);
-
 				data = loadDetails(params);
 				log.debug("DB Count " + data.size());
 			} else {
@@ -212,7 +211,6 @@ public class UpdatesAction extends ManagementAction {
 			// Replace the biomed update prefix if it exists.
 			if (id.contains(UpdateVO.DOCUMENT_ID_PREFIX))
 				id = id.replace(UpdateVO.DOCUMENT_ID_PREFIX, "");
-			
 			params.add(id);
 		}
 		return params;
@@ -256,7 +254,7 @@ public class UpdatesAction extends ManagementAction {
 		sql.append("WHERE up.UPDATE_ID in (").append(DBUtil.preparedStatmentQuestion(size)).append(") ");
 
 		//Order by Date(No Time), Order No, date(With Time)
-		sql.append("order by coalesce(cast(up.publish_dt as date), cast(up.create_dt as date)) desc, coalesce(up.order_no, 0), coalesce(up.publish_dt, up.create_dt) desc ");
+		sql.append("order by up.publish_dt_sort desc, coalesce(up.order_no, 0) desc ");
 
 		return sql.toString();
 	}
@@ -301,7 +299,8 @@ public class UpdatesAction extends ManagementAction {
 				fq.add(SearchDocumentHandler.HIERARCHY + ":" + s);
 		}
 
-		String announcementType = CookieUtil.getValue("updateAnnouncementType", req.getCookies());
+		String announcementType = StringUtil.checkVal(CookieUtil.getValue("updateAnnouncementType", req.getCookies()), "");
+		log.debug(!"null".equals(announcementType));
 		if(!StringUtil.isEmpty(announcementType) && !"null".equals(announcementType)) {
 			fq.add(StringUtil.join("announcement_type_i:", announcementType));
 		}
@@ -396,16 +395,16 @@ public class UpdatesAction extends ManagementAction {
 	 * @param dateRange
 	 * @return
 	 */
-	public List<Object> getAllUpdates(String updateId) {
+	public List<UpdateVO> getAllUpdates(String... updateIds) {
 		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
-		String sql = formatRetrieveAllQuery(schema, updateId);
+		String sql = formatRetrieveAllQuery(schema, updateIds);
 
 		log.debug(sql);
 		List<Object> params = new ArrayList<>();
-		if (!StringUtil.isEmpty(updateId)) params.add(updateId);
+		if (updateIds != null && updateIds.length > 0) params.addAll(Arrays.asList(updateIds));
 
 		DBProcessor db = new DBProcessor(dbConn, schema);
-		List<Object>  updates = db.executeSelect(sql, params, new UpdateVO());
+		List<UpdateVO>  updates = db.executeSelect(sql, params, new UpdateVO());
 		log.debug("loaded " + updates.size() + " updates");
 		return updates;
 	}
@@ -484,12 +483,12 @@ public class UpdatesAction extends ManagementAction {
 	 * @param schema
 	 * @return
 	 */
-	protected String formatRetrieveAllQuery(String schema, String updateId) {
+	protected String formatRetrieveAllQuery(String schema, String... updateIds) {
 		StringBuilder sql = new StringBuilder(400);
 		sql.append("select up.update_id, up.title_txt, up.message_txt, up.publish_dt, up.type_cd, us.update_section_xr_id, us.section_id, ");
 		sql.append("up.announcement_type, c.short_nm_txt as company_nm, prod.short_nm as product_nm, up.order_no, up.status_cd, ");
 		sql.append("coalesce(up.product_id,prod.product_id) as product_id, coalesce(up.company_id, c.company_id) as company_id, ");
-		sql.append("m.short_nm as market_nm, coalesce(up.market_id, m.market_id) as market_id, ");
+		sql.append("m.short_nm as market_nm, coalesce(up.market_id, m.market_id) as market_id, up.publish_dt_sort, ");
 		sql.append("'").append(getAttribute(Constants.QS_PATH)).append("' as qs_path, up.create_dt "); //need to pass this through for building URLs
 		sql.append("from ").append(schema).append("biomedgps_update up ");
 		sql.append("inner join profile p on up.creator_profile_id=p.profile_id ");
@@ -497,8 +496,11 @@ public class UpdatesAction extends ManagementAction {
 		sql.append(LEFT_OUTER_JOIN).append(schema).append("biomedgps_product prod on up.product_id=prod.product_id ");
 		sql.append(LEFT_OUTER_JOIN).append(schema).append("biomedgps_company c on (up.company_id is not null and up.company_id=c.company_id) or (up.product_id is not null and prod.company_id=c.company_id) "); //join from the update, or from the product.
 		sql.append(LEFT_OUTER_JOIN).append(schema).append("biomedgps_market m on up.market_id=m.market_id ");
-		if (!StringUtil.isEmpty(updateId))
-			sql.append("where up.update_id = ? ");
+		if (updateIds != null && updateIds.length > 0) {
+			sql.append("where up.update_id in (");
+			DBUtil.preparedStatmentQuestion(updateIds.length, sql);
+			sql.append(") ");
+		}
 
 		log.debug(sql);
 		return sql.toString();
@@ -568,7 +570,7 @@ public class UpdatesAction extends ManagementAction {
 		if (Convert.formatBoolean(req.getParameter("markReviewed"))) {
 			markReviewed(req.getParameter(UPDATE_ID));
 		} else if ("orderUpdate".equals(buildAction)) {
-			updateOrder(req);
+			updateOrder(req, false);
 			// We don't want to send redirects after an order update
 			return;
 		} else {
@@ -579,9 +581,10 @@ public class UpdatesAction extends ManagementAction {
 	/**
 	 * Update the Order.  Set Publish_dt on the update records 
 	 * @param req
+	 * @param updateProcessed - Prevent Recursive loop where req has been processed once.
 	 * @throws ActionException
 	 */
-	protected void updateOrder(ActionRequest req) throws ActionException {
+	protected void updateOrder(ActionRequest req, boolean updateProcessed) throws ActionException {
 		boolean isOlder = req.getBooleanParameter("isOlder");
 		String updateId = req.getParameter("targetId");
 		String refId = req.getParameter("refId");
@@ -603,7 +606,7 @@ public class UpdatesAction extends ManagementAction {
 			UpdateIndexer idx = UpdateIndexer.makeInstance(getAttributes());
 			idx.setDBConnection(dbConn);
 			idx.indexItems(orderedUpdates.toArray(new String [orderedUpdates.size()]));
-		} else if(!req.getBooleanParameter("processed")) {
+		} else if(!updateProcessed) {
 			log.debug("Different Dates Detected!");
 			Calendar refCal = Calendar.getInstance();
 			refCal.setTime(Convert.formatDate(refPublishDt));
@@ -611,18 +614,18 @@ public class UpdatesAction extends ManagementAction {
 
 			StringBuilder sql = new StringBuilder(175);
 			sql.append("UPDATE ").append(customDbSchema);
-			sql.append("BIOMEDGPS_UPDATE SET PUBLISH_DT = ?, ORDER_NO = ? WHERE UPDATE_ID = ? ");
+			sql.append("BIOMEDGPS_UPDATE SET PUBLISH_DT = ?, publish_dt_sort = ?, ORDER_NO = ? WHERE UPDATE_ID = ? ");
 
 			try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 				ps.setTimestamp(1, Timestamp.from(publishDt));
-				ps.setInt(2, ++orderNo);
-				ps.setString(3, updateId);
+				ps.setDate(2, Convert.formatSQLDate(Convert.formatStartDate(refCal.getTime())));
+				ps.setInt(3, ++orderNo);
+				ps.setString(4, updateId);
 				ps.executeUpdate();
-				req.setParameter("processed", "true");
-				updateOrder(req);
 			} catch (SQLException e) {
 				throw new ActionException(e);
 			}
+			updateOrder(req, true);
 		}
 
 	}
@@ -634,8 +637,9 @@ public class UpdatesAction extends ManagementAction {
 	private void saveOrder(List<String> orderedUpdates) {
 		String sql = StringUtil.join("update ", getCustomSchema(), "biomedgps_update set order_no = ? where update_id = ?");
 		try(PreparedStatement ps = dbConn.prepareStatement(sql)) {
-			for(int i = 0; i < orderedUpdates.size(); i++) {
-				ps.setInt(1, i);
+			int len = orderedUpdates.size();
+			for(int i = 0; i < len; i++) {
+				ps.setInt(1, len - i);
 				ps.setString(2, orderedUpdates.get(i));
 				ps.addBatch();
 			}
@@ -684,8 +688,8 @@ public class UpdatesAction extends ManagementAction {
 
 		StringBuilder sql = new StringBuilder(200);
 		sql.append("select update_id from ").append(getCustomSchema());
-		sql.append("biomedgps_update where cast(publish_dt as date) = cast(? as date) ");
-		sql.append("order by coalesce(cast(publish_dt as date), cast(create_dt as date)) desc, coalesce(order_no, 0)");
+		sql.append("biomedgps_update where publish_dt_sort = cast(? as date) ");
+		sql.append("order by publish_dt_sort desc, coalesce(order_no, 0) desc, publish_dt desc ");
 
 		try(PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, refPublishDt);
@@ -759,8 +763,10 @@ public class UpdatesAction extends ManagementAction {
 				//Set Converted Date for Create or Update Date depending on action being performed.
 				if(StringUtil.isEmpty(u.getUpdateId())) {
 					u.setCreateDt(Convert.convertTimeZoneOffset(new Date(), "EST5EDT"));
+					u.setOrderNo(getNextOrderNo(req.getParameter("publishDt")));
 				} else {
 					u.setUpdateDt(Convert.convertTimeZoneOffset(new Date(), "EST5EDT"));
+					u.setPublishDtSort(Convert.formatStartDate(req.getParameter("publishDt")));
 				}
 
 				/*
@@ -771,9 +777,11 @@ public class UpdatesAction extends ManagementAction {
 				String oldPubDt = req.getParameter("oldPubDt");
 				if(StringUtil.isEmpty(oldPubDt) || !publishDateSameDay(oldPubDt, req.getParameter("publishDt"))) {
 					u.setPublishDate(calcPublishDt(Convert.formatDate(req.getParameter("publishDt"))));
+					u.setOrderNo(getNextOrderNo(req.getParameter("publishDt")));
 				} else {
 					u.setPublishDate(Convert.formatDate(oldPubDt));
 				}
+				u.setPublishDtSort(Convert.formatStartDate(u.getPublishDate()));
 
 				db.save(u);
 
@@ -790,6 +798,28 @@ public class UpdatesAction extends ManagementAction {
 		} catch (InvalidDataException | DatabaseException e) {
 			throw new ActionException(e);
 		}
+	}
+
+	/**
+	 * Load Next Largest Order No available for the Update at given Date.
+	 * @param parameter
+	 * @return
+	 */
+	private int getNextOrderNo(String publishDt) {
+		StringBuilder sql = new StringBuilder(125);
+		sql.append("select coalesce(max(order_no) + 1, 0) from ").append(getCustomSchema());
+		sql.append("biomedgps_update where publish_dt_sort = ?");
+
+		try(PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setDate(1, Convert.formatSQLDate(Convert.formatStartDate(publishDt, Convert.DATE_DASH_PATTERN)));
+			ResultSet rs = ps.executeQuery();
+			if(rs.next()) {
+				return rs.getInt(1);
+			}
+		} catch (SQLException e) {
+			log.error("Error Processing Code", e);
+		}
+		return 0;
 	}
 
 	/**
