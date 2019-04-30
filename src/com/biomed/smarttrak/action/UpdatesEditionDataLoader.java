@@ -392,8 +392,6 @@ public class UpdatesEditionDataLoader extends SimpleActionAdapter {
 					// If we have not created the base url yet do so with this data
 					if (baseUrl.isEmpty()) baseUrl = buildBaseUrl(vo.getSSLFlg(), vo.getSiteAliasUrl());
 					if (redirectLinks) vo.setMessageTxt(buildRedirectLinks(vo.getMessageTxt(), baseUrl));
-
-					//log.debug("loaded update: " + vo.getUpdateId())
 				}
 
 				//add the new section to it
