@@ -5,7 +5,7 @@ import java.sql.ResultSet;
 import java.time.DayOfWeek;
 import java.time.LocalTime;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -108,7 +108,7 @@ public class MobileRestWidget extends SimpleActionAdapter {
 		log.debug(sql.length() + "|" + sql);
 		
 		// Perform the search
-		Map<String, DealerLocationVO> locations = new HashMap<>();
+		Map<String, DealerLocationVO> locations = new LinkedHashMap<>();
 		try(PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			int idx = 0;
 			for (Object value : vals) {
