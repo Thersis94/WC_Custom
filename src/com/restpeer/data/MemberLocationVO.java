@@ -13,6 +13,7 @@ import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
 import com.siliconmtn.gis.GeocodeLocation;
 import com.siliconmtn.util.StringUtil;
+import com.smt.sitebuilder.action.dealer.DealerAttributeXrVO;
 import com.smt.sitebuilder.action.dealer.LocationProfileVO;
 
 /****************************************************************************
@@ -44,7 +45,7 @@ public class MemberLocationVO extends GeocodeLocation {
 	private Date createDate;
 	
 	// Sub-Beans
-	private List<LocationAttributeVO> attributes = new ArrayList<>();
+	private List<DealerAttributeXrVO> attributes = new ArrayList<>();
 	private List<ProductVO> products = new ArrayList<>();
 	private List<LocationProfileVO> users = new ArrayList<>();
 	
@@ -142,7 +143,7 @@ public class MemberLocationVO extends GeocodeLocation {
 	/**
 	 * @return the attributes
 	 */
-	public List<LocationAttributeVO> getAttributes() {
+	public List<DealerAttributeXrVO> getAttributes() {
 		return attributes;
 	}
 
@@ -201,7 +202,7 @@ public class MemberLocationVO extends GeocodeLocation {
 	/**
 	 * @param attributes the attributes to set
 	 */
-	public void setAttributes(List<LocationAttributeVO> attributes) {
+	public void setAttributes(List<DealerAttributeXrVO> attributes) {
 		this.attributes = attributes;
 	}
 
@@ -210,7 +211,7 @@ public class MemberLocationVO extends GeocodeLocation {
 	 * @param attribute
 	 */
 	@BeanSubElement
-	public void addAttribute(LocationAttributeVO attribute) {
+	public void addAttribute(DealerAttributeXrVO attribute) {
 		this.attributes.add(attribute);
 	}
 	

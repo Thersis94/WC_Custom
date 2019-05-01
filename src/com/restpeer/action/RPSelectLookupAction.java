@@ -162,7 +162,7 @@ public class RPSelectLookupAction extends SelectLookupAction {
 		
 		for (RPUserVO user : users.getRowData()) {
 			String name = user.getFirstName() + " " + user.getLastName();
-			data.add(new GenericVO(user.getUserId(), name));
+			data.add(new GenericVO(user.getProfileId(), name));
 		}
 		
 		return data;

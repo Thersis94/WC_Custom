@@ -1,5 +1,8 @@
 package com.restpeer.action.admin;
 
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 // JDK 1.8.x
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -121,15 +124,36 @@ public class UserWidget extends UserBaseWidget {
 		
 		return data != null && !data.isEmpty() ? data.get(0) : new RPUserVO();
 	}
+	
+	/**
+	 * Gets the User Id from the profile id
+	 * @param profileId
+	 * @return
+	 * @throws SQLException
+	 */
+	public String getUserIdFromProfileId(String profileId) throws SQLException {
+		StringBuilder sql = new StringBuilder(64);
+		sql.append("select user_id from ").append(getCustomSchema()).append("rp_user ");
+		sql.append("where profile_id = ?");
+		log.debug(sql + "|" + profileId);
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, profileId);
+			try (ResultSet rs = ps.executeQuery()) {
+				if (rs.next()) return rs.getString(1);
+				else throw new SQLException("No user found");
+			}
+		}
+	}
 
 	/**
 	 * Loads the list of users.  if a user is already associated to the location
 	 * then do not return them in the list
-	 * @param mlid
+	 * @param dlid
 	 * @param bst
 	 * @return
 	 */
-	public GridDataVO<RPUserVO> getUsers(String mlid, BSTableControlVO bst) {
+	public GridDataVO<RPUserVO> getUsers(String dlid, BSTableControlVO bst) {
 		List<Object> vals = new ArrayList<>();
 		StringBuilder sql = new StringBuilder(344);
 		sql.append("select a.*, coalesce(user_total, 0) as member_assoc_no from ");
@@ -141,13 +165,13 @@ public class UserWidget extends UserBaseWidget {
 		sql.append(") as b on a.profile_id = b.profile_id ");
 		sql.append("where 1=1 ");
 		
-		if (! StringUtil.isEmpty(mlid)) {
+		if (! StringUtil.isEmpty(dlid)) {
 			sql.append("and a.profile_id not in ( "); 
 			sql.append("select profile_id from ");
 			sql.append("dealer_location_profile_xr where dealer_location_id = ? "); 
 			sql.append(") "); 
 			
-			vals.add(mlid);
+			vals.add(dlid);
 		}
 		
 		// Do a like search against first and last name, email and phone

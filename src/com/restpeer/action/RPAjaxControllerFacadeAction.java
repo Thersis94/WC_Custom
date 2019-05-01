@@ -1,7 +1,6 @@
 package com.restpeer.action;
 
 import com.restpeer.action.admin.UserWidget;
-import com.restpeer.action.account.LocationAttributeWidget;
 import com.restpeer.action.account.LocationProductScheduleAction;
 import com.restpeer.action.account.MemberLocationUserAction;
 
@@ -10,7 +9,6 @@ import com.siliconmtn.action.ActionInitVO;
 
 // WC Core
 import com.smt.sitebuilder.action.commerce.AjaxControllerFacadeAction;
-import com.smt.sitebuilder.action.commerce.product.LocationProductAction;
 
 /****************************************************************************
  * <b>Title</b>: AjaxControllerFacadeAction.java
@@ -52,9 +50,6 @@ public class RPAjaxControllerFacadeAction extends AjaxControllerFacadeAction {
 		actionMap.put(DEFAULT_TYPE, RPSelectLookupAction.class);
 		actionMap.put(MemberLocationUserAction.AJAX_KEY, MemberLocationUserAction.class);
 		actionMap.put(UserWidget.AJAX_KEY, UserWidget.class);
-		
-		actionMap.put(LocationProductAction.AJAX_KEY, LocationProductAction.class);
 		actionMap.put(LocationProductScheduleAction.AJAX_KEY, LocationProductScheduleAction.class);
-		actionMap.put(LocationAttributeWidget.AJAX_KEY, LocationAttributeWidget.class);
 	}
 }
