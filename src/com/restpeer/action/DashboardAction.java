@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import com.restpeer.common.RPConstants.MemberType;
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -81,17 +82,18 @@ public class DashboardAction extends SimpleActionAdapter {
 	 */
 	public SMTChartIntfc getNumKitchenLocations(int numMonths) {
 		List<Object> vals = new ArrayList<>();
-		StringBuilder sql = new StringBuilder(544);
+		vals.add(MemberType.KITCHEN.getDealerId());
 		
+		StringBuilder sql = new StringBuilder(544);
 		sql.append(CHART_SELECT);
 		sql.append("to_char(b.create_dt, 'Mon') as label_nm, "); 
 		sql.append("cast(count(*) as varchar(10)) as value, 'New Locations' as serie_nm, ");
 		sql.append("Extract(month from b.create_dt) as month_num, ");
 		sql.append("Extract(year from b.create_dt) as year_num ");
-		sql.append(DBUtil.FROM_CLAUSE).append(getCustomSchema()).append("rp_member a ");
-		sql.append("inner join ").append(getCustomSchema());
-		sql.append("rp_member_location b on a.member_id = b.member_id ");
-		sql.append("where member_type_cd = 'KITCHEN' ");
+		sql.append(DBUtil.FROM_CLAUSE).append("dealer a ");
+		sql.append("inner join ");
+		sql.append("dealer_location b on a.dealer_id = b.dealer_id ");
+		sql.append("where dealer_type_id = ? ");
 		sql.append("and b.create_dt > now() - interval '");
 		sql.append(numMonths).append(" month' ");
 		sql.append("group by label_nm, year_num, month_num "); 
@@ -110,26 +112,30 @@ public class DashboardAction extends SimpleActionAdapter {
 	 */
 	public SMTChartIntfc getNewMemberChart(int numDays) {
 		List<Object> vals = new ArrayList<>();
+		vals.add(MemberType.KITCHEN.getDealerId());
+		vals.add(MemberType.CUSTOMER.getDealerId());
 		
 		StringBuilder sql = new StringBuilder(512);
 		sql.append(CHART_SELECT);
 		sql.append("'Kitchen' as label_nm, cast(coalesce(count(*), 0) as varchar(10)) as value ");
-		sql.append("from ").append(getCustomSchema()).append("rp_member ");
-		sql.append("where member_type_cd = 'KITCHEN' ");
+		sql.append("from ").append("dealer ");
+		sql.append("where dealer_type_id = ? ");
 		sql.append("and create_dt > now() - interval '").append(numDays).append(" day' ");
 		sql.append("and active_flg = 1 ");
 		sql.append("union ");
 		sql.append(CHART_SELECT).append("'Mobile Restaurant' as label_nm, ");
 		sql.append("cast(coalesce(count(*), 0) as varchar(10)) as value ");
-		sql.append("from ").append(getCustomSchema()).append("rp_member ");
-		sql.append("where member_type_cd = 'CUSTOMER' ");
+		sql.append("from ").append("dealer ");
+		sql.append("where dealer_type_id = ? ");
 		sql.append("and create_dt > now() - interval '").append(numDays).append(" day' ");
 		sql.append("and active_flg = 1 ");
 		log.debug(sql.length() + ":" + sql + vals);
 		
 		// Get the data and process into a chart vo
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		db.setGenerateExecutedSQL(log.isDebugEnabled());
 		List<SMTChartDetailVO> chartData = db.executeSelect(sql.toString(), vals, new SMTChartDetailVO());
+		log.debug(")))))))))))))))))))))))))");
 		return buildChart(chartData, "New Members", "", ChartType.PIE, true);
 	}
 	

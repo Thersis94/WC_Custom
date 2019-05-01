@@ -37,7 +37,7 @@ public class ProductScheduleVO extends BeanDataVO {
 	// Members
 	private String scheduleEventId;
 	private String locationProductId;
-	private String memberLocationId;
+	private String dealerLocationId;
 	private DayOfWeek dayOfWeek;
 	private int startTime;
 	private int endTime;
@@ -107,11 +107,11 @@ public class ProductScheduleVO extends BeanDataVO {
 	}
 
 	/**
-	 * @return the memberLocationId
+	 * @return the dealerLocationId
 	 */
 	@Column(name="dealer_location_id")
-	public String getMemberLocationId() {
-		return memberLocationId;
+	public String getDealerLocationId() {
+		return dealerLocationId;
 	}
 
 	/**
@@ -199,10 +199,10 @@ public class ProductScheduleVO extends BeanDataVO {
 	}
 
 	/**
-	 * @param memberLocationId the memberLocationId to set
+	 * @param dealerLocationId the dealerLocationId to set
 	 */
-	public void setMemberLocationId(String memberLocationId) {
-		this.memberLocationId = memberLocationId;
+	public void setDealerLocationId(String dealerLocationId) {
+		this.dealerLocationId = dealerLocationId;
 	}
 
 	/**
