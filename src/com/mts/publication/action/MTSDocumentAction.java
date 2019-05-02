@@ -90,7 +90,10 @@ public class MTSDocumentAction extends SBActionAdapter {
 			// Save the categories
 			String sbActionId = req.getParameter((String)req.getAttribute(SB_ACTION_ID), origSbActionId);
 			String userId = getAdminUser(req).getProfileId();
-			String[] cats = StringUtil.checkVal(req.getParameter("categories")).split("\\,");
+			String[] cats = new String[0];
+			if (!StringUtil.isEmpty(req.getParameter("categories"))) {
+				cats = StringUtil.checkVal(req.getParameter("categories")).split("\\,");
+			}
 			updateMetadata(sbActionId, cats, userId);
 			
 			//Remove the redirects form the admin actions and return the data
@@ -119,7 +122,7 @@ public class MTSDocumentAction extends SBActionAdapter {
 				db.insert(doc);
 			} else {
 				db.update(doc, Arrays.asList(
-					"document_id", "unique_cd", "publish_dt", "update_dt", "authorId"
+					"document_id", "unique_cd", "publish_dt", "update_dt", "author_id"
 				));
 			}
 		} catch (Exception e) {

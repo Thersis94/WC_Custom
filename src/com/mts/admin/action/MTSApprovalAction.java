@@ -59,12 +59,13 @@ public class MTSApprovalAction extends SBActionAdapter {
 			setModuleData(null, 0, "Not Authorized to approve");
 			return;
 		}
-		
-		// Call the approval Action
-		ApprovalAction ac = new ApprovalAction(getDBConnection(), getAttributes());
+
 		try {
+			// Call the approval Action
+			ApprovalAction ac = new ApprovalAction(getDBConnection(), getAttributes());
 			ac.update(req);
 		} catch (Exception e) {
+			log.error("Error performing an approval", e);
 			setModuleData(null, 0, e.getLocalizedMessage());
 		}
 		

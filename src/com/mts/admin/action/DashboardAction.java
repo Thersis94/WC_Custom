@@ -118,12 +118,14 @@ public class DashboardAction extends SimpleActionAdapter {
 		StringBuilder sql = new StringBuilder(544);
 		
 		sql.append("select replace(newid(), '-', '') as chart_detail_id, ");
-		sql.append("to_char(create_dt, 'Mon') as label_nm, "); 
+		sql.append("to_char(b.create_dt, 'Mon') as label_nm, "); 
 		sql.append("cast(count(*) as varchar(10)) as value, 'Subscribers' as serie_nm, ");
-		sql.append("Extract(month from create_dt) as month_num, ");
-		sql.append("Extract(year from create_dt) as year_num ");
-		sql.append(DBUtil.FROM_CLAUSE).append(getCustomSchema()).append("mts_subscription_publication_xr ");
-		sql.append("where create_dt > now() - interval '");
+		sql.append("Extract(month from b.create_dt) as month_num, ");
+		sql.append("Extract(year from b.create_dt) as year_num ");
+		sql.append(DBUtil.FROM_CLAUSE).append(getCustomSchema()).append("mts_subscription_publication_xr a");
+		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("mts_user b ");
+		sql.append("on a.user_id = b.user_id ");
+		sql.append("where b.create_dt > now() - interval '");
 		sql.append(numMonths).append(" month' ");
 		sql.append("group by label_nm, year_num, month_num "); 
 		sql.append("order by year_num, month_num, serie_nm ");
