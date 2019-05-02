@@ -1,17 +1,21 @@
 package com.mts.action;
 
+// JDK 1.8.x
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+// SMT Base Libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.util.Convert;
+
+// WC Libs
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.action.user.UserLoginReport;
 import com.smt.sitebuilder.action.user.UserLoginReport.ProfileReportVO;
@@ -34,7 +38,7 @@ public class MTSReportAction extends SimpleActionAdapter {
 	/**
 	 * Key to be passed to utilize this action
 	 */
-	public static final String SELECT_KEY = "selectType";
+	public static final String SELECT_KEY = "type";
 
 	/**
 	 * Assigns the keys for the select type to method mapping.  In the generic vo
