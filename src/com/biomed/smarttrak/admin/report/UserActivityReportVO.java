@@ -9,10 +9,9 @@ import java.util.Map;
 
 // WC custom
 import com.biomed.smarttrak.vo.UserActivityVO;
-
 // SMTBaseLibs
 import com.siliconmtn.data.report.ExcelReport;
-
+import com.siliconmtn.util.StringUtil;
 // WebCrescendo
 import com.smt.sitebuilder.action.AbstractSBReportVO;
 import com.smt.sitebuilder.util.PageViewVO;
@@ -42,6 +41,11 @@ public class UserActivityReportVO extends AbstractSBReportVO {
 	private static final String PAGE_TITLE = "PAGE_TITLE";
 	private static final String VISIT_DATE = "VISIT_DATE";
 	private static final String URI = "URI";
+	private static final String EMAIL_ADDRESS = "EMAIL_ADDRESS";
+	private static final String ACCOUNT_NM = "ACCOUNT_NAME";
+	private static final String CLASSIFICATION = "CLASSIFICATION";
+	private static final String LICENSE_TYPE = "LICENSE_TYPE";
+	private static final String STATUS = "SUBSCRIBER_STATUS";
 
 	/**
 	* Constructor
@@ -79,7 +83,7 @@ public class UserActivityReportVO extends AbstractSBReportVO {
 	public void setData(Object o) {
 		this.activity =  (Map<String,UserActivityVO>) o;
 	}
-	
+
 	/**
 	 * this method is used to generate the data rows of the excel sheet.
 	 * @param rows
@@ -89,37 +93,25 @@ public class UserActivityReportVO extends AbstractSBReportVO {
 		// loop the account map
 		Map<String,Object> row;
 		for (Map.Entry<String, UserActivityVO> users : activity.entrySet()) {
-			int cnt = 1;
 			UserActivityVO user = users.getValue();
 			// loop users
+			String userName = StringUtil.join(user.getFirstName() + " " + user.getLastName());
 			for (PageViewVO page : user.getPageViews()) {
 				row = new HashMap<>();
-				row.put(NAME, cnt > 1 ? "" : user.getFirstName() + " " + user.getLastName());
+				row.put(NAME, userName);
 				row.put(PAGE, page.getPageDisplayName());
 				row.put(PAGE_TITLE, page.getPageTitleName());
 				row.put(URI, page.getRequestUri());
 				row.put(VISIT_DATE, page.getVisitDate());
+				row.put(EMAIL_ADDRESS, user.getEmailAddressTxt());
+				row.put(ACCOUNT_NM, user.getAccountNm());
+				row.put(CLASSIFICATION, user.getClassification());
+				row.put(LICENSE_TYPE, user.getLicenseType());
+				row.put(STATUS, user.getUserStatus());
 				rows.add(row);
-				cnt++;
 			}
-			
-			// add blank separator row.
-			addBlankRow(rows);
 		}
 
-	}
-	
-	/**
-	 * Adds blank row to the list of data rows.
-	 * @param rows
-	 */
-	protected void addBlankRow(List<Map<String,Object>> rows) {
-		Map<String,Object> row = new HashMap<>();
-		row.put(NAME, "");
-		row.put(PAGE, "");
-		row.put(URI, "");
-		row.put(VISIT_DATE, "");
-		rows.add(row);
 	}
 
 	/**
@@ -133,6 +125,11 @@ public class UserActivityReportVO extends AbstractSBReportVO {
 		headerMap.put(PAGE_TITLE, "Page Title");
 		headerMap.put(URI,"Page Address");
 		headerMap.put(VISIT_DATE,"Visit Date");
+		headerMap.put(EMAIL_ADDRESS,"Subscriber Email Address");
+		headerMap.put(ACCOUNT_NM, "Account Name");
+		headerMap.put(CLASSIFICATION, "Classification");
+		headerMap.put(LICENSE_TYPE, "License Type");
+		headerMap.put(STATUS, "Subscriber status");
 		return headerMap;
 	} 
 	
