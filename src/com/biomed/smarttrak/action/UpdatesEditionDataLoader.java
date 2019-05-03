@@ -256,9 +256,9 @@ public class UpdatesEditionDataLoader extends SimpleActionAdapter {
 		sql.append("and announcement_type > 0 ");
 		sql.append("order by announcement_type, type_cd, ");
 		if (orderSort) {
-			sql.append("order_no, coalesce(publish_dt, up.create_dt) ");
+			sql.append("coalesce(up.order_no,0), coalesce(up.publish_dt, up.create_dt) desc ");
 		} else {
-			sql.append("coalesce(publish_dt, up.create_dt), order_no");
+			sql.append("coalesce(up.publish_dt, up.create_dt) desc, coalesce(up.order_no,0) ");
 		}
 		return sql.toString();
 	}
@@ -451,7 +451,7 @@ public class UpdatesEditionDataLoader extends SimpleActionAdapter {
 		// Determine whether order no or publish dt has priority in the sort.
 		sql.append("order by up.type_cd, ");
 		if (orderSort) {
-			sql.append("coalesce(up.order_no,0), coalesce(up.publish_dt, up.create_dt) ");
+			sql.append("coalesce(up.order_no,0), coalesce(up.publish_dt, up.create_dt) desc");
 		} else {
 			sql.append("coalesce(up.publish_dt, up.create_dt) desc, coalesce(up.order_no,0) ");
 		}
@@ -480,7 +480,7 @@ public class UpdatesEditionDataLoader extends SimpleActionAdapter {
 		sql.append("order by up.type_cd, ");
 		// Determine whether order no or publish dt has priority in the sort.
 		if (orderSort) {
-			sql.append("coalesce(up.order_no,0), coalesce(up.publish_dt, up.create_dt) ");
+			sql.append("coalesce(up.order_no,0), coalesce(up.publish_dt, up.create_dt) desc");
 		} else {
 			sql.append("coalesce(up.publish_dt, up.create_dt) desc, coalesce(up.order_no,0) ");
 		}
