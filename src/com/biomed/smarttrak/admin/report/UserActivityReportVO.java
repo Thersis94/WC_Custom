@@ -66,7 +66,6 @@ public class UserActivityReportVO extends AbstractSBReportVO {
 		log.debug("generateReport...");
 
 		ExcelReport rpt = new ExcelReport(getHeader());
-		rpt.setTitleCell(REPORT_TITLE);
 
 		List<Map<String, Object>> rows = new ArrayList<>(activity.size());
 		generateDataRows(rows);
