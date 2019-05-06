@@ -311,9 +311,9 @@ public class UserActivityAction extends SimpleActionAdapter {
 				if(uav != null) {
 					formatNameValues(se, rs, uav);
 					uav.setAccountNm(rs.getString("account_nm"));
-					uav.setClassification(AccountVO.Classification.getFromId(rs.getInt("classification_id")));
-					uav.setLicenseType(UserVO.LicenseType.getTypeFromCode(rs.getString("status_cd")));
-					uav.setUserStatus(UserVO.Status.getStatusFromCode(rs.getInt("active_flg")));
+					uav.setClassification(AccountVO.Classification.getFromId(rs.getInt("classification_id")).getLabel());
+					uav.setLicenseType(UserVO.LicenseType.getTypeFromCode(rs.getString("status_cd")).getLabel());
+					uav.setUserStatus(UserVO.Status.getStatusFromCode(rs.getInt("active_flg")).getLabel());
 				}
 			}
 		} catch (SQLException sqle) {

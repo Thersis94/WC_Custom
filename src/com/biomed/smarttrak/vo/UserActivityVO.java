@@ -28,9 +28,9 @@ public class UserActivityVO extends UserPageViewVO {
 	private long lastAccessMinutes;
 	private String emailAddressTxt;
 	private String accountNm;
-	private AccountVO.Classification classification;
-	private UserVO.LicenseType licenseType;
-	private UserVO.Status userStatus;
+	private String classification;
+	private String licenseType;
+	private String userStatus;
 	
 	/**
 	 * @return the lastAccessTime
@@ -130,37 +130,37 @@ public class UserActivityVO extends UserPageViewVO {
 	/**
 	 * @return the classification
 	 */
-	public AccountVO.Classification getClassification() {
+	public String getClassification() {
 		return classification;
 	}
 	/**
 	 * @return the licenseType
 	 */
-	public UserVO.LicenseType getLicenseType() {
+	public String getLicenseType() {
 		return licenseType;
 	}
 	/**
 	 * @return the activeFlg
 	 */
-	public UserVO.Status getUserStatus() {
+	public String getUserStatus() {
 		return userStatus;
 	}
 	/**
 	 * @param classification the classification to set.
 	 */
-	public void setClassification(AccountVO.Classification classification) {
+	public void setClassification(String classification) {
 		this.classification = classification;
 	}
 	/**
 	 * @param licenseType the subscriptionType to set.
 	 */
-	public void setLicenseType(UserVO.LicenseType licenseType) {
+	public void setLicenseType(String licenseType) {
 		this.licenseType = licenseType;
 	}
 	/**
 	 * @param activeFlg the activeFlg to set.
 	 */
-	public void setUserStatus(UserVO.Status activeFlg) {
+	public void setUserStatus(String activeFlg) {
 		this.userStatus = activeFlg;
 	}
 }
