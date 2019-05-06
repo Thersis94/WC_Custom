@@ -94,6 +94,16 @@ public class MTSDocumentVO extends DocumentVO {
 	public String getDocumentId() {
 		return documentId;
 	}
+	
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.content.DocumentVO#getActionGroupId()
+	 */
+	@Override
+	@Column(name="action_group_id")
+	public String getActionGroupId() {
+		return super.getActionGroupId();
+	}
 
 	/**
 	 * @return the issueId

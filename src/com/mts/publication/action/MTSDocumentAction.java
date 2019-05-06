@@ -81,9 +81,10 @@ public class MTSDocumentAction extends SBActionAdapter {
 		
 		// If its a new document, add the group id.
 		MTSDocumentVO doc = new MTSDocumentVO(req);
-		if (StringUtil.isEmpty(doc.getActionGroupId()))
-			doc.setActionGroupId(StringUtil.checkVal(req.getParameter(SB_ACTION_GROUP_ID), req.getAttribute(SB_ACTION_GROUP_ID)+""));
-		
+		if (StringUtil.isEmpty(doc.getActionGroupId())) {
+			doc.setActionGroupId((String)req.getAttribute(SB_ACTION_GROUP_ID));
+		}
+
 		try {
 			save(doc);
 
@@ -118,6 +119,7 @@ public class MTSDocumentAction extends SBActionAdapter {
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		try {
 			if (StringUtil.isEmpty(doc.getDocumentId())) {
+				doc.setDocumentId(doc.getActionGroupId());
 				doc.setUniqueCode(RandomAlphaNumeric.generateRandom(6, true).toUpperCase());
 				db.insert(doc);
 			} else {
