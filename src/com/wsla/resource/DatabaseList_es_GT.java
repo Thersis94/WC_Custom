@@ -6,9 +6,9 @@ import org.apache.log4j.Logger;
 import com.smt.sitebuilder.resource.SMTBaseResourceBundle;
 
 /****************************************************************************
- * <b>Title</b>: DatabaseList_fr_FR.java
+ * <b>Title</b>: DatabaseList_es_MX.java
  * <b>Project</b>: SMTBaseLibs
- * <b>Description: </b> France French Wrapper for the Database Bundle Approach
+ * <b>Description: </b> MX Spanish Wrapper for the Database Bundle Approach
  * <b>Copyright:</b> Copyright (c) 2018
  * <b>Company:</b> Silicon Mountain Technologies
  * 
@@ -18,15 +18,15 @@ import com.smt.sitebuilder.resource.SMTBaseResourceBundle;
  * @updates:
  ****************************************************************************/
 
-public class DatabaseList_fr_FR extends SMTBaseResourceBundle {
+public class DatabaseList_es_GT extends SMTBaseResourceBundle {
 	
 	// Members
-    protected static final Logger log = Logger.getLogger(DatabaseList_fr_FR.class);
+    protected static final Logger log = Logger.getLogger(DatabaseList_es_GT.class);
     
 	/**
 	 * 
 	 */
-	public DatabaseList_fr_FR() {
+	public DatabaseList_es_GT() {
 		super();
 	}
 

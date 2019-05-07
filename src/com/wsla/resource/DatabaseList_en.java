@@ -3,12 +3,13 @@ package com.wsla.resource;
 // Log4J 1.2.17
 import org.apache.log4j.Logger;
 
+// WC Libs
 import com.smt.sitebuilder.resource.SMTBaseResourceBundle;
 
 /****************************************************************************
- * <b>Title</b>: DatabaseList_en_SA.java
+ * <b>Title</b>: DatabaseList.java
  * <b>Project</b>: SMTBaseLibs
- * <b>Description: </b> Saudi Arabia English Wrapper for the Database Bundle Approach
+ * <b>Description: </b> Base Bundle Wrapper for the Database Bundle Approach
  * <b>Copyright:</b> Copyright (c) 2018
  * <b>Company:</b> Silicon Mountain Technologies
  * 
@@ -18,15 +19,15 @@ import com.smt.sitebuilder.resource.SMTBaseResourceBundle;
  * @updates:
  ****************************************************************************/
 
-public class DatabaseList_en_SA extends SMTBaseResourceBundle {
+public class DatabaseList_en extends SMTBaseResourceBundle {
 	
 	// Members
-    protected static final Logger log = Logger.getLogger(DatabaseList_en_SA.class);
-    
+    protected static final Logger log = Logger.getLogger(DatabaseList_en.class);
+	
 	/**
 	 * 
 	 */
-	public DatabaseList_en_SA() {
+	public DatabaseList_en() {
 		super();
 	}
 
