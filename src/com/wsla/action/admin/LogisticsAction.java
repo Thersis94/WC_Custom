@@ -36,7 +36,9 @@ import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.AbstractSBReportVO;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.report.vo.DownloadReportVO;
+import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
+import com.smt.sitebuilder.resource.WCResourceBundle;
 import com.smt.sitebuilder.security.SBUserRole;
 import com.wsla.action.ticket.BaseTransactionAction;
 import com.wsla.action.ticket.TicketEditAction;
@@ -112,10 +114,11 @@ public class LogisticsAction extends SBActionAdapter {
 
 		} else if (req.getBooleanParameter("packingList")) {
 			BSTableControlVO bst = new BSTableControlVO(req);
-			UserVO user = (UserVO) this.getAdminUser(req).getUserExtendedInfo();
+			SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
+			ResourceBundle rb = WCResourceBundle.getBundle(site, getAdminUser(req));
 			try {
 				String sId = req.getParameter("shipmentId");
-				byte[] pdf = buildPackingList(user, sId, bst, req.getRealPath());
+				byte[] pdf = buildPackingList(rb, sId, bst, req.getRealPath());
 				getReportObj(pdf, req);
 			} catch (Exception e) {
 				log.error("unable to build packing list pdf", e);
@@ -146,7 +149,7 @@ public class LogisticsAction extends SBActionAdapter {
 	 * @throws SQLException 
 	 * @throws DatabaseException 
 	 */
-	public byte[] buildPackingList(UserVO user, String shipId, BSTableControlVO bst, String rp) 
+	public byte[] buildPackingList(ResourceBundle rb, String shipId, BSTableControlVO bst, String rp) 
 	throws Exception {
 		// Get the parts
 		bst.setSourceBean(PartVO.class);
@@ -163,7 +166,6 @@ public class LogisticsAction extends SBActionAdapter {
 		
 		String templateDir = rp + attributes.get(Constants.INCLUDE_DIRECTORY) + "templates/";
 		String path = templateDir + "packing_list.ftl";
-		ResourceBundle rb = ResourceBundle.getBundle(WSLAConstants.RESOURCE_BUNDLE, user.getUserLocale());
 		
 		// Generate the pdf
 		PDFGenerator pdf = new PDFGenerator(path, shmpt, rb);
