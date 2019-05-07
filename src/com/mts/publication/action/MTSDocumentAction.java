@@ -69,8 +69,6 @@ public class MTSDocumentAction extends SBActionAdapter {
 	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
-		String origSbActionId = req.getParameter(SB_ACTION_ID);
-		
 		ModuleVO mod = (ModuleVO) attributes.get( Constants.MODULE_DATA);
 		mod.setActionId(req.getParameter("moduleTypeId"));
 		
@@ -87,17 +85,18 @@ public class MTSDocumentAction extends SBActionAdapter {
 
 		try {
 			save(doc);
-
+			
 			// Save the categories
-			String sbActionId = req.getParameter((String)req.getAttribute(SB_ACTION_ID), origSbActionId);
+			String sbActionId = doc.getSbActionId();
 			String userId = getAdminUser(req).getProfileId();
 			String[] cats = new String[0];
 			if (!StringUtil.isEmpty(req.getParameter("categories"))) {
 				cats = StringUtil.checkVal(req.getParameter("categories")).split("\\,");
 			}
+			
 			updateMetadata(sbActionId, cats, userId);
 			
-			//Remove the redirects form the admin actions and return the data
+			//Remove the redirects from the admin actions and return the data
 			req.removeAttribute(Constants.REDIRECT_REQUEST);
 			req.removeAttribute(Constants.REDIRECT_URL);
 			doc.setDocument("");
@@ -141,12 +140,10 @@ public class MTSDocumentAction extends SBActionAdapter {
 	public void updateMetadata(String actionId, String[] categories, String userId) 
 	throws DatabaseException {
 		// Delete any existing entries
-		String s = "delete from widget_meta_data_xr where action_id = ?";
-		try (PreparedStatement ps = dbConn.prepareStatement(s)) {
-			ps.setString(1, actionId);
-			ps.executeUpdate();
-
-			// Insert new entries
+		deleteCategories(actionId);
+		
+		try {
+			// Loop the cats and create a VO for each
 			if (categories == null || categories.length == 0) return;
 			List<WidgetMetadataVO> cats = new ArrayList<>();
 			for (String cat : categories) {
@@ -158,8 +155,25 @@ public class MTSDocumentAction extends SBActionAdapter {
 				cats.add(vo);
 			}
 			
+			// Save the beans
 			DBProcessor db = new DBProcessor(getDBConnection());
 			db.executeBatch(cats, true);
+		} catch (Exception e) {
+			log.error("unable to update categories", e);
+			throw new DatabaseException(e.getLocalizedMessage(), e);
+		}
+	}
+	
+	/**
+	 * Deletes the existing categories before adding the new ones
+	 * @param actionId
+	 * @throws DatabaseException
+	 */
+	private void deleteCategories(String actionId) throws DatabaseException {
+		String s = "delete from widget_meta_data_xr where action_id = ?";
+		try (PreparedStatement ps = dbConn.prepareStatement(s)) {
+			ps.setString(1, actionId);
+			ps.executeUpdate();
 		} catch (Exception e) {
 			log.error("unable to update categories", e);
 			throw new DatabaseException(e.getLocalizedMessage(), e);
