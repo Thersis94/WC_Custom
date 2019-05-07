@@ -105,6 +105,7 @@ public class TeamAction extends SBActionAdapter {
 		sql.append("select a.team_id, a.account_id, a.team_nm, a.default_flg, a.private_flg, cast(count(b.user_id) as integer) as members ");
 		sql.append("from ").append(schema).append("biomedgps_team a ");
 		sql.append("left outer join ").append(schema).append("biomedgps_user_team_xr b on a.team_id=b.team_id ");
+		sql.append("inner join ").append(schema).append("biomedgps_user u on b.user_id=u.user_id  and u.active_flg > 0 ");
 		sql.append("where a.account_id=? ");
 		if (teamId != null) sql.append("and a.team_id=? "); 
 		sql.append("group by a.team_id, a.account_id, a.team_nm, a.default_flg, a.private_flg ");
