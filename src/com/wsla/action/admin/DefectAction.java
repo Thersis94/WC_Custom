@@ -167,7 +167,7 @@ public class DefectAction extends SBActionAdapter {
 			sql.append("and a.active_flg = ? ");
 			params.add(activeFlag);
 		}
-		
+		log.info("sql " + sql.toString());
 		sql.append(bst.getSQLOrderBy("defect_nm",  "asc"));
 		log.debug(sql);
 
