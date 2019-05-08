@@ -5,7 +5,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.ResourceBundle;
 
@@ -29,10 +28,10 @@ import com.smt.sitebuilder.action.user.ProfileManagerFactory;
 import com.smt.sitebuilder.action.user.ProfileRoleManager;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
+import com.smt.sitebuilder.resource.WCResourceBundle;
 import com.smt.sitebuilder.security.SBUserRole;
 import com.smt.sitebuilder.security.SecurityController;
 import com.smt.sitebuilder.security.UserLogin;
-import com.wsla.common.WSLAConstants;
 import com.wsla.data.ticket.StatusCode;
 import com.wsla.data.ticket.TicketLedgerVO;
 import com.wsla.data.ticket.UserVO;
@@ -80,16 +79,14 @@ public class BasePortalAction extends SBActionAdapter {
 	 * @param req
 	 * @throws InvalidDataException
 	 * @throws DatabaseException
-	 * TODO Either accept a single String summary, or not ignore the addtl array values
 	 */
-	public TicketLedgerVO addLedger(String userId, ActionRequest req, StatusCode statusCode, String... summary) 
+	public TicketLedgerVO addLedger(String userId, ActionRequest req, StatusCode statusCode, String summary) 
 			throws InvalidDataException, DatabaseException {
 		// Create the ledger and fill out the bean
 		TicketLedgerVO ledger = new TicketLedgerVO(req);
 		ledger.setStatusCode(statusCode);
-
-		if (summary != null && summary.length > 0) 
-			ledger.setSummary(summary[0]);
+		if (!StringUtil.isEmpty(summary))
+			ledger.setSummary(summary);
 
 		// Add the user's profile id and user id
 		if (StringUtil.isEmpty(ledger.getDispositionBy()))
@@ -132,7 +129,7 @@ public class BasePortalAction extends SBActionAdapter {
 		UserDataVO profile = user.getProfile();
 		boolean isInsert = StringUtil.isEmpty(profile.getProfileId());
 		ProfileManager pm = ProfileManagerFactory.getInstance(attributes);
-		
+
 		// Ensure we don't attempt to add the same user twice
 		if (isInsert && hasAuth && !StringUtil.isEmpty(getUserIdFromEmail(user.getEmail())))
 			throw new ActionException("User already exists");
@@ -281,15 +278,8 @@ public class BasePortalAction extends SBActionAdapter {
 	 */
 	public ResourceBundle getResourceBundle(ActionRequest req) {
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
-		Locale locale = site.getLocale();
 		UserDataVO udvo = getAdminUser(req);
-
-		if (udvo != null && udvo.getUserExtendedInfo() != null) {
-			UserVO user = (UserVO) getAdminUser(req).getUserExtendedInfo();
-			locale = user.getUserLocale();
-		}
-
-		return ResourceBundle.getBundle(WSLAConstants.RESOURCE_BUNDLE, locale);  
+		return WCResourceBundle.getBundle(site, udvo);  
 	}
 
 	/**
@@ -341,10 +331,10 @@ public class BasePortalAction extends SBActionAdapter {
 	public String getUserIdFromEmail(String emailAddress) {
 		if (StringUtil.isEmpty(emailAddress))
 			return null;
-		
+
 		String sql = StringUtil.join("select user_id from ", getCustomSchema(), "wsla_user where email_address_txt = ?");
 		log.debug(sql);
-		
+
 		DBProcessor dbp = new DBProcessor(getDBConnection());
 		List<UserVO> data = dbp.executeSelect(sql, Arrays.asList(emailAddress), new UserVO());
 		return data != null && !data.isEmpty() ? data.get(0).getUserId() : null;
