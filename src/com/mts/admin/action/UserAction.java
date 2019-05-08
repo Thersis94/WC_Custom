@@ -7,6 +7,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 // MTS Libs
+import com.mts.common.MTSConstants;
+import com.mts.subscriber.action.SubscriptionAction;
 import com.mts.subscriber.data.MTSUserVO;
 
 // SMT Base Libs
@@ -14,11 +16,14 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.common.html.BSTableControlVO;
+import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.*;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.db.util.DatabaseException;
+import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.util.StringUtil;
+
 //WC Libs
 import com.smt.sitebuilder.action.user.UserBaseWidget;
 import com.smt.sitebuilder.common.SiteVO;
@@ -82,15 +87,20 @@ public class UserAction extends UserBaseWidget {
 		
 		// Get the columns to be updated and store the user info
 		String[] cols = null;
+		boolean updateSubscription = false;
 		try {
 			if (req.getBooleanParameter("isAuthor")) {
 				cols = getAuthorUserColumns();
+			} else if (req.getBooleanParameter("isSubscriber")) {
+				cols = getSubscriberUserColumns();
+				updateSubscription = true;
 			} else {
 				cols = getCoreUserColumns();
 				saveUser((SiteVO) req.getAttribute(Constants.SITE_DATA), user, true);
 			}
-
+			
 			updateUser(user, cols);
+			if (updateSubscription) updateSubscriptions(req, user);
 			setModuleData(user);
 		} catch(Exception e) {
 			setModuleData(user, 1, e.getLocalizedMessage());
@@ -99,13 +109,41 @@ public class UserAction extends UserBaseWidget {
 	}
 	
 	/**
+	 * Updates the subscriptions for a given user
+	 * @param req
+	 * @param user
+	 * @throws DatabaseException
+	 */
+	private void updateSubscriptions(ActionRequest req, MTSUserVO user) 
+	throws DatabaseException {
+		List<String> subs = new ArrayList<>();
+		String[] subscriptions = req.getParameterValues("subscriptions");
+		if (subscriptions != null && subscriptions.length > 0)
+			subs = Arrays.asList(subscriptions);
+		
+		SubscriptionAction sa = new SubscriptionAction(getDBConnection(), getAttributes());
+		sa.assignSubscriptions(user.getUserId(), subs);
+	}
+	
+	/**
 	 * Returns the list of columns to be updated 
 	 * @return
 	 */
 	private String[] getAuthorUserColumns() {
 		return new String[]{ 
-			"user_id", "img_path", "twitter_txt", "facebook_txt", "update_dt",
+			"user_id", "img_path", "twitter_txt", "update_dt",
 			"linkedin_txt", "yrs_experience_no", "cv_desc"
+		};
+	}
+	
+	/**
+	 * Returns the list of columns to be updated 
+	 * @return
+	 */
+	private String[] getSubscriberUserColumns() {
+		return new String[]{ 
+			"user_id", "sec_user_id", "subscription_type_cd", "update_dt",
+			"print_copy_flg", "expiration_dt", "note_txt"
 		};
 	}
 	
@@ -116,9 +154,33 @@ public class UserAction extends UserBaseWidget {
 	private String[] getCoreUserColumns() {
 		return new String[]{ 
 			"user_id", "profile_id", "first_nm", "last_nm", 
-			"email_address_txt", "phone_number_txt", "locale_txt", "update_dt",
-			"active_flg", "role_id", "pro_title_nm","company_nm", "sec_user_id"
+			"email_address_txt", "locale_txt", "update_dt",
+			"active_flg", "role_id", "pro_title_nm","company_nm", "address_txt",
+			"address2_txt", "city_nm", "state_cd", "zip_cd"
 		};
+	}
+	
+	/**
+	 * 
+	 * @param userId
+	 * @return
+	 * @throws InvalidDataException
+	 * @throws DatabaseException
+	 */
+	public MTSUserVO getUserProfile(String userId) throws DatabaseException {
+		try {
+			MTSUserVO user = new MTSUserVO();
+			user.setUserId(userId);
+			
+			DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+			db.getByPrimaryKey(user);
+			
+			user.setProfile(this.getProfile(user.getProfileId(), MTSConstants.ORGANIZATON_ID));
+			
+			return user;
+		} catch (Exception e) {
+			throw new DatabaseException("Unable to retrieve user detail info", e);
+		}
 	}
 	
 	/**
@@ -128,8 +190,13 @@ public class UserAction extends UserBaseWidget {
 	 */
 	public void updateUser(MTSUserVO user, String[] cols) throws DatabaseException {
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		
 		try {
-			db.update(user, Arrays.asList(cols));
+			if (StringUtil.isEmpty(user.getUserId())) {
+				db.insert(user);
+			} else {
+				db.update(user, Arrays.asList(cols));
+			}
 		} catch (Exception e) {
 			throw new DatabaseException("Unable to save author info", e);
 		}
@@ -141,12 +208,40 @@ public class UserAction extends UserBaseWidget {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		
-		BSTableControlVO bst = new BSTableControlVO(req, MTSUserVO.class);
-		setModuleData(getAllUsers(bst, req.getParameter("roleId")));
+		try {
+			
+			if (req.getBooleanParameter("isSubscription")) {
+				setModuleData(getSubscriptions(req.getParameter("userId")));
+			} else if (req.getBooleanParameter("isProfile")) {
+				setModuleData(getUserProfile(req.getParameter("userId")));
+			} else {
+				BSTableControlVO bst = new BSTableControlVO(req, MTSUserVO.class);
+				setModuleData(getAllUsers(bst, req.getParameter("roleId")));
+			}
+		} catch (Exception e) {
+			setModuleData(null, 0, e.getLocalizedMessage());
+		}
 	}
 	
 	/**
+	 * Gets the subscriptions for a given user
+	 * @param userId
+	 * @return
+	 */
+	public List<GenericVO> getSubscriptions(String userId) {
+		StringBuilder sql = new StringBuilder(92);
+		sql.append("select subscription_publication_id as key, publication_id as value ");
+		sql.append(DBUtil.FROM_CLAUSE).append(getCustomSchema());
+		sql.append("mts_subscription_publication_xr where user_id = ?");
+		
+		List<Object> vals = new ArrayList<>();
+		vals.add(userId);
+		
+		DBProcessor db = new DBProcessor(getDBConnection());
+		return db.executeSelect(sql.toString(), vals, new GenericVO());
+	}
+	
+ 	/**
 	 * 
 	 * @return
 	 */
@@ -154,15 +249,21 @@ public class UserAction extends UserBaseWidget {
 		// Add the params
 		List<Object> vals = new ArrayList<>();
 		
-		StringBuilder sql = new StringBuilder(448);
-		sql.append("select a.*, c.role_nm, b.profile_role_id, d.authentication_id from ");
-		sql.append(getCustomSchema()).append("mts_user a ");
+		StringBuilder sql = new StringBuilder(768);
+		sql.append("select last_login_dt, a.*, c.role_nm, b.profile_role_id, d.authentication_id, a.create_dt ");
+		sql.append(DBUtil.FROM_CLAUSE).append(getCustomSchema()).append("mts_user a ");
 		sql.append(DBUtil.INNER_JOIN).append("profile_role b ");
 		sql.append("on a.profile_id = b.profile_id and site_id = 'MTS_2' ");
 		sql.append(DBUtil.INNER_JOIN).append("role c ");
 		sql.append("on b.role_id = c.role_id ");
 		sql.append(DBUtil.INNER_JOIN).append("profile d ");
 		sql.append("on a.profile_id = d.profile_id ");
+		sql.append("left outer join ( ");
+		sql.append("select authentication_id, max(login_dt) as last_login_dt ");
+		sql.append("from authentication_log ");
+		sql.append("where site_id like 'MTS%' ");
+		sql.append("group by authentication_id ");
+		sql.append(") g on d.authentication_id = g.authentication_id "); 
 		sql.append("where 1=1 ");
 		
 		// Filter by Roles

@@ -2,9 +2,14 @@ package com.mts.subscriber.data;
 
 // JDK 1.8.x
 import java.sql.ResultSet;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
 
+import com.mts.subscriber.action.SubscriptionAction.SubscriptionType;
 // SMT Base Libs
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
 import com.siliconmtn.util.StringUtil;
@@ -38,9 +43,23 @@ public class MTSUserVO extends UserVO {
 	private String secondaryUserId;
 	private String twitterName;
 	private String linkedinName;
-	private String facebookName;
+	private String notes;
+	
+	// Numeric Memebrs
 	private int activeFlag;
+	private int printCopyFlag;
 	private int yearsExperience;
+	
+	// Other Members
+	private SubscriptionType subscriptionType;
+	private Date expirationDate;
+	
+	
+	// Sub Beans
+	private List<SubscriptionUserVO> subscriptions = new ArrayList<>();
+	
+	// Helpers
+	private Date lastLogin;
 	
 	/**
 	 * 
@@ -146,19 +165,43 @@ public class MTSUserVO extends UserVO {
 	}
 
 	/**
-	 * @return the facebookName
-	 */
-	@Column(name="facebook_txt")
-	public String getFacebookName() {
-		return facebookName;
-	}
-
-	/**
 	 * @return the yearsExperience
 	 */
 	@Column(name="yrs_experience_no")
 	public int getYearsExperience() {
 		return yearsExperience;
+	}
+
+	/**
+	 * @return the notes
+	 */
+	@Column(name="note_txt")
+	public String getNotes() {
+		return notes;
+	}
+
+	/**
+	 * @return the printCopyFlag
+	 */
+	@Column(name="print_copy_flg")
+	public int getPrintCopyFlag() {
+		return printCopyFlag;
+	}
+
+	/**
+	 * @return the subscriptionType
+	 */
+	@Column(name="subscription_type_cd")
+	public SubscriptionType getSubscriptionType() {
+		return subscriptionType;
+	}
+
+	/**
+	 * @return the expirationDate
+	 */
+	@Column(name="expiration_dt")
+	public Date getExpirationDate() {
+		return expirationDate;
 	}
 
 	/**
@@ -218,18 +261,77 @@ public class MTSUserVO extends UserVO {
 	}
 
 	/**
-	 * @param facebookName the facebookName to set
-	 */
-	public void setFacebookName(String facebookName) {
-		this.facebookName = facebookName;
-	}
-
-	/**
 	 * @param yearsExperience the yearsExperience to set
 	 */
 	public void setYearsExperience(int yearsExperience) {
 		this.yearsExperience = yearsExperience;
 	}
 
+	/**
+	 * @return the subscriptions
+	 */
+	public List<SubscriptionUserVO> getSubscriptions() {
+		return subscriptions;
+	}
+
+	/**
+	 * @param subscriptions the subscriptions to set
+	 */
+	public void setSubscriptions(List<SubscriptionUserVO> subscriptions) {
+		this.subscriptions = subscriptions;
+	}
+
+	/**
+	 * 
+	 * @param subscription
+	 */
+	@BeanSubElement
+	public void addSubscription(SubscriptionUserVO subscription) {
+		if (subscription.isValid())
+			this.subscriptions.add(subscription);
+	}
+
+	/**
+	 * @return the lastLogin
+	 */
+	@Column(name="last_login_dt", isReadOnly=true)
+	public Date getLastLogin() {
+		return lastLogin;
+	}
+
+	/**
+	 * @param lastLogin the lastLogin to set
+	 */
+	public void setLastLogin(Date lastLogin) {
+		this.lastLogin = lastLogin;
+	}
+
+	/**
+	 * @param notes the notes to set
+	 */
+	public void setNotes(String notes) {
+		this.notes = notes;
+	}
+
+	/**
+	 * @param printCopyFlag the printCopyFlag to set
+	 */
+	public void setPrintCopyFlag(int printCopyFlag) {
+		this.printCopyFlag = printCopyFlag;
+	}
+
+	/**
+	 * @param subscriptionType the subscriptionType to set
+	 */
+	public void setSubscriptionType(SubscriptionType subscriptionType) {
+		this.subscriptionType = subscriptionType;
+	}
+
+	/**
+	 * @param expirationDate the expirationDate to set
+	 */
+	public void setExpirationDate(Date expirationDate) {
+		this.expirationDate = expirationDate;
+	}
 }
 

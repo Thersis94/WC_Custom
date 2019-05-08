@@ -15,6 +15,7 @@ import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
 import com.smt.sitebuilder.action.content.DocumentVO;
+import com.smt.sitebuilder.action.metadata.WidgetMetadataVO;
 
 /****************************************************************************
  * <b>Title</b>: MTSDocumentVO.java
@@ -42,16 +43,18 @@ public class MTSDocumentVO extends DocumentVO {
 	private Date publishDate;
 	private String uniqueCode;
 	private String authorId;
+	private String sbActionId;
 	
 	// Sub-Beans
 	private List<AssetVO> assets = new ArrayList<>();
-	private List<DocumentCategoryVO> categories = new ArrayList<>();
+	private List<WidgetMetadataVO> categories = new ArrayList<>();
 	private MTSUserVO author;
 	
 	// Helpers
 	private String issueName;
 	private String publicationId;
 	private String publicationName;
+	
 	
 	/**
 	 * 
@@ -74,12 +77,32 @@ public class MTSDocumentVO extends DocumentVO {
 		super(rs);
 	}
 
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBModuleVO#getApprovableFlag()
+	 */
+	@Override
+	@Column(name="approvable_flg", isReadOnly=true)
+	public Integer getApprovableFlag() {
+		return super.getApprovableFlag();
+	}
+	
 	/**
 	 * @return the documentId
 	 */
 	@Column(name="document_id", isPrimaryKey=true)
 	public String getDocumentId() {
 		return documentId;
+	}
+	
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.content.DocumentVO#getActionGroupId()
+	 */
+	@Override
+	@Column(name="action_group_id")
+	public String getActionGroupId() {
+		return super.getActionGroupId();
 	}
 
 	/**
@@ -100,10 +123,27 @@ public class MTSDocumentVO extends DocumentVO {
 	/**
 	 * @return the categories
 	 */
-	public List<DocumentCategoryVO> getCategories() {
+	public List<WidgetMetadataVO> getCategories() {
 		return categories;
 	}
 
+	/**
+	 * Creates a comma separated list form the collection of categories
+	 * @return
+	 */
+	public String getCatList() {
+		if (categories == null || categories.isEmpty()) return "";
+		
+		StringBuilder val = new StringBuilder(64);
+		int i=0;
+		for (WidgetMetadataVO cat : categories) {
+			if (i++ > 0) val.append(",");
+			val.append(cat.getWidgetMetadataId());
+		}
+		
+		return val.toString();
+	}
+	
 	/**
 	 * @return the publishDate
 	 */
@@ -153,6 +193,13 @@ public class MTSDocumentVO extends DocumentVO {
 	}
 
 	/**
+	 * @param sbActionId the sbActionId to set
+	 */
+	public void setSbActionId(String sbActionId) {
+		this.sbActionId = sbActionId;
+	}
+
+	/**
 	 * @return the author
 	 */
 	public MTSUserVO getAuthor() {
@@ -191,7 +238,7 @@ public class MTSDocumentVO extends DocumentVO {
 	/**
 	 * @param categories the categories to set
 	 */
-	public void setCategories(List<DocumentCategoryVO> categories) {
+	public void setCategories(List<WidgetMetadataVO> categories) {
 		this.categories = categories;
 	}
 	
@@ -199,7 +246,7 @@ public class MTSDocumentVO extends DocumentVO {
 	 * @param cat Add an category to the categories set
 	 */
 	@BeanSubElement
-	public void addCategory(DocumentCategoryVO cat) {
+	public void addCategory(WidgetMetadataVO cat) {
 		this.categories.add(cat);
 	}
 
@@ -253,5 +300,11 @@ public class MTSDocumentVO extends DocumentVO {
 		this.publicationName = publicationName;
 	}
 
+	/**
+	 * @return the sbActionId
+	 */
+	public String getSbActionId() {
+		return sbActionId;
+	}
 }
 

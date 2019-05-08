@@ -1,9 +1,11 @@
 package com.mts.publication.action;
 
+import java.util.Date;
 // JDK 1.8.x
 import java.util.List;
 import java.util.Map;
 
+import com.mts.common.MTSConstants;
 // MTS Libs
 import com.mts.publication.data.PublicationVO;
 
@@ -14,8 +16,10 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.*;
 import com.siliconmtn.db.pool.SMTDBConnection;
+import com.siliconmtn.db.util.DatabaseException;
 //WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
+import com.smt.sitebuilder.action.content.DocumentFolderVO;
 
 /****************************************************************************
  * <b>Title</b>: PublicationAction.java
@@ -104,11 +108,45 @@ public class PublicationAction extends SBActionAdapter {
 		
 		try {
 			DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
-			db.save(pub);
+			
+			// Add a new publication or update an existing
+			if (req.getBooleanParameter("isInsert")) {
+				DocumentFolderVO df = addDocumentFolder(pub);
+				pub.setSeoPath(df.getFullPath());
+				db.insert(pub);
+			} else {
+				db.update(pub);
+			}
+			
 			putModuleData(pub);
 		} catch (Exception e) {
 			log.error("Unable to save publication info", e);
 			putModuleData(pub, 1, false, e.getLocalizedMessage(), true);
+		}
+	}
+	
+	/**
+	 * Adds a document folder for the publication issues and articles
+	 * @param pub
+	 * @return
+	 * @throws DatabaseException
+	 */
+	public DocumentFolderVO addDocumentFolder(PublicationVO pub) throws DatabaseException {
+		DocumentFolderVO df = new DocumentFolderVO();
+		df.setDepth(3);
+		df.setParentId(MTSConstants.ROOT_FOLDER_ID);
+		df.setOrganizationId(MTSConstants.ORGANIZATON_ID);
+		df.setDocumentFolderId(pub.getPublicationId());
+		df.setName(pub.getName());
+		df.setFullPath(MTSConstants.ROOT_FOLDER_PATH + pub.getPublicationId().toLowerCase());
+		df.setCreateDate(new Date());
+		
+		DBProcessor db = new DBProcessor(getDBConnection());
+		try {
+			db.insert(df);
+			return df;
+		} catch (Exception e) {
+			throw new DatabaseException("unable to add folder", e);
 		}
 	}
 

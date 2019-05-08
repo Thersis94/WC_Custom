@@ -1,10 +1,12 @@
 package com.mts.action;
 
+import com.mts.admin.action.MTSApprovalAction;
 import com.mts.admin.action.UserAction;
 import com.mts.publication.action.AssetAction;
 import com.mts.publication.action.CategoryAction;
 import com.mts.publication.action.IssueAction;
 import com.mts.publication.action.IssueArticleAction;
+import com.mts.publication.action.MTSDocumentAction;
 import com.mts.publication.action.PublicationAction;
 
 // RP Libs
@@ -75,6 +77,8 @@ public class AjaxControllerFacadeAction extends FacadeActionAdapter {
 		actionMap.put(IssueArticleAction.AJAX_KEY, IssueArticleAction.class);
 		actionMap.put(CategoryAction.AJAX_KEY, CategoryAction.class);
 		actionMap.put(UserAction.AJAX_KEY, UserAction.class);
+		actionMap.put(MTSDocumentAction.AJAX_KEY, MTSDocumentAction.class);
+		actionMap.put(MTSApprovalAction.AJAX_KEY, MTSApprovalAction.class);
 	}
 
 	/*
@@ -94,7 +98,7 @@ public class AjaxControllerFacadeAction extends FacadeActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		if (! req.hasParameter("json")) return;
+		if (! req.hasParameter("json") && ! req.getBooleanParameter("bypass")) return;
 		loadActionByType(req.getParameter(SELECTOR_KEY, DEFAULT_TYPE)).retrieve(req);
 	}
 
