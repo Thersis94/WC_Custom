@@ -104,4 +104,10 @@ public class ManagementAction extends SBActionAdapter {
 		super.setAttributes(attr);
 		customDbSchema = (String) attr.get(Constants.CUSTOM_DB_SCHEMA);
 	}
+
+	@Override
+	public void setAttributes(Map<String, Object> attr, boolean shareAttributes) {
+		super.setAttributes(attr, shareAttributes);
+		customDbSchema = (String) attr.get(Constants.CUSTOM_DB_SCHEMA);
+	}
 }
