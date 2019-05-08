@@ -25,11 +25,6 @@ public class WSLAConstants {
 	public static final int TICKET_RANDOM_CHARS = 8;
 
 	/**
-	 * WSLA Resource Bundle
-	 */
-	public static final String RESOURCE_BUNDLE = "com.smt.sitebuilder.resource.bundle.wsla.DatabaseList";
-	
-	/**
 	 * WSLA Database Resource Bundle ID
 	 */
 	public static final String RESOURCE_BUNDLE_ID = "WSLA_BUNDLE";
@@ -40,7 +35,7 @@ public class WSLAConstants {
 	public enum WorkflowSlug {
 		WSLA_NOTIFICATION
 	}
-	
+
 	/**
 	 * Defines the roles used by this site
 	 */
@@ -57,15 +52,10 @@ public class WSLAConstants {
 		WSLA_RETAILER("WSLA_RETAILER", "Retailer"),
 		WSLA_SERVICE_CENTER("WSLA_SERVICE_CENTER", "WSLA Service Center"),
 		WSLA_WAREHOUSE("WSLA_WAREHOUSE", "WSLA Warehouse");
-		
+
 		private String roleId;
 		private String roleName;
-		
-		WSLARole(String roleId) {
-			this.roleId = roleId;
-			this.roleName = "";
-		}
-		
+
 		WSLARole(String roleId, String roleName) {
 			this.roleId = roleId;
 			this.roleName = roleName;
@@ -81,7 +71,7 @@ public class WSLAConstants {
 	 * Warranty id used for all retail owned equipment over all of wsla
 	 */
 	public static final String RETAIL_WARRANTY = "RETAILER_OWNED_DEVICE";
-	
+
 	/**
 	 * "References" email header suffix for tickets, to denote where the
 	 * reference came from in a chain of references. 
@@ -102,24 +92,24 @@ public class WSLAConstants {
 	 * email address field
 	 */
 	public static final String NO_EMAIL_ADDRESS = "none@wsla.com";
-	
+
 	/**
 	 * Constant to define the value that will be entered by a support rep if the user does
 	 * not have the product serial number handy.  This is to ensure reps are entering a 
 	 * value for the serial number field
 	 */
 	public static final String NO_SERIAL_NUMBER = "NOSN";
-	
+
 	/**
 	 * Key used to identify the service order
 	 */
 	public static final String TICKET_ID = "ticketId";
-	
+
 	/**
 	 * Key used to identify the service order number
 	 */
 	public static final String TICKET_NO = "ticketIdText";
-	
+
 	/**
 	 * 
 	 */
