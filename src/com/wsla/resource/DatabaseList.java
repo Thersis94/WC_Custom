@@ -1,15 +1,10 @@
 package com.wsla.resource;
 
-// Log4J 1.2.17
-import org.apache.log4j.Logger;
-
-// WC Libs
-import com.smt.sitebuilder.resource.SMTBaseResourceBundle;
 
 /****************************************************************************
  * <b>Title</b>: DatabaseList.java
- * <b>Project</b>: SMTBaseLibs
- * <b>Description: </b> Base Bundle Wrapper for the Database Bundle Approach
+ * <b>Project</b>: WC_Custom
+ * <b>Description: </b> Wrapper for the WSLA resource bundle.
  * <b>Copyright:</b> Copyright (c) 2018
  * <b>Company:</b> Silicon Mountain Technologies
  * 
@@ -18,40 +13,10 @@ import com.smt.sitebuilder.resource.SMTBaseResourceBundle;
  * @since Nov 11, 2018
  * @updates:
  ****************************************************************************/
+public class DatabaseList extends com.smt.sitebuilder.resource.bundle.DatabaseList {
 
-public class DatabaseList extends SMTBaseResourceBundle {
-	/**
-	 * Sets whether the class has been initialized
+	/*
+	 * This class is just a stub/placeholder to denote a package of resource bundle implementations.
+	 * There's no functionality for WSLA that isn't also in the superclass.  We don't even need a default constructor!
 	 */
-	private static boolean initialized = false;
-	
-	// Members
-    protected static final Logger log = Logger.getLogger(DatabaseList.class);
-    
-	/**
-	 * 
-	 */
-	public DatabaseList() {
-		super();
-		initialized = true;
-	}
-
-	
-	/**
-	 * Used by the caching mechanism to know if the bundle has been initialized
-	 * @return
-	 */
-	public static boolean isInitialized() {
-		return initialized;
-	}
-
-	
-	/**
-	 * Resets the initialized parameter after cache reset
-	 * @param init
-	 */
-	public static void setInitialized(boolean init) {
-		initialized = init;
-	}
 }
-
