@@ -170,6 +170,12 @@ public class MarketAction extends SimpleActionAdapter {
 	}
 
 
+	/**
+	 * Get the latest date that one of the market's graphs were changed and see
+	 * if that is more recent than the current latest update time
+	 * @param market
+	 * @throws SQLException
+	 */
 	private void checkGraphDates(MarketVO market) throws SQLException {
 		StringBuilder sql = new StringBuilder(250);
 		String customDb = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
