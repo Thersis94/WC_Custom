@@ -189,6 +189,7 @@ public class MarketVO extends AuthorVO {
 
 	public void addMarketAttribute(MarketAttributeVO attribute) {
 		marketAttributes.add(attribute);
+		checkDates(attribute);
 	}
 
 	public List<MarketAttributeVO> getGraphs() {
@@ -203,6 +204,19 @@ public class MarketVO extends AuthorVO {
 
 	public void addGraph(MarketAttributeVO graph) {
 		graphs.add(graph);
+		checkDates(graph);
+	}
+	
+	/**
+	 * A market's update date should be when the last major component was updated. 
+	 * If an attribute has a later date then the market itself use that date
+	 * @param attribute
+	 */
+	private void checkDates(MarketAttributeVO attribute) {
+		Date attrDate = attribute.getUpdateDate() == null? attribute.getCreateDate():attribute.getUpdateDate();
+		Date mktDate = updateDate == null? createDate : updateDate;
+		if (attrDate.after(mktDate))
+			updateDate = attrDate;
 	}
 
 
