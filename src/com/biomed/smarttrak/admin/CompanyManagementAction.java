@@ -586,7 +586,9 @@ public class CompanyManagementAction extends ManagementAction {
 		String [] hierarchies = req.getParameterValues("sections");
 		if (!ArrayUtils.isEmpty(hierarchies)) {
 			for (String s : hierarchies)
-				fq.add(SearchDocumentHandler.HIERARCHY + ":" + s);
+				if(!StringUtil.isEmpty(s)) {
+					fq.add(SearchDocumentHandler.HIERARCHY + ":Select Market~" + s);
+				}
 		}
 
 		//Override Product Limit Filter on Public side.
@@ -595,7 +597,7 @@ public class CompanyManagementAction extends ManagementAction {
 		//Override Status Filter on Public Side.
 		fq.add(StringUtil.join("status_s:", Status.P.toString()));
 		fq.add(StringUtil.join("status_s:", Status.E.toString()));
-		if (req.hasParameter("inactive")) {
+		if (Convert.formatBoolean(req.getParameter("inactive"))) {
 			fq.add(StringUtil.join("status_s:", Status.A.toString()));
 			fq.add(StringUtil.join("status_s:", Status.D.toString()));
 			fq.add(StringUtil.join("status_s:", "C"));
