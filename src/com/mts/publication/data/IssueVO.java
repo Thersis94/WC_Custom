@@ -43,6 +43,7 @@ public class IssueVO extends BeanDataVO {
 	private String volume;
 	private String seoPath;
 	private String editorId;
+	private String category;
 	
 	// Numeric Members
 	private int approvalFlag;
@@ -197,6 +198,14 @@ public class IssueVO extends BeanDataVO {
 	}
 
 	/**
+	 * @return the category
+	 */
+	@Column(name="category_cd")
+	public String getCategory() {
+		return category;
+	}
+
+	/**
 	 * @param issueId the issueId to set
 	 */
 	public void setIssueId(String issueId) {
@@ -308,6 +317,13 @@ public class IssueVO extends BeanDataVO {
 	@BeanSubElement
 	public void setEditor(MTSUserVO editor) {
 		this.editor = editor;
+	}
+
+	/**
+	 * @param category the category to set
+	 */
+	public void setCategory(String category) {
+		this.category = category;
 	}
 
 }
