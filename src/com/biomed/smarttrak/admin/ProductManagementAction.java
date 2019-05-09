@@ -610,7 +610,7 @@ public class ProductManagementAction extends ManagementAction {
 	 */
 	protected void retrieveProducts(ActionRequest req) throws ActionException {
 		List<Object> params = new ArrayList<>();
-		StringBuilder sql = new StringBuilder(100);
+		StringBuilder sql = new StringBuilder(1000);
 		sql.append("select * ").append("FROM ").append(customDbSchema).append("BIOMEDGPS_product p ");
 		sql.append(LEFT_OUTER_JOIN).append(customDbSchema).append("BIOMEDGPS_COMPANY c ");
 		sql.append("ON c.COMPANY_ID = p.COMPANY_ID ");
@@ -681,7 +681,7 @@ public class ProductManagementAction extends ManagementAction {
 	 * @throws ActionException 
 	 */
 	protected int getProductCount(String searchData, String authorId, boolean inactive, List<String> sections) throws ActionException {
-		StringBuilder sql = new StringBuilder(150);
+		StringBuilder sql = new StringBuilder(1000);
 		sql.append("select COUNT(*) ").append("FROM ").append(customDbSchema).append("BIOMEDGPS_product p ");
 		sql.append(LEFT_OUTER_JOIN).append(customDbSchema).append("BIOMEDGPS_COMPANY c ");
 		sql.append("ON p.COMPANY_ID = c.COMPANY_ID ");
