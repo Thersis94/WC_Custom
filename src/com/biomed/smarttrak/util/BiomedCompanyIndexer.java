@@ -15,6 +15,7 @@ import org.apache.solr.client.solrj.SolrClient;
 
 import com.biomed.smarttrak.action.AdminControllerAction;
 import com.biomed.smarttrak.action.AdminControllerAction.Section;
+import com.biomed.smarttrak.action.AdminControllerAction.Status;
 import com.biomed.smarttrak.admin.SectionHierarchyAction;
 import com.biomed.smarttrak.vo.CompanyVO;
 import com.biomed.smarttrak.vo.LocationVO;
@@ -102,7 +103,10 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 		SmarttrakTree hierarchies = createHierarchies();
 
 		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
-			if (id != null) ps.setString(1, id);
+			ps.setString(1, Status.P.toString());
+			ps.setString(2, Status.E.toString());
+			ps.setString(3, Status.P.toString());
+			if (id != null) ps.setString(4, id);
 
 			ResultSet rs = ps.executeQuery();
 			String currentCompany = "";
@@ -419,11 +423,12 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 	private String buildRetrieveSql(String id) {
 		StringBuilder sql = new StringBuilder(1250);
 		String customDb = config.getProperty(Constants.CUSTOM_DB_SCHEMA);
-		sql.append("SELECT c.COMPANY_ID, a.SECTION_ID, c.COMPANY_NM, c.STATUS_NO, c.stock_abbr_txt, c.PUBLIC_FLG, c.SHORT_NM_TXT, ");
-		sql.append("c2.COMPANY_NM as PARENT_NM, COUNT(p.COMPANY_ID) as PRODUCT_NO, c.CREATE_DT, c.UPDATE_DT, c.alias_nm ");
+		sql.append("SELECT c.COMPANY_ID, a.SECTION_ID, c.COMPANY_NM, c.stock_abbr_txt, c.PUBLIC_FLG, c.SHORT_NM_TXT, ");
+		sql.append("c2.COMPANY_NM as PARENT_NM, COUNT(p.COMPANY_ID) as PRODUCT_NO, c.CREATE_DT, c.UPDATE_DT, c.alias_nm, ");
+		sql.append("case when c.status_no = ? and count(p.company_id) = 0 then ? else c.STATUS_NO end as STATUS_NO ");
 		sql.append(DBUtil.FROM_CLAUSE).append(customDb).append("BIOMEDGPS_COMPANY c ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(customDb).append("BIOMEDGPS_PRODUCT p ");
-		sql.append("ON p.COMPANY_ID = c.COMPANY_ID ");
+		sql.append("ON p.COMPANY_ID = c.COMPANY_ID and p.status_no = ? ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(customDb).append("BIOMEDGPS_COMPANY_ATTRIBUTE_XR xr ");
 		sql.append("ON xr.COMPANY_ID = c.COMPANY_ID ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(customDb).append("BIOMEDGPS_COMPANY_ATTRIBUTE a ");
@@ -435,8 +440,7 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 		sql.append("WHERE 1=1 ");
 		if (id != null) sql.append("and c.COMPANY_ID = ? ");
 		sql.append("GROUP BY c.COMPANY_ID, c.COMPANY_NM, a.SECTION_ID, c.STATUS_NO, ");
-		sql.append("c.stock_abbr_txt, p.COMPANY_ID, c2.COMPANY_NM, c.CREATE_DT, c.UPDATE_DT ");
-		sql.append("having COUNT(p.COMPANY_ID) > 0 ");
+		sql.append("c.stock_abbr_txt, p.COMPANY_ID, c2.COMPANY_NM, c.CREATE_DT, c.UPDATE_DT, p.status_no ");
 		sql.append("order by c.company_id ");
 		log.debug(sql);
 		return sql.toString();
