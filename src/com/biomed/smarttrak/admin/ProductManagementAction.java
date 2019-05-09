@@ -5,8 +5,10 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
+import java.util.stream.Collectors;
 
 import com.biomed.smarttrak.action.AdminControllerAction;
 import com.biomed.smarttrak.action.AdminControllerAction.Section;
@@ -475,7 +477,7 @@ public class ProductManagementAction extends ManagementAction {
 	protected void retrieveProduct(ActionRequest req) throws ActionException {
 		if (req.hasParameter("productId") && ! req.hasParameter("add")) {
 			retrieveProduct(req.getParameter("productId"), req);
-		} else if (!req.hasParameter("add")) {
+		} else if (!req.hasParameter("add") && req.hasParameter("json")) {
 			retrieveProducts(req);
 		} else {
 			loadAuthors(req); //load list of BiomedGPS Staff for the "Author" drop-down
@@ -622,7 +624,28 @@ public class ProductManagementAction extends ManagementAction {
 			params.add("%" + req.getParameter(DBUtil.TABLE_SEARCH).toLowerCase() + "%");
 		}
 
-		if (!req.hasParameter("inactive")) {
+		String [] sectionIds = req.getParameterValues("sections");
+		List<String> sections = Arrays.asList(sectionIds).stream().filter(s -> !StringUtil.isEmpty(s)).collect(Collectors.toList());
+		if(sections != null && !sections.isEmpty()) {
+			sql.append("and p.product_id in ( ");
+			sql.append("select distinct product_id from ").append(customDbSchema).append("biomedgps_product_section ps ");
+			sql.append("left outer join ").append(customDbSchema).append("biomedgps_section s on s.section_id = ps.section_id ");
+			sql.append("left outer join ").append(customDbSchema).append("biomedgps_section s2 on s.parent_id = s2.section_id ");
+			sql.append("left outer join ").append(customDbSchema).append("biomedgps_section s3 on s2.parent_id = s3.section_id ");
+			sql.append("where s.section_id in (");
+			DBUtil.preparedStatmentQuestion(sections.size(), sql);
+			params.addAll(sections);
+			sql.append(") or s2.section_id in (");
+			DBUtil.preparedStatmentQuestion(sections.size(), sql);
+			params.addAll(sections);
+			sql.append(") or s3.section_id in (");
+			DBUtil.preparedStatmentQuestion(sections.size(), sql);
+			params.addAll(sections);
+			sql.append(") ");
+			sql.append(") ");
+		}
+
+		if (!req.getBooleanParameter("inactive")) {
 			sql.append("and (p.STATUS_NO = '").append(Status.P.toString()).append("' ");
 			sql.append("or p.STATUS_NO = '").append(Status.E.toString()).append("') ");
 		}
@@ -646,8 +669,9 @@ public class ProductManagementAction extends ManagementAction {
 		log.debug(sql);
 
 		DBProcessor db = new DBProcessor(dbConn);
-		List<Object> products = db.executeSelect(sql.toString(), params, new ProductVO());
-		super.putModuleData(products, getProductCount(req.getParameter(DBUtil.TABLE_SEARCH), req.getParameter("authorId"), req.hasParameter("inactive")), false);
+		db.setGenerateExecutedSQL(true);
+		List<ProductVO> products = db.executeSelect(sql.toString(), params, new ProductVO());
+		super.putModuleData(products, getProductCount(req.getParameter(DBUtil.TABLE_SEARCH), req.getParameter("authorId"), req.getBooleanParameter("inactive"), sections), false);
 	}
 
 
@@ -656,7 +680,7 @@ public class ProductManagementAction extends ManagementAction {
 	 * @return
 	 * @throws ActionException 
 	 */
-	protected int getProductCount(String searchData, String authorId, boolean inactive) throws ActionException {
+	protected int getProductCount(String searchData, String authorId, boolean inactive, List<String> sections) throws ActionException {
 		StringBuilder sql = new StringBuilder(150);
 		sql.append("select COUNT(*) ").append("FROM ").append(customDbSchema).append("BIOMEDGPS_product p ");
 		sql.append(LEFT_OUTER_JOIN).append(customDbSchema).append("BIOMEDGPS_COMPANY c ");
@@ -666,6 +690,22 @@ public class ProductManagementAction extends ManagementAction {
 		if (!StringUtil.isEmpty(searchData)) {
 			sql.append("and (lower(PRODUCT_NM) like ? ");
 			sql.append("or lower(COMPANY_NM) like ? )");
+		}
+
+		if(sections != null && !sections.isEmpty()) {
+			sql.append("and p.product_id in ( ");
+			sql.append("select distinct product_id from ").append(customDbSchema).append("biomedgps_product_section ps ");
+			sql.append("left outer join ").append(customDbSchema).append("biomedgps_section s on s.section_id = ps.section_id ");
+			sql.append("left outer join ").append(customDbSchema).append("biomedgps_section s2 on s.parent_id = s2.section_id ");
+			sql.append("left outer join ").append(customDbSchema).append("biomedgps_section s3 on s2.parent_id = s3.section_id ");
+			sql.append("where s.section_id in (");
+			DBUtil.preparedStatmentQuestion(sections.size(), sql);
+			sql.append(") or s2.section_id in (");
+			DBUtil.preparedStatmentQuestion(sections.size(), sql);
+			sql.append(") or s3.section_id in (");
+			DBUtil.preparedStatmentQuestion(sections.size(), sql);
+			sql.append(") ");
+			sql.append(") ");
 		}
 
 		if (!inactive) {
@@ -683,7 +723,19 @@ public class ProductManagementAction extends ManagementAction {
 				ps.setString(i++, "%" + searchData.toLowerCase() + "%");
 				ps.setString(i++, "%" + searchData.toLowerCase() + "%");
 			}
+			if(sections != null && !sections.isEmpty()) {
+				for(String s : sections) {
+					ps.setString(i++, s);
+				}
+				for(String s : sections) {
+					ps.setString(i++, s);
+				}
+				for(String s : sections) {
+					ps.setString(i++, s);
+				}
+			}
 			if (!StringUtil.isEmpty(authorId)) ps.setString(i, authorId);
+			log.debug(ps);
 			ResultSet rs = ps.executeQuery();
 			if (rs.next())
 				return rs.getInt(1);
