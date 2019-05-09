@@ -436,7 +436,6 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 		if (id != null) sql.append("and c.COMPANY_ID = ? ");
 		sql.append("GROUP BY c.COMPANY_ID, c.COMPANY_NM, a.SECTION_ID, c.STATUS_NO, ");
 		sql.append("c.stock_abbr_txt, p.COMPANY_ID, c2.COMPANY_NM, c.CREATE_DT, c.UPDATE_DT ");
-		sql.append("having COUNT(p.COMPANY_ID) > 0 ");
 		sql.append("order by c.company_id ");
 		log.debug(sql);
 		return sql.toString();
