@@ -65,13 +65,16 @@ public class RegionReport extends SBActionAdapter {
 			setModuleData(getCityResultData(rf));
 	}
 	
-	
+	/**
+	 * Gets the total tickets opened that utilized a case by state and country 
+	 * @param rf Report Filter for user defined filter params
+	 * @return
+	 */
 	public List<RegionReportVO> getStateResultData(ReportFilterVO rf) {
 		List<Object> vals = new ArrayList<>();
 		vals.add(rf.getCountry());
-		vals.add(rf.getCountry());
 		
-		StringBuilder sql = new StringBuilder(256);
+		StringBuilder sql = new StringBuilder(576);
 		sql.append("select newid() as id, state_nm, state_nm as display_nm, a.* ");
 		sql.append("from state s ");
 		sql.append("left outer join ( ");
@@ -80,21 +83,47 @@ public class RegionReport extends SBActionAdapter {
 		sql.append("inner join custom.wsla_ticket_assignment b on a.ticket_id = b.ticket_id and b.assg_type_cd = 'CAS' ");  
 		sql.append("inner join custom.wsla_provider_location c on b.location_id = c.location_id ");
 		sql.append("where country_cd = ? ");
+		
+		// Add the OEM filter
+		if (rf.hasOems()) {
+			sql.append("and oem_id in (").append(rf.getOemPSQuestions()).append(") ");
+			vals.addAll(rf.getOemIds());
+		}
+		
+		// Add the start date filter
+		if (rf.hasStartDate()) {
+			sql.append("and a.create_dt >= ? ");
+			vals.add(rf.getStartDate());
+		}
+		
+		// Add the end date filter
+		if (rf.hasEndDate()) {
+			sql.append("and a.create_dt <= ? ");
+			vals.add(rf.getEndDate());
+		}
+		
 		sql.append("group by state_cd, c.country_cd ");
 		sql.append(") as a on s.state_cd = a.state_cd ");
 		sql.append("where s.country_cd = ? ");
 		sql.append("order by state_nm ");
+		vals.add(rf.getCountry());
 		log.debug(sql.length() + "|" + sql + "|" + vals);
 		
 		DBProcessor db = new DBProcessor(getDBConnection());
 		return db.executeSelect(sql.toString(), vals, new RegionReportVO());
 	}
 	
+	/**
+	 * queries the database for a list of cities within the country / state
+	 * @param rf
+	 * @return
+	 */
 	public List<RegionReportVO> getCityResultData(ReportFilterVO rf) {
 		List<Object> vals = new ArrayList<>();
 		vals.add(rf.getState());
+		vals.add(rf.getCountry());
 		
-		StringBuilder sql = new StringBuilder(256);
+		StringBuilder sql = new StringBuilder(512);
 		sql.append("select newid() as id, city_nm, state_cd, country_cd, ");
 		sql.append("count(*) as total_ticket_no, city_nm as display_nm ");
 		sql.append(DBUtil.FROM_CLAUSE).append(getCustomSchema()).append("wsla_ticket a ");
@@ -102,10 +131,29 @@ public class RegionReport extends SBActionAdapter {
 		sql.append("on a.ticket_id = b.ticket_id and b.assg_type_cd = 'CAS' ");
 		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("wsla_provider_location c ");
 		sql.append("on b.location_id = c.location_id ");
-		sql.append("where state_cd = ? ");
+		sql.append("where state_cd = ? and country_cd = ? ");
+		
+		// Add the OEM filter
+		if (rf.hasOems()) {
+			sql.append("and oem_id in (").append(rf.getOemPSQuestions()).append(") ");
+			vals.addAll(rf.getOemIds());
+		}
+		
+		// Add the start date filter
+		if (rf.hasStartDate()) {
+			sql.append("and a.create_dt >= ? ");
+			vals.add(rf.getStartDate());
+		}
+		
+		// Add the end date filter
+		if (rf.hasEndDate()) {
+			sql.append("and a.create_dt <= ? ");
+			vals.add(rf.getEndDate());
+		}
+		
 		sql.append("group by city_nm, state_cd, country_cd ");
 		sql.append("order by city_nm");
-		log.debug("sql: " + sql);
+		log.debug("sql: " + sql.length() + "|" + sql + vals);
 		
 		DBProcessor db = new DBProcessor(getDBConnection());
 		return db.executeSelect(sql.toString(), vals, new RegionReportVO());
@@ -120,7 +168,7 @@ public class RegionReport extends SBActionAdapter {
 		private String city;
 		private String state;
 		private String displayName;
-		private Long totalTickets;
+		private long totalTickets;
 		
 		public RegionReportVO() {
 			super();
@@ -136,7 +184,7 @@ public class RegionReport extends SBActionAdapter {
 		public String getState() { return state; }
 		
 		@Column(name="total_ticket_no")
-		public Long getTotalTickets() { return totalTickets; }
+		public long getTotalTickets() { return totalTickets; }
 		
 		@Column(name="display_nm")
 		public String getDisplayName() { return displayName; }
@@ -145,7 +193,7 @@ public class RegionReport extends SBActionAdapter {
 		public void setCity(String city) { this.city = city; }
 		public void setState(String state) { this.state = state; }
 		public void setDisplayName(String displayName) { this.displayName = displayName; }
-		public void setTotalTickets(Long totalTickets) { this.totalTickets = totalTickets; }
+		public void setTotalTickets(long totalTickets) { this.totalTickets = totalTickets; }
 	}
 }
 
