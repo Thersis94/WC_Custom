@@ -65,7 +65,8 @@ public class CompanyManagementAction extends ManagementAction {
 	public static final String ACTION_TYPE = "actionTarget";
 	public static final String COMPANY_ID = "companyId";
 	public static final String CONTENT_ATTRIBUTE_ID = "LVL1_1";
-	private static final Object COMPANY_SOLR_KEY = "COMPANY_SOLR_KEY";
+	private static final String COMPANY_SOLR_KEY = "COMPANY_SOLR_KEY";
+	private static final String STATUS_S = "status_s:";
 
 
 	private enum ActionType {
@@ -595,13 +596,13 @@ public class CompanyManagementAction extends ManagementAction {
 		fq.add("productcount_i:[0 TO *]");
 
 		//Override Status Filter on Public Side.
-		fq.add(StringUtil.join("status_s:", Status.P.toString()));
-		fq.add(StringUtil.join("status_s:", Status.E.toString()));
+		fq.add(StringUtil.join(STATUS_S, Status.P.toString()));
+		fq.add(StringUtil.join(STATUS_S, Status.E.toString()));
 		if (Convert.formatBoolean(req.getParameter("inactive"))) {
-			fq.add(StringUtil.join("status_s:", Status.A.toString()));
-			fq.add(StringUtil.join("status_s:", Status.D.toString()));
-			fq.add(StringUtil.join("status_s:", "C"));
-			fq.add(StringUtil.join("status_s:", "I"));
+			fq.add(StringUtil.join(STATUS_S, Status.A.toString()));
+			fq.add(StringUtil.join(STATUS_S, Status.D.toString()));
+			fq.add(StringUtil.join(STATUS_S, "C"));
+			fq.add(StringUtil.join(STATUS_S, "I"));
 		}
 
 		// If this is a request for the dashboard an author id will be provided

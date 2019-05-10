@@ -629,9 +629,9 @@ public class ProductManagementAction extends ManagementAction {
 		if(sections != null && !sections.isEmpty()) {
 			sql.append("and p.product_id in ( ");
 			sql.append("select distinct product_id from ").append(customDbSchema).append("biomedgps_product_section ps ");
-			sql.append("left outer join ").append(customDbSchema).append("biomedgps_section s on s.section_id = ps.section_id ");
-			sql.append("left outer join ").append(customDbSchema).append("biomedgps_section s2 on s.parent_id = s2.section_id ");
-			sql.append("left outer join ").append(customDbSchema).append("biomedgps_section s3 on s2.parent_id = s3.section_id ");
+			sql.append(LEFT_OUTER_JOIN).append(customDbSchema).append("biomedgps_section s on s.section_id = ps.section_id ");
+			sql.append(LEFT_OUTER_JOIN).append(customDbSchema).append("biomedgps_section s2 on s.parent_id = s2.section_id ");
+			sql.append(LEFT_OUTER_JOIN).append(customDbSchema).append("biomedgps_section s3 on s2.parent_id = s3.section_id ");
 			sql.append("where s.section_id in (");
 			DBUtil.preparedStatmentQuestion(sections.size(), sql);
 			params.addAll(sections);
@@ -695,9 +695,9 @@ public class ProductManagementAction extends ManagementAction {
 		if(sections != null && !sections.isEmpty()) {
 			sql.append("and p.product_id in ( ");
 			sql.append("select distinct product_id from ").append(customDbSchema).append("biomedgps_product_section ps ");
-			sql.append("left outer join ").append(customDbSchema).append("biomedgps_section s on s.section_id = ps.section_id ");
-			sql.append("left outer join ").append(customDbSchema).append("biomedgps_section s2 on s.parent_id = s2.section_id ");
-			sql.append("left outer join ").append(customDbSchema).append("biomedgps_section s3 on s2.parent_id = s3.section_id ");
+			sql.append(LEFT_OUTER_JOIN).append(customDbSchema).append("biomedgps_section s on s.section_id = ps.section_id ");
+			sql.append(LEFT_OUTER_JOIN).append(customDbSchema).append("biomedgps_section s2 on s.parent_id = s2.section_id ");
+			sql.append(LEFT_OUTER_JOIN).append(customDbSchema).append("biomedgps_section s3 on s2.parent_id = s3.section_id ");
 			sql.append("where s.section_id in (");
 			DBUtil.preparedStatmentQuestion(sections.size(), sql);
 			sql.append(") or s2.section_id in (");
@@ -735,7 +735,6 @@ public class ProductManagementAction extends ManagementAction {
 				}
 			}
 			if (!StringUtil.isEmpty(authorId)) ps.setString(i, authorId);
-			log.debug(ps);
 			ResultSet rs = ps.executeQuery();
 			if (rs.next())
 				return rs.getInt(1);
