@@ -58,7 +58,7 @@ public class RegionReport extends SBActionAdapter {
 	public void retrieve(ActionRequest req) throws ActionException {
 		if (! req.hasParameter("json")) return;
 
-		ReportFilterVO rf = new ReportFilterVO(req);
+		ReportFilterVO rf = new ReportFilterVO(req, dbConn);
 		if (StringUtil.isEmpty(rf.getState()))
 			setModuleData(getStateResultData(rf));
 		else 

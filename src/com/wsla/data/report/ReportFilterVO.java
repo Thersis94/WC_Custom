@@ -1,10 +1,15 @@
 package com.wsla.data.report;
 
+// JDK 1.8.x
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
+// SMT Base Libs
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.parser.BeanDataVO;
 import com.siliconmtn.db.DBUtil;
@@ -14,7 +19,7 @@ import com.siliconmtn.util.StringUtil;
 /****************************************************************************
  * <b>Title</b>: ReportFilterVO.java
  * <b>Project</b>: WC_Custom
- * <b>Description: </b> ***Change Me
+ * <b>Description: </b> Processes data for the filter parameters on the reports
  * <b>Copyright:</b> Copyright (c) 2019
  * <b>Company:</b> Silicon Mountain Technologies
  * 
@@ -37,24 +42,46 @@ public class ReportFilterVO extends BeanDataVO {
 	private List<String> oemIds = new ArrayList<>();
 	private Date startDate;
 	private Date endDate;
-
-	/**
-	 * 
-	 */
-	public ReportFilterVO() {
-		super();
-	}
+	
+	// Helpers
+	private Connection conn;
 
 	/**
 	 * Populates the data elements
 	 * @param req
 	 */
-	public ReportFilterVO(ActionRequest req) {
-		this();
+	public ReportFilterVO(ActionRequest req, Connection conn) {
+		super();
+		this.conn = conn;
 		this.populateData(req);
+		
+		// Convert the comma delimited list of oems to a collection
 		if (! StringUtil.isEmpty(oemId)) {
 			oemIds.addAll(Arrays.asList(oemId.split("\\,")));
 		}
+				
+		// Make sure the country s a 2 digit code and not 3
+		if (StringUtil.checkVal(state).length() == 3) get2CharState();
+	}
+	
+	/**
+	 * Gets the 2 character state code from the 3 character ISO code
+	 * @return
+	 */
+	protected String get2CharState() {
+		String s = "select state_cd from state where iso_state_cd = ?";
+		
+		try (PreparedStatement ps = conn.prepareStatement(s)) {
+			ps.setString(1, state);
+			
+			try(ResultSet rs = ps.executeQuery()) {
+				if (rs.next()) state = rs.getString(1);
+			}
+		} catch (Exception e) {
+			log.error("Unable to retrieve 2 character country code", e);
+		}
+		
+		return country;
 	}
 
 	/**
