@@ -1,12 +1,8 @@
 package com.wsla.action.report;
 
-import java.io.Serializable;
 // JDK 1.8.x
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 // SMT Base Libs
@@ -16,17 +12,15 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.DBProcessor;
-import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
-
 // WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
-import com.wsla.data.ticket.FailureReportVO;
+import com.wsla.data.report.ReportFilterVO;
 
 /****************************************************************************
  * <b>Title</b>: FailureRateReport.java
  * <b>Project</b>: WC_Custom
- * <b>Description: </b> Pulls the data for the failure Reports
+ * <b>Description: </b> Pulls the data for the region Reports
  * <b>Copyright:</b> Copyright (c) 2019
  * <b>Company:</b> Silicon Mountain Technologies
  * 
@@ -62,55 +56,56 @@ public class RegionReport extends SBActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		log.info("region report running");
 		if (! req.hasParameter("json")) return;
-		
-		Date startDate = req.getDateParameter("startDate");
-		Date endDate = req.getDateParameter("endDate");
-		String[] oemId = req.getParameterValues("oemId");
-		oemId = oemId[0].split(",");
-		String country = req.getParameter("country", "MX");
-		String state = req.getParameter("state");
-		setModuleData(getStateResultData(country));
+
+		ReportFilterVO rf = new ReportFilterVO(req);
+		if (StringUtil.isEmpty(rf.getState()))
+			setModuleData(getStateResultData(rf));
+		else 
+			setModuleData(getCityResultData(rf));
 	}
 	
 	
-	public List<RegionReportVO> getStateResultData(String country) {
+	public List<RegionReportVO> getStateResultData(ReportFilterVO rf) {
 		List<Object> vals = new ArrayList<>();
-		vals.add(country);
-		vals.add(country);
+		vals.add(rf.getCountry());
+		vals.add(rf.getCountry());
 		
 		StringBuilder sql = new StringBuilder(256);
-		sql.append("select newid() as id, state_nm, c.country_cd, count(*) as total_ticket_no ");
-		sql.append(DBUtil.FROM_CLAUSE).append(getCustomSchema()).append("wsla_ticket a ");
-		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("wsla_ticket_assignment b ");
-		sql.append("on a.ticket_id = b.ticket_id and b.assg_type_cd = 'CAS' ");
-		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("wsla_provider_location c ");
-		sql.append("on b.location_id = c.location_id ");
-		sql.append("inner join state d on c.state_cd = d.state_cd and d.country_cd = ? ");
-		sql.append("where c.country_cd = ? ");
-		sql.append("group by state_nm, c.country_cd ");
-		sql.append("order by state_nm");
-		log.info(sql.length() + "|" + sql + "|" + vals);
+		sql.append("select newid() as id, state_nm, state_nm as display_nm, a.* ");
+		sql.append("from state s ");
+		sql.append("left outer join ( ");
+		sql.append("select state_cd, c.country_cd, count(*) as total_ticket_no ");
+		sql.append("from custom.wsla_ticket a ");
+		sql.append("inner join custom.wsla_ticket_assignment b on a.ticket_id = b.ticket_id and b.assg_type_cd = 'CAS' ");  
+		sql.append("inner join custom.wsla_provider_location c on b.location_id = c.location_id ");
+		sql.append("where country_cd = ? ");
+		sql.append("group by state_cd, c.country_cd ");
+		sql.append(") as a on s.state_cd = a.state_cd ");
+		sql.append("where s.country_cd = ? ");
+		sql.append("order by state_nm ");
+		log.debug(sql.length() + "|" + sql + "|" + vals);
 		
 		DBProcessor db = new DBProcessor(getDBConnection());
 		return db.executeSelect(sql.toString(), vals, new RegionReportVO());
 	}
 	
-	public List<RegionReportVO> getCityResultData(String country, String state) {
+	public List<RegionReportVO> getCityResultData(ReportFilterVO rf) {
 		List<Object> vals = new ArrayList<>();
-		vals.add(country);
+		vals.add(rf.getState());
 		
 		StringBuilder sql = new StringBuilder(256);
-		sql.append("select newid() as id, city_nm, state_cd, country_cd, count(*) as total_ticket_no ");
+		sql.append("select newid() as id, city_nm, state_cd, country_cd, ");
+		sql.append("count(*) as total_ticket_no, city_nm as display_nm ");
 		sql.append(DBUtil.FROM_CLAUSE).append(getCustomSchema()).append("wsla_ticket a ");
 		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("wsla_ticket_assignment b ");
 		sql.append("on a.ticket_id = b.ticket_id and b.assg_type_cd = 'CAS' ");
 		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("wsla_provider_location c ");
 		sql.append("on b.location_id = c.location_id ");
-		sql.append("where country_cd = ? ");
+		sql.append("where state_cd = ? ");
 		sql.append("group by city_nm, state_cd, country_cd ");
 		sql.append("order by city_nm");
+		log.debug("sql: " + sql);
 		
 		DBProcessor db = new DBProcessor(getDBConnection());
 		return db.executeSelect(sql.toString(), vals, new RegionReportVO());
@@ -124,7 +119,8 @@ public class RegionReport extends SBActionAdapter {
 		private String id;
 		private String city;
 		private String state;
-		private long totalTickets;
+		private String displayName;
+		private Long totalTickets;
 		
 		public RegionReportVO() {
 			super();
@@ -140,12 +136,16 @@ public class RegionReport extends SBActionAdapter {
 		public String getState() { return state; }
 		
 		@Column(name="total_ticket_no")
-		public long getTotalTickets() { return totalTickets; }
+		public Long getTotalTickets() { return totalTickets; }
+		
+		@Column(name="display_nm")
+		public String getDisplayName() { return displayName; }
 		
 		public void setId(String id) { this.id = id; }
 		public void setCity(String city) { this.city = city; }
 		public void setState(String state) { this.state = state; }
-		public void setTotalTickets(long totalTickets) { this.totalTickets = totalTickets; }
+		public void setDisplayName(String displayName) { this.displayName = displayName; }
+		public void setTotalTickets(Long totalTickets) { this.totalTickets = totalTickets; }
 	}
 }
 
