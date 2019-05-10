@@ -33,26 +33,47 @@ public class RPConstants {
 	}
 	
 	/**
-	 * 
+	 * Custom Dealer Attribute Group Codes
 	 */
-	public enum DataType {
-		LIST("List of Items"),
-		ITEM ("Single Item");
+	public enum AttributeGroupCode {
+		ADD_ONS("Facility Add Ons"),
+		KITCHEN_INFO("Kitchen Info");
 		
-		private String typeName;
-		DataType(String typeName) { 
-			this.typeName = typeName;
-		}
-
-		public String getTypeName() {	return typeName; }
-	}
-
-	private RPConstants() {
-		//don't need a constructor - static class
+		private String codeName;
+		private AttributeGroupCode(String codeName) { this.codeName = codeName; }
+		public String getCodeName() { return codeName; }
 	}
 	
+	/**
+	 * Member Types
+	 */
+	public enum MemberType {
+		KITCHEN(13000, "Kitchen Facility"),
+		RESTAURANT_PEER(13001, "Restaurant Peer"),
+		CUSTOMER(13002, "Mobile Restaurateur");
+		
+		private String memberName;
+		private int dealerId;
+		MemberType(int dealerId, String memberName) { 
+			this.memberName = memberName;
+			this.dealerId = dealerId;
+		}
+
+		public String getMemberName() {	return memberName; }
+		public int getDealerId() {return dealerId; }
+	}
+
 	/**
 	 * Site org ID
 	 */
 	public static final String ORGANIZATON_ID = "REST_PEER";
+	
+	/**
+	 * Has Schedule Product Attribute Id
+	 */
+	public static final String HAS_SCHEDULE = "RP_HAS_SCHEDULE";
+
+	private RPConstants() {
+		//don't need a constructor - static class
+	}
 }

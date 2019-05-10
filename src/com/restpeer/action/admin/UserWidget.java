@@ -1,14 +1,17 @@
 package com.restpeer.action.admin;
 
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 // JDK 1.8.x
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
 import com.restpeer.action.account.MemberLocationUserAction;
 // RP Libs
 import com.restpeer.common.RPConstants;
-import com.restpeer.data.LocationUserVO;
 import com.restpeer.data.RPUserVO;
 
 // SMT Base Libs
@@ -16,6 +19,7 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.common.html.BSTableControlVO;
+import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.orm.GridDataVO;
 import com.siliconmtn.db.pool.SMTDBConnection;
@@ -23,7 +27,7 @@ import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.StringUtil;
-
+import com.smt.sitebuilder.action.dealer.LocationProfileVO;
 // WC Libs
 import com.smt.sitebuilder.action.user.ProfileManager;
 import com.smt.sitebuilder.action.user.ProfileManagerFactory;
@@ -85,7 +89,7 @@ public class UserWidget extends UserBaseWidget {
 				setModuleData(getUserProfile(req.getParameter("profileId")));
 			} else {
 				BSTableControlVO bst = new BSTableControlVO(req, RPUserVO.class);
-				setModuleData(getUsers(req.getParameter("memberLocationId"), bst));
+				setModuleData(getUsers(req.getParameter("dealerLocationId"), bst));
 			}
 		} catch (Exception e) {
 			setModuleData(null, 0, e.getLocalizedMessage());
@@ -99,37 +103,75 @@ public class UserWidget extends UserBaseWidget {
 	 * @throws DatabaseException
 	 */
 	public UserDataVO getUserProfile(String profileId) throws DatabaseException {
-		
 		ProfileManager pm = ProfileManagerFactory.getInstance(attributes);
 		return pm.getProfile(profileId, getDBConnection(), "", RPConstants.ORGANIZATON_ID);
 	}
 	
 	/**
+	 * Returns the user record for the given profileId.
+	 * 
+	 * @param profileId
+	 * @return
+	 */
+	public RPUserVO getUserByProfileId(String profileId) {
+		StringBuilder sql = new StringBuilder(256);
+		sql.append(DBUtil.SELECT_FROM_STAR).append(getCustomSchema()).append("rp_user ");
+		sql.append(DBUtil.WHERE_CLAUSE).append("profile_id = ? ");
+		log.debug(sql.length() + "|" + sql);
+		
+		DBProcessor db = new DBProcessor(getDBConnection());
+		List<RPUserVO> data = db.executeSelect(sql.toString(), Arrays.asList(profileId), new RPUserVO());
+		
+		return data != null && !data.isEmpty() ? data.get(0) : new RPUserVO();
+	}
+	
+	/**
+	 * Gets the User Id from the profile id
+	 * @param profileId
+	 * @return
+	 * @throws SQLException
+	 */
+	public String getUserIdFromProfileId(String profileId) throws SQLException {
+		StringBuilder sql = new StringBuilder(64);
+		sql.append("select user_id from ").append(getCustomSchema()).append("rp_user ");
+		sql.append("where profile_id = ?");
+		log.debug(sql + "|" + profileId);
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, profileId);
+			try (ResultSet rs = ps.executeQuery()) {
+				if (rs.next()) return rs.getString(1);
+				else throw new SQLException("No user found");
+			}
+		}
+	}
+
+	/**
 	 * Loads the list of users.  if a user is already associated to the location
 	 * then do not return them in the list
-	 * @param mlid
+	 * @param dlid
 	 * @param bst
 	 * @return
 	 */
-	public GridDataVO<RPUserVO> getUsers(String mlid, BSTableControlVO bst) {
+	public GridDataVO<RPUserVO> getUsers(String dlid, BSTableControlVO bst) {
 		List<Object> vals = new ArrayList<>();
 		StringBuilder sql = new StringBuilder(344);
 		sql.append("select a.*, coalesce(user_total, 0) as member_assoc_no from ");
 		sql.append(getCustomSchema()).append("rp_user a "); 
 		sql.append("left outer join ( ");
-		sql.append("select user_id, count(*) as user_total from ");
-		sql.append(getCustomSchema()).append("rp_location_user_xr b ");
-		sql.append("group by user_id ");
-		sql.append(") as b on a.user_id = b.user_id ");
+		sql.append("select profile_id, count(*) as user_total from ");
+		sql.append("dealer_location_profile_xr b ");
+		sql.append("group by profile_id ");
+		sql.append(") as b on a.profile_id = b.profile_id ");
 		sql.append("where 1=1 ");
 		
-		if (! StringUtil.isEmpty(mlid)) {
-			sql.append("and a.user_id not in ( "); 
-			sql.append("select user_id from ").append(getCustomSchema());
-			sql.append("rp_location_user_xr where member_location_id = ? "); 
+		if (! StringUtil.isEmpty(dlid)) {
+			sql.append("and a.profile_id not in ( "); 
+			sql.append("select profile_id from ");
+			sql.append("dealer_location_profile_xr where dealer_location_id = ? "); 
 			sql.append(") "); 
 			
-			vals.add(mlid);
+			vals.add(dlid);
 		}
 		
 		// Do a like search against first and last name, email and phone
@@ -166,7 +208,7 @@ public class UserWidget extends UserBaseWidget {
 			if (req.getBooleanParameter("isInsert")) {
 				db.insert(user);
 				
-				if (! StringUtil.isEmpty(req.getParameter("memberLocationId"))) {
+				if (! StringUtil.isEmpty(req.getParameter("dealerLocationId"))) {
 					saveRoleInfo(user, req);
 				}
 			} else {
@@ -191,8 +233,8 @@ public class UserWidget extends UserBaseWidget {
 			log.info("Assigning user to Location");
 			// Assign the data to the location object.  Xref member type to the appropriate role
 			MemberLocationUserAction ua = new MemberLocationUserAction(getDBConnection(), getAttributes());
-			LocationUserVO loc = new LocationUserVO(req);
-			loc.setUserId(user.getUserId());
+			LocationProfileVO loc = new LocationProfileVO(req);
+			loc.setProfileId(user.getProfileId());
 			if (StringUtil.isEmpty(loc.getRoleId())) loc.setRoleId(ua.getRoleId(req));
 			
 			// Assign the user to the location
