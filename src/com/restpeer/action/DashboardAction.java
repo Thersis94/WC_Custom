@@ -135,7 +135,6 @@ public class DashboardAction extends SimpleActionAdapter {
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		db.setGenerateExecutedSQL(log.isDebugEnabled());
 		List<SMTChartDetailVO> chartData = db.executeSelect(sql.toString(), vals, new SMTChartDetailVO());
-		log.debug(")))))))))))))))))))))))))");
 		return buildChart(chartData, "New Members", "", ChartType.PIE, true);
 	}
 	
