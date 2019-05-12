@@ -6,6 +6,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -22,6 +23,7 @@ import com.biomed.smarttrak.vo.LocationVO;
 import com.biomed.smarttrak.vo.ProductAllianceVO;
 import com.biomed.smarttrak.vo.ProductVO;
 import com.biomed.smarttrak.vo.SectionVO;
+import com.siliconmtn.action.ActionException;
 import com.siliconmtn.data.Node;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
@@ -52,7 +54,7 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 
 	private static final String COMPANY_ID  = "COMPANY_ID";
 	private static final String SECTION_ID = "sectionId";
-
+	private static int MAX_COMPANY_INDEX = 500;
 	public BiomedCompanyIndexer(Properties config) {
 		this.config = config;
 	}
@@ -67,13 +69,77 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 		// This server was given to this method and it is not this method's
 		// job or right to close it.
 		SolrActionUtil util = new SmarttrakSolrUtil(server);
+		SmarttrakTree hierarchies = createHierarchies();
+
 		try {
-			util.addDocuments(retreiveCompanies(null));
+			List<SecureSolrDocumentVO> companies = retreiveCompanies(null, hierarchies);
+			processCompanies(companies, hierarchies, util);
 		} catch (Exception e) {
 			log.error("Failed to index companies", e);
 		}
 	}
 
+	/**
+	 * Process the Companies.  Iterate over them and control when we submit to solr.
+	 * @param companies
+	 * @param hierarchies
+	 * @param util
+	 * @throws SQLException
+	 * @throws ActionException
+	 */
+	private void processCompanies(List<SecureSolrDocumentVO> companies, SmarttrakTree hierarchies, SolrActionUtil util) throws SQLException, ActionException {
+		List<SecureSolrDocumentVO> temp = new ArrayList<>();
+
+		//Get Companies Iterator.
+		Iterator<SecureSolrDocumentVO> iter = companies.iterator();
+
+		//Load Location Data.
+		Map<String, LocationVO> locationMap = retrieveLocations();
+
+		int i = 0;
+
+		while(iter.hasNext()) {
+
+			//If we have proper number of companies, perform full lookup and send to Solr.
+			if(i > 0 && i % MAX_COMPANY_INDEX == 0) {
+				populateAndSaveCompanies(temp, locationMap, hierarchies, util);
+				log.info(String.format("Processed %d companies of %d", temp.size(), i));
+				temp.clear();
+			}
+			temp.add(iter.next());
+			iter.remove();
+			i++;
+		}
+
+		//Process Remainder of Records. proper number of companies, perform full lookup and send to Solr.
+		populateAndSaveCompanies(temp, locationMap, hierarchies, util);
+		log.info(String.format("Processed %d companies of %d", temp.size(), i));
+		temp.clear();
+	}
+
+	/**
+	 * Load Full Data for the given Companies and Forward to Solr.
+	 * @param temp
+	 * @param locationMap
+	 * @param hierarchies
+	 * @param util
+	 * @throws SQLException
+	 * @throws ActionException
+	 */
+	private void populateAndSaveCompanies(List<SecureSolrDocumentVO> temp, Map<String, LocationVO> locationMap, SmarttrakTree hierarchies, SolrActionUtil util) throws SQLException, ActionException {
+
+		//Load content for Companies
+		buildContent(temp, null);
+
+		//Populate Location Data for Companies.
+		buildLocationInformation(temp, locationMap);
+
+		//Add Products for Companies.
+		addProducts(temp, null, hierarchies);
+
+		//Send to Solr.
+		util.addDocuments(temp);
+	}
 
 	/*
 	 * (non-Javadoc)
@@ -82,9 +148,11 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 	@Override
 	public void indexItems(String... itemIds) {
 		SolrClient server = makeServer();
+		SmarttrakTree hierarchies = createHierarchies();
+
 		try (SolrActionUtil util = new SmarttrakSolrUtil(server)) {
 			for (String id : itemIds)
-				util.addDocuments(retreiveCompanies(id));
+				processCompanies(retreiveCompanies(id, hierarchies), hierarchies, util);
 
 		} catch (Exception e) {
 			log.error("Failed to index company with id: " + itemIds, e);
@@ -95,12 +163,12 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 	/**
 	 * Get all companies
 	 * @param id
+	 * @param hierarchies
 	 * @return
 	 */
-	private List<SecureSolrDocumentVO> retreiveCompanies(String id) {
+	private List<SecureSolrDocumentVO> retreiveCompanies(String id, SmarttrakTree hierarchies) {
 		List<SecureSolrDocumentVO> companies = new ArrayList<>();
 		String sql = buildRetrieveSql(id);
-		SmarttrakTree hierarchies = createHierarchies();
 
 		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
 			ps.setString(1, Status.P.toString());
@@ -123,10 +191,6 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 
 			}
 			addCompany(companies, company);
-
-			buildContent(companies, id);
-			buildLocationInformation(companies);
-			addProducts(companies, id, hierarchies);
 		} catch (SQLException e) {
 			log.error(e);
 		}
@@ -144,7 +208,7 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 	 */
 	@SuppressWarnings("unchecked")
 	private void addProducts(List<SecureSolrDocumentVO> companies, String id, SmarttrakTree hierarchies) {
-		Map<String, List<ProductVO>> products = loadProductAcls(id, hierarchies);
+		Map<String, List<ProductVO>> products = loadProductAcls(id, hierarchies, companies);
 		for (SecureSolrDocumentVO company : companies) {
 			List<ProductVO> productList = products.get(company.getDocumentId());
 			if (productList == null) continue;
@@ -189,16 +253,29 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 	 * Load all products and their alliances
 	 * @param id
 	 * @param hierarchies
+	 * @param companies
 	 * @return
 	 */
-	private Map<String, List<ProductVO>> loadProductAcls(String id, SmarttrakTree hierarchies) {
-		String sql = getProductSql(id);
+	private Map<String, List<ProductVO>> loadProductAcls(String id, SmarttrakTree hierarchies, List<SecureSolrDocumentVO> companies) {
+		String sql = getProductSql(id, companies);
 		Map<String, List<ProductVO>> acls = new HashMap<>();
 		DBProcessor db = new DBProcessor(dbConn);
 		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
+			int i = 1;
 			if (!StringUtil.isEmpty(id)) {
-				ps.setString(1, id);
-				ps.setString(2, id);
+				ps.setString(i++, id);
+				ps.setString(i++, id);
+			} else if(companies != null && !companies.isEmpty()) {
+
+				//Populate first In Clause
+				for(SecureSolrDocumentVO c : companies) {
+					ps.setString(i++, c.getDocumentId());
+				}
+
+				//Populate Second in clause.
+				for(SecureSolrDocumentVO c : companies) {
+					ps.setString(i++, c.getDocumentId());
+				}
 			}
 
 			String currentProduct = "";
@@ -270,9 +347,10 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 	/**
 	 * Build the product sql
 	 * @param id
+	 * @param companies
 	 * @return
 	 */
-	private String getProductSql(String id) {
+	private String getProductSql(String id, List<SecureSolrDocumentVO> companies) {
 		StringBuilder sql = new StringBuilder(300);
 		String customDb = config.getProperty(Constants.CUSTOM_DB_SCHEMA);
 		sql.append("SELECT p.PRODUCT_NM, p.SHORT_NM, p.ALIAS_NM, p.PRODUCT_ID, p.COMPANY_ID, ps.SECTION_ID, a.COMPANY_ID as ALLY_ID FROM ");
@@ -283,6 +361,13 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 		sql.append("ON a.PRODUCT_ID = p.PRODUCT_ID ");
 		sql.append("WHERE p.STATUS_NO not in ('A','D') ");
 		if (id != null) sql.append("and p.COMPANY_ID = ? or a.COMPANY_ID = ? ");
+		else if(companies != null && !companies.isEmpty()) {
+			sql.append("and p.COMPANY_ID in (");
+			DBUtil.preparedStatmentQuestion(companies.size(), sql);
+			sql.append(") or a.COMPANY_ID in (");
+			DBUtil.preparedStatmentQuestion(companies.size(), sql);
+			sql.append(") ");
+		}
 		sql.append("ORDER BY COMPANY_ID ");
 		log.info(sql);
 		return sql.toString();
@@ -313,14 +398,24 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(customDb).append("BIOMEDGPS_COMPANY_ATTRIBUTE a on a.ATTRIBUTE_ID = x.ATTRIBUTE_ID ");
 		sql.append("WHERE a.TYPE_NM = 'HTML' ");
 		if (!StringUtil.isEmpty(id)) sql.append("and x.COMPANY_ID = ? ");
+		else if(companies != null && !companies.isEmpty()){
+			sql.append("and x.company_id in (");
+			DBUtil.preparedStatmentQuestion(companies.size(), sql);
+			sql.append(") ");
+		}
 		sql.append("ORDER BY x.COMPANY_ID ");
 
-		StringBuilder content = new StringBuilder();
+		StringBuilder content = new StringBuilder(1024);
 		String currentCompany = "";
 		Map<String, StringBuilder> contentMap = new HashMap<>();
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			if (!StringUtil.isEmpty(id)) ps.setString(1, id);
-
+			int i = 1;
+			if (!StringUtil.isEmpty(id)) ps.setString(i++, id);
+			else if(companies != null && !companies.isEmpty()){
+				for(SecureSolrDocumentVO c : companies) {
+					ps.setString(i++, c.getDocumentId());
+				}
+			}
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
 				if (!currentCompany.equals(rs.getString(COMPANY_ID))) {
@@ -465,9 +560,9 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 	 * Get the state and country for the company that owns each product
 	 * and assign that information to the solr document.
 	 * @param companies
+	 * @param locationMap
 	 */
-	protected void buildLocationInformation(List<SecureSolrDocumentVO> companies) {
-		Map<String, LocationVO> locationMap = retrieveLocations();
+	protected void buildLocationInformation(List<SecureSolrDocumentVO> companies, Map<String, LocationVO> locationMap) {
 		for (SecureSolrDocumentVO company : companies) {
 			String companyId = company.getDocumentId();
 			LocationVO loc = locationMap.get(companyId);
