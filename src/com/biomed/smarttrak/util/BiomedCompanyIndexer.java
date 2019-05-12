@@ -54,7 +54,7 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 
 	private static final String COMPANY_ID  = "COMPANY_ID";
 	private static final String SECTION_ID = "sectionId";
-	private static int MAX_COMPANY_INDEX = 500;
+	private static final int MAX_COMPANY_INDEX = 500;
 	public BiomedCompanyIndexer(Properties config) {
 		this.config = config;
 	}
