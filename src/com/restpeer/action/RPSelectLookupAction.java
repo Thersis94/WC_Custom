@@ -6,7 +6,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import com.restpeer.action.admin.UserWidget;
+import com.restpeer.action.admin.UserAction;
 import com.restpeer.common.RPConstants;
 import com.restpeer.common.RPConstants.AttributeGroupCode;
 import com.restpeer.common.RPConstants.RPRole;
@@ -157,7 +157,7 @@ public class RPSelectLookupAction extends SelectLookupAction {
 	public List<GenericVO> getUsers(ActionRequest req) {
 		List<GenericVO> data = new ArrayList<>(10);
 		BSTableControlVO bst = new BSTableControlVO(req, RPUserVO.class);
-		UserWidget uw = new UserWidget(getDBConnection(), getAttributes());
+		UserAction uw = new UserAction(getDBConnection(), getAttributes());
 		GridDataVO<RPUserVO> users = uw.getUsers(req.getParameter("dealerLocationId"), bst);
 		
 		for (RPUserVO user : users.getRowData()) {

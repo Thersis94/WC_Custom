@@ -1,6 +1,6 @@
 package com.restpeer.action;
 
-import com.restpeer.action.admin.UserWidget;
+import com.restpeer.action.admin.UserAction;
 import com.restpeer.action.account.LocationProductScheduleAction;
 import com.restpeer.action.account.MemberLocationUserAction;
 
@@ -49,7 +49,7 @@ public class RPAjaxControllerFacadeAction extends AjaxControllerFacadeAction {
 		super.loadTypes();
 		actionMap.put(DEFAULT_TYPE, RPSelectLookupAction.class);
 		actionMap.put(MemberLocationUserAction.AJAX_KEY, MemberLocationUserAction.class);
-		actionMap.put(UserWidget.AJAX_KEY, UserWidget.class);
+		actionMap.put(UserAction.AJAX_KEY, UserAction.class);
 		actionMap.put(LocationProductScheduleAction.AJAX_KEY, LocationProductScheduleAction.class);
 	}
 }

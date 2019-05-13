@@ -6,7 +6,7 @@ import java.util.Map;
 // RP Libs
 import com.restpeer.common.RPConstants.RPRole;
 import com.restpeer.data.RPUserVO;
-import com.restpeer.action.admin.UserWidget;
+import com.restpeer.action.admin.UserAction;
 import com.restpeer.common.RPConstants.MemberType;
 
 // SMT Base Libs
@@ -84,7 +84,7 @@ public class MemberLocationUserAction extends DealerLocationProfileAction {
 	 * @return
 	 */
 	public RPUserVO getUser(String profileId) {
-		UserWidget uw = new UserWidget(getDBConnection(), getAttributes());
+		UserAction uw = new UserAction(getDBConnection(), getAttributes());
 		return uw.getUserByProfileId(profileId);
 	}
 	

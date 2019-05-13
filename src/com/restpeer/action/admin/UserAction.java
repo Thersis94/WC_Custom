@@ -34,7 +34,7 @@ import com.smt.sitebuilder.action.user.ProfileManagerFactory;
 import com.smt.sitebuilder.action.user.UserBaseWidget;
 
 /****************************************************************************
- * <b>Title</b>: UserWidget.java
+ * <b>Title</b>: UserAction.java
  * <b>Project</b>: WC_Custom
  * <b>Description: </b> Manages the assignment of Users to a location
  * <b>Copyright:</b> Copyright (c) 2019
@@ -46,7 +46,7 @@ import com.smt.sitebuilder.action.user.UserBaseWidget;
  * @updates:
  ****************************************************************************/
 
-public class UserWidget extends UserBaseWidget {
+public class UserAction extends UserBaseWidget {
 
 	/**
 	 * Json key to access this action
@@ -56,14 +56,14 @@ public class UserWidget extends UserBaseWidget {
 	/**
 	 * 
 	 */
-	public UserWidget() {
+	public UserAction() {
 		super();
 	}
 
 	/**
 	 * @param actionInit
 	 */
-	public UserWidget(ActionInitVO actionInit) {
+	public UserAction(ActionInitVO actionInit) {
 		super(actionInit);
 	}
 	
@@ -72,7 +72,7 @@ public class UserWidget extends UserBaseWidget {
 	 * @param dbConn
 	 * @param attributes
 	 */
-	public UserWidget(SMTDBConnection dbConn, Map<String, Object> attributes) {
+	public UserAction(SMTDBConnection dbConn, Map<String, Object> attributes) {
 		super();
 		setDBConnection(dbConn);
 		setAttributes(attributes);
