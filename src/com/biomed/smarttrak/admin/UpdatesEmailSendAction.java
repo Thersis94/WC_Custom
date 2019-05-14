@@ -40,7 +40,8 @@ public class UpdatesEmailSendAction extends SBActionAdapter {
 	protected enum KeyValueType {
 		SECTION_KEY_TYPE("SECTION"), 
 		MESSAGE_KEY_TYPE("MESSAGE"), 
-		TIME_RANGE_KEY_TYPE("timeRangeCd");
+		TIME_RANGE_KEY_TYPE("timeRangeCd"),
+		DATE("date");
 		
 		private String keyName;
 		private KeyValueType(String keyName){
@@ -181,8 +182,7 @@ public class UpdatesEmailSendAction extends SBActionAdapter {
 	 * @param config
 	 * @return
 	 */
-	protected void assignKeyValuePair(ActionRequest req, KeyValueType type, 
-			Map<String, Object> config){
+	protected void assignKeyValuePair(ActionRequest req, KeyValueType type, Map<String, Object> config){
 		//determine type
 		switch(type){
 		case SECTION_KEY_TYPE:
@@ -193,6 +193,9 @@ public class UpdatesEmailSendAction extends SBActionAdapter {
 			break;
 		case TIME_RANGE_KEY_TYPE:
 			setTimeRangeValue(req, type, config);
+			break;
+		case DATE:
+			config.put(KeyValueType.DATE.getKeyName(), req.getParameter("endDt"));
 			break;
 		}
 	}
@@ -224,9 +227,11 @@ public class UpdatesEmailSendAction extends SBActionAdapter {
 	private void setTimeRangeValue(ActionRequest req, KeyValueType type, Map<String, Object> config){
 		String campaignInstanceId = StringUtil.checkVal(req.getParameter("campaignInstanceId"));
 		//compare the ids. Determine time range value to assign
-		if(campaignInstanceId.contains("DAILY")){
+		if(req.hasParameter(type.getKeyName())) {
+			config.put(type.getKeyName(), req.getParameter(type.getKeyName()));
+		} else if(campaignInstanceId.contains("DAILY")){
 			config.put(type.getKeyName(), "daily");	
-		}else if(campaignInstanceId.contains("WEEKLY")){
+		} else if(campaignInstanceId.contains("WEEKLY")){
 			config.put(type.getKeyName(), "weekly");	
 		}
 	}

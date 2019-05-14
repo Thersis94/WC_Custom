@@ -4,6 +4,7 @@ import java.io.Serializable;
 import java.sql.ResultSet;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 
@@ -107,7 +108,7 @@ public class UpdateVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc
 	private String statusCd;
 	private String historyId;
 	private Date createDt;
-	private Date updateDt;
+	private Date publishDtSort;
 	private transient List<UpdateXRVO> sections; //UpdateXRVO is not serializable, so this List must be transient -JM- 7.03.2017
 	private String qsPath;
 	private int sslFlg;
@@ -456,7 +457,13 @@ public class UpdateVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc
 	@Column(name="update_dt", isAutoGen=true, isUpdateOnly=true)
 	@Override
 	public Date getUpdateDt() {
-		return updateDt;
+		return super.getUpdateDt();
+	}
+
+	@Column(name="publish_dt_sort")
+	@SolrField(name="sortDate_dt")
+	public Date getPublishDtSort() {
+		return publishDtSort;
 	}
 
 	@Column(name="email_flg")
@@ -570,11 +577,21 @@ public class UpdateVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc
 	}
 
 	/**
+	 * @param publishDtSort the publishDtSort to set.
+	 */
+	public void setPublishDtSort(Date publishDtSort) {
+		Calendar c = Calendar.getInstance();
+		c.setTime(publishDtSort);
+		c.set(Calendar.HOUR_OF_DAY, 0);
+		this.publishDtSort = c.getTime();
+	}
+
+	/**
 	 * @param updateDt the updateDt to set.
 	 */
 	@Override
 	public void setUpdateDt(Date updateDt) {
-		this.updateDt = updateDt;
+		super.setUpdateDt(updateDt);
 	}
 
 	/**
