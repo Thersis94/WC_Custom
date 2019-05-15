@@ -449,28 +449,7 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 		
 		TicketLedgerVO ledger = changeStatus(ticket.getTicketId(), user.getUserId(), status, summary, null);
 		buildNextStep(ledger.getStatusCode(), null, false);
-/*		if (!isApproved) return;
 
-		// Assign the nearest CAS
-		CASSelectionAction csa = new CASSelectionAction(getDBConnection(), getAttributes());
-		List<GenericVO> locations = csa.getUserSelectionList(ticket.getTicketId(), user.getLocale());
-		if (!locations.isEmpty()) {
-			GenericVO casLocation = locations.get(0);
-			
-			TicketAssignmentVO tAss = new TicketAssignmentVO(req);
-			tAss.setLocationId(casLocation.getKey().toString());
-			tAss.setTypeCode(TypeCode.CAS);
-			
-			if(isNewTicketAssignment) tAss.setTicketAssignmentId(null);
-
-			try {
-				TicketAssignmentTransaction tat = new TicketAssignmentTransaction(getDBConnection(), getAttributes());
-				tat.assign(tAss, user);
-				setNextStep(tat.getNextStep());
-			} catch (InvalidDataException | SQLException e) {
-				throw new DatabaseException(e);
-			}
-		}*/
 	}
 }
 

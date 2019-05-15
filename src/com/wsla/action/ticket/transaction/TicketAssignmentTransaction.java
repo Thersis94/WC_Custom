@@ -98,22 +98,15 @@ public class TicketAssignmentTransaction extends BaseTransactionAction {
 	public Object assign(TicketAssignmentVO tAss, UserVO user) 
 	throws InvalidDataException, DatabaseException, SQLException {
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
-		log.debug("before if logic");
 		// Only add a status code change to the ledger if this is the first
 		// Assignment of a CAS
 		TicketLedgerVO ledger = new TicketLedgerVO();
 		if (StringUtil.isEmpty(tAss.getTicketAssignmentId()) && TypeCode.CAS.equals(tAss.getTypeCode())) {
-		log.debug("in if 1 ");
 			ledger = changeStatus(tAss.getTicketId(), user.getUserId(), StatusCode.CAS_ASSIGNED, LedgerSummary.CAS_ASSIGNED.summary, null);
-			log.debug("in if 2 ");
 			buildNextStep(StatusCode.CAS_ASSIGNED, null, true);
-			log.debug("in if 3 ");
 		} else if (TypeCode.CAS.equals(tAss.getTypeCode())) {
-			log.debug("in else if");
 			addLedger(tAss.getTicketId(), user.getUserId(), StatusCode.CAS_ASSIGNED, LedgerSummary.CAS_ASSIGNED.summary, null);
 		}
-		
-		log.debug("end if logic");
 
 		// Save the ledger and the assignment
 		db.save(tAss);
