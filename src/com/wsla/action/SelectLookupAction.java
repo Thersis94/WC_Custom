@@ -204,7 +204,7 @@ public class SelectLookupAction extends SBActionAdapter {
 	}
 
 	/**
-	 * 
+	 * gets the refund replacement approval type and returns an internationalized name and value
 	 * @return
 	 */
 	public List<GenericVO> getRefRepApprovalType(ActionRequest req) {
@@ -221,7 +221,7 @@ public class SelectLookupAction extends SBActionAdapter {
 	}
 	
 	/**
-	 * 
+	 * gets the refund replacement disposition type and return an internationalized name and value
 	 * @return
 	 */
 	public List<GenericVO> getRefRepDispostionType(ActionRequest req){
