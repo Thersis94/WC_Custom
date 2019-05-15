@@ -56,10 +56,12 @@ public class ProductManagementAction extends ManagementAction {
 	public static final String DETAILS_ID = "DETAILS_ROOT";
 
 	public static final String CONTENT_ATTRIBUTE_ID = "CONTENT";
+	
+	public static final String TYPE_CD = "attributeTypeCd";
 
 	private enum ActionTarget {
 		PRODUCT, PRODUCTATTRIBUTE, ATTRIBUTE, PRODUCTLINK, PRODUCTATTACH,
-		ATTRIBUTELIST, ALLIANCE, DETAILSATTRIBUTE, REGULATION, PREVIEW, PRODUCTATTRIBUTEARCHIVE, PRODUCTATTRIBUTEARCHIVEUPDATE
+		ATTRIBUTELIST, ALLIANCE, DETAILSATTRIBUTE, REGULATION, PREVIEW, PRODUCTATTRIBUTEARCHIVE, PRODUCTATTRIBUTEARCHIVEUPDATE, UNKNOWNATTRIBUTE
 	}
 
 	/**
@@ -213,16 +215,17 @@ public class ProductManagementAction extends ManagementAction {
 			case PRODUCTATTRIBUTEARCHIVE:
 				retrieveArchives(req);
 				break;
+			case UNKNOWNATTRIBUTE:
 			case PRODUCTLINK:
 			case PRODUCTATTACH:
 			case PRODUCTATTRIBUTE:
-				productAttributeRetrieve(req);
+				productAttributeRetrieve(req, action);
 				break;
 			case ATTRIBUTE:
 				attributeRetrieve(req);
 				break;
 			case ATTRIBUTELIST:
-				super.putModuleData(getProductAttributes(req.getParameter("productId"), req.getParameter("attributeTypeCd")));
+				super.putModuleData(getProductAttributes(req.getParameter("productId"), req.getParameter(TYPE_CD)));
 				break;
 			case ALLIANCE:
 				allianceRetrieve(req);
@@ -247,7 +250,7 @@ public class ProductManagementAction extends ManagementAction {
 	 * @throws ActionException 
 	 */
 	private void retrieveArchives(ActionRequest req) {
-		String attributeType = req.getParameter("attributeTypeCd");
+		String attributeType = req.getParameter(TYPE_CD);
 		String productAttributeGroupId = req.getParameter("productAttributeGroupId");
 		List<Object> params = new ArrayList<>();
 
@@ -324,10 +327,11 @@ public class ProductManagementAction extends ManagementAction {
 	/**
 	 * Get information neccesary to populate product attribute pages
 	 * @param req
+	 * @param action 
 	 */
-	private void productAttributeRetrieve(ActionRequest req) {
+	private void productAttributeRetrieve(ActionRequest req, ActionTarget action) {
 		if (req.hasParameter("productAttributeId"))
-			retrieveProductAttribute(req);
+			retrieveProductAttribute(req, action);
 	}
 
 
@@ -492,8 +496,9 @@ public class ProductManagementAction extends ManagementAction {
 	/**
 	 * get a particular product attribute from the database for editing
 	 * @param req
+	 * @param action 
 	 */
-	protected void retrieveProductAttribute(ActionRequest req) {
+	protected void retrieveProductAttribute(ActionRequest req, ActionTarget action) {
 		StringBuilder sql = new StringBuilder(300);
 		sql.append("SELECT xr.*, a.TYPE_CD FROM ").append(customDbSchema).append("BIOMEDGPS_PRODUCT_ATTRIBUTE_XR xr ");
 		sql.append(LEFT_OUTER_JOIN).append(customDbSchema).append("BIOMEDGPS_PRODUCT_ATTRIBUTE a ");
@@ -506,6 +511,14 @@ public class ProductManagementAction extends ManagementAction {
 		DBProcessor db = new DBProcessor(dbConn);
 		ProductAttributeVO attr = db.executeSelect(sql.toString(), params, new ProductAttributeVO()).get(0);
 		super.putModuleData(attr);
+		if (ActionTarget.UNKNOWNATTRIBUTE == action) {
+			if ("LINK".equals(attr.getAttributeTypeCd())) {
+				req.setParameter(ACTION_TARGET, ActionTarget.PRODUCTLINK.toString());
+			} else {
+				req.setParameter(ACTION_TARGET, ActionTarget.PRODUCTATTRIBUTE.toString());
+			}
+			req.setParameter(TYPE_CD, attr.getAttributeTypeCd());
+		}
 		req.setParameter("rootNode", attr.getAttributeId());
 	}
 
@@ -522,9 +535,9 @@ public class ProductManagementAction extends ManagementAction {
 			sql.append("WHERE lower(ATTRIBUTE_NM) like ? ");
 			params.add("%" + req.getParameter(DBUtil.TABLE_SEARCH).toLowerCase() + "%");
 		}
-		if (req.hasParameter("attributeTypeCd")) {
+		if (req.hasParameter(TYPE_CD)) {
 			sql.append("WHERE TYPE_CD = ? ");
-			params.add(req.getParameter("attributeTypeCd"));
+			params.add(req.getParameter(TYPE_CD));
 		}
 
 		sql.append("ORDER BY ORDER_NO ");
@@ -721,7 +734,7 @@ public class ProductManagementAction extends ManagementAction {
 		if ("alliance".equals(jsonType)) {
 			addAlliances(product);
 		}  else if ("attribute".equals(jsonType)) {
-			addAttributes(product, req.getParameter("attributeTypeCd"));
+			addAttributes(product, req.getParameter(TYPE_CD));
 		} else if ("regulation".equals(jsonType)) {
 			addRegulations(product);
 		} else {

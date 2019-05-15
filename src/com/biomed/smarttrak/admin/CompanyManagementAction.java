@@ -55,10 +55,11 @@ public class CompanyManagementAction extends ManagementAction {
 	public static final String ACTION_TYPE = "actionTarget";
 	public static final String COMPANY_ID = "companyId";
 	public static final String CONTENT_ATTRIBUTE_ID = "LVL1_1";
+	public static final String TYPE_CD = "attributeTypeCd";
 
 
 	private enum ActionType {
-		COMPANY, LOCATION, ALLIANCE, COMPANYATTRIBUTE, COMPANYATTACH, COMPANYLINK, ATTRIBUTE, PREVIEW, COMPANYATTRIBUTEARCHIVE, COMPANYATTRIBUTEARCHIVEUPDATE
+		COMPANY, LOCATION, ALLIANCE, UNKNOWNATTRIBUTE, COMPANYATTRIBUTE, COMPANYATTACH, COMPANYLINK, ATTRIBUTE, PREVIEW, COMPANYATTRIBUTEARCHIVE, COMPANYATTRIBUTEARCHIVEUPDATE
 	}
 
 
@@ -172,10 +173,11 @@ public class CompanyManagementAction extends ManagementAction {
 			case COMPANYATTRIBUTEARCHIVE:
 				retrieveArchives(req);
 				break;
+			case UNKNOWNATTRIBUTE:
 			case COMPANYATTRIBUTE:
 			case COMPANYLINK:
 			case COMPANYATTACH:
-				companyAttributeRetrieve(req);
+				companyAttributeRetrieve(req, type);
 				break;
 			case LOCATION:
 				locationRetrieve(req);
@@ -201,7 +203,7 @@ public class CompanyManagementAction extends ManagementAction {
 	 * @throws ActionException 
 	 */
 	private void retrieveArchives(ActionRequest req) throws ActionException {
-		String attributeType = req.getParameter("attributeTypeCd");
+		String attributeType = req.getParameter(TYPE_CD);
 		String companyAttributeGroupId = req.getParameter("companyAttributeGroupId");
 		List<Object> params = new ArrayList<>();
 
@@ -307,12 +309,13 @@ public class CompanyManagementAction extends ManagementAction {
 	/**
 	 * Determine how to retrieve company information and do so.
 	 * @param req
+	 * @param type 
 	 * @throws ActionException
 	 */
-	protected void companyAttributeRetrieve(ActionRequest req) {
+	protected void companyAttributeRetrieve(ActionRequest req, ActionType type) {
 		if (req.hasParameter("companyAttributeId"))
-			retrieveAttribute(req);
-		if ("HTML".equals(req.getParameter("attributeTypeCd")))
+			retrieveAttribute(req, type);
+		if ("HTML".equals(req.getParameter(TYPE_CD)))
 			retrieveAttributes(req);
 	}
 
@@ -397,9 +400,9 @@ public class CompanyManagementAction extends ManagementAction {
 			sql.append("WHERE lower(ATTRIBUTE_NM) like ? ");
 			params.add("%" + req.getParameter("searchData").toLowerCase() + "%");
 		}
-		if (req.hasParameter("attributeTypeCd")) {
+		if (req.hasParameter(TYPE_CD)) {
 			sql.append("WHERE TYPE_NM = ? ");
-			params.add(req.getParameter("attributeTypeCd"));
+			params.add(req.getParameter(TYPE_CD));
 		}
 
 		sql.append("ORDER BY DISPLAY_ORDER_NO ");
@@ -417,7 +420,7 @@ public class CompanyManagementAction extends ManagementAction {
 		// If all attributes of a type is being requested set it as a request attribute since it is
 		// being used to supplement the attribute xr editing.
 		// Search data should not be turned into a tree after a search as requisite nodes may be missing
-		if (req.hasParameter("attributeTypeCd")) {
+		if (req.hasParameter(TYPE_CD)) {
 			req.getSession().setAttribute("attributeList", new Tree(orderedResults).getPreorderList());
 		} else if (req.hasParameter("searchData")) {
 			super.putModuleData(orderedResults, orderedResults.size(), false);
@@ -448,9 +451,10 @@ public class CompanyManagementAction extends ManagementAction {
 
 	/**
 	 * Get the details of the supplied company attribute
+	 * @param type 
 	 * @param attributeId
 	 */
-	protected void retrieveAttribute(ActionRequest req) {
+	protected void retrieveAttribute(ActionRequest req, ActionType type) {
 		StringBuilder sql = new StringBuilder(100);
 		sql.append(DBUtil.SELECT_FROM_STAR).append(customDbSchema).append("BIOMEDGPS_COMPANY_ATTRIBUTE_XR xr ");
 		sql.append(LEFT_OUTER_JOIN).append(customDbSchema).append("BIOMEDGPS_COMPANY_ATTRIBUTE a ");
@@ -462,6 +466,14 @@ public class CompanyManagementAction extends ManagementAction {
 		DBProcessor db = new DBProcessor(dbConn);
 		CompanyAttributeVO attr = (CompanyAttributeVO) db.executeSelect(sql.toString(), params, new CompanyAttributeVO()).get(0);
 		super.putModuleData(attr);
+		if (ActionType.UNKNOWNATTRIBUTE == type) {
+			if ("LINK".equals(attr.getAttributeTypeName())) {
+				req.setParameter(ACTION_TYPE, ActionType.COMPANYLINK.toString());
+			} else {
+				req.setParameter(ACTION_TYPE, ActionType.COMPANYATTRIBUTE.toString());
+			}
+			req.setParameter(TYPE_CD, attr.getAttributeTypeName());
+		}
 		if (!req.hasParameter("attributeTypeName"))
 			req.setParameter("attributeTypeName", attr.getAttributeTypeName());
 	}
@@ -606,7 +618,7 @@ public class CompanyManagementAction extends ManagementAction {
 		if ("alliance".equals(jsonType))
 			addAlliances(company);
 		if ("attribute".equals(jsonType))
-			addAttributes(company, req.getParameter("attributeTypeCd"));
+			addAttributes(company, req.getParameter(TYPE_CD));
 
 		getActiveSections(company);
 		loadAuthors(req); //load list of BiomedGPS Staff for the "Author" drop-down
