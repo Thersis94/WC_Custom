@@ -452,7 +452,7 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 		if (!isApproved) return;
 
 		// Assign the nearest CAS
-		CASSelectionAction csa = new CASSelectionAction(getDBConnection(), getAttributes());
+/*		CASSelectionAction csa = new CASSelectionAction(getDBConnection(), getAttributes());
 		List<GenericVO> locations = csa.getUserSelectionList(ticket.getTicketId(), user.getLocale());
 		if (!locations.isEmpty()) {
 			GenericVO casLocation = locations.get(0);
@@ -470,7 +470,7 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 			} catch (InvalidDataException | SQLException e) {
 				throw new DatabaseException(e);
 			}
-		}
+		}*/
 	}
 }
 

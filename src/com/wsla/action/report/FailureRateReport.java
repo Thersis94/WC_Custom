@@ -190,7 +190,7 @@ public class FailureRateReport extends SBActionAdapter {
 	 * @return
 	 */
 	private String joinToTicketSql() {
-		StringBuilder sb = new StringBuilder(80);
+		StringBuilder sb = new StringBuilder(328);
 		sb.append("select pm.product_id, count(*) as total from ").append(getCustomSchema()).append("wsla_ticket t ");
 		sb.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("wsla_ticket_assignment b on t.ticket_id = b.ticket_id and b.assg_type_cd = 'CAS' ");
 		sb.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("wsla_product_serial ps on t.product_serial_id = ps.product_serial_id ");

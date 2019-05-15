@@ -19,6 +19,7 @@ import com.siliconmtn.util.StringUtil;
 // WC Lib
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.admin.action.ResourceBundleManagerAction;
+import com.smt.sitebuilder.resource.ResourceBundleLoader;
 import com.wsla.common.LocaleWrapper;
 import com.wsla.common.WSLALocales;
 
@@ -41,6 +42,7 @@ public class LanguageBundleMapAction extends SBActionAdapter {
 	 * Ajax to utilize when calling this action
 	 */
 	public static final String AJAX_KEY = "languageBundle";
+	public static final String KEY_CODE = "keyCode";
 	
 	/**
 	 * 
@@ -63,7 +65,8 @@ public class LanguageBundleMapAction extends SBActionAdapter {
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		try {
-			String keyId = getKeyId(req.getParameter("keyCode"));
+			ResourceBundleLoader bl = new ResourceBundleLoader(dbConn);
+			String keyId = bl.getKeyId(req.getParameter(KEY_CODE));
 			log.debug("keyId "+ keyId);
 			
 			putModuleData(getBundleInfo(keyId));
@@ -72,23 +75,7 @@ public class LanguageBundleMapAction extends SBActionAdapter {
 			setModuleData(null, 0, e.getLocalizedMessage());
 		}
 	}
-	
-	/**
-	 * Gets the key id from the key code
-	 * @param code
-	 * @return
-	 * @throws SQLException
-	 */
-	public String getKeyId(String code) throws SQLException {
-		String s = "select key_id from resource_bundle_key where key_cd = ?";
-		try (PreparedStatement ps = dbConn.prepareStatement(s)) {
-			ps.setString(1, code);
-			try (ResultSet rs = ps.executeQuery()) {
-				if (rs.next()) return rs.getString(1);
-				else return null;
-			}
-		}
-	}
+
  	
 	/**
 	 * Gets a list of the keys and values for a given bundle key 
@@ -112,11 +99,7 @@ public class LanguageBundleMapAction extends SBActionAdapter {
 		DBProcessor db = new DBProcessor(getDBConnection());
 		db.setGenerateExecutedSQL(log.isDebugEnabled());
 		List<ResourceBundleDataVO> results = db.executeSelect(sql.toString(), Arrays.asList(keyId), new ResourceBundleDataVO(), "language_cd");
-		log.debug("############ length " + WSLALocales.getBaseLocales().length + " size " + results.size());  
-		if (WSLALocales.getBaseLocales().length != results.size())	{
-			
-		}
-				
+		log.debug("base locales length " + WSLALocales.getBaseLocales().length + " results size " + results.size());  
 		return results;
 	}
 
@@ -166,11 +149,11 @@ public class LanguageBundleMapAction extends SBActionAdapter {
 
 			ResourceBundleManagerAction rbma = new ResourceBundleManagerAction(dbConn, attributes);
 			
-			ResourceBundleKeyVO key = rbma.getKeyByKeyCode(req.getParameter("keyCode"));
+			ResourceBundleKeyVO key = rbma.getKeyByKeyCode(req.getParameter(KEY_CODE));
 			if(StringUtil.isEmpty(key.getKeyId())) {
 				log.debug("No key exists for this change adding one");
 				
-				String keyCode = StringUtil.checkVal(req.getParameter("keyCode"));
+				String keyCode = StringUtil.checkVal(req.getParameter(KEY_CODE));
 				String bundleId = StringUtil.checkVal(req.getParameter("resourceBundleId"));
 				String description = StringUtil.checkVal(req.getParameter("description"));
 				//no key exists save a key first
