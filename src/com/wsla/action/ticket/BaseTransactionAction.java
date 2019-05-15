@@ -327,6 +327,7 @@ public class BaseTransactionAction extends SBActionAdapter {
 				nextStep.addAuthorizedRole(role.getRoleId());
 			}
 		} catch (ParseException e) {
+			log.debug("error message " , e );
 			throw new DatabaseException(e);
 		}
 	}

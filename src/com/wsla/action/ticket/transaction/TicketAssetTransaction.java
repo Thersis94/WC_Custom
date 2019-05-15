@@ -449,7 +449,7 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 		
 		TicketLedgerVO ledger = changeStatus(ticket.getTicketId(), user.getUserId(), status, summary, null);
 		buildNextStep(ledger.getStatusCode(), null, false);
-		if (!isApproved) return;
+/*		if (!isApproved) return;
 
 		// Assign the nearest CAS
 		CASSelectionAction csa = new CASSelectionAction(getDBConnection(), getAttributes());
@@ -470,7 +470,7 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 			} catch (InvalidDataException | SQLException e) {
 				throw new DatabaseException(e);
 			}
-		}
+		}*/
 	}
 }
 
