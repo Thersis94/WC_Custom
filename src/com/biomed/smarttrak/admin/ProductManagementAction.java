@@ -50,6 +50,9 @@ import com.smt.sitebuilder.search.SearchDocumentHandler;
  * @version 1.0
  * @since Feb 1, 2017<p/>
  * <b>Changes: </b>
+ * TODO - Next time we work in this class, we need to look at splitting it up into
+ * a controller/Facade and related sub classes.
+ * This class has grown too large to maintain adequately.
  ****************************************************************************/
 public class ProductManagementAction extends ManagementAction {
 
