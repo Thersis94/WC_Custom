@@ -132,7 +132,7 @@ public class StatusCodeAction extends SBActionAdapter {
 		if (locale != null) {
 			sql.append("left outer join resource_bundle_key c on a.status_cd = c.key_id ");
 			sql.append("left outer join resource_bundle_data d on c.key_id = d.key_id ");
-			sql.append("and language_cd = ? and country_cd = ? ");
+			sql.append("and language_cd = ? and (country_cd = ? or country_cd is null)");
 			vals.add(locale.getLanguage());
 			vals.add(locale.getCountry());
 		}

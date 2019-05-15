@@ -51,6 +51,9 @@ public class ReportFacadeAction extends FacadeActionAdapter {
 	private void loadTypes() {
 		actionMap.put(BillableActivityReport.AJAX_KEY, BillableActivityReport.class);
 		actionMap.put(SummaryActivityReport.AJAX_KEY, SummaryActivityReport.class);
+		actionMap.put(OpenPendingReport.AJAX_KEY, OpenPendingReport.class);
+		actionMap.put(FailureRateReport.AJAX_KEY, FailureRateReport.class);
+		
 	}
 
 	/*
@@ -61,7 +64,7 @@ public class ReportFacadeAction extends FacadeActionAdapter {
 	public void retrieve(ActionRequest req) throws ActionException {
 		String reportType = req.getStringParameter(SELECTOR_KEY, "");
 		if (reportType.length() == 0 || ! actionMap.containsKey(reportType)) return;
-		
+		log.debug("reporttype " + reportType);
 		loadActionByType(reportType).retrieve(req);
 	}
 	
