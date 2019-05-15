@@ -12,10 +12,11 @@ import java.util.Map;
 
 import com.biomed.smarttrak.action.AdminControllerAction;
 import com.biomed.smarttrak.util.SmarttrakPageViewRetriever;
-import com.biomed.smarttrak.vo.AccountVO;
+import com.biomed.smarttrak.vo.AccountVO.Classification;
 // WC custom
 import com.biomed.smarttrak.vo.UserActivityVO;
-import com.biomed.smarttrak.vo.UserVO;
+import com.biomed.smarttrak.vo.UserVO.LicenseType;
+import com.biomed.smarttrak.vo.UserVO.Status;
 // SMTBaseLibs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -311,9 +312,24 @@ public class UserActivityAction extends SimpleActionAdapter {
 				if(uav != null) {
 					formatNameValues(se, rs, uav);
 					uav.setAccountNm(rs.getString("account_nm"));
-					uav.setClassification(AccountVO.Classification.getFromId(rs.getInt("classification_id")).getLabel());
-					uav.setLicenseType(UserVO.LicenseType.getTypeFromCode(rs.getString("status_cd")).getLabel());
-					uav.setUserStatus(UserVO.Status.getStatusFromCode(rs.getInt("active_flg")).getLabel());
+					Classification c = Classification.getFromId(rs.getInt("classification_id"));
+					if(c != null) {
+						uav.setClassification(c.getLabel());
+					} else {
+						uav.setClassification("(None)");
+					}
+					LicenseType l = LicenseType.getTypeFromCode(rs.getString("status_cd"));
+					if(l != null) {
+						uav.setLicenseType(l.getLabel());
+					} else {
+						uav.setLicenseType("(None)");
+					}
+					Status s = Status.getStatusFromCode(rs.getInt("active_flg"));
+					if(s != null) {
+						uav.setUserStatus(s.getLabel());
+					} else {
+						uav.setUserStatus("(None)");
+					}
 				}
 			}
 		} catch (SQLException sqle) {
