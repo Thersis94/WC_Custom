@@ -130,10 +130,8 @@ public class FailureRateReport extends SBActionAdapter {
 		sql.append(")as units on units.product_id = a.product_id ");
 		sql.append("where (refund.total is not null or repair.total is not null or replacement.total is not null) ");
 		if (oemId != null && oemId.length > 0&& !StringUtil.isEmpty(oemId[0])) {
-			sql.append("and a.provider_id in ( ? ");
-			for(int i = 0; i < oemId.length-1; i++) {
-				sql.append(", ?");
-			}
+			sql.append("and a.provider_id in ( ");
+			sql.append(DBUtil.preparedStatmentQuestion(oemId.length));
 			sql.append(" ) ");
 			
 		}
@@ -150,7 +148,8 @@ public class FailureRateReport extends SBActionAdapter {
 			ps.setTimestamp(ctr++, Convert.formatTimestamp(ed));
  			ps.setTimestamp(ctr++, Convert.formatTimestamp(sd));
 			ps.setTimestamp(ctr++, Convert.formatTimestamp(ed));
-			log.debug("oem id length "+ oemId.length );
+			if(oemId != null)log.debug("oem id length "+ oemId.length );
+			
 			if (oemId != null && oemId.length > 0 && !StringUtil.isEmpty(oemId[0])) {
 				for(String s :oemId) {
 					log.debug("oem id " + oemId[0] );
