@@ -19,7 +19,6 @@ import com.siliconmtn.util.StringUtil;
 
 // WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
-import com.smt.sitebuilder.admin.action.data.BootstrapTableResponseVO;
 import com.wsla.action.ticket.TicketEditAction;
 import com.wsla.data.ticket.TicketVO;
 

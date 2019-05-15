@@ -1,8 +1,5 @@
 package com.wsla.action.admin;
 
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
@@ -12,7 +9,6 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.DBProcessor;
-import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.resource.ResourceBundleDataVO;
 import com.siliconmtn.resource.ResourceBundleKeyVO;
 import com.siliconmtn.util.StringUtil;
