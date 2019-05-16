@@ -36,6 +36,7 @@ import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.admin.action.ResourceBundleManagerAction;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
+import com.smt.sitebuilder.resource.WCResourceBundle;
 import com.smt.sitebuilder.security.SBUserRole;
 
 // WSLA Libs
@@ -55,6 +56,9 @@ import com.wsla.action.ticket.TicketSearchAction;
 import com.wsla.action.ticket.TicketEditAction;
 import com.wsla.common.LocaleWrapper;
 import com.wsla.common.WSLALocales;
+import com.wsla.action.ticket.transaction.RefundReplacementTransaction;
+import com.wsla.action.ticket.transaction.RefundReplacementTransaction.ApprovalTypes;
+import com.wsla.action.ticket.transaction.RefundReplacementTransaction.DispositionCodes;
 import com.wsla.common.WSLAConstants.WSLARole;
 import com.wsla.data.product.LocationItemMasterVO;
 import com.wsla.data.product.ProductSetVO;
@@ -142,6 +146,8 @@ public class SelectLookupAction extends SBActionAdapter {
 		keyMap.put("billableType", new GenericVO("getBillableTypes", Boolean.FALSE));
 		keyMap.put("supportNumbers", new GenericVO("getSupportNumbers", Boolean.TRUE));
 		keyMap.put("ticketSearch", new GenericVO("ticketSearch", Boolean.TRUE));
+		keyMap.put("refRepApprovalType", new GenericVO("getRefRepApprovalType", Boolean.TRUE));
+		keyMap.put("refRepDispostionType", new GenericVO("getRefRepDispostionType", Boolean.TRUE));
 		keyMap.put("standing", new GenericVO("getStanding", Boolean.TRUE));
 	}
 
@@ -197,6 +203,41 @@ public class SelectLookupAction extends SBActionAdapter {
 		return db.executeSelect(sql.toString(), null, new GenericVO());
 	}
 
+	/**
+	 * gets the refund replacement approval type and returns an internationalized name and value
+	 * @return
+	 */
+	public List<GenericVO> getRefRepApprovalType(ActionRequest req) {
+		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
+		UserVO user = (UserVO) getAdminUser(req).getUserExtendedInfo();
+		ResourceBundle rb = WCResourceBundle.getBundle(site.getResourceBundleClass(),user.getUserLocale());
+		String prefix = "refrep.approvalType.";
+		
+		List<GenericVO> list = new ArrayList<>();
+		for (ApprovalTypes at : RefundReplacementTransaction.ApprovalTypes.values()) {
+			list.add(new GenericVO(at.name(), rb.getString(prefix+at.name())));
+		}
+		return list;
+	}
+	
+	/**
+	 * gets the refund replacement disposition type and return an internationalized name and value
+	 * @return
+	 */
+	public List<GenericVO> getRefRepDispostionType(ActionRequest req){
+		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
+		UserVO user = (UserVO) getAdminUser(req).getUserExtendedInfo();
+		ResourceBundle rb = WCResourceBundle.getBundle(site.getResourceBundleClass(),user.getUserLocale());
+		String prefix = "refund.disposition.";
+		
+		List<GenericVO> list = new ArrayList<>();
+		for (DispositionCodes dt : RefundReplacementTransaction.DispositionCodes.values()) {
+			list.add(new GenericVO(dt.name(), rb.getString(prefix+dt.name())));
+		}
+		return list;
+	}
+	
+	
 	/**
 	 * selects the existing attribute groups
 	 * @return

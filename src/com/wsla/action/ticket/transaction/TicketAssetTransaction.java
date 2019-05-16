@@ -1,6 +1,5 @@
 package com.wsla.action.ticket.transaction;
 
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -12,7 +11,6 @@ import java.util.Map;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
-import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
@@ -22,16 +20,13 @@ import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.common.constants.Constants;
 // WC Libs
 import com.wsla.action.ticket.BaseTransactionAction;
-import com.wsla.action.ticket.CASSelectionAction;
 import com.wsla.action.ticket.TicketEditAction;
 import com.wsla.data.ticket.ApprovalCode;
 import com.wsla.data.ticket.CreditMemoVO;
 // WSLA Libs
 import com.wsla.data.ticket.LedgerSummary;
 import com.wsla.data.ticket.StatusCode;
-import com.wsla.data.ticket.TicketAssignmentVO;
 import com.wsla.data.ticket.TicketAssignmentVO.ProductOwner;
-import com.wsla.data.ticket.TicketAssignmentVO.TypeCode;
 import com.wsla.data.ticket.TicketDataVO;
 import com.wsla.data.ticket.TicketLedgerVO;
 import com.wsla.data.ticket.TicketVO;
@@ -449,28 +444,7 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 		
 		TicketLedgerVO ledger = changeStatus(ticket.getTicketId(), user.getUserId(), status, summary, null);
 		buildNextStep(ledger.getStatusCode(), null, false);
-		if (!isApproved) return;
 
-		// Assign the nearest CAS
-		CASSelectionAction csa = new CASSelectionAction(getDBConnection(), getAttributes());
-		List<GenericVO> locations = csa.getUserSelectionList(ticket.getTicketId(), user.getLocale());
-		if (!locations.isEmpty()) {
-			GenericVO casLocation = locations.get(0);
-			
-			TicketAssignmentVO tAss = new TicketAssignmentVO(req);
-			tAss.setLocationId(casLocation.getKey().toString());
-			tAss.setTypeCode(TypeCode.CAS);
-			
-			if(isNewTicketAssignment) tAss.setTicketAssignmentId(null);
-
-			try {
-				TicketAssignmentTransaction tat = new TicketAssignmentTransaction(getDBConnection(), getAttributes());
-				tat.assign(tAss, user);
-				setNextStep(tat.getNextStep());
-			} catch (InvalidDataException | SQLException e) {
-				throw new DatabaseException(e);
-			}
-		}
 	}
 }
 

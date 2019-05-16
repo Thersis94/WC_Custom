@@ -10,8 +10,10 @@ import java.util.List;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.common.html.BSTableControlVO;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
+import com.siliconmtn.db.orm.GridDataVO;
 import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.util.StringUtil;
 
@@ -67,11 +69,14 @@ public class OpenPendingReport extends SBActionAdapter {
 		Date startDate = req.getDateParameter("startDate");
 		Date endDate = req.getDateParameter("endDate");
 		String[] oemId = req.getParameterValues("oemId");
-		log.debug("oemId: " + oemId);
+		String statusCode  = req.getParameter("statusCode");
+		String appTypeCode = req.getParameter("appTypeCode");
+		String disTypeCode = req.getParameter("disTypeCode");
+		
 		oemId = oemId[0].split(",");
 		
 		try {
-			setModuleData(getOpenPendingData(oemId, startDate, endDate));
+			setModuleData(getOpenPendingData(oemId, startDate, endDate, statusCode, appTypeCode, disTypeCode, new BSTableControlVO(req)));
 		} catch (Exception e) {
 			log.error("Unable to get pivot", e);
 		}
@@ -79,47 +84,77 @@ public class OpenPendingReport extends SBActionAdapter {
 	
 	/**
 	 * gets the data for the failure report
+	 * @param oemId
 	 * @param sd
 	 * @param ed
+	 * @param StatusCode
+	 * @param appTypeCode
+	 * @param disTypeCode
+	 * @param offset 
+	 * @param order 
+	 * @param limit 
 	 * @return
-	 * @throws SQLException
 	 */
-	public List<TicketVO> getOpenPendingData(String[] oemId, Date sd, Date ed) {
+	public GridDataVO<TicketVO> getOpenPendingData(String[] oemId, Date sd, Date ed, String statusCode, String appTypeCode, String disTypeCode, BSTableControlVO bstc) {
+		
 		List<Object> vals = new ArrayList<>();
 
 		StringBuilder sql = new StringBuilder(2500);
 		sql.append("select * from ").append(getCustomSchema()).append("wsla_ticket t ");
-		sql.append(DBUtil.WHERE_CLAUSE).append("status_cd != 'CLOSED' ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(getCustomSchema()).append("wsla_ticket_ref_rep rr on t.ticket_id = rr.ticket_id ");
+		sql.append(DBUtil.WHERE_1_CLAUSE);
+		
+		if(StringUtil.isEmpty(statusCode)) {
+			sql.append("and status_cd != 'CLOSED' ");
+		}else {
+			sql.append("and status_cd = ? ");
+			vals.add(statusCode);
+		}
+		
+		if(!StringUtil.isEmpty(appTypeCode)) {
+			sql.append("and approval_type_cd = ? ");
+			vals.add(appTypeCode);
+		}
+		
+		if(!StringUtil.isEmpty(disTypeCode)) {
+			sql.append("and unit_disposition_cd = ? ");
+			vals.add(disTypeCode);
+		}
+		
 		sql.append(DATE_WHERE);
+		
 		vals.add(sd);
 		vals.add(ed);
 		if (oemId != null && oemId.length > 0&& !StringUtil.isEmpty(oemId[0])) {
-			sql.append("and a.provider_id in ( ? ");
-			for(int i = 0; i < oemId.length-1; i++) {
+			sql.append("and t.oem_id in ( ? ");
+			int i =0;
+			for( ;i < oemId.length-1; i++) {
 				sql.append(", ?");
 				vals.add(oemId[i]);
 			}
+			//add the tailing variable
+			vals.add(oemId[i]);
 			sql.append(" ) ");
 		}
 
-		log.debug(sql.length() + "|" + sql +"|"+sd+"|"+ed+"|"+oemId);
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		db.setGenerateExecutedSQL(log.isDebugEnabled());
 		
-		List<TicketVO> data  = db.executeSelect(sql.toString(), vals, new TicketVO());
+		GridDataVO<TicketVO> data  = db.executeSQLWithCount(sql.toString(), vals, new TicketVO(), bstc);
+		
 		TicketEditAction tea = new TicketEditAction(getDBConnection(), getAttributes());
 		List<TicketVO> completeTickets = new ArrayList<>();
 		
 		try {
-			for (TicketVO t : data) {
+			for (TicketVO t : data.getRowData()) {
 				completeTickets.add(tea.getCompleteTicket(t.getTicketId()));
-				log.info("@@@@@ ticket " + t.getTicketId()+"||"+t.getAssignments());
 			}
 		} catch (DatabaseException | SQLException e) {
 			log.error("could not get complete ticket",e);
 		}
 		
-		return completeTickets;
+		data.setRowData(completeTickets);
+		return data;
 	}
 }
 
