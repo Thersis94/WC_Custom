@@ -28,6 +28,7 @@ public class LinkVO {
 	private String adminUrl;
 	private String publicUrl;
 	private String redirectUrl;
+	private String originalUrl;
 	private int reviewFlag;
 	private int numChecks;
 
@@ -198,6 +199,20 @@ public class LinkVO {
 
 	public void setRedirectUrl(String redirectUrl) {
 		this.redirectUrl = redirectUrl;
+	}
+
+	/**
+	 * @return the originalUrl
+	 */
+	public String getOriginalUrl() {
+		return originalUrl;
+	}
+
+	/**
+	 * @param originalUrl the originalUrl to set
+	 */
+	public void setOriginalUrl(String originalUrl) {
+		this.originalUrl = originalUrl;
 	}
 
 	/**

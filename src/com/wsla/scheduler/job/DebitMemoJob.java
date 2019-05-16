@@ -78,7 +78,7 @@ public class DebitMemoJob extends AbstractSMTJob {
 
 		// Assign the needed attributes
 		job.attributes = new HashMap<>();
-		job.attributes.put(Constants.PATH_TO_BINARY, "/Users/james/Code/git/java/WebCrescendo/binary");
+		job.attributes.put(Constants.PATH_TO_BINARY, "/home/ryan/git/WebCrescendo/binary");
 		job.attributes.put(Constants.CUSTOM_DB_SCHEMA, "custom.");
 		job.attributes.put(Constants.INCLUDE_DIRECTORY, "/WEB-INF/include/");
 		job.attributes.put("fileManagerType", "2");
@@ -95,7 +95,7 @@ public class DebitMemoJob extends AbstractSMTJob {
 		job.getResourceBundleData("en", "US", "WSLA_BUNDLE");
 
 		// Process the job
-		job.log.info("Starting ...");
+		job.log.debug("Starting ...");
 		job.processDebitMemos(StringUtil.checkVal(job.attributes.get(Constants.CUSTOM_DB_SCHEMA)));
 	}
 
@@ -133,9 +133,8 @@ public class DebitMemoJob extends AbstractSMTJob {
 	 * @return
 	 */
 	public List<DebitMemoVO> processDebitMemos(String schema) {
-		// 
 		List<DebitMemoVO> memos = getGroupData(schema);
-		
+
 		for (DebitMemoVO memo : memos) {
 			try {
 				// get the credit memos
@@ -355,4 +354,3 @@ public class DebitMemoJob extends AbstractSMTJob {
 		memo.setRetailer(prov);
 	}
 }
-
