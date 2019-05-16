@@ -26,6 +26,11 @@ public class UserActivityVO extends UserPageViewVO {
 	private Date lastAccessTime;
 	private long lastAccessHours;
 	private long lastAccessMinutes;
+	private String emailAddressTxt;
+	private String accountNm;
+	private String classification;
+	private String licenseType;
+	private String userStatus;
 	
 	/**
 	 * @return the lastAccessTime
@@ -84,5 +89,78 @@ public class UserActivityVO extends UserPageViewVO {
 	 */
 	public long getLastAccessMinutes() {
 		return lastAccessMinutes;
+	}
+	/**
+	 * @return the emailAddressTxt
+	 */
+	public String getEmailAddressTxt() {
+		return emailAddressTxt;
+	}
+	/**
+	 * @return the accountNm
+	 */
+	public String getAccountNm() {
+		return accountNm;
+	}
+
+	/**
+	 * @param lastAccessHours the lastAccessHours to set.
+	 */
+	public void setLastAccessHours(long lastAccessHours) {
+		this.lastAccessHours = lastAccessHours;
+	}
+	/**
+	 * @param lastAccessMinutes the lastAccessMinutes to set.
+	 */
+	public void setLastAccessMinutes(long lastAccessMinutes) {
+		this.lastAccessMinutes = lastAccessMinutes;
+	}
+	/**
+	 * @param emailAddressTxt the emailAddressTxt to set.
+	 */
+	public void setEmailAddressTxt(String emailAddressTxt) {
+		this.emailAddressTxt = emailAddressTxt;
+	}
+	/**
+	 * @param accountNm the accountNm to set.
+	 */
+	public void setAccountNm(String accountNm) {
+		this.accountNm = accountNm;
+	}
+	/**
+	 * @return the classification
+	 */
+	public String getClassification() {
+		return classification;
+	}
+	/**
+	 * @return the licenseType
+	 */
+	public String getLicenseType() {
+		return licenseType;
+	}
+	/**
+	 * @return the activeFlg
+	 */
+	public String getUserStatus() {
+		return userStatus;
+	}
+	/**
+	 * @param classification the classification to set.
+	 */
+	public void setClassification(String classification) {
+		this.classification = classification;
+	}
+	/**
+	 * @param licenseType the subscriptionType to set.
+	 */
+	public void setLicenseType(String licenseType) {
+		this.licenseType = licenseType;
+	}
+	/**
+	 * @param activeFlg the activeFlg to set.
+	 */
+	public void setUserStatus(String activeFlg) {
+		this.userStatus = activeFlg;
 	}
 }
