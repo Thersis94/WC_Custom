@@ -53,7 +53,7 @@ public class ReportFacadeAction extends FacadeActionAdapter {
 		actionMap.put(SummaryActivityReport.AJAX_KEY, SummaryActivityReport.class);
 		actionMap.put(OpenPendingReport.AJAX_KEY, OpenPendingReport.class);
 		actionMap.put(FailureRateReport.AJAX_KEY, FailureRateReport.class);
-		
+		actionMap.put(RegionReport.AJAX_KEY, RegionReport.class);
 	}
 
 	/*
