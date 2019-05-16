@@ -100,9 +100,9 @@ public class TicketAssignmentTransaction extends BaseTransactionAction {
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		// Only add a status code change to the ledger if this is the first
 		// Assignment of a CAS
-		TicketLedgerVO ledger = new TicketLedgerVO();
+		
 		if (StringUtil.isEmpty(tAss.getTicketAssignmentId()) && TypeCode.CAS.equals(tAss.getTypeCode())) {
-			ledger = changeStatus(tAss.getTicketId(), user.getUserId(), StatusCode.CAS_ASSIGNED, LedgerSummary.CAS_ASSIGNED.summary, null);
+			changeStatus(tAss.getTicketId(), user.getUserId(), StatusCode.CAS_ASSIGNED, LedgerSummary.CAS_ASSIGNED.summary, null);
 			buildNextStep(StatusCode.CAS_ASSIGNED, null, true);
 		} else if (TypeCode.CAS.equals(tAss.getTypeCode())) {
 			addLedger(tAss.getTicketId(), user.getUserId(), StatusCode.CAS_ASSIGNED, LedgerSummary.CAS_ASSIGNED.summary, null);
