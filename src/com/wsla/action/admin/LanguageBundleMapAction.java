@@ -150,7 +150,7 @@ public class LanguageBundleMapAction extends SBActionAdapter {
 				log.debug("No key exists for this change adding one");
 				
 				String keyCode = StringUtil.checkVal(req.getParameter(KEY_CODE));
-				String bundleId = StringUtil.checkVal(req.getParameter("resourceBundleId"));
+				String bundleId = StringUtil.checkVal(req.getParameter(ResourceBundleManagerAction.REQ_RES_BUNDLE_ID));
 				String description = StringUtil.checkVal(req.getParameter("description"));
 				//no key exists save a key first
 				//get the new key id and save it to the data bundle
@@ -160,6 +160,7 @@ public class LanguageBundleMapAction extends SBActionAdapter {
 				dvo.setKeyId(key.getKeyId());
 			}
 			rbma.saveBundleKeyData(dvo);
+			rbma.delete(req);
 		} catch(Exception e) {
 			log.error("Unable to save bundle", e);
 			putModuleData("", 0, false, e.getLocalizedMessage(), true);

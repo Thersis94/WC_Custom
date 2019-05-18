@@ -23,6 +23,7 @@ import com.wsla.data.ticket.LedgerSummary;
 import com.wsla.data.ticket.StatusCode;
 import com.wsla.data.ticket.TicketAssignmentVO;
 import com.wsla.data.ticket.TicketAssignmentVO.TypeCode;
+import com.wsla.data.ticket.TicketLedgerVO;
 import com.wsla.data.ticket.UserVO;
 
 /****************************************************************************
@@ -78,9 +79,8 @@ public class TicketAssignmentTransaction extends BaseTransactionAction {
 		TicketAssignmentVO tAss = new TicketAssignmentVO(req);
 		UserVO user = (UserVO)getAdminUser(req).getUserExtendedInfo();
 
-		try {
-			
-			putModuleData(assign(tAss, user));
+		try {		
+			putModuleData(assign(tAss, user, req.getBooleanParameter("isApprovedCAS")));
 		} catch (InvalidDataException | DatabaseException | SQLException e) {
 			log.error("Unable to save asset", e);
 			putModuleData("", 0, false, e.getLocalizedMessage(), true);
@@ -94,17 +94,26 @@ public class TicketAssignmentTransaction extends BaseTransactionAction {
 	 * @throws InvalidDataException
 	 * @throws DatabaseException
 	 */
-	public Object assign(TicketAssignmentVO tAss, UserVO user) 
-	throws InvalidDataException, DatabaseException, SQLException {
+	public Object assign(TicketAssignmentVO tAss, UserVO user, boolean isApprovedCAS) throws InvalidDataException, DatabaseException, SQLException {
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		// Only add a status code change to the ledger if this is the first
 		// Assignment of a CAS
 		
+		TicketLedgerVO ledger = new TicketLedgerVO();
+		
 		if (StringUtil.isEmpty(tAss.getTicketAssignmentId()) && TypeCode.CAS.equals(tAss.getTypeCode())) {
-			changeStatus(tAss.getTicketId(), user.getUserId(), StatusCode.CAS_ASSIGNED, LedgerSummary.CAS_ASSIGNED.summary, null);
-			buildNextStep(StatusCode.CAS_ASSIGNED, null, true);
+			if(isApprovedCAS) {
+				ledger = changeStatus(tAss.getTicketId(), user.getUserId(), StatusCode.CAS_ASSIGNED, LedgerSummary.CAS_ASSIGNED.summary, null);
+			}else {
+				ledger = addLedger(tAss.getTicketId(), user.getUserId(), StatusCode.CAS_ASSIGNED, LedgerSummary.CAS_ASSIGNED.summary, null);
+			}
 		} else if (TypeCode.CAS.equals(tAss.getTypeCode())) {
 			addLedger(tAss.getTicketId(), user.getUserId(), StatusCode.CAS_ASSIGNED, LedgerSummary.CAS_ASSIGNED.summary, null);
+		}
+		
+		// Build the next step
+		if (ledger.getStatusCode() != null) {
+			buildNextStep(ledger.getStatusCode(), null, true);
 		}
 
 		// Save the ledger and the assignment
@@ -149,6 +158,19 @@ public class TicketAssignmentTransaction extends BaseTransactionAction {
 		}
 		
 		return vo;
+	}
+
+	/**
+	 * backwards compatibility
+	 * @param tAss
+	 * @param user
+	 * @param isApproved
+	 * @throws SQLException 
+	 * @throws DatabaseException 
+	 * @throws InvalidDataException 
+	 */
+	public Object assign(TicketAssignmentVO tAss, UserVO user) throws InvalidDataException, DatabaseException, SQLException {
+		return assign(tAss, user, false);
 	}
 }
 
