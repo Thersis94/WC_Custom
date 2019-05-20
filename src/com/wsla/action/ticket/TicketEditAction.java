@@ -251,12 +251,15 @@ public class TicketEditAction extends SBActionAdapter {
 	 */
 	private RefundReplacementVO getRefundReplacement(String ticketId) {
 		StringBuilder sql = new StringBuilder(93);
-		sql.append("select rr.*,cm.*, s.*, dl.location_nm as to_location_nm, sl.location_nm as from_location_nm  from ").append(getCustomSchema());
+		sql.append("select pm.msrp_cost_no, rr.*,cm.*, s.*, dl.location_nm as to_location_nm, sl.location_nm as from_location_nm  from ").append(getCustomSchema());
 		sql.append("wsla_ticket_ref_rep rr ");
-		sql.append("left outer join ").append(getCustomSchema()).append("wsla_credit_memo cm on rr.ticket_ref_rep_id = cm.ticket_ref_rep_id ");
-		sql.append("left outer join ").append(getCustomSchema()).append("wsla_shipment s on rr.ticket_id = s.ticket_id and s.shipment_type_cd in (?,?) ");
-		sql.append("left outer join ").append(getCustomSchema()).append("wsla_provider_location dl on s.to_location_id = dl.location_id " );
-		sql.append("left outer join ").append(getCustomSchema()).append("wsla_provider_location sl on s.from_location_id =sl.location_id ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(getCustomSchema()).append("wsla_credit_memo cm on rr.ticket_ref_rep_id = cm.ticket_ref_rep_id ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(getCustomSchema()).append("wsla_shipment s on rr.ticket_id = s.ticket_id and s.shipment_type_cd in (?,?) ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(getCustomSchema()).append("wsla_provider_location dl on s.to_location_id = dl.location_id " );
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(getCustomSchema()).append("wsla_provider_location sl on s.from_location_id =sl.location_id ");
+		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("wsla_ticket t on rr.ticket_id = t.ticket_id ");
+		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("wsla_product_serial ps on t.product_serial_id = ps.product_serial_id ");
+		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("wsla_product_master pm on ps.product_id = pm.product_id ");
 		sql.append(DBUtil.WHERE_CLAUSE).append("rr.ticket_id = ? ");
 		log.debug(sql);
 		
@@ -264,12 +267,15 @@ public class TicketEditAction extends SBActionAdapter {
 		params.add(ShipmentType.UNIT_MOVEMENT.name());
 		params.add(ShipmentType.REPLACEMENT_UNIT.name());
 		params.add(ticketId);
-		
+
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		db.setGenerateExecutedSQL(log.isDebugEnabled());
 		List<RefundReplacementVO> data = db.executeSelect(sql.toString(), params, new RefundReplacementVO());
 		
+		
+		
 		if(data != null && data.size() == 1) {
-			log.debug(" data " + data.get(0).getShipmentId());
+			log.debug("data " + data.get(0));
 			return data.get(0);
 		}else {
 			return new RefundReplacementVO();
