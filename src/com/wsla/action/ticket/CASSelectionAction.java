@@ -15,6 +15,7 @@ import com.siliconmtn.gis.GeocodeLocation;
 
 // WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
+import com.wsla.common.WSLAConstants;
 import com.wsla.data.ticket.LocationDistanceVO;
 
 /****************************************************************************
@@ -91,6 +92,15 @@ public class CASSelectionAction extends SBActionAdapter {
 			String value = item.getValue() + " (" + item.getDistance() + " " + (locale.contains("US") ? "MI" : "KM") + ")";
 			data.add(new GenericVO(item.getKey(), value));
 		}
+		
+		// Add the WSLA CAS Locations
+		StringBuilder s = new StringBuilder(88);
+		s.append("select location_id as key, location_nm || ' (WSLA)' as value ");
+		s.append("from ").append(getCustomSchema()).append("wsla_provider_location ");
+		s.append("where provider_id = '").append(WSLAConstants.WSLA_CAS_ID).append("' ");
+		s.append("order by location_nm");
+		data.addAll(db.executeSelect(s.toString(), null, new GenericVO()));
+		
 		return data;
 	}
 	
