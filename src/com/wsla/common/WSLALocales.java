@@ -17,10 +17,18 @@ package com.wsla.common;
  ****************************************************************************/
 @Deprecated
 public enum WSLALocales {
-	en_US("US English"), es_MX("MX Espanol"), es_HN("HN Espanol"),es_CR("CR Espanol"),
-	es_GT("GT Espanol"),es_DO("DO Espanol");
+	en_US("US English", true), es_MX("MX Español", true), es_HN("HN Español", true),es_CR("CR Español", true),
+	es_GT("GT Español", true),es_DO("DO Espanol", true), en_("Base English",false), es_("Base Español", false);
 
 	private String desc;
-	private WSLALocales(String desc) { this.desc = desc; }
+	private boolean isDisplayed;
+	private WSLALocales(String desc, boolean isDisplayed) { this.desc = desc; this.isDisplayed = isDisplayed;}
 	public String getDesc() { return desc;}
+	public boolean isDisplayed() {return isDisplayed;}
+	public static WSLALocales[] getBaseLocales() {
+        WSLALocales[] base = new WSLALocales[2];
+        base[0] = WSLALocales.en_;
+        base[1] = WSLALocales.es_;
+        return base;
+    }
 }
