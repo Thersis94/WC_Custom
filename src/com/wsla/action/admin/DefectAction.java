@@ -26,7 +26,6 @@ import com.smt.sitebuilder.admin.action.ResourceBundleManagerAction;
 import com.wsla.common.WSLAConstants;
 // WSLA Libs
 import com.wsla.data.ticket.DefectVO;
-import com.wsla.data.ticket.TicketAttributeVO;
 
 /****************************************************************************
  * <b>Title</b>: DefectAction.java
@@ -80,7 +79,7 @@ public class DefectAction extends SBActionAdapter {
 		String providerId = req.getParameter("providerId");
 		boolean hasActiveFlag = req.hasParameter("activeFlag");
 		int activeFlag = Convert.formatInteger(req.getParameter("activeFlag"));
-		setModuleData(getDefects(providerId, activeFlag, hasActiveFlag, new BSTableControlVO(req, TicketAttributeVO.class)));
+		setModuleData(getDefects(providerId, activeFlag, hasActiveFlag, new BSTableControlVO(req, DefectVO.class)));
 	}
 
 	/*
@@ -158,7 +157,8 @@ public class DefectAction extends SBActionAdapter {
 
 		// Filter by search criteria
 		if (bst.hasSearch()) {
-			sql.append("and lower(defect_nm) like ? ");
+			sql.append("and (lower(defect_nm) like ? or lower(defect_cd) like ?)");
+			params.add(bst.getLikeSearch().toLowerCase());
 			params.add(bst.getLikeSearch().toLowerCase());
 		}
 
@@ -167,11 +167,12 @@ public class DefectAction extends SBActionAdapter {
 			sql.append("and a.active_flg = ? ");
 			params.add(activeFlag);
 		}
-		
+
 		sql.append(bst.getSQLOrderBy("defect_nm",  "asc"));
 		log.debug(sql);
 
 		DBProcessor db = new DBProcessor(getDBConnection(), schema);
+		db.setGenerateExecutedSQL(log.isDebugEnabled());
 		return db.executeSQLWithCount(sql.toString(), params, new DefectVO(), bst.getLimit(), bst.getOffset());
 	}
 }

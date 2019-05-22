@@ -11,9 +11,9 @@ import java.util.Map;
 //SMT Base Libs
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
+import com.siliconmtn.io.mail.EmailRecipientVO;
 import com.siliconmtn.io.mail.EmailMessageVO.Header;
 import com.siliconmtn.sb.email.util.EmailCampaignBuilderUtil;
-import com.siliconmtn.sb.email.vo.EmailRecipientVO;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.workflow.data.WorkflowModuleVO;
 import com.siliconmtn.workflow.modules.AbstractWorkflowModule;

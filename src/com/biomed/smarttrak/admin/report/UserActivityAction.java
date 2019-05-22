@@ -6,15 +6,17 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Calendar;
 import java.util.Date;
-import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.biomed.smarttrak.action.AdminControllerAction;
 import com.biomed.smarttrak.util.SmarttrakPageViewRetriever;
+import com.biomed.smarttrak.vo.AccountVO.Classification;
 // WC custom
 import com.biomed.smarttrak.vo.UserActivityVO;
-
+import com.biomed.smarttrak.vo.UserVO.LicenseType;
+import com.biomed.smarttrak.vo.UserVO.Status;
 // SMTBaseLibs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -24,7 +26,6 @@ import com.siliconmtn.security.StringEncrypter;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
-
 // WebCrescendo libs
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.common.SiteVO;
@@ -46,8 +47,6 @@ import com.smt.sitebuilder.util.PageViewVO;
  <b>Changes:</b> 
  ***************************************************************************/
 public class UserActivityAction extends SimpleActionAdapter {
-
-	private static final int DEFAULT_START_DATE_OFFSET = -12;
 	
 	/**
 	 * Constructor
@@ -55,14 +54,14 @@ public class UserActivityAction extends SimpleActionAdapter {
 	public UserActivityAction() {
 		super();
 	}
-	
+
 	/**
 	 * Constructor
 	 */
 	public UserActivityAction(ActionInitVO actionInit) {
 		super(actionInit);
 	}
-	
+
 	public Map<String,UserActivityVO> retrieveUserActivity(ActionRequest req) throws ActionException {
 		log.debug("retrieveUserActivity...");
 		Map<String,UserActivityVO> userActivity;
@@ -73,17 +72,17 @@ public class UserActivityAction extends SimpleActionAdapter {
 			String dateEnd = formatReportDate(req.getParameter("dateEnd"), false);
 			log.debug("dateStart|dateEnd: " + dateStart + "|" + dateEnd);
 			userActivity = retrieveUserPageViews(siteId, profileId, dateStart, dateEnd);
+
 			// merge certain profile data (first/last names) with user activity data
 			mergeUserNames(userActivity);
-			
 		} catch (ActionException ae) {
 			userActivity = new HashMap<>();
 		}
+
 		log.debug("userActivity map size: " + userActivity.size());
 		return userActivity;
-		
 	}
-	
+
 	/**
 	 * Checks the String date valued passed in.  If the String is null or empty, a null 
 	 * value is returned, otherwise the value of the String date is returned.
@@ -94,19 +93,18 @@ public class UserActivityAction extends SimpleActionAdapter {
 	protected String formatReportDate(String date, boolean isStartDate) {
 		String strDate = StringUtil.checkVal(date,null);
 		if (strDate == null) {
-			Calendar cal = GregorianCalendar.getInstance();
+			Calendar cal = Calendar.getInstance();
 			if (isStartDate) {
-				cal.add(Calendar.HOUR_OF_DAY, DEFAULT_START_DATE_OFFSET);
-			} else {
-				cal.add(Calendar.DAY_OF_MONTH, 1);
+				cal.add(Calendar.MONTH, -1);
 			}
 			strDate = Convert.formatDate(cal.getTime(),Convert.DATE_SLASH_PATTERN);
 		}
+
 		// Convert to Date and back to String in correct pattern.
 		Date tmpDt = Convert.formatDate(Convert.DATE_SLASH_PATTERN,strDate);
 		return Convert.formatDate(tmpDt,Convert.DATE_TIME_DASH_PATTERN); 
 	}
-	
+
 	/**
 	 * Validates a user's security role and then returns a profile ID or null value based
 	 * on the role of the of the logged in user.
@@ -120,13 +118,12 @@ public class UserActivityAction extends SimpleActionAdapter {
 		/* Check caller security here so that we can gracefully catch/set the error 
 		 * on the module response if the caller has an insufficient role level. */
 		int roleLevel = checkRoleLevel(sess, siteId);
-		if (roleLevel == SecurityController.ADMIN_ROLE_LEVEL) {
+		if (roleLevel >= AdminControllerAction.STAFF_ROLE_LEVEL) {
 			return StringUtil.checkVal(req.getParameter("profileId"), null);
 		}
 
 		UserDataVO user = (UserDataVO)sess.getAttribute(Constants.USER_DATA);
 		return user.getProfileId();
-
 	}
 
 	/**
@@ -145,17 +142,15 @@ public class UserActivityAction extends SimpleActionAdapter {
 		SBUserRole roles = (SBUserRole)sess.getAttribute(Constants.ROLE_DATA);
 
 		// check access
-		if (roles == null || 
-				! roles.getSiteId().equalsIgnoreCase(siteId) ||
+		if (roles == null || !roles.getSiteId().equalsIgnoreCase(siteId) ||
 				roles.getRoleLevel() == SecurityController.PUBLIC_ROLE_LEVEL) {
 			errMsg.append(" Administrative access required for the site data requested.");
 			throw new ActionException(errMsg.toString());
 		}
 
 		return roles.getRoleLevel();
-
 	}
-	
+
 	/**
 	 * Determines the siteId value to use for this retrieving page views.
 	 * @param req
@@ -182,7 +177,7 @@ public class UserActivityAction extends SimpleActionAdapter {
 	 */
 	private Map<String,UserActivityVO> retrieveUserPageViews(String siteId, String profileId,
 			String dateStart, String dateEnd) throws ActionException {
-		
+
 		/* Retrieve page views from db, parse into PageViewVO
 		 * and return list */
 		String customSchema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
@@ -192,7 +187,7 @@ public class UserActivityAction extends SimpleActionAdapter {
 		log.debug("Total number of raw page views found: " + pageViews.size());
 		return parseResults(pageViews);
 	}
-	
+
 	/**
 	 * Parses the resulting list of page views into a map of profile IDs mapped to UserActivityVOs.
 	 * @param pageViews
@@ -203,14 +198,14 @@ public class UserActivityAction extends SimpleActionAdapter {
 		Map<String,UserActivityVO> userActivity = new HashMap<>();
 		String prevPid = null;
 		String currPid;
-		
+
 		for (PageViewVO pageView : pageViews ) {
-			
+
 			currPid = pageView.getProfileId();
 			if (currPid.equals(prevPid)) {
 				// add pageview to current user's list
 				user.addPageView(pageView);
-				
+
 			} else {
 				// first time through loop or we changed users
 				if (user != null) {
@@ -234,10 +229,10 @@ public class UserActivityAction extends SimpleActionAdapter {
 				 * this user. */
 				user.setLastAccessTime(pageView.getVisitDate());
 			}
-			
+
 			prevPid = currPid;
 		}
-		
+
 		// pick up the dangling user record(s).
 		if (user != null) {
 			userActivity.put(user.getProfileId(), user);
@@ -245,7 +240,7 @@ public class UserActivityAction extends SimpleActionAdapter {
 		log.debug("Unique users with page views: " + userActivity.size());
 		return userActivity;
 	}
-		
+
 	/**
 	 * Retrieves and merges specific profile data values into user activity VOs. This uses
 	 * a batching mechanism for efficiency.
@@ -274,7 +269,7 @@ public class UserActivityAction extends SimpleActionAdapter {
 			end = (listSize > end + maxBatch) ? end + maxBatch : listSize;
 		} while (start < listSize);
 	}
-	
+
 	/**
 	 * Retrieves and merges specific profile data values (first/last names) into user activity VOs.
 	 * This purposely does not leverage ProfileManager as we do not need entire profiles 
@@ -289,8 +284,16 @@ public class UserActivityAction extends SimpleActionAdapter {
 	 */
 	private void retrieveUserNames(StringEncrypter se, Map<String,UserActivityVO> userActivity, 
 			String[] profileIds, int start, int end) {
-		StringBuilder sql = new StringBuilder(200);
-		sql.append("select profile_id, first_nm, last_nm from profile where profile_id in ");
+		String custom = getCustomSchema();
+		StringBuilder sql = new StringBuilder(500);
+		sql.append("select p.profile_id, p.first_nm, p.last_nm, p.email_address_txt, ");
+		sql.append("a.account_nm, u.status_cd, a.classification_id, u.active_flg ");
+		sql.append("from profile p ");
+		sql.append("inner join ").append(custom).append("biomedgps_user u ");
+		sql.append("on p.profile_id = u.profile_id ");
+		sql.append("inner join ").append(custom).append("biomedgps_account a ");
+		sql.append("on u.account_id = a.account_id ");
+		sql.append("where p.profile_id in ");
 		sql.append("(");
 		for (int i = start; i < end; i++) {
 			if (i > start) sql.append(",");
@@ -305,13 +308,35 @@ public class UserActivityAction extends SimpleActionAdapter {
 			}
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
-				formatNameValues(se, rs, userActivity.get(rs.getString("profile_id")));
+				UserActivityVO uav = userActivity.get(rs.getString("profile_id"));
+				if(uav != null) {
+					formatNameValues(se, rs, uav);
+					uav.setAccountNm(rs.getString("account_nm"));
+					Classification c = Classification.getFromId(rs.getInt("classification_id"));
+					if(c != null) {
+						uav.setClassification(c.getLabel());
+					} else {
+						uav.setClassification("(None)");
+					}
+					LicenseType l = LicenseType.getTypeFromCode(rs.getString("status_cd"));
+					if(l != null) {
+						uav.setLicenseType(l.getLabel());
+					} else {
+						uav.setLicenseType("(None)");
+					}
+					Status s = Status.getStatusFromCode(rs.getInt("active_flg"));
+					if(s != null) {
+						uav.setUserStatus(s.getLabel());
+					} else {
+						uav.setUserStatus("(None)");
+					}
+				}
 			}
 		} catch (SQLException sqle) {
 			log.error("Error retrieving user profile data (first/last names), ", sqle);
 		}
 	}
-	
+
 	/**
 	 * Parses and decrypts user's first/last name from result set and sets values
 	 * on user's activity VO.
@@ -325,8 +350,9 @@ public class UserActivityAction extends SimpleActionAdapter {
 		if (user == null) return;
 		user.setFirstName(decryptName(se,rs.getString("first_nm")));
 		user.setLastName(decryptName(se,rs.getString("last_nm")));
+		user.setEmailAddressTxt(decryptName(se, rs.getString("email_address_txt")));
 	}
-	
+
 	/**
 	 * Decrypts an encrypted String value.
 	 * @param se
@@ -350,6 +376,4 @@ public class UserActivityAction extends SimpleActionAdapter {
 	public void list(ActionRequest req) throws ActionException {
 		super.retrieve(req);
 	}
-	
-	
 }

@@ -213,7 +213,7 @@ public class UserVO extends BeanDataVO {
 		
 		//make sure the language and country have been set if not set 
 		//	them from locale if it exists
-		
+		if (profile == null) profile = new UserDataVO();
 		if(StringUtil.isEmpty(profile.getCountryCode()) && getUserLocale() != null && !StringUtil.isEmpty(getUserLocale().getCountry())) {
 			profile.setCountryCode(getUserLocale().getCountry());
 		}
