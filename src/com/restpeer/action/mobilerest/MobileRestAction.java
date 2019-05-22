@@ -29,7 +29,7 @@ import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
- * <b>Title</b>: MobileRestWidget.java
+ * <b>Title</b>: MobileRestAction.java
  * <b>Project</b>: WC_Custom
  * <b>Description: </b> Main widget for management of the mobile restaurateur data
  * <b>Copyright:</b> Copyright (c) 2019
@@ -40,19 +40,19 @@ import com.smt.sitebuilder.common.constants.Constants;
  * @since Mar 25, 2019
  * @updates:
  ****************************************************************************/
-public class MobileRestWidget extends SimpleActionAdapter {
+public class MobileRestAction extends SimpleActionAdapter {
 
 	/**
 	 * 
 	 */
-	public MobileRestWidget() {
+	public MobileRestAction() {
 		super();
 	}
 
 	/**
 	 * @param actionInit
 	 */
-	public MobileRestWidget(ActionInitVO actionInit) {
+	public MobileRestAction(ActionInitVO actionInit) {
 		super(actionInit);
 	}
 	
