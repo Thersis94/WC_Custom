@@ -228,7 +228,8 @@ public class ProviderAction extends BatchImport {
 		
 		sql.append(incUnknown ? "" : " and provider_id != 'NOT_SUPPORTED' ");
 		sql.append("order by provider_nm");
-
+		log.debug(sql + "|" + type.toString());
+		
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema()); 
 		return db.executeSelect(sql.toString(),vals, new GenericVO());
 	}

@@ -40,7 +40,12 @@ public class LocaleWrapper extends BeanDataVO {
 		if (strLocale == null || strLocale.indexOf('_') == -1) return;
 		
 		String[] vals = strLocale.split("_");
-		locale = new Locale(vals[0], vals[1]);
+		if (vals.length == 1) {
+			//if there is no country get the base locale for the language
+			locale = new Locale(vals[0]);
+		}else {
+			locale = new Locale(vals[0], vals[1]);
+		}
  	}
 	
 	/**
