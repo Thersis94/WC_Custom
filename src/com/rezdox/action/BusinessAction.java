@@ -28,7 +28,6 @@ import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.gis.GeocodeLocation;
 import com.siliconmtn.http.session.SMTSession;
 import com.siliconmtn.io.mail.EmailRecipientVO;
-import com.siliconmtn.sb.email.util.EmailCampaignBuilderUtil;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
@@ -48,6 +47,7 @@ import com.smt.sitebuilder.data.vo.QueryParamVO;
 import com.smt.sitebuilder.security.SBUserRole;
 import com.smt.sitebuilder.security.SBUserRoleContainer;
 import com.smt.sitebuilder.security.SecurityController;
+import com.smt.sitebuilder.util.CampaignMessageSender;
 
 /****************************************************************************
  * <b>Title</b>: BusinessAction.java<p/>
@@ -446,7 +446,7 @@ public class BusinessAction extends SBActionAdapter {
 		//notify the admin if a new business got created - it requires approval
 		if (notifyAdmin) {
 			//repopulate the VO when what the form handler repositioned for us
-			EmailCampaignBuilderUtil emailer = new EmailCampaignBuilderUtil(getDBConnection(), getAttributes());
+			CampaignMessageSender emailer = new CampaignMessageSender(getAttributes());
 			List<EmailRecipientVO> rcpts = new ArrayList<>();
 			rcpts.add(new EmailRecipientVO(null, site.getAdminEmail(), EmailRecipientVO.TO));
 			Map<String, Object> data = new HashMap<>();

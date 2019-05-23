@@ -27,7 +27,6 @@ import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.http.session.SMTSession;
 import com.siliconmtn.io.mail.EmailRecipientVO;
-import com.siliconmtn.sb.email.util.EmailCampaignBuilderUtil;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.StringUtil;
 
@@ -43,6 +42,7 @@ import com.smt.sitebuilder.data.DataManagerUtil;
 import com.smt.sitebuilder.security.SBUserRole;
 import com.smt.sitebuilder.security.SecurityController;
 import com.smt.sitebuilder.security.UserLogin;
+import com.smt.sitebuilder.util.CampaignMessageSender;
 
 /****************************************************************************
  * <b>Title</b>: MemberAction.java<p/>
@@ -360,7 +360,7 @@ public class MemberAction extends SimpleActionAdapter {
 		rcpts.add(new EmailRecipientVO(member.getProfileId(), member.getEmailAddress(), EmailRecipientVO.TO));
 
 		// Send the email
-		EmailCampaignBuilderUtil util = new EmailCampaignBuilderUtil(getDBConnection(), getAttributes());
+		CampaignMessageSender util = new CampaignMessageSender(getAttributes());
 		util.sendMessage(dataMap, rcpts, RezDoxUtils.EmailSlug.WELCOME.name());
 	}
 }

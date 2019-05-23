@@ -28,13 +28,13 @@ import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.io.mail.EmailRecipientVO;
-import com.siliconmtn.sb.email.util.EmailCampaignBuilderUtil;
 import com.siliconmtn.util.EnumUtil;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.security.SBUserRole;
+import com.smt.sitebuilder.util.CampaignMessageSender;
 
 /****************************************************************************
  * <b>Title</b>: ConnectionAction.java
@@ -527,7 +527,7 @@ public class ConnectionAction extends SimpleActionAdapter {
 	 * @throws ActionException 
 	 */
 	private void processEmails(ConnectionVO cvo, ActionRequest req) throws ActionException {
-		EmailCampaignBuilderUtil emailer = new EmailCampaignBuilderUtil(getDBConnection(), getAttributes());
+		CampaignMessageSender emailer = new CampaignMessageSender(getAttributes());
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		RezDoxNotifier notifyUtil = new RezDoxNotifier(site, getDBConnection(), getCustomSchema());
 
@@ -554,7 +554,7 @@ public class ConnectionAction extends SimpleActionAdapter {
 	 * @param emailer
 	 * @param notifyUtil
 	 */
-	private void sendRequestEmail(ConnectionVO cvo, EmailCampaignBuilderUtil emailer, RezDoxNotifier notifyUtil) {
+	private void sendRequestEmail(ConnectionVO cvo, CampaignMessageSender emailer, RezDoxNotifier notifyUtil) {
 		Map<String, Object> dataMap = new HashMap<>();
 		Map<String, String> emailMap = new HashMap<>();
 
@@ -573,6 +573,7 @@ public class ConnectionAction extends SimpleActionAdapter {
 		emailer.sendMessage(dataMap, rcpts, slug.name());
 
 		// Add the browser notification
+		dataMap.put("url", "/member/connections");
 		String notifyProfileId = emailMap.entrySet().iterator().next().getKey();
 		notifyUtil.send(RezDoxNotifier.Message.CONNECTION_REQ, dataMap, null, notifyProfileId);
 
@@ -585,7 +586,7 @@ public class ConnectionAction extends SimpleActionAdapter {
 	 * @param emailer
 	 * @param notifyUtil
 	 */
-	private void sendApprovedEmail(ConnectionVO cvo, EmailCampaignBuilderUtil emailer, RezDoxNotifier notifyUtil) {
+	private void sendApprovedEmail(ConnectionVO cvo, CampaignMessageSender emailer, RezDoxNotifier notifyUtil) {
 		Map<String, Object> dataMap = new HashMap<>();
 		Map<String, String> emailMap = new HashMap<>();
 
