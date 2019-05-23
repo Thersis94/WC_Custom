@@ -24,13 +24,13 @@ import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.io.mail.EmailRecipientVO;
-import com.siliconmtn.sb.email.util.EmailCampaignBuilderUtil;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.security.SBUserRole;
+import com.smt.sitebuilder.util.CampaignMessageSender;
 
 /****************************************************************************
  * <b>Title</b>: BusinessReviewAction.java<p/>
@@ -147,7 +147,7 @@ public class BusinessReviewAction extends SimpleActionAdapter {
 		params.add(0);
 
 		// Get/return the data
-		DBProcessor dbp = new DBProcessor(dbConn);
+		DBProcessor dbp = new DBProcessor(dbConn, getCustomSchema());
 		return dbp.executeSelect(sql.toString(), params, new BusinessReviewVO());
 	}
 
@@ -227,7 +227,7 @@ public class BusinessReviewAction extends SimpleActionAdapter {
 	public void build(ActionRequest req) throws ActionException {
 		boolean isModerated = req.hasParameter(BusinessAdminDataTool.REQ_ADMIN_MODERATE);
 		BusinessReviewVO review = new BusinessReviewVO(req);
-		DBProcessor dbp = new DBProcessor(dbConn);
+		DBProcessor dbp = new DBProcessor(dbConn, getCustomSchema());
 
 		// Ensure the member editing/deleting, is the member who left the review originally
 		if (!(StringUtil.isEmpty(review.getBusinessReviewId())) && !isModerated) {
@@ -308,8 +308,9 @@ public class BusinessReviewAction extends SimpleActionAdapter {
 
 		//quit while we're ahead if there's nobody to inform
 		if (profileIds == null || profileIds.length == 0) return;
-
-		notifyUtil.send(Message.REVIEW_RCVD, null, null, profileIds);
+		Map<String, Object> params = new HashMap<>();
+		params.put("url", "/member/reviews");
+		notifyUtil.send(Message.REVIEW_RCVD, params, null, profileIds);
 	}
 
 	/**
@@ -332,7 +333,7 @@ public class BusinessReviewAction extends SimpleActionAdapter {
 		rcpts.add(new EmailRecipientVO(recipient.getProfileId(), business.getEmailAddressText(), EmailRecipientVO.TO));
 
 		// Send the email
-		EmailCampaignBuilderUtil util = new EmailCampaignBuilderUtil(getDBConnection(), getAttributes());
+		CampaignMessageSender util = new CampaignMessageSender(getAttributes());
 		util.sendMessage(dataMap, rcpts, RezDoxUtils.EmailSlug.REVIEW_BUSINESS.name());
 	}
 }
