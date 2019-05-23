@@ -13,9 +13,11 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.pool.SMTDBConnection;
+import com.siliconmtn.http.session.SMTSession;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.common.constants.Constants;
+import com.smt.sitebuilder.security.SBUserRole;
 
 /****************************************************************************
  * <b>Title</b>: MembershipAction.java<p/>
@@ -30,7 +32,8 @@ import com.smt.sitebuilder.common.constants.Constants;
 public class MembershipAction extends SBActionAdapter {
 
 	public static final String MEMBERSHIP_ID = "membershipId";
-	public static final String REQ_EXC_GROUP_CD = "excGroupCd";
+
+	private static final String RD_STORE = "RD_STORE"; //the session attribute, used in view too
 
 	public MembershipAction() {
 		super();
@@ -62,6 +65,16 @@ public class MembershipAction extends SBActionAdapter {
 		putModuleData(memberships, memberships.size(), true);
 	}
 
+	/**
+	 * retrieve the user's available store options, and cache them in session
+	 * @param req
+	 */
+	protected void loadStoreOptions(ActionRequest req) {
+		SMTSession ses = req.getSession();
+		if (ses.getAttribute(RD_STORE) != null) return; //list is already cached
+
+		ses.setAttribute(RD_STORE, retrieveMemberships(req));
+	}
 
 	/**
 	 * Retrieves list of memberships
@@ -72,14 +85,16 @@ public class MembershipAction extends SBActionAdapter {
 		String schema = getCustomSchema();
 		List<Object> params = new ArrayList<>();
 
-		StringBuilder sql = new StringBuilder(100);
-		sql.append("select * from ").append(schema).append("rezdox_membership ");
+		StringBuilder sql = new StringBuilder(200);
+		sql.append(DBUtil.SELECT_FROM_STAR).append(schema).append("rezdox_membership ");
 
 		String[] membershipIds = req.getParameterValues(MEMBERSHIP_ID);
-		String[] groupCodes = req.getParameterValues(REQ_EXC_GROUP_CD);
+		String[] groupCodes = getMembershipExclusions(req);
 
 		if (membershipIds != null && membershipIds.length > 0) {
-			sql.append("where membership_id in (").append(DBUtil.preparedStatmentQuestion(membershipIds.length)).append(") ");
+			sql.append("where membership_id in (");
+			DBUtil.preparedStatmentQuestion(membershipIds.length, sql);
+			sql.append(") ");
 			params.addAll(Arrays.asList(membershipIds));
 
 		} else if (req.hasParameter("getNewMemberDefault")) {
@@ -87,15 +102,37 @@ public class MembershipAction extends SBActionAdapter {
 			params.add(req.getParameter("groupCode"));
 
 		} else if (groupCodes != null && groupCodes.length > 0) {
-			sql.append("where group_cd not in (").append(DBUtil.preparedStatmentQuestion(groupCodes.length)).append(") ");
+			sql.append("where group_cd not in (");
+			DBUtil.preparedStatmentQuestion(groupCodes.length, sql);
+			sql.append(") ");
 			params.addAll(Arrays.asList(groupCodes));
 		}
-
 		sql.append("order by order_no");
-		log.debug(sql);
 
 		DBProcessor dbp = new DBProcessor(dbConn, schema);
+		dbp.setGenerateExecutedSQL(log.isDebugEnabled());
 		return dbp.executeSelect(sql.toString(), params, new MembershipVO());
+	}
+
+	/**
+	 * Checks the member's role to determine which subscriptions they don't have access to
+	 * 
+	 * @param req
+	 * @return
+	 */
+	private String[] getMembershipExclusions(ActionRequest req) {
+		List<String> exclusions = new ArrayList<>();
+		SBUserRole role = ((SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA));
+
+		if (RezDoxUtils.REZDOX_BUSINESS_ROLE.equals(role.getRoleId())) {
+			// Exclude residence memberships if this is a business-only role
+			exclusions.add(Group.HO.name());
+		} else if (RezDoxUtils.REZDOX_RESIDENCE_ROLE.equals(role.getRoleId())) {
+			// Exclude business memberships if this is a residence-only role
+			exclusions.add(Group.BU.name());
+		}
+
+		return exclusions.toArray(new String[exclusions.size()]);
 	}
 
 

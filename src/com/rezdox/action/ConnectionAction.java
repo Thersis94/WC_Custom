@@ -119,8 +119,11 @@ public class ConnectionAction extends SimpleActionAdapter {
 
 		 // Don't need this when reloading the cookie, but otherwise MyProsAction 
 		// will fail-fast on it's own and is also checking for a cookie reload (trigger).
-		if (!req.hasParameter("generateCookie"))
+		if (!req.hasParameter("generateCookie")) {
 			new MyProsAction(dbConn, attributes).retrieve(req);
+			//also generate the store options, since was modeled after MyPros and renders as part of it's view
+			new MembershipAction(dbConn, attributes).loadStoreOptions(req);
+		}
 
 		if (req.hasParameter(TARGET_ID))
 			findConnections(req);
