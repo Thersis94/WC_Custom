@@ -675,6 +675,7 @@ public class MarketManagementAction extends ManagementAction {
 			case MARKETGRAPH:
 			case MARKETLINK:
 			case MARKETATTACH:
+			case UNKNOWNATTRIBUTE:
 				MarketAttributeVO attr = new MarketAttributeVO(req);
 				saveAttribute(attr, db);
 				break;
