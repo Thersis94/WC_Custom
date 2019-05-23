@@ -1,9 +1,13 @@
 package com.rezdox.action;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import com.rezdox.action.RezDoxNotifier.Message;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.action.blog.BlogFacadeAction;
 import com.smt.sitebuilder.common.SiteVO;
@@ -87,7 +91,13 @@ public class BlogAction extends SimpleActionAdapter {
 		//notify all users that a new blog article has been published
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		RezDoxNotifier notifyUtil = new RezDoxNotifier(site, getDBConnection(), getCustomSchema());
-		notifyUtil.sendToAllMembers(Message.BLOG_NEW, null, null);
+		String blogUrl = "/learn/blog";
+		if (req.hasParameter("url"))
+			blogUrl += "/" + StringUtil.checkVal(getAttribute(Constants.QS_PATH)) + req.getParameter("url");
+
+		Map<String, Object> params = new HashMap<>();
+		params.put("blogUrl", blogUrl);
+		notifyUtil.sendToAllMembers(Message.BLOG_NEW, params, null);
 	}
 
 
