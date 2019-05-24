@@ -97,7 +97,7 @@ public class MemberLocationUserAction extends DealerLocationProfileAction {
 	 */
 	@Override
 	public String getRoleId(ActionRequest req) throws InvalidDataException {
-		MemberType mt = null;;
+		MemberType mt = null;
 		for (MemberType memberType : MemberType.values()) {
 			if (memberType.getDealerId() == req.getIntegerParameter("dealerTypeId")) {
 				mt = memberType;
