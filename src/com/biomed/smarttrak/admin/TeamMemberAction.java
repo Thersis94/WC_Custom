@@ -94,7 +94,7 @@ public class TeamMemberAction extends SBActionAdapter {
 		sql.append("from ").append(schema).append("biomedgps_user u ");
 		sql.append("inner join profile p on p.profile_id=u.profile_id ");
 		sql.append("left outer join ").append(schema).append("biomedgps_user_team_xr x on u.user_id=x.user_id and x.team_id=? ");
-		sql.append("where u.account_id=? and ((u.active_flg > 0 and (u.expiration_dt is null or u.expiration_dt > CURRENT_DATE)) or x.team_id is not null) ");
+		sql.append("where u.account_id=? and u.active_flg > 0 and (u.expiration_dt is null or u.expiration_dt > CURRENT_DATE or x.team_id is not null) ");
 		log.debug(sql);
 		return sql.toString();
 	}

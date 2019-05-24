@@ -322,6 +322,7 @@ public class AccountReportVO extends AbstractSBReportVO {
 		addSummaryRow(sb, counts, Classification.WOUND.getId(), Type.FULL.getId());
 		addSummaryRow(sb, counts, Classification.COMBO.getId(), Type.FULL.getId());
 		addSummaryRow(sb, counts, Classification.NEURO.getId(), Type.FULL.getId());
+		addSummaryRow(sb, counts, Classification.REGEN.getId(), Type.FULL.getId());
 		addTotalRow(sb, counts);
 		closeTable(sb);
 		
