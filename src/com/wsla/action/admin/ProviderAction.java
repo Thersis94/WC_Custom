@@ -228,7 +228,8 @@ public class ProviderAction extends BatchImport {
 		
 		sql.append(incUnknown ? "" : " and provider_id != 'NOT_SUPPORTED' ");
 		sql.append("order by provider_nm");
-
+		log.debug(sql + "|" + type.toString());
+		
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema()); 
 		return db.executeSelect(sql.toString(),vals, new GenericVO());
 	}
@@ -269,7 +270,12 @@ public class ProviderAction extends BatchImport {
 		sql.append("wsla_product_category_xr c on b.product_id = c.product_id ");
 		sql.append("where a.provider_type_id = 'OEM' and c.product_category_id = ? ");
 		sql.append("group by key, value ");
-		if (incUnknown) sql.append("union select 'NOT_SUPPORTED', 'Manufacturer Not Supported' ");
+		if (incUnknown) {
+			sql.append("union ");
+			sql.append("select provider_id as key, provider_nm as value ");
+			sql.append(DBUtil.FROM_CLAUSE).append(getCustomSchema()).append("wsla_provider ");
+			sql.append("where provider_id = 'NOT_SUPPORTED'  ");
+		}
 		sql.append("order by value ");
 		
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema()); 
