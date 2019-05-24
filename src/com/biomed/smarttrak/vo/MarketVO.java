@@ -189,7 +189,8 @@ public class MarketVO extends AuthorVO {
 
 	public void addMarketAttribute(MarketAttributeVO attribute) {
 		marketAttributes.add(attribute);
-		checkDates(attribute);
+		if ("HTML".equals(attribute.getAttributeTypeCd()))
+				checkDates(attribute);
 	}
 
 	public List<MarketAttributeVO> getGraphs() {
