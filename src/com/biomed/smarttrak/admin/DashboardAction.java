@@ -92,16 +92,24 @@ public class DashboardAction extends SBActionAdapter {
 		
 		List<GenericVO> itemList = (List<GenericVO>) req.getSession().getAttribute(attrKey);
 		if (itemList == null || itemList.isEmpty()) itemList = loadRecentlyViewed(req);
-		int i=0;
-		// Check if the new item is present.
-		for (; i < MAX_RESULTS && i < itemList.size(); i++) {
-			String id = (String) itemList.get(i).getKey();
-			if (id.equals(item.getKey())) break;
+
+		//Verify that we don't have an empty list
+		if(!itemList.isEmpty()) {
+			int i=0;
+			// Check if the new item is present.
+			for (; i < MAX_RESULTS && i < itemList.size(); i++) {
+				String id = (String) itemList.get(i).getKey();
+				if (id.equals(item.getKey())) break;
+			}
+
+			// If this is a new item for the lists ensure that last current item is removed.
+			if (i == MAX_RESULTS) {
+				i = itemList.size() - 1;
+			}
+
+			itemList.remove(i);
+			itemList.add(0, item);
 		}
-		// If this is a new item for the lists ensure that last current item is removed.
-		if (i == MAX_RESULTS) i--;
-		itemList.remove(i);
-		itemList.add(0, item);
 	}
 	
 	@Override
@@ -212,7 +220,9 @@ public class DashboardAction extends SBActionAdapter {
 	 * @return
 	 */
 	private List<GenericVO> getItemDetails(List<String> ids, loadAction load) throws ActionException {
-
+		if(ids.isEmpty()) {
+			return Collections.emptyList();
+		}
 		Map<String, String> data = new HashMap<>(MAX_RESULTS);
 		try (PreparedStatement ps = dbConn.prepareStatement(getDetailSQL(ids.size(), load))) {
 			int i = 1;

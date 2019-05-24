@@ -23,7 +23,7 @@ import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.common.constants.ErrorCodes;
 import com.smt.sitebuilder.security.DBLoginModule;
 import com.smt.sitebuilder.security.UserLogin;
-
+import com.biomed.smarttrak.vo.AccountVO;
 //WC_Custom libs
 import com.biomed.smarttrak.vo.TeamVO;
 import com.biomed.smarttrak.vo.UserVO;
@@ -74,7 +74,14 @@ public class SmartTRAKLoginModule extends DBLoginModule {
 		authUser = testUserPassword(ul, authUser, password); //this will throw if the password can't be verified
 
 		// Return user authented user, after loading their Smarttrak data
-		return loadSmarttrakUser(loadUserData(null, authUser.getAuthenticationId()));
+		UserVO user = loadSmarttrakUser(loadUserData(null, authUser.getAuthenticationId()));
+
+		//Check if we got the userId.  If not, then user passed WC Security but not Smarttrak Security.
+		if(StringUtil.isEmpty(user.getUserId())) {
+			throw new AuthenticationException(ErrorCodes.ERR_NOT_AUTHORIZED);
+		}
+
+		return user;
 	}
 
 
@@ -103,6 +110,7 @@ public class SmartTRAKLoginModule extends DBLoginModule {
 		stUser.setAttributes(userData.getAttributes());
 		stUser.setAuthenticated(userData.isAuthenticated());
 		loadCustomData(stUser);
+
 		return stUser;
 	}
 
@@ -114,30 +122,32 @@ public class SmartTRAKLoginModule extends DBLoginModule {
 	 * @param conn
 	 * @param user
 	 * @return
-	 * @throws AuthenticationException
 	 */
 	private void loadCustomData(UserVO user) {
 		Connection dbConn = (Connection)getAttribute(GlobalConfig.KEY_DB_CONN);
 		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
 
 		// use profile ID as that is all we have at the moment.
-		StringBuilder sql = new StringBuilder(200);
+		StringBuilder sql = new StringBuilder(1100);
 		sql.append("select u.user_id, u.account_id, u.register_submittal_id, u.fd_auth_flg, u.ga_auth_flg, ");
 		sql.append("u.acct_owner_flg, coalesce(u.expiration_dt, a.expiration_dt) as expiration_dt, u.status_cd, u.active_flg, a.type_id, ");
 		sql.append("t.team_id, t.account_id, t.team_nm, t.default_flg, t.private_flg, a.account_nm, p.profile_id as source_id, p.email_address_txt as source_email ");
 		sql.append("from ").append(schema).append("biomedgps_user u ");
 		sql.append("left outer join ").append(schema).append("biomedgps_user_team_xr xr on u.user_id=xr.user_id ");
 		sql.append("left outer join ").append(schema).append("biomedgps_team t on xr.team_id=t.team_id ");
-		sql.append("inner join ").append(schema).append("biomedgps_account a on a.status_no='A' and u.account_id=a.account_id ");
+		sql.append("inner join ").append(schema).append("biomedgps_account a on a.status_no= ? and u.account_id=a.account_id ");
 		sql.append("left outer join register_data rd on rd.register_submittal_id = u.register_submittal_id and register_field_id = ? ");
 		sql.append("left outer join profile p on p.profile_id = rd.value_txt ");
-		sql.append("where u.profile_id=? and u.active_flg > 0 order by t.team_nm"); //active > 0 includes Active and Demo.
+		sql.append("where u.profile_id=? and u.active_flg > 0 and (u.expiration_dt > current_date or u.expiration_dt is null) ");
+		sql.append("and (a.expiration_dt > current_date or a.expiration_dt is null) ");
+		sql.append("order by t.team_nm"); //active > 0 includes Active and Demo.
 		log.debug(sql + user.getProfileId());
 
 		int iter = 0;
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			ps.setString(1, UserVO.RegistrationMap.SOURCE.getFieldId());
-			ps.setString(2, user.getProfileId());
+			ps.setString(1, AccountVO.Status.ACTIVE.getStatusNo());
+			ps.setString(2, UserVO.RegistrationMap.SOURCE.getFieldId());
+			ps.setString(3, user.getProfileId());
 			ResultSet rs = ps.executeQuery();
 			StringEncrypter se = new StringEncrypter((String)getAttribute(Constants.ENCRYPT_KEY));
 			while (rs.next()) {
