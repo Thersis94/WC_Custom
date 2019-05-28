@@ -183,7 +183,8 @@ public class TicketScheduleTransaction extends BaseTransactionAction {
 		
 		// Change the status
 		boolean isPreRepair = PRE_REPAIR.equals(ts.getRecordTypeCode());
-		TicketLedgerVO ledger = changeStatus(ts.getTicketId(), user.getUserId(), isPreRepair ? StatusCode.PICKUP_COMPLETE : StatusCode.DELIVERY_COMPLETE, LedgerSummary.SCHEDULE_TRANSFER_COMPLETE.summary, location);
+		String summary = LedgerSummary.SCHEDULE_TRANSFER_COMPLETE.summary + " - " + ts.getNotesText();
+		TicketLedgerVO ledger = changeStatus(ts.getTicketId(), user.getUserId(), isPreRepair ? StatusCode.PICKUP_COMPLETE : StatusCode.DELIVERY_COMPLETE, summary, location);
 		ts.setLedgerEntryId(ledger.getLedgerEntryId());
 
 		// Save the transfer completion data

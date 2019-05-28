@@ -147,9 +147,12 @@ public class TicketListAction extends SimpleActionAdapter {
 		cSql.append(oemSearch);
 
 		// Add the Status Code
-		String statusCode = getStatusFilter(req.getParameter("statusCode"), req.getParameter("status"), params);
-		sql.append(statusCode);
-		cSql.append(statusCode);
+		List<String> statusCodes = new ArrayList<>();
+		if (! StringUtil.isEmpty(req.getParameter("statusCode"))) 
+			statusCodes = Arrays.asList(req.getParameter("statusCode").split("\\,"));
+		String sfFilter = getStatusFilter(statusCodes, req.getParameter("status"), params);
+		sql.append(sfFilter);
+		cSql.append(sfFilter);
 
 		// Add the Status Code
 		String roleFilter = getRoleFilter(req.getParameter("roleId"), user.getUserId(),params);
@@ -221,10 +224,10 @@ public class TicketListAction extends SimpleActionAdapter {
 	 * @param params
 	 * @return
 	 */
-	public String getStatusFilter(String statusCode, String status, List<String> params) {
-		if(!StringUtil.isEmpty(statusCode) || "CLOSED".equals(status)) {
-			params.add("CLOSED".equals(status) ? status : statusCode);
-			return "and a.status_cd = ? ";
+	public String getStatusFilter(List<String> statusCodes, String status, List<String> params) {
+		if(!statusCodes.isEmpty() || "CLOSED".equals(status)) {
+			params.addAll("CLOSED".equals(status) ? Arrays.asList(status) : statusCodes);
+			return "and a.status_cd in ( " + DBUtil.preparedStatmentQuestion(statusCodes.size()) + ") ";
 		} else if (!StringUtil.isEmpty(status) && !"ALL".equals(status)) {
 			return "and a.status_cd != 'CLOSED' ";
 		} 

@@ -12,9 +12,9 @@ import com.siliconmtn.data.parser.BeanDataVO;
 import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
+import com.siliconmtn.util.StringUtil;
+// WC Libs
 import com.wsla.data.provider.ProviderVO;
-
-import opennlp.tools.util.StringUtil;
 
 /****************************************************************************
  * <b>Title</b>: DebitMemoVO.java
