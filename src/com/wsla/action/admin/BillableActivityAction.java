@@ -74,15 +74,16 @@ public class BillableActivityAction extends SBActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		BSTableControlVO bst = new BSTableControlVO(req, BillableActivityVO.class);
-		setModuleData(getCodes(null, req.getBooleanParameter("isMiscActivites"), bst));
+		BSTableControlVO bst = new BSTableControlVO(req, BillableActivityVO.class); 
+		setModuleData(getCodes(null, req.getBooleanParameter("isMiscActivites"), bst, req.getStringParameter("")));
 	}
 	
 	/**
 	 * Gets the complete or filtered list of codes
+	 * @param billableType 
 	 * @return
 	 */
-	public GridDataVO<BillableActivityVO> getCodes(String btc, boolean isMiscActivites, BSTableControlVO bst) {
+	public GridDataVO<BillableActivityVO> getCodes(String btc, boolean isMiscActivites, BSTableControlVO bst, String billableType) {
 		List<Object> vals = new ArrayList<>();
 		StringBuilder sql = new StringBuilder(80);
 		sql.append(DBUtil.SELECT_FROM_STAR).append(getCustomSchema()).append("wsla_billable_activity ");
@@ -97,6 +98,11 @@ public class BillableActivityAction extends SBActionAdapter {
 		}else {
 			sql.append("and (parent_id != ? or parent_id is null) ");
 			vals.add(MISC_ACT_CODE);
+		}
+		
+		if(!StringUtil.isEmpty(billableType)) {
+			sql.append(" and billable_type_cd = ? ");
+			vals.add(billableType);
 		}
 		
 		if(!StringUtil.isEmpty(bst.getSearch())) {
