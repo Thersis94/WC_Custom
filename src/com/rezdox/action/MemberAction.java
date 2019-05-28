@@ -26,8 +26,8 @@ import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.http.session.SMTSession;
+import com.siliconmtn.io.mail.EmailRecipientVO;
 import com.siliconmtn.sb.email.util.EmailCampaignBuilderUtil;
-import com.siliconmtn.sb.email.vo.EmailRecipientVO;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.StringUtil;
 
