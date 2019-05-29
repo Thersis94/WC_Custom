@@ -50,6 +50,7 @@ public class CreditMemoVO extends BeanDataVO {
 	private Date approvalDate;
 	private Date createDate;
 	private Date updateDate;
+	private Date authorizationDate;
 	
 	// Sub-beans
 	private TicketDataVO asset = new TicketDataVO();
@@ -246,6 +247,21 @@ public class CreditMemoVO extends BeanDataVO {
 	@Column(name="msrp_cost_no", isReadOnly=true)
 	public double getUnitCost() {
 		return unitCost;
+	}
+
+	/**
+	 * @return the authenticationDate
+	 */
+	@Column(name="authorization_dt")
+	public Date getAuthorizationDate() {
+		return authorizationDate;
+	}
+
+	/**
+	 * @param authenticationDate the authenticationDate to set
+	 */
+	public void setAuthorizationDate(Date authorizationDate) {
+		this.authorizationDate = authorizationDate;
 	}
 
 	/**

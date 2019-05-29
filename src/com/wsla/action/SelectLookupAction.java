@@ -824,7 +824,7 @@ public class SelectLookupAction extends SBActionAdapter {
 
 		// Get the codes
 		BillableActivityAction ba = new BillableActivityAction(dbConn, attributes);
-		GridDataVO<BillableActivityVO> codes = ba.getCodes(btc, isMisc, bst,null);
+		GridDataVO<BillableActivityVO> codes = ba.getCodes(btc, isMisc, bst);
 		List<GenericVO> data = new ArrayList<>();
 
 		// Loop the codes and convert to Generic
