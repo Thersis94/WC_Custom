@@ -372,7 +372,6 @@ public class UpdatesEditionDataLoader extends SimpleActionAdapter {
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
 				// Skip updates that are not in the user's allowed types list
-				log.debug(isEmail+"|"+allowedTypes+"|"+rs.getString("type_cd"));
 				if (isEmail && !allowedTypes.isEmpty() && !allowedTypes.contains(StringUtil.checkVal(rs.getString("type_cd"), "0"))) continue;
 				
 				vo = updates.get(rs.getString("update_id"));
@@ -420,6 +419,11 @@ public class UpdatesEditionDataLoader extends SimpleActionAdapter {
 	}
 
 
+	/**
+	 * Get the types of updates the user has set as allowed to be recieved
+	 * @param profileId
+	 * @return
+	 */
 	private String getAllowedTypes(String profileId) {
 		StringBuilder sql = new StringBuilder(120);
 		sql.append("select string_agg(value_txt, ',') from ").append("register_submittal rs ");
