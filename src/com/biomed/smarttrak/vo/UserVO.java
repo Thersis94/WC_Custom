@@ -169,6 +169,7 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 		JOBCATEGORY("ef6444293f7c69630a001421545e4917", "jobCategory"),
 		JOBLEVEL("7bff2e9e3f7f7fb90a0014217397e884", "jobLevel"),
 		INDUSTRY("5291b7693f8104240a001421db8d04ab", "industry"),
+		TYPE("35f1557ev46063760a00141dc2a4ec41", "fieldType"),
 		DIVISIONS("31037d2e3f859f100a001421e77994f4", "divisions", true);
 
 		private boolean isArray;
