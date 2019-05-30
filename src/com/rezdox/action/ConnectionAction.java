@@ -34,6 +34,7 @@ import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.security.SBUserRole;
+import com.smt.sitebuilder.security.SecurityController;
 import com.smt.sitebuilder.util.CampaignMessageSender;
 
 /****************************************************************************
@@ -111,13 +112,13 @@ public class ConnectionAction extends SimpleActionAdapter {
 			String sendingId = StringUtil.checkVal(req.getParameter("sendingId"));
 
 			if (MEMBER.equalsIgnoreCase(StringUtil.checkVal(req.getParameter("receiverType")))) {
-				putModuleData(searchMembers(search,sendingId, false, true));
+				setModuleData(searchMembers(search,sendingId, false));
 			} else {
-				putModuleData(searchBusiness(search,sendingId));
+				setModuleData(searchBusiness(search,sendingId));
 			}
 		}
 
-		 // Don't need this when reloading the cookie, but otherwise MyProsAction 
+		// Don't need this when reloading the cookie, but otherwise MyProsAction 
 		// will fail-fast on it's own and is also checking for a cookie reload (trigger).
 		if (!req.hasParameter("generateCookie")) {
 			new MyProsAction(dbConn, attributes).retrieve(req);
@@ -219,7 +220,8 @@ public class ConnectionAction extends SimpleActionAdapter {
 	 * @return
 	 */
 	private List<BusinessVO> searchBusiness(String search, String sendingId) {
-		log.debug("searching businesses");
+		String searchTerm = "%"+StringUtil.checkVal(search).toLowerCase()+"%";
+		log.debug("searching businesses for " + searchTerm);
 		StringBuilder sql = new StringBuilder(250);
 		String schema = getCustomSchema();
 		List<Object> params = new ArrayList<>();
@@ -228,32 +230,36 @@ public class ConnectionAction extends SimpleActionAdapter {
 		sql.append("select * from ").append(schema).append("rezdox_business b ");
 		sql.append(DBUtil.INNER_JOIN).append("(select business_id from ").append(schema).append("rezdox_business_member_xr where status_flg = 1 group by business_id) bmxa on b.business_id = bmxa.business_id ");
 
-		sql.append("where LOWER(business_nm) like ? ");
-		params.add("%"+search.toLowerCase()+"%");
+		sql.append("where (lower(b.business_nm) like ? or lower(b.email_address_txt) like ? or lower(b.address_txt) like ?) ");
+		params.add(searchTerm);
+		params.add(searchTerm);
+		params.add(searchTerm);
 
 		sql.append("and b.business_id != ? and b.business_id not in ( select case  ");
 		params.add(idParts[1]);
 
 		if("m".equalsIgnoreCase(idParts[0])) {
 			//member looking for business
-			sql.append("when sndr_member_id is not null and sndr_member_id = ? and rcpt_business_id is not null then rcpt_business_id ");
-			sql.append("when rcpt_member_id is not null and rcpt_member_id = ? and sndr_business_id is not null then sndr_business_id ");		
+			sql.append("when sndr_member_id is not null and sndr_member_id=? and rcpt_business_id is not null then rcpt_business_id ");
+			sql.append("when rcpt_member_id is not null and rcpt_member_id=? and sndr_business_id is not null then sndr_business_id ");		
 			params.add(idParts[1]);
 			params.add(idParts[1]);
 		}else {
 			//business looking for business
-			sql.append("when sndr_business_id is not null and sndr_business_id = ? and rcpt_business_id is not null then rcpt_business_id ");
-			sql.append("when rcpt_business_id is not null and rcpt_business_id = ? and sndr_business_id is not null then sndr_business_id ");
+			sql.append("when sndr_business_id is not null and sndr_business_id=? and rcpt_business_id is not null then rcpt_business_id ");
+			sql.append("when rcpt_business_id is not null and rcpt_business_id=? and sndr_business_id is not null then sndr_business_id ");
 			params.add(idParts[1]);
 			params.add(idParts[1]);
 		}
-		sql.append("else '-1' end as business_id from ").append(schema).append("rezdox_connection group by business_id) ");
-		sql.append("order by business_nm asc ");
-		log.debug(sql +"|"+params);
+		sql.append("else '-1' end as business_id from ").append(schema).append("rezdox_connection group by business_id)");
+		sql.append(" order by business_nm asc");
 
-		//generate a list of VO's
+		//run the query & return the results
 		DBProcessor dbp = new DBProcessor(dbConn, schema);
-		return dbp.executeSelect(sql.toString(), params, new BusinessVO());
+		dbp.setGenerateExecutedSQL(log.isDebugEnabled());
+		List<BusinessVO> data = dbp.executeSelect(sql.toString(), params, new BusinessVO());
+		log.debug("number of businesses found " + data.size());
+		return data;
 	}
 
 	/**
@@ -262,8 +268,10 @@ public class ConnectionAction extends SimpleActionAdapter {
 	 * @param sendingId 
 	 * @return
 	 */
-	public List<MemberVO> searchMembers(String search, String sendingId, boolean isConnected, boolean isConnectionSearch) {
-		log.debug("searching members for matches to " + search);
+	public List<MemberVO> searchMembers(String search, String sendingId, boolean isConnected) {
+		String searchTerm = "%"+StringUtil.checkVal(search).toLowerCase()+"%";
+		log.debug("searching members for " + searchTerm);
+
 		StringBuilder sql = new StringBuilder(250);
 		String schema = getCustomSchema();
 		List<Object> params = new ArrayList<>();
@@ -271,48 +279,44 @@ public class ConnectionAction extends SimpleActionAdapter {
 
 		sql.append("select m.member_id, m.profile_id, m.first_nm, m.last_nm, m.email_address_txt ");
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("rezdox_member m ");
-		//prohibit finding 'business only' members when finding connections (not when sharing) - only their businesses can be connected to, not them.
-		//after discussion with Mike this code was pulled because of edge cases where a business owner can't share their business with employees who are also business-only members.
-//		if (isConnectionSearch) {
-//			sql.append(DBUtil.LEFT_OUTER_JOIN).append("profile_role pr on m.profile_id=pr.profile_id and pr.site_id=? ");
-//			params.add(RezDoxUtils.MAIN_SITE_ID); //roles are tied to the parent site
-//		}
-		
-		sql.append("where LOWER(first_nm || ' ' || last_nm) like ? ");
-		params.add("%"+search.toLowerCase()+"%");
-		sql.append("and member_id != ? and member_id ");
-		sql.append(isConnected ? "" : "not").append(" in ( select case  "); //boolean toggle allows this method to be reused by SharingAction
+		//only allow active resident and hybrid members to be found - not business owners or inactive accounts
+		sql.append("inner join profile_role pr on m.profile_id=pr.profile_id and pr.role_id in (?,?) and pr.site_id=? and pr.status_id=? ");
+		params.add(RezDoxUtils.REZDOX_RES_BUS_ROLE);
+		params.add(RezDoxUtils.REZDOX_RESIDENCE_ROLE);
+		params.add(RezDoxUtils.MAIN_SITE_ID);
+		params.add(SecurityController.STATUS_ACTIVE);
+
+		sql.append("where (LOWER(first_nm || ' ' || last_nm) like ? or lower(m.email_address_txt) like ? or m.search_address_txt like ?) "); //search address is already lowercase
+		params.add(searchTerm);
+		params.add(searchTerm);
+		params.add(searchTerm);
+		sql.append("and member_id != ? ");
 		params.add(idParts[1]);
+		sql.append("and member_id ");
+		sql.append(isConnected ? "in" : "not in").append(" (select case  "); //boolean toggle allows this method to be reused by SharingAction
 
 		if ("m".equalsIgnoreCase(idParts[0])) {
 			//member looking for member
-			sql.append("when sndr_member_id is not null and sndr_member_id = ? and rcpt_member_id is not null then rcpt_member_id ");
-			sql.append("when rcpt_member_id is not null and rcpt_member_id = ? and sndr_member_id is not null then sndr_member_id ");
+			sql.append("when sndr_member_id is not null and sndr_member_id=? and rcpt_member_id is not null then rcpt_member_id ");
+			sql.append("when rcpt_member_id is not null and rcpt_member_id=? and sndr_member_id is not null then sndr_member_id ");
 			params.add(idParts[1]);
 			params.add(idParts[1]);
 		} else {
 			//business looking for member
-			sql.append("when sndr_business_id is not null and sndr_business_id = ? and rcpt_member_id is not null then rcpt_member_id ");
-			sql.append("when rcpt_business_id is not null and rcpt_business_id = ? and sndr_member_id is not null then sndr_member_id ");
+			sql.append("when sndr_business_id is not null and sndr_business_id=? and rcpt_member_id is not null then rcpt_member_id ");
+			sql.append("when rcpt_business_id is not null and rcpt_business_id=? and sndr_member_id is not null then sndr_member_id ");
 			params.add(idParts[1]);
 			params.add(idParts[1]);
 		}
 
-		sql.append("else '-1' end as member_id from ").append(schema).append("rezdox_connection where approved_flg >= 0 group by member_id ) ");
-	// see note above for why this is commented.
-//		if (isConnectionSearch) {
-//			sql.append("and pr.role_id != ? ");
-//			params.add(RezDoxUtils.REZDOX_BUSINESS_ROLE);
-//		}
-		sql.append(" order by last_nm, first_nm asc ");
-		log.debug(sql+"|"+params);
+		sql.append("else '-1' end as member_id from ").append(schema).append("rezdox_connection where approved_flg >= 0 group by member_id) ");
+		sql.append("order by last_nm, first_nm asc");
 
-		//generate a list of VO's
+		//run the query & return the results
 		DBProcessor dbp = new DBProcessor(dbConn, schema);
+		dbp.setGenerateExecutedSQL(log.isDebugEnabled());
 		List<MemberVO> data = dbp.executeSelect(sql.toString(), params, new MemberVO());
-
 		log.debug("number of members found " + data.size());
-
 		return data;
 	}
 
@@ -365,25 +369,35 @@ public class ConnectionAction extends SimpleActionAdapter {
 		StringBuilder sql = new StringBuilder(2680);
 		sql.append(DBUtil.SELECT_FROM_STAR);
 		sql.append("( select connection_id, sndr_").append(idField).append("_id as sndr_id, b.member_id as rcpt_id, 'sending' as direction_cd, b.first_nm, b.last_nm, b.profile_pic_pth, ");
-		sql.append("pa.city_nm, pa.state_cd, '' as business_summary, cast(0 as numeric) as rating, b.create_dt, 'MEMBER' as category_cd, '' as sub_category_cd, approved_flg, privacy_flg, concat(b.first_nm, ' ', b.last_nm) as sortable_nm ");
+		sql.append("pa.city_nm, pa.state_cd, '' as business_summary, cast(0 as numeric) as rating, b.create_dt, 'MEMBER' as category_cd, '' as sub_category_cd, a.approved_flg, privacy_flg, concat(b.first_nm, ' ', b.last_nm) as sortable_nm ");
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append(REZDOX_CONNECTION_A);
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("rezdox_member b on a.rcpt_member_id = b.member_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(" profile_address pa on b.profile_id = pa.profile_id ");
+		sql.append("inner join profile_role pr on b.profile_id=pr.profile_id and pr.role_id in (?,?) and pr.site_id=? and pr.status_id=? ");
+		params.add(RezDoxUtils.REZDOX_RES_BUS_ROLE);
+		params.add(RezDoxUtils.REZDOX_RESIDENCE_ROLE);
+		params.add(RezDoxUtils.MAIN_SITE_ID);
+		params.add(SecurityController.STATUS_ACTIVE);
 		sql.append("where sndr_").append(idField).append(ID_SUFFIX).append(andIsApproved);
 		params.add(targetId);
 		//getting the records where target id was sent a connection by an other memeber
 		sql.append(DBUtil.UNION_ALL);
 		sql.append("select connection_id, b.member_id as sender_id, rcpt_").append(idField).append("_id as rcpt_id, 'receiving' as directionCd, b.first_nm, b.last_nm, b.profile_pic_pth, ");
-		sql.append("pa.city_nm, pa.state_cd, '', cast(0 as numeric) as rating, b.create_dt, 'MEMBER', '' as sub_category_cd, approved_flg, privacy_flg, concat(b.first_nm, ' ', b.last_nm)  ");
+		sql.append("pa.city_nm, pa.state_cd, '', cast(0 as numeric) as rating, b.create_dt, 'MEMBER', '' as sub_category_cd, a.approved_flg, privacy_flg, concat(b.first_nm, ' ', b.last_nm)  ");
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append(REZDOX_CONNECTION_A );
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("rezdox_member b on a.sndr_member_id = b.member_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(" profile_address pa on b.profile_id = pa.profile_id ");
+		sql.append("inner join profile_role pr on b.profile_id=pr.profile_id and pr.role_id in (?,?) and pr.site_id=? and pr.status_id=? ");
+		params.add(RezDoxUtils.REZDOX_RES_BUS_ROLE);
+		params.add(RezDoxUtils.REZDOX_RESIDENCE_ROLE);
+		params.add(RezDoxUtils.MAIN_SITE_ID);
+		params.add(SecurityController.STATUS_ACTIVE);
 		sql.append("where rcpt_").append(idField).append(ID_SUFFIX).append(andIsApproved);
 		params.add(targetId);
 		//getting the records where target id sent a connection to a business
 		sql.append(DBUtil.UNION_ALL);
 		sql.append("select connection_id, sndr_").append(idField).append("_id , b.business_id, 'sending', '', business_nm, b.photo_url, ");
-		sql.append("city_nm, state_cd, value_txt, cast(coalesce(rating, 0) as numeric) , b.create_dt, business_category_cd, sub_category_cd, approved_flg, privacy_flg, business_nm ");
+		sql.append("city_nm, state_cd, value_txt, cast(coalesce(rating, 0) as numeric) , b.create_dt, business_category_cd, sub_category_cd, a.approved_flg, privacy_flg, business_nm ");
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append(REZDOX_CONNECTION_A);
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("rezdox_business b on a.rcpt_business_id = b.business_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN);
@@ -404,7 +418,7 @@ public class ConnectionAction extends SimpleActionAdapter {
 		//getting the records where a business sent a connection to the target id
 		sql.append(DBUtil.UNION_ALL);
 		sql.append("select connection_id, b.business_id, rcpt_").append(idField).append("_id, 'receiving', '', business_nm, b.photo_url, ");
-		sql.append("city_nm, state_cd, value_txt, cast( coalesce(rating, 0)as numeric), b.create_dt, business_category_cd, sub_category_cd, approved_flg, privacy_flg, business_nm ");
+		sql.append("city_nm, state_cd, value_txt, cast( coalesce(rating, 0)as numeric), b.create_dt, business_category_cd, sub_category_cd, a.approved_flg, privacy_flg, business_nm ");
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append(REZDOX_CONNECTION_A);
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("rezdox_business b on a.sndr_business_id = b.business_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN);
@@ -426,10 +440,10 @@ public class ConnectionAction extends SimpleActionAdapter {
 		//where for whole multiplexed union would go here
 		generateWhere(sql, req, params);
 		sql.append(order);
-		log.debug(sql+"|"+ params);
 
 		//generate a list of VO's
 		DBProcessor dbp = new DBProcessor(dbConn, schema);
+		dbp.setGenerateExecutedSQL(log.isDebugEnabled());
 		return dbp.executeSelect(sql.toString(), params, new ConnectionReportVO());
 	}
 
@@ -466,7 +480,7 @@ public class ConnectionAction extends SimpleActionAdapter {
 		}
 
 		if (req.getIntegerParameter(APPROVED_FLAG) != null && req.getIntegerParameter(APPROVED_FLAG) < 3 && req.getIntegerParameter(APPROVED_FLAG) >= 0) {
-			sql.append("and approved_flg = ? ");
+			sql.append("and a.approved_flg = ? ");
 			log.debug("approved "+req.getIntegerParameter(APPROVED_FLAG));
 			params.add(req.getIntegerParameter(APPROVED_FLAG));
 		}
@@ -485,7 +499,7 @@ public class ConnectionAction extends SimpleActionAdapter {
 	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
-		log.debug(" Connections build called");
+		log.debug("Connections build called");
 
 		// Member/business directory
 		if (req.hasParameter("directory")) {
@@ -520,7 +534,9 @@ public class ConnectionAction extends SimpleActionAdapter {
 			log.error("could not save connection ",e);
 		}
 
-		processEmails(cvo, req);
+		//skip is passed from MemberAction
+		if (!req.hasParameter("skipEmails"))
+			processEmails(cvo, req);
 	}
 
 

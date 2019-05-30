@@ -18,6 +18,7 @@ import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.security.SBUserRole;
+import com.smt.sitebuilder.security.SecurityController;
 
 /****************************************************************************
  * <b>Title</b>: DirectoryAction.java
@@ -74,41 +75,49 @@ public class DirectoryAction extends SimpleActionAdapter {
 
 		// Member half of union
 		sql.append(DBUtil.SELECT_FROM_STAR).append("(");
-		if (role.getRoleLevel() > 0) {
+		if (!RezDoxUtils.isResidenceRole(role, false)) { //true for business and hybrid users - do not display residents to residents
 			memberId = RezDoxUtils.getMemberId(req);
 			sql.append("select m.member_id as user_id, c.connection_id, m.first_nm, m.last_nm, m.profile_pic_pth, pa.city_nm, ");
 			sql.append("pa.state_cd, '' as business_summary, cast(0 as numeric) as rating, 'MEMBER' as category_cd, '' as category_lvl2_cd, ");
 			sql.append("m.privacy_flg, m.create_dt, m.member_id || '_m' as unique_id, '' as my_pro_id ");
 			sql.append(DBUtil.FROM_CLAUSE).append(schema).append("rezdox_member m ");
 			sql.append(DBUtil.INNER_JOIN).append("profile_address pa on m.profile_id = pa.profile_id ");
+			//only display people who are ACTIVE and are NOT business members (hybrid or residence, OK)
+			sql.append(DBUtil.INNER_JOIN).append("profile_role pr on m.profile_id=pr.profile_id and pr.site_id=? and pr.role_id in (?,?) and pr.status_id=? ");
 			sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("rezdox_connection c on ((m.member_id = c.rcpt_member_id and c.sndr_member_id = ?) or (m.member_id = c.sndr_member_id and c.rcpt_member_id = ?)) and c.approved_flg >= 0 ");
 			sql.append(DBUtil.WHERE_CLAUSE).append("m.member_id != ? ");
-			params.addAll(Arrays.asList(memberId, memberId, memberId));
-			sql.append(DBUtil.UNION_ALL);
+			params.add(RezDoxUtils.MAIN_SITE_ID);
+			params.add(RezDoxUtils.REZDOX_RESIDENCE_ROLE);
+			params.add(RezDoxUtils.REZDOX_RES_BUS_ROLE);
+			params.add(SecurityController.STATUS_ACTIVE);
+			params.add(memberId); //my prods
+			params.addAll(Arrays.asList(memberId, memberId));
+			
+			if (!RezDoxUtils.isBusinessRole(role, false)) //union is only for hybrid users
+				sql.append(DBUtil.UNION_ALL);
 		}
 
 		// Business half of union
-		sql.append("select b.business_id as user_id, ");
-		if (role.getRoleLevel() > 0) {
-			sql.append("c.connection_id, ");
-		} else {
-			sql.append("'' as connection_id, ");
-		}
-		sql.append("b.business_nm as first_nm, '' as last_nm, b.photo_url as profile_pic_pth, b.city_nm, b.state_cd, ba.value_txt as business_summary, ");
-		sql.append("cast(coalesce(r.rating, 0) as numeric) as rating, bc.business_category_cd as category_cd, bcs.business_category_cd as category_lvl2_cd, ");
-		sql.append("b.privacy_flg, b.create_dt, b.business_id || '_b' as unique_id, mp.my_pro_id ");
-		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("rezdox_business b ");
-		sql.append(DBUtil.INNER_JOIN).append("(select business_id from ").append(schema).append("rezdox_business_member_xr where status_flg=1 group by business_id) bmxa on b.business_id = bmxa.business_id ");
-		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("rezdox_business_attribute ba on b.business_id = ba.business_id and slug_txt='BUSINESS_SUMMARY' ");
-		sql.append(DBUtil.LEFT_OUTER_JOIN).append("(select business_id, avg(rating_no) as rating ").append(DBUtil.FROM_CLAUSE).append(schema).append("rezdox_member_business_review where parent_id is null group by business_id) as r on b.business_id = r.business_id ");
-		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("rezdox_business_category_xr bcx on b.business_id=bcx.business_id ");
-		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("rezdox_business_category bcs on bcx.business_category_cd=bcs.business_category_cd ");
-		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("rezdox_business_category bc on bcs.parent_cd=bc.business_category_cd ");
-		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("rezdox_my_pro mp on mp.business_category_cd=bc.business_category_cd and mp.business_id=b.business_id and mp.member_id=? ");
-		params.add(memberId); //for my pros join
-		if(role.getRoleLevel() > 0) {
+		if (!RezDoxUtils.isBusinessRole(role, false)) {
+			sql.append("select b.business_id as user_id, ");
+			if (role.getRoleLevel() > 0) {
+				sql.append("c.connection_id, ");
+			} else {
+				sql.append("'' as connection_id, ");
+			}
+			sql.append("b.business_nm as first_nm, '' as last_nm, b.photo_url as profile_pic_pth, b.city_nm, b.state_cd, ba.value_txt as business_summary, ");
+			sql.append("cast(coalesce(r.rating, 0) as numeric) as rating, bc.business_category_cd as category_cd, bcs.business_category_cd as category_lvl2_cd, ");
+			sql.append("b.privacy_flg, b.create_dt, b.business_id || '_b' as unique_id, mp.my_pro_id ");
+			sql.append(DBUtil.FROM_CLAUSE).append(schema).append("rezdox_business b ");
+			sql.append(DBUtil.INNER_JOIN).append("(select business_id from ").append(schema).append("rezdox_business_member_xr where status_flg=1 group by business_id) bmxa on b.business_id = bmxa.business_id ");
+			sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("rezdox_business_attribute ba on b.business_id = ba.business_id and slug_txt='BUSINESS_SUMMARY' ");
+			sql.append(DBUtil.LEFT_OUTER_JOIN).append("(select business_id, avg(rating_no) as rating ").append(DBUtil.FROM_CLAUSE).append(schema).append("rezdox_member_business_review where parent_id is null group by business_id) as r on b.business_id = r.business_id ");
+			sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("rezdox_business_category_xr bcx on b.business_id=bcx.business_id ");
+			sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("rezdox_business_category bcs on bcx.business_category_cd=bcs.business_category_cd ");
+			sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("rezdox_business_category bc on bcs.parent_cd=bc.business_category_cd ");
+			sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("rezdox_my_pro mp on mp.business_category_cd=bc.business_category_cd and mp.business_id=b.business_id and mp.member_id=? ");
 			sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("rezdox_connection c on ((b.business_id = c.rcpt_business_id and c.sndr_member_id = ?) or (b.business_id = c.sndr_business_id and c.rcpt_member_id = ?)) and c.approved_flg >= 0 ");
-			params.addAll(Arrays.asList(memberId, memberId));
+			params.addAll(Arrays.asList(memberId, memberId, memberId));
 		}
 		sql.append(") as user_directory ");
 

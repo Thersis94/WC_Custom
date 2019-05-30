@@ -11,15 +11,16 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+
 //WC Custom
 import com.rezdox.action.RewardsAction.Reward;
 import com.rezdox.action.RezDoxNotifier.Message;
+import com.rezdox.action.RezDoxUtils.Product;
 import com.rezdox.api.SunNumberAPIManager;
 import com.rezdox.api.WalkScoreAPIManager;
 import com.rezdox.api.ZillowAPIManager;
 import com.rezdox.data.ResidenceFormProcessor;
 import com.rezdox.vo.MemberVO;
-import com.rezdox.vo.MembershipVO.Group;
 import com.rezdox.vo.ResidenceAttributeVO;
 import com.rezdox.vo.ResidenceVO;
 import com.rezdox.vo.SunNumberVO;
@@ -188,10 +189,10 @@ public class ResidenceAction extends SBActionAdapter {
 
 		// Validate whether the member needs a residence upgrade
 		SubscriptionAction sa = (SubscriptionAction) ActionControllerFactoryImpl.loadAction(SubscriptionAction.class.getName(), this);
-		boolean needsUpgrade = sa.checkUpgrade(member, Group.HO);
+		boolean needsUpgrade = sa.checkUpgrade(req, member, Product.RESIDENCE);
 
 		// Set default residence name per requirements
-		if (!needsUpgrade) {
+		if (!needsUpgrade && residenceList != null) {
 			ResidenceVO defaultResidence = new ResidenceVO();
 			defaultResidence.setResidenceName(member.getLastName() + PRIMARY_RESIDENCE);
 			residenceList.add(defaultResidence);
@@ -335,8 +336,12 @@ public class ResidenceAction extends SBActionAdapter {
 		log.debug("residence build called");
 		SubscriptionAction sa = new SubscriptionAction(getDBConnection(), getAttributes());	
 		String memberId = RezDoxUtils.getMemberId(req);
+		
+		if (req.hasParameter("testMembership")) {
+			putModuleData(canAddNewResidence(null, req),1, false, UPGRADE_MSG);
+			return;
 
-		if (req.hasParameter("homeInfo") || req.hasParameter("settings")) {
+		} else if (req.hasParameter("homeInfo") || req.hasParameter("settings")) {
 			saveForm(req);
 
 		} else if (req.hasParameter("transferResidence")) {
@@ -372,7 +377,7 @@ public class ResidenceAction extends SBActionAdapter {
 				boolean isNew = StringUtil.isEmpty(residence.getResidenceId());
 
 				//get usage count before writing the table, the increment it.  This avoids read locks and uncomitted data issues	
-				int count = sa.getUsageQty(memberId, Group.HO);
+				int count = sa.getUsageQty(memberId, Product.RESIDENCE);
 				++count; //for the one we're adding.
 
 				putModuleData(saveResidence(req), 1, false);

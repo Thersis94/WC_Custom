@@ -8,13 +8,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.rezdox.action.RezDoxUtils.Product;
 //WC Custom
 import com.rezdox.data.MemberFormProcessor;
 import com.rezdox.vo.MemberVO;
 import com.rezdox.vo.MembershipVO;
-import com.rezdox.vo.MembershipVO.Group;
 import com.rezdox.vo.PromotionVO;
-
+import com.siliconmtn.action.ActionControllerFactoryImpl;
 //SMTBaseLibs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -29,7 +29,6 @@ import com.siliconmtn.http.session.SMTSession;
 import com.siliconmtn.io.mail.EmailRecipientVO;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.StringUtil;
-
 //WC Core
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.action.form.FormAction;
@@ -178,6 +177,7 @@ public class MemberAction extends SimpleActionAdapter {
 			createProfileRole(member, site);
 			performLogin(member, site, req);
 			setupMembership(member, req);
+			connectionToRezdox(member, req);
 		}
 
 		//put the member VO onto their session, refreshing any data that's already there.
@@ -323,10 +323,10 @@ public class MemberAction extends SimpleActionAdapter {
 	 * @throws ActionException
 	 */
 	private void setupMembership(MemberVO member, ActionRequest req) throws ActionException {
-		// Get default member subscription... the only default right now is "100 Connections".
+		// Get default member subscription... the only default after 6/1/2019 is HomeOwner.
 		// Free business and residence subscriptions are added by member selection after signing up.
 		MembershipAction ma = new MembershipAction(dbConn, attributes);
-		MembershipVO membership = ma.retrieveDefaultMembership(Group.CO);
+		MembershipVO membership = ma.retrieveDefaultMembership(req, Product.BUSINESS.name());
 
 		// Get the "Free" promotion used when signing up
 		PromotionAction pa = new PromotionAction(dbConn, attributes);
@@ -362,5 +362,24 @@ public class MemberAction extends SimpleActionAdapter {
 		// Send the email
 		CampaignMessageSender util = new CampaignMessageSender(getAttributes());
 		util.sendMessage(dataMap, rcpts, RezDoxUtils.EmailSlug.WELCOME.name());
+	}
+
+
+	/**
+	 * Create a connection between this user and the Rezdox business, so the user has an initial connection.
+	 * Do not send notif emails for this one.
+	 * Note: if the user later decides to create a business, a second connection will be created between Rezdox and their business.
+	 * Business users see business connections, so having both won't display a duplicate.
+	 * @param member
+	 * @param req
+	 * @throws ActionException 
+	 */
+	private void connectionToRezdox(MemberVO member, ActionRequest req) throws ActionException {
+		ConnectionAction ca = ActionControllerFactoryImpl.loadAction(ConnectionAction.class, this, true);
+		req.setParameter("senderBusinessId", RezDoxUtils.REZDOX_BUSINESS_ID);
+		req.setParameter("recipientMemberId", member.getMemberId());
+		req.setParameter("approvedFlag", "1");
+		req.setParameter("skipEmails", "1");
+		ca.build(req);
 	}
 }

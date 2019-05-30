@@ -86,23 +86,24 @@ public class MembershipAction extends SBActionAdapter {
 		List<Object> params = new ArrayList<>();
 
 		StringBuilder sql = new StringBuilder(200);
-		sql.append(DBUtil.SELECT_FROM_STAR).append(schema).append("rezdox_membership ");
+		sql.append(DBUtil.SELECT_FROM_STAR).append(schema).append("rezdox_membership where 1=1 ");
 
 		String[] membershipIds = req.getParameterValues(MEMBERSHIP_ID);
 		String[] groupCodes = getMembershipExclusions(req);
+		boolean loadDefault = req.hasParameter("getNewMemberDefault") && membershipIds != null && membershipIds.length > 0;
 
-		if (membershipIds != null && membershipIds.length > 0) {
-			sql.append("where membership_id in (");
+		if (loadDefault) {
+			sql.append("and group_cd in (select group_cd from ").append(schema).append("rezdox_membership where membership_id=?) and new_mbr_dflt_flg=1 ");
+			params.add(membershipIds[0]);
+
+		} else if (membershipIds != null && membershipIds.length > 0 && !loadDefault) {
+			sql.append("and membership_id in (");
 			DBUtil.preparedStatmentQuestion(membershipIds.length, sql);
 			sql.append(") ");
 			params.addAll(Arrays.asList(membershipIds));
 
-		} else if (req.hasParameter("getNewMemberDefault")) {
-			sql.append("where new_mbr_dflt_flg=1 and group_cd=? ");
-			params.add(req.getParameter("groupCode"));
-
 		} else if (groupCodes != null && groupCodes.length > 0) {
-			sql.append("where group_cd not in (");
+			sql.append("and group_cd not in (");
 			DBUtil.preparedStatmentQuestion(groupCodes.length, sql);
 			sql.append(") ");
 			params.addAll(Arrays.asList(groupCodes));
@@ -122,7 +123,8 @@ public class MembershipAction extends SBActionAdapter {
 	 */
 	private String[] getMembershipExclusions(ActionRequest req) {
 		List<String> exclusions = new ArrayList<>();
-		SBUserRole role = ((SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA));
+		SBUserRole role = ((SBUserRole) req.getSession(true).getAttribute(Constants.ROLE_DATA));
+		if (role == null) role = new SBUserRole();
 
 		if (RezDoxUtils.REZDOX_BUSINESS_ROLE.equals(role.getRoleId())) {
 			// Exclude residence memberships if this is a business-only role
@@ -142,12 +144,11 @@ public class MembershipAction extends SBActionAdapter {
 	 * @param membershipGroup
 	 * @return
 	 */
-	public MembershipVO retrieveDefaultMembership(Group membershipGroup) {
-		ActionRequest membershipReq = new ActionRequest();
-		membershipReq.setParameter("getNewMemberDefault", "true");
-		membershipReq.setParameter("groupCode", membershipGroup.name());
+	public MembershipVO retrieveDefaultMembership(ActionRequest req, String membershipId) {
+		req.setParameter("getNewMemberDefault", "true");
+		req.setParameter(MEMBERSHIP_ID, membershipId);
 
-		List<MembershipVO> membership = retrieveMemberships(membershipReq);
+		List<MembershipVO> membership = retrieveMemberships(req);
 		return !membership.isEmpty() ? membership.get(0) : new MembershipVO();
 	}
 
