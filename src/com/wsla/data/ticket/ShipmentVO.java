@@ -88,6 +88,9 @@ public class ShipmentVO extends BeanDataVO {
 			UserVO user = userData != null ? (UserVO) userData.getUserExtendedInfo() : null;
 			if (user != null) setShippedById(user.getUserId());
 		}
+		
+		// if ticket id is empty, ensure it is null and not empty string
+		if (StringUtil.isEmpty(ticketId)) ticketId = null;
 	}
 
 	@Column(name="shipment_id", isPrimaryKey=true)

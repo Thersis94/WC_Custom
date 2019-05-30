@@ -26,6 +26,7 @@ import com.smt.sitebuilder.security.SBUserRole;
 import com.wsla.action.ticket.BaseTransactionAction;
 import com.wsla.action.ticket.PartsAction;
 import com.wsla.action.ticket.ShipmentAction;
+import com.wsla.action.ticket.transaction.CreditMemoTransaction;
 import com.wsla.action.ticket.transaction.RefundReplacementTransaction;
 import com.wsla.action.ticket.transaction.RefundReplacementTransaction.ApprovalTypes;
 import com.wsla.action.ticket.transaction.RefundReplacementTransaction.DispositionCodes;
@@ -308,12 +309,16 @@ public class LogisticsPartsAction extends SBActionAdapter {
 		}
 
 		// Add a status change depending on whether another shipment exists or not.
-		// If this is a replacement request, there will be a pending shipment. Otherwise, this is a refund request.
+		// If this is a replacement request, there will be a pending shipment.
+		// Otherwise, this is a refund request, and the credit memo may or may not be approved at this point.
 		if (hasPending) {
 			ledger = bta.changeStatus(shipment.getTicketId(), user.getUserId(), StatusCode.REPLACEMENT_CONFIRMED, null, null);
 		} else {
+			CreditMemoTransaction cmt = new CreditMemoTransaction(getDBConnection(), getAttributes());
+			boolean hasUnapprovedCM = cmt.hasUnapprovedCreditMemos(shipment.getTicketId());
+			
 			String summary = !isHarvest ? LedgerSummary.REPAIR_AFTER_RECEIPT.summary : null;
-			ledger = bta.changeStatus(shipment.getTicketId(), user.getUserId(), StatusCode.CLOSED, summary, null);
+			ledger = bta.changeStatus(shipment.getTicketId(), user.getUserId(), hasUnapprovedCM ? StatusCode.CREDIT_MEMO_WSLA : StatusCode.CLOSED, summary, null);
 		}
 		
 		return ledger;

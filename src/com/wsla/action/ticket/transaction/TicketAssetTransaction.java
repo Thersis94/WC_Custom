@@ -1,6 +1,5 @@
 package com.wsla.action.ticket.transaction;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
@@ -178,47 +177,16 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 		db.save(td);
 
 		if("attr_credit_memo".equalsIgnoreCase(req.getParameter("attributeCode"))) {
-			log.debug(" save the attribute id in credit memo table");
+			CreditMemoTransaction cmt = new CreditMemoTransaction(getDBConnection(), getAttributes());
 			CreditMemoVO cmvo = new CreditMemoVO(req);
 			cmvo.setAssetId(td.getDataEntryId());
-			log.debug(cmvo);
-			saveMemoAssetId(cmvo);
-			addLedger(td.getTicketId(), user.getUserId(), null, LedgerSummary.CREDIT_MEMO_APPROVED.summary, null);
-		}
-	}
-	
-	
-	
-	/**
-	 * this method updates the credit memo id when a new credit memo asset is saved.
-	 * @param ticketId
-	 * @param dataEntryId
-	 */
-	private void saveMemoAssetId(CreditMemoVO cmvo) {
-	
-		cmvo.setApprovalDate(new Date());
-		cmvo.setUpdateDate(new Date());
-		
-		List<String> fields = new ArrayList<>();
-		fields.add("asset_id");
-		fields.add("refund_amount_no");
-		fields.add("approved_by_txt");
-		fields.add("bank_nm");
-		fields.add("account_no");
-		fields.add("transfer_cd");
-		fields.add("approval_dt");
-		fields.add("credit_memo_id");
-
-		
-		StringBuilder sql = new StringBuilder(93);
-		sql.append("update ").append(getCustomSchema()).append("wsla_credit_memo set asset_id = ?, refund_amount_no = ?, approved_by_txt = ?, bank_nm = ?, account_no = ?, transfer_cd = ?, approval_dt = ?  where credit_memo_id = ? ");
-		
-		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
-		try {
-			db.executeSqlUpdate(sql.toString(), cmvo, fields);
-		} catch (DatabaseException e) {
-			log.error("could not save asset id to credit memo",e);
-			putModuleData(cmvo, 0, false, e.getLocalizedMessage(), true);
+			cmt.saveCreditMemoApproval(cmvo);
+			
+			if (status == StatusCode.CREDIT_MEMO_WSLA && !cmt.hasUnapprovedCreditMemos(td.getTicketId())) {
+				changeStatus(td.getTicketId(), user.getUserId(), StatusCode.CLOSED, LedgerSummary.CREDIT_MEMO_APPROVED.summary, null);
+			} else {
+				addLedger(td.getTicketId(), user.getUserId(), null, LedgerSummary.CREDIT_MEMO_APPROVED.summary, null);
+			}
 		}
 	}
 
