@@ -28,6 +28,7 @@ import com.siliconmtn.db.orm.GridDataVO;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
+import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.EnumUtil;
 import com.siliconmtn.util.StringUtil;
@@ -43,6 +44,7 @@ import com.smt.sitebuilder.security.SBUserRole;
 import com.wsla.action.ticket.BaseTransactionAction;
 import com.wsla.action.ticket.TicketEditAction;
 import com.wsla.action.ticket.transaction.TicketPartsTransaction;
+import com.wsla.common.LocaleWrapper;
 import com.wsla.common.UserSqlFilter;
 import com.wsla.common.WSLAConstants;
 import com.wsla.data.provider.ProviderLocationVO;
@@ -115,7 +117,15 @@ public class LogisticsAction extends SBActionAdapter {
 		} else if (req.getBooleanParameter("packingList")) {
 			BSTableControlVO bst = new BSTableControlVO(req);
 			SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
-			ResourceBundle rb = WCResourceBundle.getBundle(site, getAdminUser(req));
+			//Set the smt User locale to match the WSLA locale.
+			UserDataVO user = getAdminUser(req);
+			UserVO wslaUser = (UserVO) user.getUserExtendedInfo();
+			LocaleWrapper lw = new LocaleWrapper(wslaUser.getLocale());
+			
+			user.setLanguage(lw.getLocale().getLanguage());
+			user.setCountryCode(lw.getLocale().getCountry());
+			
+			ResourceBundle rb = WCResourceBundle.getBundle(site, user);
 			try {
 				String sId = req.getParameter("shipmentId");
 				byte[] pdf = buildPackingList(rb, sId, bst, req.getRealPath());

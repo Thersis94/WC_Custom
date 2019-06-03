@@ -47,7 +47,7 @@ public class TicketCommentVO extends BeanDataVO {
 	private String userId;
 	private String comment;
 	private String recipientName;
-	private ActivityType activityType;
+	private String activityType;
 	private int priorityTicketFlag;
 	private int endUserFlag;
 	private int wslaReplyFlag;
@@ -137,7 +137,7 @@ public class TicketCommentVO extends BeanDataVO {
 	 * @return the activityType
 	 */
 	@Column(name="activity_type_cd")
-	public ActivityType getActivityType() {
+	public String getActivityType() {
 		return activityType;
 	}
 
@@ -224,6 +224,13 @@ public class TicketCommentVO extends BeanDataVO {
 	 * @param activityType the activityType to set
 	 */
 	public void setActivityType(ActivityType activityType) {
+		this.activityType = activityType.name();
+	}
+	
+	/**
+	 * @param activityType the activityType to set
+	 */
+	public void setActivityType(String activityType) {
 		this.activityType = activityType;
 	}
 
