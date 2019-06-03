@@ -3,7 +3,6 @@ package com.wsla.action.admin;
 // JDK 1.8.x
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -23,6 +22,7 @@ import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.BatchImport;
+
 // WC Libs
 import com.wsla.data.provider.ProviderLocationVO;
 import com.wsla.data.provider.ProviderType;
@@ -212,14 +212,17 @@ public class ProviderAction extends BatchImport {
 	 * Called from SelectLookupAction.
 	 * @return
 	 */
-	public List<GenericVO> getProviderOptions(ProviderType type, String search, boolean incUnknown) {
-		if (type == null) return Collections.emptyList();
+	public List<GenericVO> getProviderOptions(ProviderType type, String search, boolean incUnknown, int limit) {
 		List<Object> vals = new ArrayList<>();
-		vals.add(type.toString());
 		
 		StringBuilder sql = new StringBuilder(200);
 		sql.append("select provider_id as key, provider_nm as value from ");
-		sql.append(getCustomSchema()).append("wsla_provider where provider_type_id= ? ");
+		sql.append(getCustomSchema()).append("wsla_provider where 1=1 ");
+		
+		if (type != null) {
+			sql.append("and provider_type_id= ? ");
+			vals.add(type.toString());
+		}
 		
 		if (!StringUtil.isEmpty(search)) {
 			sql.append("and lower(provider_nm) like ? ");
@@ -227,8 +230,9 @@ public class ProviderAction extends BatchImport {
 		}
 		
 		sql.append(incUnknown ? "" : " and provider_id != 'NOT_SUPPORTED' ");
-		sql.append("order by provider_nm");
-		log.debug(sql + "|" + type.toString());
+		sql.append("order by provider_nm ");
+		if (limit > 0) sql.append("limit " + limit);
+		log.debug(sql + "|" + type);
 		
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema()); 
 		return db.executeSelect(sql.toString(),vals, new GenericVO());

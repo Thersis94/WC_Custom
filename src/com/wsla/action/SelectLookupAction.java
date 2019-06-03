@@ -333,10 +333,14 @@ public class SelectLookupAction extends SBActionAdapter {
 	public List<GenericVO> getProviders(ActionRequest req) {
 		String search = req.getParameter(REQ_SEARCH);
 		boolean incUnknown = req.getBooleanParameter("incUnknown");
-		ProviderType pt = EnumUtil.safeValueOf(ProviderType.class, req.getParameter(PROVIDER_TYPE), ProviderType.OEM);
-		return new ProviderAction(getAttributes(), getDBConnection()).getProviderOptions(pt, search, incUnknown);
+		String providerType = StringUtil.checkVal(req.getParameter(PROVIDER_TYPE));
+		ProviderType pt = null;
+		if (! providerType.isEmpty() && ! "ALL".equalsIgnoreCase(providerType)) 
+			pt = EnumUtil.safeValueOf(ProviderType.class, providerType);
+		
+		int limit = req.getIntegerParameter("limit", 0);
+		return new ProviderAction(getAttributes(), getDBConnection()).getProviderOptions(pt, search, incUnknown, limit);
 	}
-
 
 	/**
 	 * return a list of OEMs - a specific type of providers.  Distinguished from 'getProvider' to avoid coupling in View logic.
@@ -396,30 +400,33 @@ public class SelectLookupAction extends SBActionAdapter {
 	 * @return
 	 */
 	public List<GenericVO> getRetailerACList(ActionRequest req) {
-		StringBuilder term = new StringBuilder(16);
-		term.append("%").append(StringUtil.checkVal(req.getParameter(REQ_SEARCH)).toLowerCase()).append("%");
-
+		StringBuilder term = new StringBuilder(32);
+		String[] terms = StringUtil.checkVal(req.getParameter(REQ_SEARCH)).split(" ");
+		for (int i=0; i < terms.length; i++) {
+			if (i > 0) term.append(" & ");
+			term.append(terms[i]).append(":*");
+		}
+		log.debug("Search Term: " + term);
+		
 		StringBuilder sql = new StringBuilder(512);
+		sql.append("select key, value from ( ");
 		sql.append("select location_id as key, coalesce(provider_nm, '') || ' - ' ");
 		sql.append("|| coalesce(location_nm, '') || ' (' || coalesce(store_no, '') || ')  ' ");
-		sql.append("|| coalesce(city_nm, '') || ', ' || coalesce(state_cd, '') as value ");
+		sql.append("|| coalesce(city_nm, '') || ', ' || coalesce(state_cd, '') as value, ");
+		sql.append("to_tsvector(provider_nm) || "); 
+		sql.append("to_tsvector(location_nm) || ");
+		sql.append("to_tsvector(coalesce(store_no, '')) || ");
+		sql.append("to_tsvector(coalesce(city_nm, '')) as document ");
 		sql.append(DBUtil.FROM_CLAUSE).append(getCustomSchema()).append("wsla_provider a ");
 		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("wsla_provider_location b ");
 		sql.append("on a.provider_id = b.provider_id ");
-		sql.append("where provider_type_id = 'RETAILER' ");
-		sql.append("and (lower(provider_nm) like ? or lower(location_nm) like ? ");
-		sql.append("or lower(city_nm) like ? or store_no like ?) ");
-		sql.append("order by provider_nm ");
-
-		List<Object> vals = new ArrayList<>();
-		vals.add(term);
-		vals.add(term);
-		vals.add(term);
-		vals.add(term);
+		sql.append("where provider_type_id = 'RETAILER' ) as search ");
+		sql.append("where search.document @@ to_tsquery('").append(term).append("') ");
+		log.debug(sql);
 
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		db.setGenerateExecutedSQL(log.isDebugEnabled());
-		return db.executeSelect(sql.toString(), vals, new GenericVO(),null,req.getIntegerParameter("offset").intValue(), req.getIntegerParameter("limit").intValue());
+		return db.executeSelect(sql.toString(), null, new GenericVO(),null,req.getIntegerParameter("offset").intValue(), req.getIntegerParameter("limit").intValue());
 	}
 
 	/**
@@ -689,7 +696,8 @@ public class SelectLookupAction extends SBActionAdapter {
 		}
 			
 		for (ProductVO product : products.getRowData()) {
-			data.add(new GenericVO(product.getProductId(), product.getProductName()	));
+			String name = product.getCustomerProductId() + " - " + product.getProductName();
+			data.add(new GenericVO(product.getProductId(), name));
 		}
 
 		return data;
