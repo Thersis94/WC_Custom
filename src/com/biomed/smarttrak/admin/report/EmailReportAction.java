@@ -9,8 +9,6 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 
-import org.simplejavamail.email.Email;
-
 //WC custom
 import com.biomed.smarttrak.vo.EmailLogVO;
 // SMTBaseLibs
@@ -93,9 +91,9 @@ public class EmailReportAction extends SBActionAdapter {
 	 */
 	private void loadEmiData(EmailLogVO vo) {
 		MessageLoggingUtil mlu = new MessageLoggingUtil(dbConn, attributes);
-		Email eml = mlu.retrieveEmlFile(vo.getCampaignLogId());
+		EmailMessageVO eml = mlu.retrieveEmailFromFile(vo.getCampaignLogId());
 		vo.setSubject(eml.getSubject());
-		vo.setMessageBody(eml.getHTMLText());
+		vo.setMessageBody(eml.getHtmlBody());
 	}
 
 
