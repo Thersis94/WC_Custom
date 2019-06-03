@@ -213,19 +213,12 @@ public class LogisticsAction extends SBActionAdapter {
 	 * @throws com.siliconmtn.db.util.DatabaseException
 	 */
 	private ProviderLocationVO getShippingLocation(String locationId) throws com.siliconmtn.db.util.DatabaseException {
-		DBProcessor dbp = new DBProcessor(getDBConnection(), getCustomSchema());
-		
 		// Try getting the location
-		ProviderLocationVO location = new ProviderLocationVO();
-		location.setLocationId(locationId);
-		try {
-			dbp.getByPrimaryKey(location);
-		} catch (InvalidDataException e) {
-			throw new com.siliconmtn.db.util.DatabaseException(e);
-		}
+		ProviderLocationAction pla = new ProviderLocationAction(getAttributes(), getDBConnection());
+		ProviderLocationVO location = pla.getProviderLocation(locationId);
 		
 		// If there is no location returned, this is a user
-		if (location.getLocationName() == null) {
+		if (StringUtil.isEmpty(location.getLocationName())) {
 			BasePortalAction bpa = new BasePortalAction(getDBConnection(), getAttributes());
 			try {
 				UserVO user = bpa.getUser(locationId);
@@ -312,16 +305,22 @@ public class LogisticsAction extends SBActionAdapter {
 				if (ShipmentStatus.SHIPPED.equals(vo.getStatus()) && vo.getShipmentDate() == null)
 					vo.setShipmentDate(Calendar.getInstance().getTime());
 
-				db.save(vo);
-
-				//if this is a new shipment getting created, automatically put all the parts from the ticket into it
-				//the admin can remove or add on the next screen, but this is a significant convenience for them.
+				// Set the shipment type for new shipments
+				boolean isNewTicketShipment = false;
 				if (isInsert && req.hasParameter(REQ_TICKET_ID)) {
-					addTicketPartsToShipment(vo.getShipmentId(), req.getParameter(REQ_TICKET_ID));
 					vo.setShipmentType(ShipmentType.PARTS_REQUEST);
+					isNewTicketShipment = true;
 				} else if (isInsert) {
 					vo.setShipmentType(ShipmentType.INVENTORY);
 				}
+
+				// Save the shipment record
+				db.save(vo);
+				
+				//if this is a new shipment getting created, automatically put all the parts from the ticket into it
+				//the admin can remove or add on the next screen, but this is a significant convenience for them.
+				if (isNewTicketShipment)
+					addTicketPartsToShipment(vo.getShipmentId(), req.getParameter(REQ_TICKET_ID));
 				
 				// Change the service order status when shipping the service order parts or unit
 				if (req.hasParameter(REQ_TICKET_ID) && ShipmentStatus.SHIPPED.equals(vo.getStatus())) {

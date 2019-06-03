@@ -32,6 +32,7 @@ import com.wsla.action.ticket.transaction.RefundReplacementTransaction.ApprovalT
 import com.wsla.action.ticket.transaction.RefundReplacementTransaction.DispositionCodes;
 import com.wsla.action.ticket.transaction.TicketCloneTransaction;
 import com.wsla.common.WSLAConstants.WSLARole;
+import com.wsla.data.provider.ProviderLocationVO;
 import com.wsla.data.ticket.LedgerSummary;
 import com.wsla.data.ticket.PartVO;
 import com.wsla.data.ticket.RefundReplacementVO;
@@ -395,8 +396,8 @@ public class LogisticsPartsAction extends SBActionAdapter {
 	private void adjustInventories(ShipmentVO shipment, List<PartVO> parts) 
 			throws ActionException {
 		InventoryAction ia = new InventoryAction(getAttributes(), getDBConnection());
-		boolean receiverExists = !StringUtil.isEmpty(shipment.getToLocationId());
-		boolean senderExists = !StringUtil.isEmpty(shipment.getFromLocationId());
+		boolean receiverExists = !StringUtil.isEmpty(shipment.getToLocationId()) && isProviderLocation(shipment.getToLocationId());
+		boolean senderExists = !StringUtil.isEmpty(shipment.getFromLocationId()) && isProviderLocation(shipment.getFromLocationId());
 		for (PartVO part : parts) {
 			//no movement if no part
 			if (part.getQuantityReceived() == 0) continue;
@@ -410,7 +411,26 @@ public class LogisticsPartsAction extends SBActionAdapter {
 				ia.recordInventory(part.getProductId(), shipment.getFromLocationId(), 0-part.getQuantity());
 		}
 	}
-
+	
+	/**
+	 * Location could be a provider location or a user. Quantities only should be
+	 * adjusted for provider locations.
+	 * 
+	 * @param locationId
+	 * @return
+	 * @throws ActionException 
+	 */
+	private boolean isProviderLocation(String locationId) throws ActionException {
+		ProviderLocationAction pla = new ProviderLocationAction(getAttributes(), getDBConnection());
+		ProviderLocationVO location;
+		try {
+			location = pla.getProviderLocation(locationId);
+		} catch (DatabaseException e) {
+			throw new ActionException(e);
+		}
+		
+		return !StringUtil.isEmpty(location.getLocationName());
+	}
 
 	/**
 	 * List parts tied to the given shipment
