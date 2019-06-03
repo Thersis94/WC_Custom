@@ -181,6 +181,7 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 			log.debug(" save the attribute id in credit memo table");
 			CreditMemoVO cmvo = new CreditMemoVO(req);
 			cmvo.setAssetId(td.getDataEntryId());
+			cmvo.setCustomerMemoCode(req.getStringParameter("customerMemoCode", cmvo.getCustomerMemoCode()));
 			log.debug(cmvo);
 			saveMemoAssetId(cmvo);
 			addLedger(td.getTicketId(), user.getUserId(), null, LedgerSummary.CREDIT_MEMO_APPROVED.summary, null);
@@ -207,12 +208,13 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 		fields.add("account_no");
 		fields.add("transfer_cd");
 		fields.add("approval_dt");
+		fields.add("customer_memo_cd");
+		fields.add("authorization_dt");
 		fields.add("credit_memo_id");
 
 		
 		StringBuilder sql = new StringBuilder(93);
-		sql.append("update ").append(getCustomSchema()).append("wsla_credit_memo set asset_id = ?, refund_amount_no = ?, approved_by_txt = ?, bank_nm = ?, account_no = ?, transfer_cd = ?, approval_dt = ?  where credit_memo_id = ? ");
-		
+		sql.append("update ").append(getCustomSchema()).append("wsla_credit_memo set asset_id = ?, refund_amount_no = ?, approved_by_txt = ?, bank_nm = ?, account_no = ?, transfer_cd = ?, approval_dt = ?, customer_memo_cd = ?, authorization_dt = ? where credit_memo_id = ? ");
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		try {
 			db.executeSqlUpdate(sql.toString(), cmvo, fields);
