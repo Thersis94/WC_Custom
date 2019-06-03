@@ -74,12 +74,13 @@ public class BillableActivityAction extends SBActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		BSTableControlVO bst = new BSTableControlVO(req, BillableActivityVO.class);
+		BSTableControlVO bst = new BSTableControlVO(req, BillableActivityVO.class); 
 		setModuleData(getCodes(null, req.getBooleanParameter("isMiscActivites"), bst));
 	}
 	
 	/**
 	 * Gets the complete or filtered list of codes
+	 * @param billableType 
 	 * @return
 	 */
 	public GridDataVO<BillableActivityVO> getCodes(String btc, boolean isMiscActivites, BSTableControlVO bst) {

@@ -180,6 +180,7 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 			CreditMemoTransaction cmt = new CreditMemoTransaction(getDBConnection(), getAttributes());
 			CreditMemoVO cmvo = new CreditMemoVO(req);
 			cmvo.setAssetId(td.getDataEntryId());
+			cmvo.setCustomerMemoCode(req.getStringParameter("customerMemoCode", cmvo.getCustomerMemoCode()));
 			cmt.saveCreditMemoApproval(cmvo);
 			
 			if (status == StatusCode.CREDIT_MEMO_WSLA && !cmt.hasUnapprovedCreditMemos(td.getTicketId())) {
