@@ -27,6 +27,7 @@ public class EmailLogVO extends UserDataVO implements HumanNameIntfc {
 	private String status;
 	private Date sentDate;
 	private String subject;
+	private String emlFilePath;
 
 	public EmailLogVO() {
 		super();
@@ -86,5 +87,13 @@ public class EmailLogVO extends UserDataVO implements HumanNameIntfc {
 
 	public void setMessageBody(String messageBody) {
 		this.messageBody = messageBody;
+	}
+
+	public String getEmlFilePath() {
+		return this.emlFilePath;
+	}
+
+	public void setEmlFilePath(String emlFilePath) {
+		this.emlFilePath = emlFilePath;
 	}
 }

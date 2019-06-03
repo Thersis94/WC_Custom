@@ -9,6 +9,8 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 
+import org.simplejavamail.email.Email;
+
 //WC custom
 import com.biomed.smarttrak.vo.EmailLogVO;
 // SMTBaseLibs
@@ -25,6 +27,7 @@ import com.smt.sitebuilder.action.SBActionAdapter;
 // WebCrescendo
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
+import com.smt.sitebuilder.util.MessageLoggingUtil;
 
 /*****************************************************************************
  <p><b>Title</b>: EmailReportAction.java</p>
@@ -57,8 +60,6 @@ public class EmailReportAction extends SBActionAdapter {
 	public void retrieve(ActionRequest req) throws ActionException {
 		if (req.hasParameter("loadData")) {
 			List<EmailLogVO> data = loadSummaryData(req, null);
-			for (EmailLogVO email : data)
-				populateEmail(email);
 			putModuleData(data, getEmailCount(req), false);
 		} else if (req.hasParameter("campaignLogId")) {
 			putModuleData(loadSingleEmail(req, req.getParameter("campaignLogId")));
@@ -76,9 +77,25 @@ public class EmailReportAction extends SBActionAdapter {
 		if (data == null || data.isEmpty()) return null;
 		EmailLogVO vo = data.get(0);
 		//load the email message body, and the config params tied to this send.
-		populateEmail(vo);
+		if(StringUtil.isEmpty(vo.getEmlFilePath())) {
+			populateEmail(vo);
+		} else {
+			loadEmiData(vo);
+		}
 
 		return vo;
+	}
+
+
+	/**
+	 * Helper method for loading html data from EMI File.
+	 * @param vo
+	 */
+	private void loadEmiData(EmailLogVO vo) {
+		MessageLoggingUtil mlu = new MessageLoggingUtil(dbConn, attributes);
+		Email eml = mlu.retrieveEmlFile(vo.getCampaignLogId());
+		vo.setSubject(eml.getSubject());
+		vo.setMessageBody(eml.getHTMLText());
 	}
 
 
@@ -132,6 +149,7 @@ public class EmailReportAction extends SBActionAdapter {
 				vo.setCampaignInstanceId(rs.getString("campaign_instance_id"));
 				vo.setOpenCnt(rs.getInt("cnt"));
 				vo.setSubject(rs.getString("subject_txt"));
+				vo.setEmlFilePath(rs.getString("eml_file_path"));
 				data.add(vo);
 			}
 
@@ -167,7 +185,7 @@ public class EmailReportAction extends SBActionAdapter {
 		StringBuilder sql = new StringBuilder(250);
 		sql.append("select inst.campaign_instance_id, coalesce(l.attempt_dt,l.create_dt) as attempt_dt, l.success_flg, p.email_address_txt, p.profile_id, ");
 		sql.append("p.first_nm, p.last_nm, l.campaign_log_id, count(resp.email_response_id) as cnt, ");
-		sql.append("case when inst.subject_txt = '${subject!\"Not Specified\"}' then sl.value_txt else inst.subject_txt end as subject_txt ");
+		sql.append("l.subject_txt, l.eml_file_path ");
 		sql.append("from email_campaign camp ");
 		sql.append("inner join email_campaign_instance inst on camp.email_campaign_id=inst.email_campaign_id ");
 		sql.append("inner join email_campaign_log l on inst.campaign_instance_id=l.campaign_instance_id ");
@@ -180,12 +198,11 @@ public class EmailReportAction extends SBActionAdapter {
 			}
 		}
 		sql.append("left join email_response resp on l.campaign_log_id=resp.campaign_log_id and resp.response_type_id='EMAIL_OPEN' ");
-		sql.append("left outer join SENT_EMAIL_PARAM sl on l.campaign_log_id=sl.campaign_log_id and sl.key_nm='subject' ");
 		sql.append("where camp.organization_id=? ");
 		if (campaignLogId != null) sql.append("and l.campaign_log_id=? ");
 		sql.append("and l.create_dt > ? ");
 		sql.append("group by inst.campaign_instance_id, l.attempt_dt, p.profile_id, p.email_address_txt, ");
-		sql.append("p.first_nm, p.last_nm, success_flg, l.campaign_log_id, subject_txt, sl.value_txt ");
+		sql.append("p.first_nm, p.last_nm, success_flg, l.campaign_log_id, l.subject_txt, eml_file_path ");
 		sql.append("order by ").append(getOrderBy(sort, dir)).append(" limit ? offset ? ");
 		return sql.toString();
 	}
