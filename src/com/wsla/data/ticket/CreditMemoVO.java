@@ -39,6 +39,12 @@ public class CreditMemoVO extends BeanDataVO {
 	private String debitMemoId;
 	private String assetId;
 	private String approvalFlag;
+	
+	private String bankName;
+	private String accountNumber;
+	private String transferCode;
+	private double unitCost;
+	
 	private String approvedBy;
 	private double refundAmount;
 	private Date approvalDate;
@@ -208,6 +214,66 @@ public class CreditMemoVO extends BeanDataVO {
 	@Column(name="ticket_id", isReadOnly=true)
 	public String getTicketId() {
 		return ticketId;
+	}
+
+	/**
+	 * @return the bankName
+	 */
+	@Column(name="bank_nm")
+	public String getBankName() {
+		return bankName;
+	}
+
+	/**
+	 * @return the accountNumber
+	 */
+	@Column(name="account_no")
+	public String getAccountNumber() {
+		return accountNumber;
+	}
+
+	/**
+	 * @return the transferCode
+	 */
+	@Column(name="transfer_cd")
+	public String getTransferCode() {
+		return transferCode;
+	}
+
+	/**
+	 * @return the unitCost
+	 */
+	@Column(name="msrp_cost_no", isReadOnly=true)
+	public double getUnitCost() {
+		return unitCost;
+	}
+
+	/**
+	 * @param unitCost the unitCost to set
+	 */
+	public void setUnitCost(double unitCost) {
+		this.unitCost = unitCost;
+	}
+
+	/**
+	 * @param transferCode the transferCode to set
+	 */
+	public void setTransferCode(String transferCode) {
+		this.transferCode = transferCode;
+	}
+
+	/**
+	 * @param accountNumber the accountNumber to set
+	 */
+	public void setAccountNumber(String accountNumber) {
+		this.accountNumber = accountNumber;
+	}
+
+	/**
+	 * @param bankName the bankName to set
+	 */
+	public void setBankName(String bankName) {
+		this.bankName = bankName;
 	}
 
 	/**

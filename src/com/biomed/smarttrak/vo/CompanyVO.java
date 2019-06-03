@@ -12,10 +12,12 @@ import com.biomed.smarttrak.action.AdminControllerAction;
 import com.biomed.smarttrak.action.AdminControllerAction.Section;
 import com.biomed.smarttrak.util.BiomedCompanyIndexer;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.annotations.SolrField;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
+import com.smt.sitebuilder.search.SearchDocumentHandler;
 import com.smt.sitebuilder.util.solr.SecureSolrDocumentVO;
 
 /****************************************************************************
@@ -424,6 +426,7 @@ public class CompanyVO  extends AuthorVO {
 	 * @return the creatorProfileId
 	 */
 	@Override
+	@SolrField(name=SearchDocumentHandler.AUTHOR)
 	@Column(name="creator_profile_id")
 	public String getCreatorProfileId() {
 		return creatorProfileId;

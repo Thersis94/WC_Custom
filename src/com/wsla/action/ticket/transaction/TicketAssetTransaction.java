@@ -1,12 +1,12 @@
 package com.wsla.action.ticket.transaction;
 
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.sql.SQLException;
 
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
@@ -179,7 +179,10 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 
 		if("attr_credit_memo".equalsIgnoreCase(req.getParameter("attributeCode"))) {
 			log.debug(" save the attribute id in credit memo table");
-			saveMemoAssetId(req.getParameter("creditMemoId"), td.getDataEntryId(), req.getDoubleParameter("refundAmount"), req.getParameter("approvedBy"));
+			CreditMemoVO cmvo = new CreditMemoVO(req);
+			cmvo.setAssetId(td.getDataEntryId());
+			log.debug(cmvo);
+			saveMemoAssetId(cmvo);
 			addLedger(td.getTicketId(), user.getUserId(), null, LedgerSummary.CREDIT_MEMO_APPROVED.summary, null);
 		}
 	}
@@ -191,12 +194,8 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 	 * @param ticketId
 	 * @param dataEntryId
 	 */
-	private void saveMemoAssetId(String creditMemoId, String dataEntryId, Double refundAmount, String approvedBy) {
-		CreditMemoVO cmvo = new CreditMemoVO();
-		cmvo.setAssetId(dataEntryId);
-		cmvo.setCreditMemoId(creditMemoId);
-		cmvo.setRefundAmount(refundAmount);
-		cmvo.setApprovedBy(approvedBy);
+	private void saveMemoAssetId(CreditMemoVO cmvo) {
+	
 		cmvo.setApprovalDate(new Date());
 		cmvo.setUpdateDate(new Date());
 		
@@ -204,11 +203,15 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 		fields.add("asset_id");
 		fields.add("refund_amount_no");
 		fields.add("approved_by_txt");
+		fields.add("bank_nm");
+		fields.add("account_no");
+		fields.add("transfer_cd");
 		fields.add("approval_dt");
 		fields.add("credit_memo_id");
+
 		
 		StringBuilder sql = new StringBuilder(93);
-		sql.append("update ").append(getCustomSchema()).append("wsla_credit_memo set asset_id = ?, refund_amount_no = ?, approved_by_txt = ?, approval_dt = ?  where credit_memo_id = ? ");
+		sql.append("update ").append(getCustomSchema()).append("wsla_credit_memo set asset_id = ?, refund_amount_no = ?, approved_by_txt = ?, bank_nm = ?, account_no = ?, transfer_cd = ?, approval_dt = ?  where credit_memo_id = ? ");
 		
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		try {
@@ -432,7 +435,7 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 	 * @param req
 	 * @throws DatabaseException 
 	 */
-	public void finalizeApproval(ActionRequest req, boolean isApproved, boolean isNewTicketAssignment) throws DatabaseException {
+	public void finalizeApproval(ActionRequest req, boolean isApproved, boolean isNewTicketAssignment) throws DatabaseException   {
 		StatusCode status = isApproved ? StatusCode.USER_DATA_COMPLETE : StatusCode.USER_CALL_DATA_INCOMPLETE;
 		String summary = isApproved ? LedgerSummary.FINAL_ASSET_APPROVED.summary : LedgerSummary.FINAL_ASSET_REJECTED.summary;
 		
@@ -449,6 +452,7 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 		
 		TicketLedgerVO ledger = changeStatus(ticket.getTicketId(), user.getUserId(), status, summary, null);
 		buildNextStep(ledger.getStatusCode(), null, false);
+		
 		if (!isApproved) return;
 
 		// Assign the nearest CAS
@@ -456,11 +460,11 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 		List<GenericVO> locations = csa.getUserSelectionList(ticket.getTicketId(), user.getLocale());
 		if (!locations.isEmpty()) {
 			GenericVO casLocation = locations.get(0);
-			
+
 			TicketAssignmentVO tAss = new TicketAssignmentVO(req);
 			tAss.setLocationId(casLocation.getKey().toString());
 			tAss.setTypeCode(TypeCode.CAS);
-			
+
 			if(isNewTicketAssignment) tAss.setTicketAssignmentId(null);
 
 			try {
@@ -471,6 +475,7 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 				throw new DatabaseException(e);
 			}
 		}
+
 	}
 }
 

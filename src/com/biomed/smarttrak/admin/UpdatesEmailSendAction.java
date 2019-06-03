@@ -12,9 +12,9 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.exception.DatabaseException;
+import com.siliconmtn.io.mail.EmailRecipientVO;
 // WC EmailCampaigns
 import com.siliconmtn.sb.email.util.EmailCampaignBuilderUtil;
-import com.siliconmtn.sb.email.vo.EmailRecipientVO;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;

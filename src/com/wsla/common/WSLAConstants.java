@@ -87,6 +87,11 @@ public class WSLAConstants {
 	public static final String DEFAULT_SHIPPING_SRC = "b89e4d5a3e2c439f879a25aee66bedde";
 
 	/**
+	 * The provider ID for the WSLA CAS
+	 */
+	public static final String WSLA_CAS_ID = "WSLA_ID";
+	
+	/**
 	 * Constant to define the value that will be entered by a support rep if the user does
 	 * not have an email address.  This is to ensure reps are entering a value for the
 	 * email address field
