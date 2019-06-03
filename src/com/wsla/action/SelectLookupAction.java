@@ -149,6 +149,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		keyMap.put("refRepApprovalType", new GenericVO("getRefRepApprovalType", Boolean.TRUE));
 		keyMap.put("refRepDispostionType", new GenericVO("getRefRepDispostionType", Boolean.TRUE));
 		keyMap.put("standing", new GenericVO("getStanding", Boolean.TRUE));
+		keyMap.put("acShipLocation", new GenericVO("getAcShippingLocation", Boolean.TRUE));
 	}
 
 	/**
@@ -481,6 +482,66 @@ public class SelectLookupAction extends SBActionAdapter {
 		List<GenericVO> data = db.executeSelect(sql.toString(), vals, new GenericVO());
 		log.debug("acCas size " + data.size());
 		return data;
+	}
+
+
+	/**
+	 * Returns an auto-complete list of locations for shipping (providers and users)
+	 * 
+	 * @param req
+	 * @return
+	 */
+	public List<GenericVO> getAcShippingLocation(ActionRequest req) {
+		StringBuilder term = new StringBuilder(20);
+		term.append("%").append(StringUtil.checkVal(req.getParameter(REQ_SEARCH)).toLowerCase()).append("%");
+		
+		// Set the "fuzzy" search term
+		String docTerm = StringUtil.checkVal(req.getParameter(REQ_SEARCH)).toLowerCase();
+		while (docTerm.contains("  ")) {
+			docTerm = StringUtil.replace(docTerm, "  ", " ");
+		}
+		docTerm = docTerm.trim();
+		docTerm = StringUtil.replace(docTerm, " ", ":*& ") + ":*";
+		
+		// Set the first part of the query
+		String schema = getCustomSchema();
+		StringBuilder sql = new StringBuilder(750);
+		sql.append(DBUtil.SELECT_CLAUSE).append("key, value").append(DBUtil.FROM_CLAUSE).append("(");
+		sql.append(DBUtil.SELECT_CLAUSE).append("location_id as key, coalesce(provider_nm, '') || ' - ' ");
+		sql.append("|| coalesce(location_nm, '') || ' (' || coalesce(store_no, '') || ') ' ");
+		sql.append("|| coalesce(city_nm, '') || ', ' || coalesce(state_cd, '') as value, ");
+		sql.append("to_tsvector(provider_nm) || ' ' || to_tsvector(location_nm) || ' ' || to_tsvector(coalesce(store_no, '')) || ' ' || ");
+		sql.append("to_tsvector(coalesce(city_nm, '')) || ' ' || to_tsvector(coalesce(state_cd, '')) as document");
+		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("wsla_provider p");
+		sql.append(DBUtil.INNER_JOIN).append(schema).append("wsla_provider_location pl on p.provider_id = pl.provider_id");
+		sql.append(") as search");
+		sql.append(DBUtil.WHERE_CLAUSE).append("search.document @@ to_tsquery(?) ");
+		
+		List<Object> vals = new ArrayList<>();
+		vals.add(docTerm);
+
+		// If a ticket id exists, set the second part of the query
+		String ticketId = req.getParameter(TicketEditAction.TICKET_ID);
+		if (!StringUtil.isEmpty(ticketId)) {
+			sql.append(DBUtil.UNION);
+			sql.append(DBUtil.SELECT_CLAUSE).append("user_id as key, first_nm || ' ' || last_nm ");
+			sql.append("|| ' - ' || coalesce(city_nm, '') || ', ' || coalesce(state_cd, '') as value");
+			sql.append(DBUtil.FROM_CLAUSE).append(schema).append("wsla_ticket t");
+			sql.append(DBUtil.INNER_JOIN).append(schema).append("wsla_user u on t.originator_user_id = u.user_id");
+			sql.append(DBUtil.INNER_JOIN).append("profile_address pa on u.profile_id = pa.profile_id");
+			sql.append(DBUtil.WHERE_CLAUSE).append("(lower(first_nm || ' ' || last_nm) like ? or lower(city_nm) like ?)");
+			sql.append("and ticket_id = ? ");
+			vals.add(term);
+			vals.add(term);
+			vals.add(ticketId);
+		}
+		
+		sql.append(DBUtil.ORDER_BY).append("value");
+		
+		// Execute the query
+		DBProcessor dbp = new DBProcessor(getDBConnection(), getCustomSchema());
+		dbp.setGenerateExecutedSQL(log.isDebugEnabled());
+		return dbp.executeSelect(sql.toString(), vals, new GenericVO());
 	}
 
 	/**

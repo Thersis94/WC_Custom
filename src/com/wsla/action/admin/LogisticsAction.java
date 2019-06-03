@@ -41,6 +41,7 @@ import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.resource.WCResourceBundle;
 import com.smt.sitebuilder.security.SBUserRole;
+import com.wsla.action.BasePortalAction;
 import com.wsla.action.ticket.BaseTransactionAction;
 import com.wsla.action.ticket.TicketEditAction;
 import com.wsla.action.ticket.transaction.TicketPartsTransaction;
@@ -200,19 +201,9 @@ public class LogisticsAction extends SBActionAdapter {
 		shipment.setShipmentId(shipmentId);
 		db.getByPrimaryKey(shipment);
 		
-		// Get the source info
-		ProviderLocationVO fromLoc = new ProviderLocationVO();
-		fromLoc.setLocationId(shipment.getFromLocationId());
-		db.getByPrimaryKey(fromLoc);
-		
-		// Get the destination info
-		ProviderLocationVO toLoc = new ProviderLocationVO();
-		toLoc.setLocationId(shipment.getToLocationId());
-		db.getByPrimaryKey(toLoc);
-		
 		// Add the source and dest to the shipment
-		shipment.setFromLocation(fromLoc);
-		shipment.setToLocation(toLoc);
+		shipment.setFromLocation(getShippingLocation(shipment.getFromLocationId()));
+		shipment.setToLocation(getShippingLocation(shipment.getToLocationId()));
 		
 		// Get user who performed shipping
 		UserVO shippedBy = new UserVO();
@@ -222,6 +213,57 @@ public class LogisticsAction extends SBActionAdapter {
 		
 		return shipment;
 	}
+	
+	/**
+	 * Gets a shipping location which may be a provider location, or a user.
+	 * 
+	 * @param locationId
+	 * @return
+	 * @throws com.siliconmtn.db.util.DatabaseException
+	 */
+	private ProviderLocationVO getShippingLocation(String locationId) throws com.siliconmtn.db.util.DatabaseException {
+		// Try getting the location
+		ProviderLocationAction pla = new ProviderLocationAction(getAttributes(), getDBConnection());
+		ProviderLocationVO location = pla.getProviderLocation(locationId);
+		
+		// If there is no location returned, this is a user
+		if (StringUtil.isEmpty(location.getLocationName())) {
+			BasePortalAction bpa = new BasePortalAction(getDBConnection(), getAttributes());
+			try {
+				UserVO user = bpa.getUser(locationId);
+				if (user.getProfileId() != null) {
+					TicketEditAction tea = new TicketEditAction(getDBConnection(), getAttributes());
+					location = setLocationDataFromUser(tea.getProfile(user.getProfileId()));
+				}
+			} catch (SQLException | DatabaseException e) {
+				throw new com.siliconmtn.db.util.DatabaseException(e);
+			}
+			
+		}
+		
+		return location;
+	}
+	
+	/**
+	 * Sets user data for shipping as provider location data.
+	 * 
+	 * @param profile
+	 * @return
+	 */
+	private ProviderLocationVO setLocationDataFromUser(UserDataVO profile) {
+		ProviderLocationVO location = new ProviderLocationVO();
+		
+		location.setLocationName(StringUtil.join(profile.getFirstName(), " ", profile.getLastName()));
+		location.setAddress(profile.getAddress());
+		location.setAddress2(profile.getAddress2());
+		location.setCity(profile.getCity());
+		location.setState(profile.getState());
+		location.setZipCode(profile.getZipCode());
+		location.setCountry(profile.getCountryCode());
+		
+		return location;
+	}
+	
 	/**
 	 * Builds the Packing List Object to be streamed
 	 * @param ticket
@@ -272,16 +314,22 @@ public class LogisticsAction extends SBActionAdapter {
 				if (ShipmentStatus.SHIPPED.equals(vo.getStatus()) && vo.getShipmentDate() == null)
 					vo.setShipmentDate(Calendar.getInstance().getTime());
 
-				db.save(vo);
-
-				//if this is a new shipment getting created, automatically put all the parts from the ticket into it
-				//the admin can remove or add on the next screen, but this is a significant convenience for them.
+				// Set the shipment type for new shipments
+				boolean isNewTicketShipment = false;
 				if (isInsert && req.hasParameter(REQ_TICKET_ID)) {
-					addTicketPartsToShipment(vo.getShipmentId(), req.getParameter(REQ_TICKET_ID));
 					vo.setShipmentType(ShipmentType.PARTS_REQUEST);
+					isNewTicketShipment = true;
 				} else if (isInsert) {
 					vo.setShipmentType(ShipmentType.INVENTORY);
 				}
+
+				// Save the shipment record
+				db.save(vo);
+				
+				//if this is a new shipment getting created, automatically put all the parts from the ticket into it
+				//the admin can remove or add on the next screen, but this is a significant convenience for them.
+				if (isNewTicketShipment)
+					addTicketPartsToShipment(vo.getShipmentId(), req.getParameter(REQ_TICKET_ID));
 				
 				// Change the service order status when shipping the service order parts or unit
 				if (req.hasParameter(REQ_TICKET_ID) && ShipmentStatus.SHIPPED.equals(vo.getStatus())) {
@@ -351,10 +399,13 @@ public class LogisticsAction extends SBActionAdapter {
 		List<Object> params = new ArrayList<>();
 		StringBuilder sql = new StringBuilder(200);
 		sql.append("select s.*, t.ticket_no, srclcn.*, destlcn.*, ");
-		sql.append("srclcn.location_nm as from_location_nm, destlcn.location_nm as to_location_nm ");
+		sql.append("coalesce(srclcn.location_nm, srcusr.first_nm || ' ' || srcusr.last_nm) as from_location_nm, ");
+		sql.append("coalesce(destlcn.location_nm, destusr.first_nm || ' ' || destusr.last_nm) as to_location_nm ");
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("wsla_shipment s ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("wsla_provider_location srclcn on s.from_location_id=srclcn.location_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("wsla_provider_location destlcn on s.to_location_id=destlcn.location_id ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("wsla_user srcusr on s.from_location_id=srcusr.user_id ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("wsla_user destusr on s.to_location_id=destusr.user_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("wsla_ticket t on s.ticket_id=t.ticket_id ");
 		sql.append(userFilter.getTicketFilter("t", params));
 		sql.append("where (s.status_cd != ? or (s.status_cd=? and coalesce(s.shipment_dt, s.update_dt, s.create_dt) > CURRENT_DATE-31)) "); //only show ingested items for 30 days past receipt
@@ -366,7 +417,10 @@ public class LogisticsAction extends SBActionAdapter {
 		if (!StringUtil.isEmpty(term)) {
 			sql.append("and (lower(t.ticket_no) like ? or lower(s.status_cd) like ? ");
 			sql.append("or lower(t.ticket_no) like ? or lower(s.carrier_tracking_no) like ? ");
-			sql.append("or lower(destlcn.location_nm) like ? or lower(srclcn.location_nm) like ?) ");
+			sql.append("or lower(destlcn.location_nm) like ? or lower(srclcn.location_nm) like ? ");
+			sql.append("or lower(destusr.first_nm || ' ' || destusr.last_nm) like ? or lower(srcusr.first_nm || ' ' || srcusr.last_nm) like ?) ");
+			params.add(term);
+			params.add(term);
 			params.add(term);
 			params.add(term);
 			params.add(term);
