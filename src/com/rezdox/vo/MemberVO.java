@@ -276,6 +276,12 @@ public class MemberVO extends UserDataVO implements HumanNameIntfc, Serializable
 	}
 
 
+	@Column(name="search_address_txt")
+	public String getSearchAddress() {
+		return !StringUtil.isEmpty(super.getAddress()) ? super.getAddress().toLowerCase() : null;
+	}
+
+
 	/*
 	 * (non-Javadoc)
 	 * @see java.lang.Object#equals(java.lang.Object)
@@ -326,7 +332,7 @@ public class MemberVO extends UserDataVO implements HumanNameIntfc, Serializable
 	private void setInitials() {
 		setInitials(StringUtil.abbreviate(getFullName(), 2).toUpperCase());
 	}
-	
+
 	/**
 	 * Overwritten to add annocations - used in SharingAction
 	 */
@@ -335,7 +341,7 @@ public class MemberVO extends UserDataVO implements HumanNameIntfc, Serializable
 	public String getCity() {
 		return super.getCity();
 	}
-	
+
 	/**
 	 * Overwritten to add annocations - used in SharingAction
 	 */

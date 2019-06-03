@@ -92,14 +92,29 @@ public class RezDoxUtils {
 	public static final int REZDOX_RES_BUS_ROLE_LEVEL = 55;
 	
 	/**
+	 * Products are memberships which represent "a residence" or "a business", which we run counts 
+	 * against to see if more credits need to be purchased prior to creating new ones.
+	 * Note: These are not membership types (aka user roles) - these are purchaseable products in the Store.
+	 */
+	public enum Product {
+		RESIDENCE, BUSINESS
+	}
+
+	/**
 	 * Used for setting notifications from outside of the sub-site context; like in the admintool.
 	 */
 	public static final String MEMBER_SITE_ID = "REZDOX_1";
-	
+
 	/**
 	 * Used for setting running Data Tool reports  in the admintool.
 	 */
 	public static final String MAIN_SITE_ID = "REZDOX_2";
+
+	/**
+	 * The businessId of the RezDox business - used when forming Connections during account creation
+	 * Value taken from production, 5/29/19 - https://www.rezdox.com/member/storefront?storeFront=1&businessId=1ddc7800e696d19eac10023edd2c87b7
+	 */
+	public static final String REZDOX_BUSINESS_ID = "1ddc7800e696d19eac10023edd2c87b7";
 
 	/**
 	 * email slugs that correlated to the database/email campaigns.
@@ -167,7 +182,17 @@ public class RezDoxUtils {
 	 * @return
 	 */
 	public static boolean isResidenceRole(SBUserRole role) {
-		return REZDOX_RESIDENCE_ROLE.equals(role.getRoleId()) || REZDOX_RES_BUS_ROLE.equals(role.getRoleId());
+		return isResidenceRole(role, true);
+	}
+
+	/**
+	 * Checks if the user's role is a residence role
+	 * Overloaded to omit hybrid users -JM- 05.23.19
+	 * @param role
+	 * @return
+	 */
+	public static boolean isResidenceRole(SBUserRole role, boolean orHybrid) {
+		return REZDOX_RESIDENCE_ROLE.equals(role.getRoleId()) || (orHybrid && REZDOX_RES_BUS_ROLE.equals(role.getRoleId()));
 	}
 
 	/**
@@ -176,6 +201,25 @@ public class RezDoxUtils {
 	 * @return
 	 */
 	public static boolean isBusinessRole(SBUserRole role) {
-		return REZDOX_BUSINESS_ROLE.equals(role.getRoleId()) || REZDOX_RES_BUS_ROLE.equals(role.getRoleId());
+		return isBusinessRole(role, true);
+	}
+
+	/**
+	 * Checks if the user's role is a business role
+	 * Overloaded to omit hybrid users -JM- 05.23.19
+	 * @param role
+	 * @return
+	 */
+	public static boolean isBusinessRole(SBUserRole role, boolean orHybrid) {
+		return REZDOX_BUSINESS_ROLE.equals(role.getRoleId()) || (orHybrid && REZDOX_RES_BUS_ROLE.equals(role.getRoleId()));
+	}
+
+	/**
+	 * Checks if the user's role is both a business and residence role (hybrid)
+	 * @param role
+	 * @return
+	 */
+	public static boolean isHybridRole(SBUserRole role) {
+		return REZDOX_RES_BUS_ROLE.equals(role.getRoleId());
 	}
 }
