@@ -3,9 +3,13 @@ package com.mts.publication.data;
 // JDK 1.8.x
 import java.sql.ResultSet;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
+import com.mts.publication.data.AssetVO.AssetType;
 // MTS Libs
 import com.mts.subscriber.data.MTSUserVO;
 
@@ -55,7 +59,6 @@ public class MTSDocumentVO extends DocumentVO {
 	private String publicationId;
 	private String publicationName;
 	
-	
 	/**
 	 * 
 	 */
@@ -75,6 +78,45 @@ public class MTSDocumentVO extends DocumentVO {
 	 */
 	public MTSDocumentVO(ResultSet rs) {
 		super(rs);
+	}
+	
+	/**
+	 * Returns the singular image for the teaser on this document
+	 * @return
+	 */
+	public AssetVO getTeaserAsset() {
+		Map<String, AssetVO> fAssets = new HashMap<>();
+		Collections.shuffle(assets);
+		for (AssetVO vo : assets) {
+			if (AssetType.TEASER_IMG.equals(vo.getAssetType())) {
+				if (vo.getObjectKeyId().equals(documentId)) return vo;
+				else if (PublicationTeaserVO.DEFAULT_TEASER_IMG.equals(vo.getObjectKeyId()))
+					fAssets.put(PublicationTeaserVO.DEFAULT_TEASER_IMG, vo);
+				else fAssets.put(PublicationTeaserVO.CATEGORY_IMG, vo);
+			}
+		}
+		
+		return (fAssets.size() == 1) ? fAssets.get(PublicationTeaserVO.DEFAULT_TEASER_IMG) : fAssets.get(PublicationTeaserVO.CATEGORY_IMG);
+	}
+	
+	/**
+	 * Returns the singular image for the feature on this document
+	 * @return
+	 */
+	public AssetVO getFeatureAsset() {
+		Map<String, AssetVO> fAssets = new HashMap<>();
+		Collections.shuffle(assets);
+		for (AssetVO vo : assets) {
+			if (AssetType.FEATURE_IMG.equals(vo.getAssetType())) {
+				if (vo.getObjectKeyId().equals(documentId)) return vo;
+				else if (PublicationTeaserVO.DEFAULT_FEATURE_IMG.equals(vo.getObjectKeyId()))
+					fAssets.put(PublicationTeaserVO.DEFAULT_FEATURE_IMG, vo);
+				else fAssets.put(PublicationTeaserVO.CATEGORY_IMG, vo);
+			}
+		}
+		
+		return (fAssets.size() == 1) ? fAssets.get(PublicationTeaserVO.DEFAULT_FEATURE_IMG) : fAssets.get(PublicationTeaserVO.CATEGORY_IMG);
+
 	}
 
 	/*

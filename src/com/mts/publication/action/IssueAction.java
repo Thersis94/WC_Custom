@@ -87,7 +87,9 @@ public class IssueAction extends SBActionAdapter {
 		sql.append("on a.editor_id = b.user_id ");
 		sql.append("left outer join ( ");
 		sql.append("select issue_id, count(*) as article_count ");
-		sql.append("from ").append(getCustomSchema()).append("mts_document ");
+		sql.append("from ").append(getCustomSchema()).append("mts_document d ");
+		sql.append("inner join sb_action s on d.action_group_id = s.action_group_id ");
+		sql.append("and pending_sync_flg = 0 ");
 		sql.append("group by issue_id ");
 		sql.append(") c on a.issue_id = c.issue_id ");
 		sql.append("where publication_id = ? ");

@@ -7,9 +7,15 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 // MTS Libs
+import com.mts.publication.data.AssetVO;
 import com.mts.publication.data.MTSDocumentVO;
+import com.mts.publication.data.PublicationTeaserVO;
+import com.mts.publication.data.PublicationVO;
+import com.mts.subscriber.data.MTSUserVO;
 
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
@@ -18,6 +24,8 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.common.html.BSTableControlVO;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.*;
+import com.siliconmtn.db.pool.SMTDBConnection;
+import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.util.StringUtil;
 
 //WC Libs
@@ -57,6 +65,17 @@ public class IssueArticleAction extends SBActionAdapter {
 	 */
 	public IssueArticleAction(ActionInitVO actionInit) {
 		super(actionInit);
+	}
+	
+	/**
+	 * 
+	 * @param db
+	 * @param attributes
+	 */
+	public IssueArticleAction(SMTDBConnection db, Map<String, Object> attributes) {
+		super();
+		this.setDBConnection(db);
+		this.setAttributes(attributes);
 	}
 	
 	/*
@@ -109,6 +128,85 @@ public class IssueArticleAction extends SBActionAdapter {
 		DBProcessor db = new DBProcessor(getDBConnection());
 		doc.setCategories(db.executeSelect(s, Arrays.asList(doc.getActionId()), new WidgetMetadataVO()));
 		return doc;
+	}
+	
+	/**
+	 * 
+	 * @param publicationId
+	 * @return
+	 */
+	public PublicationTeaserVO getArticleTeasers(String publicationId) {
+		StringBuilder sql = new StringBuilder(768);
+		sql.append("select a.document_id, c.action_id, first_nm, last_nm, a.publish_dt, a.author_id, ");
+		sql.append("c.action_nm, c.action_desc, b.issue_nm, m.field_nm as value_txt, m.widget_meta_data_id, p.publication_id, ");
+		sql.append("publication_nm, p.publication_desc ");
+		sql.append("from custom.mts_document a ");
+		sql.append("inner join custom.mts_issue b on a.issue_id = b.issue_id ");
+		sql.append("inner join custom.mts_publication p on b.publication_id = p.publication_id ");
+		sql.append("inner join sb_action c on a.action_group_id = c.action_group_id and c.pending_sync_flg = 0 ");
+		sql.append("inner join custom.mts_user u on a.author_id = u.user_id ");
+		sql.append("left outer join ( ");
+		sql.append("select action_id, field_nm, b.widget_meta_data_id ");
+		sql.append("from widget_meta_data_xr a ");
+		sql.append("inner join widget_meta_data b on a.widget_meta_data_id = b.widget_meta_data_id ");
+		sql.append("where organization_id = 'MTS' and parent_id = 'CHANNELS' ");
+		sql.append(") m on c.action_id = m.action_id ");
+		sql.append("where issue_dt in ( ");
+		sql.append("select max(issue_dt) as latest ");
+		sql.append("from custom.mts_issue ");
+		sql.append("where publication_id = ? ");
+		sql.append(") and publish_dt is not null ");
+		
+		PublicationTeaserVO ptvo = null;
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, publicationId);
+			
+			try (ResultSet rs = ps.executeQuery()) {
+				while (rs.next()) {
+					if (ptvo == null) {
+						ptvo = new PublicationTeaserVO(rs);
+						ptvo.setPublication(new PublicationVO(rs));
+					}
+					
+					MTSDocumentVO doc = new MTSDocumentVO(rs);
+					doc.addCategory(new WidgetMetadataVO(rs));
+					doc.setAuthor(new MTSUserVO(rs));
+					ptvo.addDocument(doc);
+				}
+			}
+			
+			if (ptvo != null) assignAssets(ptvo);
+		} catch (Exception e) {
+			log.error("Unable to retrieve teaser data", e);
+		}
+		
+		return ptvo;
+	}
+	
+	/**
+	 * Adds the assets to the teaser vo
+	 * @param ptvo
+	 * @throws SQLException
+	 * @throws DatabaseException 
+	 */
+	private void assignAssets(PublicationTeaserVO ptvo) throws SQLException, DatabaseException {
+		Set<String> ids = ptvo.getAssetObjectKeys();
+		StringBuilder sql = new StringBuilder(128);
+		sql.append("select * from custom.mts_document_asset ");
+		sql.append("where asset_type_cd in ('TEASER_IMG','FEATURE_IMG') ");
+		sql.append("and object_key_id in ( ");
+		sql.append(DBUtil.preparedStatmentQuestion(ids.size())).append(") ");
+		sql.append("order by object_key_id");
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			DBUtil.preparedStatementValues(ps, 1, new ArrayList<Object>(ids));
+			
+			try (ResultSet rs = ps.executeQuery()) {
+				while(rs.next()) {
+					ptvo.addAsset(new AssetVO(rs));
+				}
+			}
+		}
 	}
 	
 	/**

@@ -30,9 +30,9 @@ public class AssetVO extends BeanDataVO {
 	 * Enum for the different asset types
 	 */
 	public enum AssetType {
-		THUMBNAIL_IMG("Thumbnail Image"),
+		FEATURE_IMG("Feature Image (255 x 150)"),
 		COVER_IMG("Cover Image"),
-		TEASER_IMG("Teaser Image"),
+		TEASER_IMG("Teaser Image (540 x 360)"),
 		PDF_DOC("PDF Document"),
 		EXCEL_DOC("Excel Document"),
 		GEN_IMAGE("General Image");
