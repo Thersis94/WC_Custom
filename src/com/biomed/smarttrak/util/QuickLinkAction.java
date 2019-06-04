@@ -55,7 +55,7 @@ public class QuickLinkAction extends SBActionAdapter{
 		req.setParameter("organizationId", orgId);
 		req.setParameter("actionId", actionInit.getActionId());
 		String filePath = req.getParameter("filePathText");
-		req.setParameter("fileType", filePath.substring(filePath.indexOf('.')+1));
+		req.setParameter("fileType", filePath.substring(filePath.lastIndexOf('.')+1));
 		req.setParameter("fileName", filePath.substring(filePath.indexOf("--")+2));
 
 		try {
