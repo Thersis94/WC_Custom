@@ -155,7 +155,8 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 		// triggers a need for approval.
 		TicketLedgerVO ledger;
 		StatusCode status;
-		if (isReadyForApproval(td)) {
+		
+		if (isReadyForApproval(td) && req.getBooleanParameter("hasIncompleteCallData")) {
 			ledger = changeStatus(td.getTicketId(), user.getUserId(), StatusCode.USER_DATA_APPROVAL_PENDING, LedgerSummary.ASSET_LOADED.summary, null);
 			status = ledger.getStatusCode();
 		} else {
@@ -359,16 +360,18 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 			if (prevApproval == null || prevApproval == ApprovalCode.REJECTED) 
 				approvals.put(attributeCode, thisApproval);
 		}
-		
 		// Manage the status based on approval
 		if (approvals.get(PROOF_PURCHASE) != null && approvals.get(SERIAL_NO) != null && approvals.get(EQUIPMENT_IMAGE) != null) {
 			
 			boolean popHasApproval = !approvals.get(PROOF_PURCHASE).isRejected();
 			boolean snHasApproval = !approvals.get(SERIAL_NO).isRejected();
 			boolean eiHasApproval = !approvals.get(EQUIPMENT_IMAGE).isRejected();
-			
-			finalizeApproval(req, popHasApproval && snHasApproval && eiHasApproval , true);
+			if(req.getBooleanParameter("hasIncompleteCallData")) {
+				//if the call data is still incomplete move status 
+				finalizeApproval(req, popHasApproval && snHasApproval && eiHasApproval , true);
+			}
 		}
+		
 	}
 	
 	/**

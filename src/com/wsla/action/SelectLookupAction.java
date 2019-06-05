@@ -573,9 +573,12 @@ public class SelectLookupAction extends SBActionAdapter {
 	 */
 	public List<GenericVO> getLocales() {
 		List<GenericVO> data = new ArrayList<>(8);
+		List<WSLALocales> base = Arrays.asList(WSLALocales.getBaseLocales());
 
 		for (WSLALocales val : WSLALocales.values()) {
-			data.add(new GenericVO(val, val.getDesc()));
+			if (!base.contains(val)) {
+				data.add(new GenericVO(val, val.getDesc()));
+			}
 		}
 
 		return data;
