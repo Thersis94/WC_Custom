@@ -366,7 +366,7 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 			boolean popHasApproval = !approvals.get(PROOF_PURCHASE).isRejected();
 			boolean snHasApproval = !approvals.get(SERIAL_NO).isRejected();
 			boolean eiHasApproval = !approvals.get(EQUIPMENT_IMAGE).isRejected();
-			if(req.getBooleanParameter("hasIncompleteCallData")) {
+			if(!req.getBooleanParameter("hasIncompleteCallData")) {
 				//if the call data is still incomplete move status 
 				finalizeApproval(req, popHasApproval && snHasApproval && eiHasApproval , true);
 			}
