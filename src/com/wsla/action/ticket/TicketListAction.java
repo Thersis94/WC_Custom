@@ -227,7 +227,12 @@ public class TicketListAction extends SimpleActionAdapter {
 	public String getStatusFilter(List<String> statusCodes, String status, List<String> params) {
 		if(!statusCodes.isEmpty() || "CLOSED".equals(status)) {
 			params.addAll("CLOSED".equals(status) ? Arrays.asList(status) : statusCodes);
-			return "and a.status_cd in ( " + DBUtil.preparedStatmentQuestion(statusCodes.size()) + ") ";
+			int questions = statusCodes.size();
+			
+			if (questions == 0 && "CLOSED".equals(status)) {
+				questions = 1;
+			}
+			return "and a.status_cd in ( " + DBUtil.preparedStatmentQuestion(questions) + ") ";
 		} else if (!StringUtil.isEmpty(status) && !"ALL".equals(status)) {
 			return "and a.status_cd != 'CLOSED' ";
 		} 
