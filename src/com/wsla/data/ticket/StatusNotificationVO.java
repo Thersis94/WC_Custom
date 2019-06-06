@@ -13,7 +13,6 @@ import com.siliconmtn.data.parser.BeanDataVO;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
 import com.siliconmtn.util.StringUtil;
-
 // WSLA Libs
 import com.wsla.common.WSLAConstants.WSLARole;
 import com.wsla.common.WSLALocales;
@@ -46,13 +45,13 @@ public class StatusNotificationVO extends BeanDataVO {
 	private String locale;
 	private String roleId;
 	private Date createDate;
-	
+
 	// Helpers
 	private String campaignInstanceName;
 	private String statusCodeName;
 	private String localeName;
 	private String roleNames;
-	
+
 	/**
 	 * 
 	 */
@@ -82,7 +81,7 @@ public class StatusNotificationVO extends BeanDataVO {
 		if (StringUtil.isEmpty(roleId)) return  new ArrayList<>();
 		return Arrays.asList(roleId.split(","));
 	}
-	
+
 	/**
 	 * Sets the name of the roles rather than the list of ids
 	 */
@@ -97,10 +96,10 @@ public class StatusNotificationVO extends BeanDataVO {
 				s.append(role.getRoleName());
 			}
 		}
-		
+
 		roleNames = s.toString();
 	}
-	
+
 	/**
 	 * 
 	 * @return
@@ -109,7 +108,7 @@ public class StatusNotificationVO extends BeanDataVO {
 		if (StringUtil.isEmpty(roleNames)) setRoleNames();
 		return roleNames;
 	}
-	
+
 	/**
 	 * @return the statusNotificationId
 	 */
@@ -176,7 +175,7 @@ public class StatusNotificationVO extends BeanDataVO {
 	/**
 	 * @return the createDate
 	 */
-	@Column(name="create_dt", isInsertOnly=true)
+	@Column(name="create_dt", isInsertOnly=true, isAutoGen=true)
 	public Date getCreateDate() {
 		return createDate;
 	}
@@ -207,7 +206,7 @@ public class StatusNotificationVO extends BeanDataVO {
 	 */
 	public void setLocale(String locale) {
 		this.locale = locale;
-		
+
 		if (locale != null) {
 			localeName = WSLALocales.valueOf(locale).getDesc();
 		}
@@ -218,7 +217,7 @@ public class StatusNotificationVO extends BeanDataVO {
 	 */
 	public void setRoleId(String roleId) {
 		this.roleId = roleId;
-		
+
 		setRoleNames();
 	}
 

@@ -57,7 +57,7 @@ public class UpdateIndexer extends SMTAbstractIndex {
 		// job or right to close it.
 		SolrActionUtil util = new SmarttrakSolrUtil(server);
 		try {
-			util.addDocuments(getDocuments(null));
+			util.addDocuments(getDocuments(new String[0]));
 		} catch (Exception e) {
 			log.error("Failed to index Updates", e);
 		}
@@ -81,11 +81,11 @@ public class UpdateIndexer extends SMTAbstractIndex {
 	 * @throws SQLException
 	 */
 	@SuppressWarnings("unchecked")
-	private List<SolrDocumentVO> getDocuments(String documentId) {
+	private List<SolrDocumentVO> getDocuments(String... documentIds) {
 		UpdatesAction ua = new UpdatesAction();
 		ua.setDBConnection(new SMTDBConnection(dbConn));
 		ua.setAttributes(getAttributes());
-		List<Object> list = ua.getAllUpdates(documentId);
+		List<UpdateVO> list = ua.getAllUpdates(documentIds);
 
 		//Load the Section Tree and set all the Hierarchies.
 		SmarttrakTree tree = ua.loadSections();
@@ -108,8 +108,7 @@ public class UpdateIndexer extends SMTAbstractIndex {
 		log.debug("adding single Update: " + itemIds);
 		SolrClient server = makeServer();
 		try (SolrActionUtil util = new SmarttrakSolrUtil(server)) {
-			for (String id : itemIds)
-				util.addDocuments(getDocuments(id));
+			util.addDocuments(getDocuments(itemIds));
 
 		} catch (Exception e) {
 			log.error("Failed to index Update with id=" + itemIds, e);

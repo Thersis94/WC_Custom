@@ -136,4 +136,3 @@ public class NWSExtendedForecastManager implements ForecastManagerInterface {
 		return gson.fromJson(new String(data), ExtendedForecastVO.class);
 	}
 }
-

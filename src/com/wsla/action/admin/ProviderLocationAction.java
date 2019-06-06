@@ -26,10 +26,12 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
+import com.smt.sitebuilder.action.BatchImport;
 // WC Libs
 import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.wsla.data.provider.ProviderLocationVO;
+import com.wsla.data.provider.ProviderVO;
 
 /****************************************************************************
  * <b>Title</b>: ProviderLocationAction.java
@@ -94,6 +96,14 @@ public class ProviderLocationAction extends BatchImport {
 	public void build(ActionRequest req) throws ActionException {
 		Object msg = getAttribute(AdminConstants.KEY_SUCCESS_MESSAGE);
 		boolean error = false;
+		if(req.hasParameter("fromProviderId") && req.getBooleanParameter("moveAllLocations")) {
+			log.debug("move all locations called");
+			String toProvider = StringUtil.checkVal(req.getParameter("providerId"));
+			String fromProvider = StringUtil.checkVal(req.getParameter("fromProviderId"));
+			transferProviderLocations(toProvider, fromProvider);
+			return;
+		}
+		
 		ProviderLocationVO loc = new ProviderLocationVO(req);
 		try {
 			if (req.getBooleanParameter("mapLocation")) {
@@ -114,6 +124,63 @@ public class ProviderLocationAction extends BatchImport {
 		}
 
 		this.putModuleData("", 0, false, (String)msg, error);
+	}
+
+	/**
+	 * this method takes two provider ids and moves all provider locations 
+	 * @param toProvider
+	 * @param fromProvider
+	 */
+	private void transferProviderLocations(String toProvider, String fromProvider) {
+		Object msg = getAttribute(AdminConstants.KEY_SUCCESS_MESSAGE);
+		boolean error = false;
+		
+		try {
+			//update the locations to the new to provider
+			updateProviderLocations(toProvider, fromProvider);
+		
+			//delete the old from provider
+			removeOutdatedProvider(fromProvider);
+		
+		} catch (Exception e) {
+			error = true;
+			msg = getAttribute(AdminConstants.KEY_ERROR_MESSAGE);
+			log.error("unable to move all provider locations", e);
+			this.putModuleData("", 0, false, (String)msg, error);
+		}
+	}
+
+	/**
+	 * @param fromProvider
+	 * @throws DatabaseException 
+	 * @throws InvalidDataException 
+	 */
+	private void removeOutdatedProvider(String fromProvider) throws InvalidDataException, DatabaseException {
+
+		ProviderVO pvo = new ProviderVO();
+		pvo.setProviderId(fromProvider);
+		
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		db.setGenerateExecutedSQL(log.isDebugEnabled());
+		db.delete(pvo);
+	}
+
+	/**
+	 * @param toProvider
+	 * @param fromProvider
+	 * @throws SQLException 
+	 */
+	private void updateProviderLocations(String toProvider, String fromProvider) throws SQLException {
+		StringBuilder sql = new StringBuilder(128);
+		sql.append("update ").append(getCustomSchema()).append("wsla_provider_location ");
+		sql.append("set provider_id =? ");
+		sql.append("where provider_id = ?");
+		log.debug("sql " + sql.toString() + "|"+toProvider+ "|" +fromProvider);
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, toProvider);
+			ps.setString(2, fromProvider);
+			ps.executeUpdate();
+		}
 	}
 
 	/**

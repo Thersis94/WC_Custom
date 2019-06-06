@@ -306,10 +306,9 @@ public class AccountsReportAction extends SimpleActionAdapter {
 	 */
 	protected void addUserToAccountDivisions(Map<String,List<UserVO>> divs, 
 			UserVO user, String currDivVal) {
+		if (currDivVal == null) currDivVal = "No Division";
 		// if the divs map doesn't have a map entry for the currDivVal, create one
-		if (divs.get(currDivVal) == null) {
-			divs.put(currDivVal, new ArrayList<>());
-		}
+		divs.computeIfAbsent(currDivVal, k -> new ArrayList<>());
 		divs.get(currDivVal).add(user);
 	}
 

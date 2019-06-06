@@ -23,7 +23,7 @@ import com.biomed.smarttrak.vo.LocationVO;
 import com.biomed.smarttrak.vo.ProductVO;
 import com.biomed.smarttrak.vo.SectionVO;
 import com.biomed.smarttrak.action.AdminControllerAction.LinkType;
-
+import com.biomed.smarttrak.action.AdminControllerAction.Status;
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -89,7 +89,7 @@ public class CompanyAction extends SimpleActionAdapter {
 			if (role == null)
 				SecurityController.throwAndRedirect(req);
 
-			CompanyVO vo = retrieveCompany(req.getParameter("reqParam_1"), role, false);
+			CompanyVO vo = retrieveCompany(req.getParameter("reqParam_1"), role, false, false);
 			if (StringUtil.isEmpty(vo.getCompanyId())){
 				PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
 				sbUtil.manualRedirect(req,page.getFullPath());
@@ -111,7 +111,7 @@ public class CompanyAction extends SimpleActionAdapter {
 	 * @param companyId
 	 * @throws ActionException
 	 */
-	public CompanyVO retrieveCompany(String companyId, SmarttrakRoleVO role, boolean bypassProducts) throws ActionException {
+	public CompanyVO retrieveCompany(String companyId, SmarttrakRoleVO role, boolean bypassProducts, boolean allowAll) throws ActionException {
 		StringBuilder sql = new StringBuilder(275);
 		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		sql.append("SELECT c.*, parent.COMPANY_NM as PARENT_NM, d.SYMBOL_TXT ");
@@ -120,10 +120,12 @@ public class CompanyAction extends SimpleActionAdapter {
 		sql.append("ON c.PARENT_ID = parent.COMPANY_ID ");
 		sql.append("LEFT JOIN CURRENCY d on d.CURRENCY_TYPE_ID = c.CURRENCY_TYPE_ID ");
 		sql.append("WHERE c.COMPANY_ID = ? ");
+		if (!allowAll) sql.append("and c.STATUS_NO = ? ");
 
 		DBProcessor db = new DBProcessor(dbConn, (String)attributes.get(Constants.CUSTOM_DB_SCHEMA));
 		List<Object> params = new ArrayList<>();
 		params.add(companyId);
+		if (!allowAll) params.add(Status.P.toString());
 		CompanyVO company;
 		try {
 			List<Object> results = db.executeSelect(sql.toString(), params, new CompanyVO());
@@ -297,15 +299,21 @@ public class CompanyAction extends SimpleActionAdapter {
 	 * @param company
 	 */
 	protected void addAlliances(CompanyVO company) {
-		StringBuilder sql = new StringBuilder(450);
+		StringBuilder sql = new StringBuilder(650);
 		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
-		sql.append("SELECT * FROM ").append(customDb).append("BIOMEDGPS_COMPANY_ALLIANCE_XR cax ");
+		sql.append("SELECT cax.company_alliance_xr_id, cax.alliance_type_id, c.short_nm_txt, cax.reference_txt, c.company_nm, at.type_nm, ");
+		sql.append("at.alliance_type_id, case when c.status_no = 'P' and COUNT(p.product_id) > 0 then cax.rel_company_id else '' end as rel_company_id ");
+		sql.append("FROM ").append(customDb).append("BIOMEDGPS_COMPANY_ALLIANCE_XR cax ");
 		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_ALLIANCE_TYPE at ");
 		sql.append("ON cax.ALLIANCE_TYPE_ID = at.ALLIANCE_TYPE_ID ");
 		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_COMPANY c ");
 		sql.append("ON c.COMPANY_ID = cax.REL_COMPANY_ID ");
+		sql.append("left join ").append(customDb).append("biomedgps_product p on p.company_id = c.company_id ");
 		sql.append("WHERE cax.COMPANY_ID = ? ");
+		sql.append("group by cax.company_alliance_xr_id, cax.alliance_type_id, c.short_nm_txt, cax.reference_txt, ");
+		sql.append("cax.rel_company_id, c.company_nm, at.type_nm, at.alliance_type_id, c.status_no ");
 		sql.append("ORDER BY at.TYPE_NM, c.COMPANY_NM ");
+		log.debug(sql+"|"+company.getCompanyId());
 
 		List<Object> params = new ArrayList<>();
 		params.add(company.getCompanyId());

@@ -61,9 +61,10 @@ public class GridChartAction extends SBActionAdapter {
 		super();
 		sortMapper = new HashMap<>();
 		sortMapper.put("title", "title_nm");
-		sortMapper.put("subtitle", "subtitle_nm");
+		sortMapper.put("subtitle", "coalesce(subtitle_nm, '')");
 		sortMapper.put("approved", "approve_flg");
 		sortMapper.put("lastUpdated", "update_dt");
+		sortMapper.put("archived", "archive_flg");
 	}
 
 	/**
@@ -261,17 +262,72 @@ public class GridChartAction extends SBActionAdapter {
 	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
-		if (Convert.formatBoolean(req.getParameter("deleteLegacy"))) {
-			deactivateLegacy(req.getParameter("slugText"));
-		} else if(req.getBooleanParameter("promoteFlg")) {
-			promoteGridCharts(req);
-		} else if(req.hasParameter("tableData")) {
-			buildGridExcel(req);
-		}else {
-			saveGrid(req);
+		try {
+			/*
+			 * Load the GridVO from database to verify status of grid.  Don't ever
+			 * Always ensure that if a grid has been archived, we know it.
+			 * Protects against other calls that may come in and ensures we don't
+			 * miss something.
+			 */
+			GridVO g = new GridVO(req);
+			if (!StringUtil.isEmpty(g.getGridId())) {
+				DBProcessor dbp = new DBProcessor(dbConn, getCustomSchema());
+				dbp.getByPrimaryKey(g);
+			}
+
+			if(g.isArchived()) {
+				updateArchiveTitle(req);
+			} else if (Convert.formatBoolean(req.getParameter("deleteLegacy"))) {
+				deactivateLegacy(req.getParameter("slugText"));
+			} else if(req.getBooleanParameter("promoteFlg")) {
+				promoteGridCharts(req);
+			} else if(req.hasParameter("tableData")) {
+				buildGridExcel(req);
+			}else {
+				saveGrid(req);
+			}
+		} catch(Exception e) {
+			throw new ActionException(e.getMessage(), e);
 		}
 	}
 
+
+	/**
+	 * Updated an archived Grid.  Only allow Title Updates.
+	 * @param req
+	 */
+	private void updateArchiveTitle(ActionRequest req) {
+		GridVO grid = new GridVO(req);
+		String msg = "You have successfuly saved the grid data";
+		boolean error = false;
+
+		log.debug(req.getParameter(GridVO.JSON_DATA_KEY));
+		Map<String, String> columnMatch = new HashMap<>(grid.getDetails().size());
+
+		String sql = StringUtil.join("update ", getCustomSchema(), "biomedgps_grid set title_nm = ?, update_dt = ? where grid_id = ?;");
+		String title = req.getParameter("title");
+		String gridId = req.getParameter(GRID_ID);
+		try(PreparedStatement ps = dbConn.prepareStatement(sql)) {
+			ps.setString(1, title);
+			ps.setTimestamp(2, Convert.getCurrentTimestamp());
+			ps.setString(3, gridId);
+			ps.executeUpdate();
+		} catch (SQLException e) {
+			log.error("Error Updating Grid Title", e);
+			error = true;
+		}
+
+		// Return the data
+		Map<String, Object> response = new HashMap<>(8);
+		response.put(GRID_ID, grid.getGridId());
+		response.put("gridGroupId", grid.getGridGroupId());
+		response.put(GlobalConfig.SUCCESS_KEY, !error);
+		response.put(ErrorCodes.ERR_JSON_ACTION, msg);
+		response.put(ErrorCodes.ERR_JSON_ACTION, msg);
+		response.put(GlobalConfig.ACTION_DATA_KEY, columnMatch);
+		response.put(GlobalConfig.ACTION_DATA_COUNT, columnMatch.size());
+		putModuleData(response, 0, false, msg, error);
+	}
 
 	/**
 	 * Promote given gridId to replace the records where gridId = gridGroupId.
@@ -683,7 +739,7 @@ public class GridChartAction extends SBActionAdapter {
 		Map<String, GridVO> data = new LinkedHashMap<>();
 		StringBuilder sql = new StringBuilder(800);
 		
-		sql.append("select *, 1 as original from (");
+		sql.append("select * from ( select *, 1 as original from (");
 		sql.append("select a.*, (");
 		sql.append("select count(*) from ").append(schema).append("biomedgps_grid_detail b where a.grid_id = b.grid_id ");
 		sql.append(") as total_rows from ").append(schema).append("biomedgps_grid a ");
@@ -704,7 +760,7 @@ public class GridChartAction extends SBActionAdapter {
 		sql.append("where a.grid_id != a.grid_group_id and archive_flg != true ");
 		if (search.length() > 0) sql.append("and (upper(title_nm) like ? or upper(subtitle_nm) like ?) ");
 		sql.append("order by ").append(sort).append(" ").append(order);
-		sql.append(" limit ? offset ? ) as b ");
+		sql.append(" limit ? offset ? ) as b ) as data ");
 		sql.append("order by original desc, ").append(sort).append(" ").append(order);
 
 		// Loop the data and store

@@ -9,6 +9,7 @@ import static com.wsla.action.admin.ProviderAction.REQ_PROVIDER_ID;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -35,6 +36,7 @@ import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.admin.action.ResourceBundleManagerAction;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
+import com.smt.sitebuilder.resource.WCResourceBundle;
 import com.smt.sitebuilder.security.SBUserRole;
 
 // WSLA Libs
@@ -54,6 +56,9 @@ import com.wsla.action.ticket.TicketSearchAction;
 import com.wsla.action.ticket.TicketEditAction;
 import com.wsla.common.LocaleWrapper;
 import com.wsla.common.WSLALocales;
+import com.wsla.action.ticket.transaction.RefundReplacementTransaction;
+import com.wsla.action.ticket.transaction.RefundReplacementTransaction.ApprovalTypes;
+import com.wsla.action.ticket.transaction.RefundReplacementTransaction.DispositionCodes;
 import com.wsla.common.WSLAConstants.WSLARole;
 import com.wsla.data.product.LocationItemMasterVO;
 import com.wsla.data.product.ProductSetVO;
@@ -141,7 +146,9 @@ public class SelectLookupAction extends SBActionAdapter {
 		keyMap.put("billableType", new GenericVO("getBillableTypes", Boolean.FALSE));
 		keyMap.put("supportNumbers", new GenericVO("getSupportNumbers", Boolean.TRUE));
 		keyMap.put("ticketSearch", new GenericVO("ticketSearch", Boolean.TRUE));
-		keyMap.put("standing", new GenericVO("getStanding", Boolean.FALSE));
+		keyMap.put("refRepApprovalType", new GenericVO("getRefRepApprovalType", Boolean.TRUE));
+		keyMap.put("refRepDispostionType", new GenericVO("getRefRepDispostionType", Boolean.TRUE));
+		keyMap.put("standing", new GenericVO("getStanding", Boolean.TRUE));
 	}
 
 	/**
@@ -196,6 +203,41 @@ public class SelectLookupAction extends SBActionAdapter {
 		return db.executeSelect(sql.toString(), null, new GenericVO());
 	}
 
+	/**
+	 * gets the refund replacement approval type and returns an internationalized name and value
+	 * @return
+	 */
+	public List<GenericVO> getRefRepApprovalType(ActionRequest req) {
+		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
+		UserVO user = (UserVO) getAdminUser(req).getUserExtendedInfo();
+		ResourceBundle rb = WCResourceBundle.getBundle(site.getResourceBundleClass(),user.getUserLocale());
+		String prefix = "refrep.approvalType.";
+		
+		List<GenericVO> list = new ArrayList<>();
+		for (ApprovalTypes at : RefundReplacementTransaction.ApprovalTypes.values()) {
+			list.add(new GenericVO(at.name(), rb.getString(prefix+at.name())));
+		}
+		return list;
+	}
+	
+	/**
+	 * gets the refund replacement disposition type and return an internationalized name and value
+	 * @return
+	 */
+	public List<GenericVO> getRefRepDispostionType(ActionRequest req){
+		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
+		UserVO user = (UserVO) getAdminUser(req).getUserExtendedInfo();
+		ResourceBundle rb = WCResourceBundle.getBundle(site.getResourceBundleClass(),user.getUserLocale());
+		String prefix = "refund.disposition.";
+		
+		List<GenericVO> list = new ArrayList<>();
+		for (DispositionCodes dt : RefundReplacementTransaction.DispositionCodes.values()) {
+			list.add(new GenericVO(dt.name(), rb.getString(prefix+dt.name())));
+		}
+		return list;
+	}
+	
+	
 	/**
 	 * selects the existing attribute groups
 	 * @return
@@ -446,13 +488,13 @@ public class SelectLookupAction extends SBActionAdapter {
 	 * @return
 	 */
 	public List<GenericVO> getStatusCodes(ActionRequest req) {
-		Locale locale = new ResourceBundleManagerAction().getUserLocale(req);
+		LocaleWrapper lw = new LocaleWrapper(req);
 		List<GenericVO> data = new ArrayList<>(64);
 		StatusCodeAction sca = new StatusCodeAction(getDBConnection(), getAttributes());
-		List<StatusCodeVO> codes = sca.getStatusCodes(req.getParameter("roleId"), locale, null);
+		List<StatusCodeVO> codes = sca.getStatusCodes(req.getParameter("roleId"), lw.getLocale(), null);
 		
 		for(StatusCodeVO sc : codes) {
-			data.add(new GenericVO(sc.getStatusCode(), sc.getStatusName()));
+			data.add(new GenericVO(sc.getStatusCode(), sc.getStatusName().trim()));
 		}
 
 		return data;
@@ -480,8 +522,8 @@ public class SelectLookupAction extends SBActionAdapter {
 		List<GenericVO> data = new ArrayList<>(8);
 		
 		if (lw.getLocale().equals(new Locale("es", "MX"))) {
-			data.add(new GenericVO("F", "Female"));
-			data.add(new GenericVO("M", "Hembra"));
+			data.add(new GenericVO("F", "Mujer"));
+			data.add(new GenericVO("M", "Hombre"));
 		} else {
 			data.add(new GenericVO("F", "Female"));
 			data.add(new GenericVO("M", "Male"));
@@ -535,8 +577,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		if (lw.getLocale().equals(new Locale("es", "MX"))) {
 			selectList.add(new GenericVO("Mr.", "Señor"));
 			selectList.add(new GenericVO("Mrs.", "Señora"));
-			selectList.add(new GenericVO("Ms", "Sra"));
-			selectList.add(new GenericVO("Miss", "Perder"));
+			selectList.add(new GenericVO("Miss", "Srta."));
 		} else {
 			selectList.add(new GenericVO("Mr.", "Mr."));
 			selectList.add(new GenericVO("Mrs.", "Mrs."));
@@ -777,13 +818,17 @@ public class SelectLookupAction extends SBActionAdapter {
 	 */
 	public List<GenericVO> getBillableCodes(ActionRequest req) {
 		String btc = req.getParameter("billableTypeCode");
+		boolean isMisc = req.getBooleanParameter("isMiscActivites");
+		BSTableControlVO bst = new BSTableControlVO(req, BillableActivityVO.class);
+		bst.setLimit(1000);
 
 		// Get the codes
-		List<BillableActivityVO> codes = new BillableActivityAction(dbConn, attributes).getCodes(btc);
+		BillableActivityAction ba = new BillableActivityAction(dbConn, attributes);
+		GridDataVO<BillableActivityVO> codes = ba.getCodes(btc, isMisc, bst);
 		List<GenericVO> data = new ArrayList<>();
 
 		// Loop the codes and convert to Generic
-		for (BillableActivityVO code : codes) {
+		for (BillableActivityVO code : codes.getRowData()) {
 			if (code.getActiveFlag() == 0) continue;
 			data.add(new GenericVO(code.getBillableActivityCode(), code.getActivityName()));
 		}
@@ -856,12 +901,23 @@ public class SelectLookupAction extends SBActionAdapter {
 	 * Gets the standing list
 	 * @return
 	 */
-	public List<GenericVO> getStanding() {
+	public List<GenericVO> getStanding(ActionRequest req) {
+		LocaleWrapper lw = new LocaleWrapper(req);
 		List<GenericVO> data = new ArrayList<>();
 		for(Standing standing : Standing.values()) {
-			data.add(new GenericVO(standing.name(), StringUtil.capitalize(standing.name())));
+			String value = standing.name();
+			if (lw.getLocale().equals(new Locale("es", "MX"))) {
+				if (standing.equals(Standing.GOOD)) value="Bueno";
+				else if (standing.equals(Standing.CRITICAL)) value="Crítico";
+				else value="Retrasado";
+			}
+			
+			data.add(new GenericVO(standing.name(), StringUtil.capitalize(value)));
 		}
 		
+		// Sort the collection by the value
+		Collections.sort(data, (a, b) -> ((String)a.getValue()).compareTo(((String)b.getValue())));
+
 		return data;
 	}
 }
