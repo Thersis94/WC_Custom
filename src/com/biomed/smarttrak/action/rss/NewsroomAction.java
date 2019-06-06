@@ -58,6 +58,7 @@ public class NewsroomAction extends SBActionAdapter {
 	private static final String FEED_GROUP_ID = "feedGroupId";
 	private static final String MY_BUCKET_COUNT = "myBucketCount";
 	private static final String BULK_ACTION = "bulkAction";
+	private static final String SEGMENTS_ATTR = "segments";
 
 	/**
 	 * 
@@ -93,12 +94,12 @@ public class NewsroomAction extends SBActionAdapter {
 		} else if(req.hasParameter("isBucket") && req.hasParameter(BUCKET_ID)) {
 			loadBucketArticles(req);
 			loadManagers(req);
-			req.setAttribute("segments", loadSegmentGroupArticles(req));
+			req.setAttribute(SEGMENTS_ATTR, loadSegmentGroupArticles(req));
 		} else if(req.hasParameter("isBucket")) {
 			loadBuckets(req);
 			loadMyCounts(req);
 			loadManagers(req);
-			req.setAttribute("segments", loadSegmentGroupArticles(req));
+			req.setAttribute(SEGMENTS_ATTR, loadSegmentGroupArticles(req));
 		} else if(req.hasParameter(FEED_GROUP_ID) && !req.hasParameter("isConsole")) {
 			//Get the Filtered Updates according to Request.
 			getFilteredArticles(req);
@@ -120,10 +121,10 @@ public class NewsroomAction extends SBActionAdapter {
 			}
 
 			//Load Managers for assigning rss articles.
-			req.setAttribute("segments", loadSegmentGroupArticles(req));
+			req.setAttribute(SEGMENTS_ATTR, loadSegmentGroupArticles(req));
 		} else if(!req.hasParameter("amid")) {
 			loadMyCounts(req);
-			req.setAttribute("segments", loadSegmentGroupArticles(req));
+			req.setAttribute(SEGMENTS_ATTR, loadSegmentGroupArticles(req));
 
 		}
 	}
