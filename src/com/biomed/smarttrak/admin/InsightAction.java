@@ -130,7 +130,7 @@ public class InsightAction extends ManagementAction {
 	private void loadPreview(ActionRequest req) throws ActionException {
 		setAttribute(Constants.PAGE_PREVIEW, true);
 		ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
-		mod.setAttribute(ModuleVO.ATTRIBUTE_1, mod.getIntroText());
+		mod.setAttribute(ModuleVO.ATTRIBUTE_1, mod.getActionUrl());
 		ActionInterface ai = new com.biomed.smarttrak.action.InsightAction();
 		ai.setActionInit(actionInit);
 		ai.setDBConnection(dbConn);
