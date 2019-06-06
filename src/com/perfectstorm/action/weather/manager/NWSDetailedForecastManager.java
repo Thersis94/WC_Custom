@@ -4,7 +4,10 @@ import java.io.IOException;
 import java.lang.reflect.Method;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -174,9 +177,15 @@ public class NWSDetailedForecastManager implements ForecastManagerInterface {
 				int day = date.getDayOfMonth() + ((date.getHour() + durHour) / 24);
 				day = day > monthLen ? day - monthLen : day;
 				
-				// Dynamically populate the value into the associated VO
+				// Set the forecast dates in utc and local to the station
 				ForecastVO fvo = forecast.get(day + "_" + hour);
-				fvo.setStartDate(Date.from(date.plusHours(durHour).atZone(ZoneId.systemDefault()).toInstant()));
+				ZonedDateTime forecastDate = date.plusHours(durHour).atZone(ZoneId.systemDefault());
+				fvo.setStartDate(Date.from(forecastDate.toInstant()));
+				
+				ZoneOffset zoneOffset = OffsetDateTime.now(ZoneId.of(station.getTimezoneCode())).getOffset();
+				fvo.setLocalStartDate(Date.from(forecastDate.plusSeconds(zoneOffset.getTotalSeconds()).toInstant()));
+				
+				// Dynamically populate the value into the associated VO
 				double normalizedValue = VenueForecastManager.normalizeByUnitOfMeasure(value.getValue(), unitOfMeasure);
 				try {
 					Method elementGetter = fvo.getClass().getMethod(elementGetMethod);
@@ -264,5 +273,6 @@ public class NWSDetailedForecastManager implements ForecastManagerInterface {
 		// Parse the data into an object
 		return gson.fromJson(new String(gridData), WeatherDetailVO.class);
 	}
+
 }
 

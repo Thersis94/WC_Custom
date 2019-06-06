@@ -3,8 +3,6 @@ package com.wsla.common;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.log4j.Logger;
-
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.util.EnumUtil;
 import com.wsla.common.WSLAConstants.WSLARole;
@@ -25,19 +23,13 @@ import com.wsla.data.ticket.UserVO;
  * @updates:
  ****************************************************************************/
 public class UserSqlFilter {
-	
-	/**
-	 * Sets up a logger for this class
-	 */
-	protected static Logger log = Logger.getLogger(UserSqlFilter.class);
-	
+
 	private WSLARole role;
 	private String schema;
 	private UserVO user;
 
 	/**
 	 * Constructor for creating user filters
-	 * 
 	 * @param user
 	 * @param roleId
 	 * @param schema
@@ -45,7 +37,7 @@ public class UserSqlFilter {
 	public UserSqlFilter(UserVO user, String roleId, String schema) {
 		this.user = user;
 		this.schema = schema;
-		
+
 		switch (roleId) {
 			case "0":
 				role = WSLARole.PUBLIC;
@@ -60,26 +52,26 @@ public class UserSqlFilter {
 				role = EnumUtil.safeValueOf(WSLARole.class, roleId, WSLARole.PUBLIC);
 		}
 	}
-	
+
+
 	/**
 	 * Returns a filter for ticket based queries, according to the user's role.
 	 * This is an inner join filter and must be placed with the other tables in the query.
-	 * 
-	 * @param ticketAlias - wsla_ticket table alias
+	 * @param tableAlias - wsla_ticket table alias
 	 * @param params
 	 * @return
 	 */
-	public String getTicketFilter(String ticketAlias, List<Object> params) {
+	public String getTicketFilter(String tableAlias, List<Object> params) {
 		StringBuilder sql = new StringBuilder(200);
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("wsla_ticket_assignment taf on ");
-		sql.append(ticketAlias).append(".ticket_id = taf.ticket_id and taf.location_id = ? and taf.assg_type_cd = ? ");
-		
+		sql.append(tableAlias).append(".ticket_id = taf.ticket_id and taf.location_id = ? and taf.assg_type_cd = ? ");
+
 		// Use a temporary params list, as they may or may not be used
 		List<Object> filterParams = new ArrayList<>();
-		filterParams.add(user.getLocationId());
-		
+		filterParams.add(user != null ? user.getLocationId() : null);
+
 		// Add parameters based on the role
-		switch(role) {
+		switch (role) {
 			case WSLA_SERVICE_CENTER:
 				filterParams.add(TypeCode.CAS.name());
 				break;
@@ -93,7 +85,7 @@ public class UserSqlFilter {
 				sql.setLength(0);
 				filterParams.clear();
 		}
-		
+
 		// Finalize the filter to be added to the query
 		params.addAll(filterParams);
 		return sql.toString();

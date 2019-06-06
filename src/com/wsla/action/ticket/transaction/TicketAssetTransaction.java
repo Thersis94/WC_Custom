@@ -1,12 +1,12 @@
 package com.wsla.action.ticket.transaction;
 
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.sql.SQLException;
 
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
@@ -16,7 +16,10 @@ import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
+import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.EnumUtil;
+import com.siliconmtn.util.StringUtil;
+import com.smt.sitebuilder.common.constants.Constants;
 // WC Libs
 import com.wsla.action.ticket.BaseTransactionAction;
 import com.wsla.action.ticket.CASSelectionAction;
@@ -58,6 +61,8 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 	 */
 	public static final String PROOF_PURCHASE = "attr_proofPurchase";
 	public static final String SERIAL_NO = "attr_serialNumberImage";
+	public static final String EQUIPMENT_IMAGE = "attr_unitImage";
+	public static final int STATUS_NOT_FOUND = 2;
 	
 	/**
 	 * 
@@ -80,17 +85,48 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 	@Override
 	public void build(ActionRequest req) throws ActionException {
 		try {
+			
+			//if request is a bypass only bypass
+			if(req.hasParameter("isBypass")) {
+				TicketVO ticket = new TicketEditAction(getDBConnection(), getAttributes()).getBaseTicket(StringUtil.checkVal(req.getParameter("ticketId")));
+				UserDataVO profile = (UserDataVO)req.getSession().getAttribute(Constants.USER_DATA);
+				UserVO user = (UserVO)profile.getUserExtendedInfo();
+				byPassAsset(ticket, user, req);
+			}
+			//if request is an approvale only approve
 			if (req.hasParameter("isApproval")) {
 				approveAsset(req);
-			} else {
+			} 
+			
+			//if its not a bypass or an approval save
+			if(!req.hasParameter("isBypass") && !req.hasParameter("isApproval")) {
 				saveAsset(req);
 			}
+			
+			
 		} catch (InvalidDataException | DatabaseException e) {
 			log.error("Unable to save asset", e);
 			putModuleData("", 0, false, e.getLocalizedMessage(), true);
 		}
 	}
 	
+	/**
+	 * used to by pass having to save assets
+	 * @param req 
+	 * @param req
+	 */
+	private void byPassAsset(TicketVO ticket, UserVO user, ActionRequest req) {
+		
+		try {
+			addLedger(ticket.getTicketId(), user.getUserId(), ticket.getStatusCode(), LedgerSummary.ASSETS_BYPASSED.summary, null);
+			finalizeApproval(req, true, true);
+		} catch (DatabaseException e) {
+			log.error("could not change status ",e);
+			putModuleData(ticket, 0, false, e.getLocalizedMessage(), true);
+		}
+		
+	}
+
 	/**
 	 * Saves a file asset loaded into the system
 	 * @param req
@@ -143,8 +179,11 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 
 		if("attr_credit_memo".equalsIgnoreCase(req.getParameter("attributeCode"))) {
 			log.debug(" save the attribute id in credit memo table");
-			saveMemoAssetId(req.getParameter("creditMemoId"), td.getDataEntryId(), req.getDoubleParameter("refundAmount"), req.getParameter("approvedBy"));
-			
+			CreditMemoVO cmvo = new CreditMemoVO(req);
+			cmvo.setAssetId(td.getDataEntryId());
+			log.debug(cmvo);
+			saveMemoAssetId(cmvo);
+			addLedger(td.getTicketId(), user.getUserId(), null, LedgerSummary.CREDIT_MEMO_APPROVED.summary, null);
 		}
 	}
 	
@@ -155,12 +194,8 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 	 * @param ticketId
 	 * @param dataEntryId
 	 */
-	private void saveMemoAssetId(String creditMemoId, String dataEntryId, Double refundAmount, String approvedBy) {
-		CreditMemoVO cmvo = new CreditMemoVO();
-		cmvo.setAssetId(dataEntryId);
-		cmvo.setCreditMemoId(creditMemoId);
-		cmvo.setRefundAmount(refundAmount);
-		cmvo.setApprovedBy(approvedBy);
+	private void saveMemoAssetId(CreditMemoVO cmvo) {
+	
 		cmvo.setApprovalDate(new Date());
 		cmvo.setUpdateDate(new Date());
 		
@@ -168,11 +203,15 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 		fields.add("asset_id");
 		fields.add("refund_amount_no");
 		fields.add("approved_by_txt");
+		fields.add("bank_nm");
+		fields.add("account_no");
+		fields.add("transfer_cd");
 		fields.add("approval_dt");
 		fields.add("credit_memo_id");
+
 		
 		StringBuilder sql = new StringBuilder(93);
-		sql.append("update ").append(getCustomSchema()).append("wsla_credit_memo set asset_id = ?, refund_amount_no = ?, approved_by_txt = ?, approval_dt = ?  where credit_memo_id = ? ");
+		sql.append("update ").append(getCustomSchema()).append("wsla_credit_memo set asset_id = ?, refund_amount_no = ?, approved_by_txt = ?, bank_nm = ?, account_no = ?, transfer_cd = ?, approval_dt = ?  where credit_memo_id = ? ");
 		
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		try {
@@ -199,7 +238,8 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 		// Retailers aren't required to submit a POP.
 		ProductOwner owner = getProductOwnerType(td.getTicketId());
 		int popApproval = getDefaultPopApprovalLevel(owner);
-		int snApproval = 2;
+		int snApproval = STATUS_NOT_FOUND;
+		int eqImageApproval = STATUS_NOT_FOUND;
 		
 		// Determine the approval levels for each asset type requiring approval
 		for (TicketDataVO asset : assets) {
@@ -210,11 +250,15 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 				popApproval = getApprovalLevel(popApproval, approvalLevel);
 			else if (SERIAL_NO.equals(attributeCode))
 				snApproval = getApprovalLevel(snApproval, approvalLevel);
+			else if (EQUIPMENT_IMAGE.equals(attributeCode))
+				eqImageApproval = getApprovalLevel(eqImageApproval, approvalLevel);
 		}
 		
-		// Approval is not needed if both are approved or at least one hasn't been submitted
+		// Approval is not needed if all three are approved or at least one hasn't been submitted
 		int approvedLevel = ApprovalCode.APPROVED.getLevel();
-		if ((popApproval == approvedLevel && snApproval == approvedLevel) || popApproval == 2 || snApproval == 2)
+		boolean approvalLevelCheck = getApproveLevelCheck(popApproval,snApproval, eqImageApproval, approvedLevel);
+		boolean pendingLevelCheck = getPendingCheck(popApproval,snApproval, eqImageApproval);
+		if (approvalLevelCheck || pendingLevelCheck)
 			return false;
 		
 		// Approval is needed when one or both are in the UNKNOWN state
@@ -222,6 +266,29 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 		return popApproval == unknownApprovalLevel || snApproval == unknownApprovalLevel;
 	}
 	
+	/**
+	 * checking that the images have a known status
+	 * @param popApproval
+	 * @param snApproval
+	 * @param eqImageApproval
+	 * @return
+	 */
+	private boolean getPendingCheck(int popApproval, int snApproval, int eqImageApproval) {
+		return (popApproval == STATUS_NOT_FOUND || snApproval == STATUS_NOT_FOUND || eqImageApproval == STATUS_NOT_FOUND);
+	}
+
+	/**
+	 * checking if the images have an approved status
+	 * @param popApproval
+	 * @param snApproval
+	 * @param eqImageApproval
+	 * @param approvedLevel
+	 * @return
+	 */
+	private boolean getApproveLevelCheck(int popApproval, int snApproval, int eqImageApproval, int approvedLevel) {
+		return (popApproval == approvedLevel && snApproval == approvedLevel && eqImageApproval == approvedLevel) ;
+	}
+
 	/**
 	 * Determines the current owner type
 	 * 
@@ -274,10 +341,25 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 		TicketDataVO td = new TicketDataVO(req);
 		td.setUpdateDate(new Date());
 		saveApproval(td);
+		
+		//Write ledger entry for each rejection or approval here.
+		boolean isApproved = td.getApprovalCode() == ApprovalCode.APPROVED;
+		String summary = isApproved ? LedgerSummary.ASSET_APPROVED.summary : LedgerSummary.ASSET_REJECTED.summary;
+		
+		//if its not approved we need to capture the text added in for the rejection.  
+		//	which is stored in ticket data meta value 1
+		if (!isApproved && req.hasParameter("metaValue1")) {
+			summary = summary + ": " + StringUtil.checkVal(req.getStringParameter("metaValue1"));
+		}
+		
+		UserVO user = (UserVO) getAdminUser(req).getUserExtendedInfo();
+		addLedger(td.getTicketId(), user.getUserId() , null, summary, null);
 
-		// Ticket status is only managed when approving/rejecting a POP or SN
-		if (PROOF_PURCHASE.equals(td.getAttributeCode()) || SERIAL_NO.equals(td.getAttributeCode())) 
+		// Ticket status is only managed when approving/rejecting a POP, SN or equipment image
+		if (PROOF_PURCHASE.equals(td.getAttributeCode()) || SERIAL_NO.equals(td.getAttributeCode()) || EQUIPMENT_IMAGE.equals(td.getAttributeCode())) {
 			manageTicketApproval(td.getTicketId(), req);
+		}
+			
 	}
 	
 	/**
@@ -310,10 +392,13 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 		}
 		
 		// Manage the status based on approval
-		if (approvals.get(PROOF_PURCHASE) != null && approvals.get(SERIAL_NO) != null) {
+		if (approvals.get(PROOF_PURCHASE) != null && approvals.get(SERIAL_NO) != null && approvals.get(EQUIPMENT_IMAGE) != null) {
+			
 			boolean popHasApproval = !approvals.get(PROOF_PURCHASE).isRejected();
 			boolean snHasApproval = !approvals.get(SERIAL_NO).isRejected();
-			finalizeApproval(req, popHasApproval && snHasApproval, true);
+			boolean eiHasApproval = !approvals.get(EQUIPMENT_IMAGE).isRejected();
+			
+			finalizeApproval(req, popHasApproval && snHasApproval && eiHasApproval , true);
 		}
 	}
 	
@@ -350,15 +435,24 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 	 * @param req
 	 * @throws DatabaseException 
 	 */
-	public void finalizeApproval(ActionRequest req, boolean isApproved, boolean isNewTicketAssignment) throws DatabaseException {
+	public void finalizeApproval(ActionRequest req, boolean isApproved, boolean isNewTicketAssignment) throws DatabaseException   {
 		StatusCode status = isApproved ? StatusCode.USER_DATA_COMPLETE : StatusCode.USER_CALL_DATA_INCOMPLETE;
-		String summary = isApproved ? LedgerSummary.ASSET_APPROVED.summary : LedgerSummary.ASSET_REJECTED.summary;
+		String summary = isApproved ? LedgerSummary.FINAL_ASSET_APPROVED.summary : LedgerSummary.FINAL_ASSET_REJECTED.summary;
+		
+		//if its not approved we need to capture the text added in for the rejection.  
+		//	which is stored in ticket data meta value 1
+		if (!isApproved && req.hasParameter("metaValue1")) {
+			summary = summary + ": " + StringUtil.checkVal(req.getStringParameter("metaValue1"));
+		}
 		
 		// Update the status based on approval or rejection.
 		TicketVO ticket = new TicketVO(req);
 		UserVO user = (UserVO) getAdminUser(req).getUserExtendedInfo();
+		
+		
 		TicketLedgerVO ledger = changeStatus(ticket.getTicketId(), user.getUserId(), status, summary, null);
 		buildNextStep(ledger.getStatusCode(), null, false);
+		
 		if (!isApproved) return;
 
 		// Assign the nearest CAS
@@ -366,11 +460,11 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 		List<GenericVO> locations = csa.getUserSelectionList(ticket.getTicketId(), user.getLocale());
 		if (!locations.isEmpty()) {
 			GenericVO casLocation = locations.get(0);
-			
+
 			TicketAssignmentVO tAss = new TicketAssignmentVO(req);
 			tAss.setLocationId(casLocation.getKey().toString());
 			tAss.setTypeCode(TypeCode.CAS);
-			
+
 			if(isNewTicketAssignment) tAss.setTicketAssignmentId(null);
 
 			try {
@@ -381,6 +475,7 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 				throw new DatabaseException(e);
 			}
 		}
+
 	}
 }
 

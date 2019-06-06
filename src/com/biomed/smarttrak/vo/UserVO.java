@@ -113,6 +113,13 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 		}
 		public int getCode() { return cd; }
 		public String getLabel() { return label; }
+		public static Status getStatusFromCode(int code) {
+			for (Status s : Status.values()) {
+				if (s.getCode() == code)
+					return s;
+			}
+			return null;
+		}
 	}
 
 	/**
