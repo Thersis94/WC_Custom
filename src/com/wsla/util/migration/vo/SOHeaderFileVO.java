@@ -3,6 +3,9 @@ package com.wsla.util.migration.vo;
 import java.util.Date;
 
 import com.siliconmtn.annotations.Importable;
+import com.siliconmtn.util.StringUtil;
+import com.wsla.data.ticket.StatusCode;
+import com.wsla.data.ticket.TicketOriginCode;
 
 /****************************************************************************
  * <p><b>Title:</b> SOHeaderFileVO.java</p>
@@ -31,8 +34,10 @@ public class SOHeaderFileVO {
 	private String custName;
 	private String custAddress1;
 	private String custAddress2;
+	private String custCity;
 	private String custState;
 	private String custZip;
+	private String custCountry;
 	private String custPhone;
 	private String custContact;
 	private String problemCode; //reported problem
@@ -47,6 +52,8 @@ public class SOHeaderFileVO {
 	private String userArea1;
 	private String userArea2;
 	private String userArea3;
+	private String emailAddress;
+	private String productCategory;
 
 	public String getSoNumber() {
 		return soNumber;
@@ -91,10 +98,17 @@ public class SOHeaderFileVO {
 		return custState;
 	}
 	public String getCustZip() {
-		return custZip;
+		//flush all zeros
+		return custZip == null || custZip.matches("0+") ? null : custZip;
 	}
 	public String getCustPhone() {
-		return custPhone;
+		custPhone = StringUtil.removeNonNumeric(custPhone);
+		if (custPhone == null || custPhone.length() < 11) {
+			return custPhone;
+		} else {
+			//return 10 digits from the right - which gets rid of weird area and country codes
+			return custPhone.substring(custPhone.length()-10);
+		}
 	}
 	public String getCustContact() {
 		return custContact;
@@ -112,10 +126,24 @@ public class SOHeaderFileVO {
 		return operator;
 	}
 	public String getReceivedMethod() {
-		return receivedMethod;
+		if (StringUtil.isEmpty(receivedMethod)) return null;
+		if (receivedMethod.matches("(?i:.*email.*)")) return TicketOriginCode.EMAIL.name();
+		if (receivedMethod.matches("(?i:.*sales?for.*)")) return TicketOriginCode.SALESFORCE.name();
+		return TicketOriginCode.CALL.name(); //LLAMDA - the default per Steve
 	}
 	public String getStatus() {
 		return status;
+	}
+	public StatusCode getStatusCode() {
+		switch (StringUtil.checkVal(status).toUpperCase()) {
+			case "D":
+			case "B":
+			case "C": return StatusCode.CLOSED;
+			case "P": return StatusCode.CAS_ASSIGNED;
+			case "S": return StatusCode.DELIVERY_SCHEDULED;
+			case "E":
+			default: return StatusCode.OPENED;
+		}
 	}
 	public Date getStartDate() {
 		return startDate;
@@ -131,6 +159,18 @@ public class SOHeaderFileVO {
 	}
 	public String getUserArea3() {
 		return userArea3;
+	}	
+	public String getEmailAddress() {
+		return StringUtil.isValidEmail(emailAddress) ? emailAddress : null;
+	}
+	public String getCustCity() {
+		return custCity;
+	}
+	public String getProductCategory() {
+		return StringUtil.checkVal(productCategory, "FPT");
+	}
+	public String getCustCountry() {
+		return custCountry;
 	}
 
 
@@ -245,5 +285,21 @@ public class SOHeaderFileVO {
 	@Importable(name="User Area 3")
 	public void setUserArea3(String userArea3) {
 		this.userArea3 = userArea3;
+	}
+	@Importable(name="Email Address")
+	public void setEmailAddress(String eml) {
+		this.emailAddress = eml;
+	}
+	@Importable(name="Svc City")
+	public void setCustCity(String custCity) {
+		this.custCity = custCity;
+	}
+	@Importable(name="Category")
+	public void setProductCategory(String productCategory) {
+		this.productCategory = productCategory;
+	}
+	@Importable(name="Svc Country Code")
+	public void setCustCountry(String custCountry) {
+		this.custCountry = custCountry;
 	}
 }
