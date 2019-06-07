@@ -34,6 +34,7 @@ public class RSSFeedSegment extends BeanDataVO implements Serializable {
 	private String segmentDesc;
 	private String sectionId;
 	private String sectionNm;
+	private String profileId;
 	private int articleCount;
 	private int orderNo;
 	private Date createDt;
@@ -111,6 +112,11 @@ public class RSSFeedSegment extends BeanDataVO implements Serializable {
 		return sectionNm;
 	}
 
+	@Column(name="PROFILE_ID")
+	public String getProfileId() {
+		return profileId;
+	}
+
 	public List<RSSFeedGroupVO> getGroups() {
 		return groups;
 	}
@@ -167,6 +173,10 @@ public class RSSFeedSegment extends BeanDataVO implements Serializable {
 
 	public void setGroups(List<RSSFeedGroupVO> groups) {
 		this.groups = groups;
+	}
+
+	public void setProfileId(String profileId) {
+		this.profileId = profileId;
 	}
 
 	@BeanSubElement

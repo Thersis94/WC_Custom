@@ -58,6 +58,8 @@ public class NewsroomAction extends SBActionAdapter {
 	private static final String FEED_GROUP_ID = "feedGroupId";
 	private static final String MY_BUCKET_COUNT = "myBucketCount";
 	private static final String BULK_ACTION = "bulkAction";
+	private static final String SEGMENTS_ATTR = "segments";
+
 	/**
 	 * 
 	 */
@@ -92,10 +94,12 @@ public class NewsroomAction extends SBActionAdapter {
 		} else if(req.hasParameter("isBucket") && req.hasParameter(BUCKET_ID)) {
 			loadBucketArticles(req);
 			loadManagers(req);
+			req.setAttribute(SEGMENTS_ATTR, loadSegmentGroupArticles(req));
 		} else if(req.hasParameter("isBucket")) {
 			loadBuckets(req);
 			loadMyCounts(req);
 			loadManagers(req);
+			req.setAttribute(SEGMENTS_ATTR, loadSegmentGroupArticles(req));
 		} else if(req.hasParameter(FEED_GROUP_ID) && !req.hasParameter("isConsole")) {
 			//Get the Filtered Updates according to Request.
 			getFilteredArticles(req);
@@ -117,11 +121,11 @@ public class NewsroomAction extends SBActionAdapter {
 			}
 
 			//Load Managers for assigning rss articles.
-			loadManagers(req);
+			req.setAttribute(SEGMENTS_ATTR, loadSegmentGroupArticles(req));
 		} else if(!req.hasParameter("amid")) {
-			req.setAttribute("segments", loadSegmentGroupArticles(req));
 			loadMyCounts(req);
-			loadManagers(req);
+			req.setAttribute(SEGMENTS_ATTR, loadSegmentGroupArticles(req));
+
 		}
 	}
 
@@ -233,7 +237,7 @@ public class NewsroomAction extends SBActionAdapter {
 	private void getFilteredArticles(ActionRequest req) throws ActionException {
 		//parse the requet object
 		setSolrParams(req);
-		
+	
 		// Pass along the proper information for a search to be done.
 		ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
 		actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
@@ -465,7 +469,7 @@ public class NewsroomAction extends SBActionAdapter {
 		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(1000);
 		sql.append("select a.feed_segment_id, a.feed_group_id, a.feed_group_nm, ");
-		sql.append("b.FEED_SEGMENT_NM, coalesce(d.article_count, 0) as article_count, s.section_nm, b.section_id from ");
+		sql.append("b.FEED_SEGMENT_NM, coalesce(d.article_count, 0) as article_count, s.section_nm, b.section_id, b.profile_id from ");
 		sql.append(schema).append("BIOMEDGPS_FEED_GROUP a ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("BIOMEDGPS_FEED_SEGMENT b ");
 		sql.append("on a.FEED_SEGMENT_ID = b.FEED_SEGMENT_ID ");
@@ -483,7 +487,7 @@ public class NewsroomAction extends SBActionAdapter {
 		sql.append("group by feed_group_id) as d ");
 		sql.append("on a.feed_group_id = d.feed_group_id ");
 		sql.append("group by a.feed_segment_id, a.feed_group_id, a.feed_group_nm, b.feed_segment_id, s.section_nm, s.order_no, d.article_count ");
-		sql.append("order by s.order_no, b.order_no, FEED_GROUP_NM");
+		sql.append("order by s.order_no, b.order_no, FEED_GROUP_NM ");
 		log.debug(sql.toString());
 		return sql.toString();
 	}
