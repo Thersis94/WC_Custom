@@ -1,7 +1,11 @@
 package com.biomed.smarttrak.util;
 
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 // Java 8
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -12,10 +16,10 @@ import org.apache.solr.client.solrj.SolrClient;
 //WC Custom
 import com.biomed.smarttrak.admin.UpdatesAction;
 import com.biomed.smarttrak.vo.UpdateVO;
-
 // SMT base libs
 import com.siliconmtn.db.pool.SMTDBConnection;
-
+import com.siliconmtn.util.StringUtil;
+import com.smt.sitebuilder.common.constants.Constants;
 // WC Core
 import com.smt.sitebuilder.search.SMTAbstractIndex;
 import com.smt.sitebuilder.util.solr.SolrActionUtil;
@@ -35,7 +39,7 @@ import com.smt.sitebuilder.util.solr.SolrDocumentVO;
 public class UpdateIndexer extends SMTAbstractIndex {
 
 	public static final String INDEX_TYPE = "BIOMED_UPDATE";
-
+	private static final int BATCH_SIZE = 10000;
 	public UpdateIndexer(Properties config) {
 		super(config);
 	}
@@ -56,13 +60,49 @@ public class UpdateIndexer extends SMTAbstractIndex {
 		// This server was given to this method and it is not this method's
 		// job or right to close it.
 		SolrActionUtil util = new SmarttrakSolrUtil(server);
+		List<String> tempIds = new ArrayList<>();
+		int i = 0;
 		try {
-			util.addDocuments(getDocuments(new String[0]));
+			List<String> docIds = loadUpdateIds();
+			Iterator<String> docIter = docIds.iterator();
+
+			while(docIter.hasNext()) {
+
+				//If we have proper number of companies, perform full lookup and send to Solr.
+				if(i > 0 && i % BATCH_SIZE == 0) {
+					util.addDocuments(getDocuments(tempIds.toArray(new String [tempIds.size()])));
+					log.info(String.format("Processed %d updates of %d", tempIds.size(), i));
+					tempIds.clear();
+				}
+				tempIds.add(docIter.next());
+				docIter.remove();
+				i++;
+			}
+			util.addDocuments(getDocuments(tempIds.toArray(new String [tempIds.size()])));
+			log.info(String.format("Processed %d updates of %d", tempIds.size(), i));
 		} catch (Exception e) {
 			log.error("Failed to index Updates", e);
 		}
 	}
 
+
+	/**
+	 * Load a List of all Update Ids
+	 * @return
+	 * @throws SQLException
+	 */
+	private List<String> loadUpdateIds() throws SQLException {
+		String sql = StringUtil.join("select update_id from ", getAttributes().get(Constants.CUSTOM_DB_SCHEMA).toString(), "biomedgps_update");
+		List<String> updateIds = new ArrayList<>();
+		try(PreparedStatement ps = dbConn.prepareStatement(sql)) {
+			ResultSet rs = ps.executeQuery();
+			while(rs.next()) {
+				updateIds.add(rs.getString("UPDATE_ID"));
+			}
+		}
+
+		return updateIds;
+	}
 
 	/*
 	 * (non-Javadoc)

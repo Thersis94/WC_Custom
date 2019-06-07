@@ -4,5 +4,17 @@
 	"repository" :
 	{	"type" : "git",
 		"url" : "https://github.com/smtadmin/WC_Custom.git"
+	},
+	"release": {
+	  "generateNotes": [{
+	 	"path": "@semantic-release/exec",
+		"cmd": "echo \"version_WC_Custom=${nextRelease.version}\" >> ../wc_branches.properties"	
+	  }],
+	  "plugins": [
+		"@semantic-release/commit-analyzer",
+		"@semantic-release/release-notes-generator",
+		"@semantic-release/exec",
+		"@semantic-release/github"
+	  ]
 	}
 }
