@@ -96,11 +96,11 @@ public class ProductSerialAction extends BatchImport {
 			TicketVO ticket = lookupServiceOrder(productId, req.getParameter("serialNo"));
 			
 			//check the date and warranty max date
-			if(!StringUtil.isEmpty(pwvo.getProviderId())){
+			if(!StringUtil.isEmpty(pwvo.getProviderId()) && req.hasParameter("purchaseDate")){
 				
 				int max = getMaxWarrantyLength(pwvo.getProviderId());
 				Date purchaseDate = req.getDateParameter("purchaseDate");
-				
+
 				long diff = new Date().getTime() - purchaseDate.getTime();
 				long numDays = TimeUnit.DAYS.convert(diff, TimeUnit.MILLISECONDS);
 				

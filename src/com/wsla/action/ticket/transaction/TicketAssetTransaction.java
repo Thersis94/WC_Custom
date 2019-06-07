@@ -136,6 +136,9 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 		TicketDataVO td = new TicketDataVO(req);
 		td.setApprovalCode(ApprovalCode.PENDING);
 		
+		boolean hasIncompleteCallData = req.getBooleanParameter("hasIncompleteCallData");
+		boolean hasApprovableImageAttribute = (PROOF_PURCHASE.equals(td.getAttributeCode()) ||EQUIPMENT_IMAGE.equals(td.getAttributeCode()) || SERIAL_NO.equals(td.getAttributeCode()) );
+		
 		// Get the DB Processor
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		UserVO user = null;
@@ -151,12 +154,13 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 		}
 		
 		
+		
 		// Add a ledger entry, but only change status if the uploaded asset
 		// triggers a need for approval.
 		TicketLedgerVO ledger;
 		StatusCode status;
 		
-		if (isReadyForApproval(td) && req.getBooleanParameter("hasIncompleteCallData")) {
+		if (isReadyForApproval(td) && hasIncompleteCallData) {
 			ledger = changeStatus(td.getTicketId(), user.getUserId(), StatusCode.USER_DATA_APPROVAL_PENDING, LedgerSummary.ASSET_LOADED.summary, null);
 			status = ledger.getStatusCode();
 		} else {
@@ -174,6 +178,11 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 		// Build the additional Ticket Data
 		td.setLedgerEntryId(ledger.getLedgerEntryId());
 		td.setMetaValue(req.getParameter("fileName"));
+		
+		//if we are past the point where we can approve call data
+		if(!hasIncompleteCallData && hasApprovableImageAttribute) {
+			td.setApprovalCode(ApprovalCode.APPROVED);
+		}
 		
 		db.save(td);
 

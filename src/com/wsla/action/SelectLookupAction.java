@@ -857,11 +857,14 @@ public class SelectLookupAction extends SBActionAdapter {
 		BSTableControlVO bst = new BSTableControlVO(req, LocationItemMasterVO.class);
 		InventoryAction pa = new InventoryAction(getAttributes(), getDBConnection());
 		boolean setFlag = req.getBooleanParameter("setFlag");
+		bst.setLimit(40000);
 		GridDataVO<LocationItemMasterVO> data = pa.listInventory(locationId, null, bst, setFlag);
-		
+
 		List<GenericVO> products = new ArrayList<>(data.getRowData().size());
-		for (LocationItemMasterVO lim : data.getRowData())
+		for (LocationItemMasterVO lim : data.getRowData()) {
 			products.add(new GenericVO(lim.getProductId(), lim.getProductName()));
+		}
+			
 
 		return products;
 	}
