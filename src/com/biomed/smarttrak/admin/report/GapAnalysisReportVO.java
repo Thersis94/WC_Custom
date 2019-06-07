@@ -103,11 +103,12 @@ public class GapAnalysisReportVO extends AbstractSBReportVO {
 					url.append(site.getFullSiteAlias()).append(Section.COMPANY.getPageURL());
 					url.append(qs).append(comp.getCompanyId());
 
+					String name = StringUtil.isEmpty(comp.getShortCompanyName())? comp.getCompanyName() : comp.getShortCompanyName();
 					doc.append("<tr>");
 					doc.append("<th class=\"fix\">");
 					doc.append("<div class=\"wrap\">");
-					doc.append("<a href=\"").append(url.toString()).append("\" title=\"").append(comp.getCompanyName());
-					doc.append("\">").append(comp.getShortCompanyName()).append("</a>");
+					doc.append("<a href=\"").append(url.toString()).append("\" title=\"").append(name);
+					doc.append("\">").append(name).append("</a>");
 					doc.append("</div></th>");
 					for(GapCellVO cell : comp.getCells()) {
 						doc.append("<td><div class=\"pill\">");
