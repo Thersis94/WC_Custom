@@ -26,6 +26,7 @@ import com.siliconmtn.common.html.BSTableControlVO;
 import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.db.orm.*;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.StringUtil;
 
 // WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
@@ -70,13 +71,14 @@ public class SelectLookupAction extends SBActionAdapter {
 		keyMap.put("role", new GenericVO("getRoles", Boolean.FALSE));
 		keyMap.put("prefix", new GenericVO("getPrefix", Boolean.FALSE));
 		keyMap.put("gender", new GenericVO("getGenders", Boolean.FALSE));
-		keyMap.put("category", new GenericVO("getCategories", Boolean.FALSE));
+		keyMap.put("category", new GenericVO("getCategories", Boolean.TRUE));
 		keyMap.put("users", new GenericVO("getUsers", Boolean.TRUE));
 		keyMap.put("editors", new GenericVO("getEditors", Boolean.FALSE));
 		keyMap.put("assetTypes", new GenericVO("getAssetTypes", Boolean.FALSE));
 		keyMap.put("publications", new GenericVO("getPublications", Boolean.TRUE));
 		keyMap.put("issues", new GenericVO("getIssues", Boolean.TRUE));
 		keyMap.put("subscriptions", new GenericVO("getSubscriptions", Boolean.FALSE));
+		keyMap.put("articles", new GenericVO("getArticles", Boolean.FALSE));
 	}
 
 	/**
@@ -180,19 +182,22 @@ public class SelectLookupAction extends SBActionAdapter {
 	 * Gets a list of attribute categories
 	 * @return
 	 */
-	public List<GenericVO> getCategories() {
+	public List<GenericVO> getCategories(ActionRequest req) {
 		List<GenericVO> data = new ArrayList<>(64);
 		OrgMetadataAction oma = new OrgMetadataAction(getDBConnection(), getAttributes());
 		List<MetadataVO> items = oma.getOrgMetadata("MTS", null, false);
+		String filter = req.getParameter("parentId");
 		
 		for (MetadataVO md : items) {
-			data.add(new GenericVO(null, md.getFieldName()));
+			if (StringUtil.isEmpty(filter)) data.add(new GenericVO(null, md.getFieldName()));
+			if (! StringUtil.isEmpty(filter) &&  !md.getMetadataId().equals(filter)) continue;
 			
 			for (MetadataVO option : md.getOptions()) {
+				if (! StringUtil.isEmpty(filter) && StringUtil.isEmpty(option.getParentId())) continue;
 				data.add(new GenericVO(option.getMetadataId(), option.getFieldName()));
 			}
 		}
-	
+		
 		return data;
 	}
 
@@ -306,5 +311,23 @@ public class SelectLookupAction extends SBActionAdapter {
 		Collections.sort(data, (a, b) -> ((String)a.getValue()).compareTo((String)b.getValue()));
 		
 		return data;
+	}
+	
+	/**
+	 * Gets a lit of articles.  supports type ahead and full list
+	 * @return
+	 */
+	public List<GenericVO> getArticles() {
+		StringBuilder sql = new StringBuilder(256);
+		sql.append("select a.document_id as key, "); 
+		sql.append("substring(action_nm, 0, 50 + position(' ' in substring(action_nm, 50))) || ");
+		sql.append("CASE WHEN position(' ' in substring(action_nm, 50)) > 0  THEN ' ...' else '' END as value ");
+		sql.append("from custom.mts_document a ");
+		sql.append("inner join sb_action b on a.document_id = b.action_group_id and pending_sync_flg = 0 ");
+		sql.append("order by action_nm ");
+		log.debug(sql.length() + "|" + sql);
+		
+		DBProcessor db = new DBProcessor(getDBConnection());
+		return db.executeSelect(sql.toString(), null, new GenericVO());
 	}
 }

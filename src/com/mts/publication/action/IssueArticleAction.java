@@ -15,6 +15,7 @@ import com.mts.publication.data.AssetVO;
 import com.mts.publication.data.MTSDocumentVO;
 import com.mts.publication.data.PublicationTeaserVO;
 import com.mts.publication.data.PublicationVO;
+import com.mts.publication.data.RelatedArticleVO;
 import com.mts.subscriber.data.MTSUserVO;
 
 // SMT Base Libs
@@ -26,6 +27,7 @@ import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.*;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.exception.DatabaseException;
+import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.util.StringUtil;
 
 //WC Libs
@@ -85,14 +87,39 @@ public class IssueArticleAction extends SBActionAdapter {
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		try {
-			if (req.hasParameter("documentId")) {
+			if (req.hasParameter("related")) {
+				setModuleData(getRelatedArticles(req.getParameter("actionGroupId")));
+			} else if (req.hasParameter("documentId")) {
 				setModuleData(getDocument(req.getParameter("documentId")));
 			} else {
-				setModuleData(getArticles(req));
+				setModuleData(getArticles(new BSTableControlVO(req, MTSDocumentVO.class), req));
 			}
 		} catch (Exception e) {
 			setModuleData(null, 0, e.getLocalizedMessage());
 		}
+	}
+	
+	/**
+	 * 
+	 * @param groupId
+	 * @return
+	 */
+	public List<RelatedArticleVO> getRelatedArticles(String groupId) {
+		StringBuilder sql = new StringBuilder(408);
+		sql.append("select d.action_id, action_nm, publish_dt, first_nm, last_nm, ");
+		sql.append("a.document_id, related_article_id, user_id,f.widget_meta_data_id, f.field_nm, f.parent_id ");
+		sql.append("from custom.mts_related_article a ");
+		sql.append("inner join custom.mts_document b on a.related_document_id = b.document_id ");
+		sql.append("inner join custom.mts_user c on b.author_id = c.user_id ");
+		sql.append("inner join sb_action d on a.related_document_id = d.action_group_id and pending_sync_flg = 0 ");
+		sql.append("left outer join widget_meta_data_xr e on d.action_id = e.action_id ");
+		sql.append("left outer join widget_meta_data f on e.widget_meta_data_id = f.widget_meta_data_id ");
+		sql.append("where a.document_id = ? ");
+		sql.append("order by action_nm, related_article_id ");
+		log.debug(sql.length() + "|" + sql + "|" + groupId);
+		
+		DBProcessor db = new DBProcessor(getDBConnection()); 
+		return db.executeSelect(sql.toString(), Arrays.asList(groupId), new RelatedArticleVO());
 	}
 	
 	/**
@@ -102,7 +129,7 @@ public class IssueArticleAction extends SBActionAdapter {
 	 * @throws SQLException
 	 */
 	public MTSDocumentVO getDocument(String documentId) throws SQLException {
-		StringBuilder sql = new StringBuilder(384);
+		StringBuilder sql = new StringBuilder(640);
 		sql.append("select publication_nm, e.publication_id, d.issue_nm, a.*, b.*, c.* ");
 		sql.append(DBUtil.FROM_CLAUSE).append(getCustomSchema()).append("mts_document a ");
 		sql.append(DBUtil.INNER_JOIN).append("sb_action b on a.action_group_id = b.action_group_id ");
@@ -123,11 +150,23 @@ public class IssueArticleAction extends SBActionAdapter {
 			}
 		}
 		
-		// Get the categories
-		String s = "select * from widget_meta_data_xr where action_id = ?";
-		DBProcessor db = new DBProcessor(getDBConnection());
-		doc.setCategories(db.executeSelect(s, Arrays.asList(doc.getActionId()), new WidgetMetadataVO()));
+		doc.setCategories(getCategories(doc.getActionId()));
 		return doc;
+	}
+	
+	/**
+	 * Gets the categories for the given action id
+	 * @param actionId
+	 * @return
+	 */
+	public List<WidgetMetadataVO> getCategories(String actionId) {
+		// Get the categories
+		StringBuilder s = new StringBuilder(184);
+		s.append("select * from widget_meta_data_xr a inner join widget_meta_data b ");
+		s.append("on a.widget_meta_data_id = b.widget_meta_data_id where action_id = ?");
+		DBProcessor db = new DBProcessor(getDBConnection());
+		
+		return db.executeSelect(s.toString(), Arrays.asList(actionId), new WidgetMetadataVO());
 	}
 	
 	/**
@@ -213,9 +252,7 @@ public class IssueArticleAction extends SBActionAdapter {
 	 * 
 	 * @return
 	 */
-	public GridDataVO<MTSDocumentVO> getArticles(ActionRequest req) {
-		BSTableControlVO bst = new BSTableControlVO(req, MTSDocumentVO.class);
-		
+	public GridDataVO<MTSDocumentVO> getArticles(BSTableControlVO bst, ActionRequest req) {
 		// Add the params
 		List<Object> vals = new ArrayList<>();
 		
@@ -309,24 +346,78 @@ public class IssueArticleAction extends SBActionAdapter {
 	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
-		// Define the vo
-		MTSDocumentVO doc = new MTSDocumentVO(req);
+
 		try {
-			// Save the SB Action data and the WC Document
-			DocumentAction da = new DocumentAction(getDBConnection(), getAttributes());
-			da.update(req);
-			
-			// Save the info into the SB Action
-			DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
-			db.save(doc);
-			
-			// Return the data
-			putModuleData(doc);
+			if (req.hasParameter("assignArticle")) {
+				String did = req.getParameter("documentId");
+				String raid = req.getParameter("relatedDocumentId");
+				setModuleData(assignRelatedArticle(did, raid));
+			} else if (req.hasParameter("deleteRelated")) {
+				deleteRelatedArticle(req.getParameter("relatedArticleId"));
+			} else {
+				setModuleData(saveInfo(req));
+			}
 		} catch (Exception e) {
 			log.error("Unable to save publication info", e);
-			putModuleData(doc, 1, false, e.getLocalizedMessage(), true);
+			putModuleData(null, 0, false, e.getLocalizedMessage(), true);
 		}
 	}
+	
+	/**
+	 * 
+	 * @param req
+	 * @throws InvalidDataException
+	 * @throws com.siliconmtn.db.util.DatabaseException
+	 * @throws ActionException
+	 */
+	public MTSDocumentVO saveInfo(ActionRequest req) 
+	throws InvalidDataException, com.siliconmtn.db.util.DatabaseException, ActionException {
+		// Save the SB Action data and the WC Document
+		MTSDocumentVO doc = new MTSDocumentVO(req);
+		DocumentAction da = new DocumentAction(getDBConnection(), getAttributes());
+		da.update(req);
+		
+		// Save the info into the SB Action
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		db.save(doc);
+		
+		// Return the data
+		return doc;
+	}
+	
+	/**
+	 * Removes a related article assignment
+	 * @param relatedArticleId
+	 * @throws InvalidDataException
+	 * @throws com.siliconmtn.db.util.DatabaseException
+	 */
+	public void deleteRelatedArticle(String relatedArticleId) 
+	throws InvalidDataException, com.siliconmtn.db.util.DatabaseException {
+		RelatedArticleVO vo = new RelatedArticleVO();
+		vo.setRelatedArticleId(relatedArticleId);
+		
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		db.delete(vo);
+	}
+	
 
+	/**
+	 * Assigns a related article to another article
+	 * @param documentId
+	 * @param relatedDocumentId
+	 * @throws InvalidDataException
+	 * @throws com.siliconmtn.db.util.DatabaseException
+	 */
+	public RelatedArticleVO assignRelatedArticle(String documentId, String relatedDocumentId) 
+	throws InvalidDataException, com.siliconmtn.db.util.DatabaseException {
+		if (StringUtil.isEmpty(relatedDocumentId)) throw new InvalidDataException("Related document is required");
+		RelatedArticleVO vo = new RelatedArticleVO();
+		vo.setDocumentId(documentId);
+		vo.setRelatedDocumentId(relatedDocumentId);
+		
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		db.insert(vo);
+		return vo;
+	}
 }
 

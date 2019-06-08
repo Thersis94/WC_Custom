@@ -21,6 +21,8 @@ import com.siliconmtn.db.orm.Table;
 import com.smt.sitebuilder.action.content.DocumentVO;
 import com.smt.sitebuilder.action.metadata.WidgetMetadataVO;
 
+import com.siliconmtn.util.StringUtil;
+
 /****************************************************************************
  * <b>Title</b>: MTSDocumentVO.java
  * <b>Project</b>: WC_Custom
@@ -174,11 +176,20 @@ public class MTSDocumentVO extends DocumentVO {
 	 * @return
 	 */
 	public String getCatList() {
+		return getCatList(null);
+	}
+	
+	/**
+	 * Creates a comma separated list form the collection of categories
+	 * @return
+	 */
+	public String getCatList(String parentId) {
 		if (categories == null || categories.isEmpty()) return "";
 		
 		StringBuilder val = new StringBuilder(64);
 		int i=0;
 		for (WidgetMetadataVO cat : categories) {
+			if (!StringUtil.isEmpty(parentId) && !parentId.contentEquals(cat.getParentId())) continue;
 			if (i++ > 0) val.append(",");
 			val.append(cat.getWidgetMetadataId());
 		}
