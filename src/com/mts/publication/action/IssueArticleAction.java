@@ -260,7 +260,7 @@ public class IssueArticleAction extends SBActionAdapter {
 		StringBuilder sql = new StringBuilder(1280);
 		sql.append("select * from ( ");
 		sql.append("select action_nm, action_desc, publish_dt, b.action_id, b.action_group_id, ");
-		sql.append("b.pending_sync_flg, m.approvable_flg, d.issue_id, d.publication_id, document_id, c.* ");
+		sql.append("b.pending_sync_flg, m.approvable_flg, d.issue_id, d.publication_id, document_id, info_bar_txt, c.* ");
 		sql.append("from ").append(getCustomSchema()).append("mts_document a "); 
 		sql.append("inner join sb_action b on a.action_group_id = b.action_group_id "); 
 		sql.append("inner join module_type m on b.module_type_id = m.module_type_id "); 
@@ -271,7 +271,7 @@ public class IssueArticleAction extends SBActionAdapter {
 		sql.append("where pending_sync_flg > 0 ");
 		sql.append("union ");
 		sql.append("select action_nm, action_desc, publish_dt, b.action_id, b.action_group_id, ");
-		sql.append("b.pending_sync_flg, m.approvable_flg, d.issue_id, d.publication_id, document_id, c.* ");
+		sql.append("b.pending_sync_flg, m.approvable_flg, d.issue_id, d.publication_id, document_id, info_bar_txt, c.* ");
 		sql.append("from ").append(getCustomSchema()).append("mts_document a ");
 		sql.append("inner join sb_action b on a.action_group_id = b.action_group_id "); 
 		sql.append("inner join module_type m on b.module_type_id = m.module_type_id "); 
@@ -354,6 +354,8 @@ public class IssueArticleAction extends SBActionAdapter {
 				setModuleData(assignRelatedArticle(did, raid));
 			} else if (req.hasParameter("deleteRelated")) {
 				deleteRelatedArticle(req.getParameter("relatedArticleId"));
+			} else if (req.hasParameter("saveInfoBar")) {
+				saveInfoBar(new MTSDocumentVO(req));
 			} else {
 				setModuleData(saveInfo(req));
 			}
@@ -361,6 +363,18 @@ public class IssueArticleAction extends SBActionAdapter {
 			log.error("Unable to save publication info", e);
 			putModuleData(null, 0, false, e.getLocalizedMessage(), true);
 		}
+	}
+	
+	/**
+	 * Updates the info bar data
+	 * @param doc
+	 * @throws InvalidDataException
+	 * @throws com.siliconmtn.db.util.DatabaseException
+	 */
+	public void saveInfoBar(MTSDocumentVO doc) 
+	throws InvalidDataException, com.siliconmtn.db.util.DatabaseException {
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		db.update(doc, Arrays.asList("info_bar_txt", "document_id"));
 	}
 	
 	/**

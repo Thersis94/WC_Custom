@@ -50,6 +50,7 @@ public class MTSDocumentVO extends DocumentVO {
 	private String uniqueCode;
 	private String authorId;
 	private String sbActionId;
+	private String infoBar;
 	
 	// Sub-Beans
 	private List<AssetVO> assets = new ArrayList<>();
@@ -246,6 +247,21 @@ public class MTSDocumentVO extends DocumentVO {
 	}
 
 	/**
+	 * @return the sbActionId
+	 */
+	public String getSbActionId() {
+		return sbActionId;
+	}
+
+	/**
+	 * @return the infoBar
+	 */
+	@Column(name="info_bar_txt")
+	public String getInfoBar() {
+		return infoBar;
+	}
+
+	/**
 	 * @param sbActionId the sbActionId to set
 	 */
 	public void setSbActionId(String sbActionId) {
@@ -354,10 +370,10 @@ public class MTSDocumentVO extends DocumentVO {
 	}
 
 	/**
-	 * @return the sbActionId
+	 * @param infoBar the infoBar to set
 	 */
-	public String getSbActionId() {
-		return sbActionId;
+	public void setInfoBar(String infoBar) {
+		this.infoBar = infoBar;
 	}
 }
 
