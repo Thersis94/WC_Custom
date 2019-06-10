@@ -105,12 +105,13 @@ public class IssueArticleAction extends SBActionAdapter {
 	 * @return
 	 */
 	public List<RelatedArticleVO> getRelatedArticles(String groupId) {
+		String schema = getCustomSchema();
 		StringBuilder sql = new StringBuilder(408);
 		sql.append("select d.action_id, action_nm, publish_dt, first_nm, last_nm, ");
 		sql.append("a.document_id, related_article_id, user_id,f.widget_meta_data_id, f.field_nm, f.parent_id ");
-		sql.append("from custom.mts_related_article a ");
-		sql.append("inner join custom.mts_document b on a.related_document_id = b.document_id ");
-		sql.append("inner join custom.mts_user c on b.author_id = c.user_id ");
+		sql.append("from ").append(schema).append("mts_related_article a ");
+		sql.append("inner join ").append(schema).append("mts_document b on a.related_document_id = b.document_id ");
+		sql.append("inner join ").append(schema).append("mts_user c on b.author_id = c.user_id ");
 		sql.append("inner join sb_action d on a.related_document_id = d.action_group_id and pending_sync_flg = 0 ");
 		sql.append("left outer join widget_meta_data_xr e on d.action_id = e.action_id ");
 		sql.append("left outer join widget_meta_data f on e.widget_meta_data_id = f.widget_meta_data_id ");
@@ -176,14 +177,16 @@ public class IssueArticleAction extends SBActionAdapter {
 	 */
 	public PublicationTeaserVO getArticleTeasers(String publicationId) {
 		StringBuilder sql = new StringBuilder(768);
+		String schema = getCustomSchema();
+		
 		sql.append("select a.document_id, c.action_id, first_nm, last_nm, a.publish_dt, a.author_id, ");
 		sql.append("c.action_nm, c.action_desc, b.issue_nm, m.field_nm as value_txt, m.widget_meta_data_id, p.publication_id, ");
 		sql.append("publication_nm, p.publication_desc ");
-		sql.append("from custom.mts_document a ");
-		sql.append("inner join custom.mts_issue b on a.issue_id = b.issue_id ");
-		sql.append("inner join custom.mts_publication p on b.publication_id = p.publication_id ");
+		sql.append("from ").append(schema).append("mts_document a ");
+		sql.append("inner join ").append(schema).append("mts_issue b on a.issue_id = b.issue_id ");
+		sql.append("inner join ").append(schema).append("mts_publication p on b.publication_id = p.publication_id ");
 		sql.append("inner join sb_action c on a.action_group_id = c.action_group_id and c.pending_sync_flg = 0 ");
-		sql.append("inner join custom.mts_user u on a.author_id = u.user_id ");
+		sql.append("inner join ").append(schema).append("mts_user u on a.author_id = u.user_id ");
 		sql.append("left outer join ( ");
 		sql.append("select action_id, field_nm, b.widget_meta_data_id ");
 		sql.append("from widget_meta_data_xr a ");
@@ -192,7 +195,7 @@ public class IssueArticleAction extends SBActionAdapter {
 		sql.append(") m on c.action_id = m.action_id ");
 		sql.append("where issue_dt in ( ");
 		sql.append("select max(issue_dt) as latest ");
-		sql.append("from custom.mts_issue ");
+		sql.append("from ").append(schema).append("mts_issue ");
 		sql.append("where publication_id = ? ");
 		sql.append(") and publish_dt is not null ");
 		
@@ -231,7 +234,7 @@ public class IssueArticleAction extends SBActionAdapter {
 	private void assignAssets(PublicationTeaserVO ptvo) throws SQLException, DatabaseException {
 		Set<String> ids = ptvo.getAssetObjectKeys();
 		StringBuilder sql = new StringBuilder(128);
-		sql.append("select * from custom.mts_document_asset ");
+		sql.append("select * from ").append(getCustomSchema()).append("mts_document_asset ");
 		sql.append("where asset_type_cd in ('TEASER_IMG','FEATURE_IMG') ");
 		sql.append("and object_key_id in ( ");
 		sql.append(DBUtil.preparedStatmentQuestion(ids.size())).append(") ");
@@ -260,7 +263,7 @@ public class IssueArticleAction extends SBActionAdapter {
 		StringBuilder sql = new StringBuilder(1280);
 		sql.append("select * from ( ");
 		sql.append("select action_nm, action_desc, publish_dt, b.action_id, b.action_group_id, ");
-		sql.append("b.pending_sync_flg, m.approvable_flg, d.issue_id, d.publication_id, document_id, info_bar_txt, c.* ");
+		sql.append("b.pending_sync_flg, m.approvable_flg, d.issue_id, issue_nm, d.publication_id, document_id, info_bar_txt, c.* ");
 		sql.append("from ").append(getCustomSchema()).append("mts_document a "); 
 		sql.append("inner join sb_action b on a.action_group_id = b.action_group_id "); 
 		sql.append("inner join module_type m on b.module_type_id = m.module_type_id "); 
@@ -271,7 +274,7 @@ public class IssueArticleAction extends SBActionAdapter {
 		sql.append("where pending_sync_flg > 0 ");
 		sql.append("union ");
 		sql.append("select action_nm, action_desc, publish_dt, b.action_id, b.action_group_id, ");
-		sql.append("b.pending_sync_flg, m.approvable_flg, d.issue_id, d.publication_id, document_id, info_bar_txt, c.* ");
+		sql.append("b.pending_sync_flg, m.approvable_flg, d.issue_id, issue_nm, d.publication_id, document_id, info_bar_txt, c.* ");
 		sql.append("from ").append(getCustomSchema()).append("mts_document a ");
 		sql.append("inner join sb_action b on a.action_group_id = b.action_group_id "); 
 		sql.append("inner join module_type m on b.module_type_id = m.module_type_id "); 

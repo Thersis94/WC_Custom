@@ -209,11 +209,12 @@ public class SelectLookupAction extends SBActionAdapter {
 	public List<GenericVO> getUsers(ActionRequest req) {
 		List<GenericVO> data = new ArrayList<>(10);
 		String roleId = req.getParameter("roleId");
+		String subType = req.getParameter("subscriptionTypeCode");
 		BSTableControlVO bst = new BSTableControlVO(req, MTSUserVO.class);
 		bst.setLimit(1000);
 		
 		UserAction ua = new UserAction(getDBConnection(), getAttributes());
-		GridDataVO<MTSUserVO> users = ua.getAllUsers(bst, roleId);
+		GridDataVO<MTSUserVO> users = ua.getAllUsers(bst, roleId, subType);
 		
 		for (MTSUserVO user : users.getRowData()) {
 			data.add(new GenericVO(user.getUserId(), user.getFullName()));
@@ -322,7 +323,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		sql.append("select a.document_id as key, "); 
 		sql.append("substring(action_nm, 0, 50 + position(' ' in substring(action_nm, 50))) || ");
 		sql.append("CASE WHEN position(' ' in substring(action_nm, 50)) > 0  THEN ' ...' else '' END as value ");
-		sql.append("from custom.mts_document a ");
+		sql.append("from ").append(getCustomSchema()).append("mts_document a ");
 		sql.append("inner join sb_action b on a.document_id = b.action_group_id and pending_sync_flg = 0 ");
 		sql.append("order by action_nm ");
 		log.debug(sql.length() + "|" + sql);

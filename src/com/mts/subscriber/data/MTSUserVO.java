@@ -53,8 +53,7 @@ public class MTSUserVO extends UserVO {
 	// Other Members
 	private SubscriptionType subscriptionType;
 	private Date expirationDate;
-	
-	
+		
 	// Sub Beans
 	private List<SubscriptionUserVO> subscriptions = new ArrayList<>();
 	
@@ -80,6 +79,21 @@ public class MTSUserVO extends UserVO {
 	 */
 	public MTSUserVO(ResultSet rs) {
 		super(rs);
+	}
+	
+	/**
+	 * Determines if the subscriber is subscribed to the provided publication
+	 * @param publicationId
+	 * @return
+	 */
+	public boolean isPublicationAssigned(String publicationId) {
+		if (StringUtil.isEmpty(publicationId)) return false;
+		
+		for(SubscriptionUserVO sub : subscriptions) {
+			if(publicationId.equalsIgnoreCase(sub.getPublicationId())) return true;
+		}
+		
+		return false;
 	}
 	
 	/**

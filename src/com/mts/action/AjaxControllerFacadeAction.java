@@ -8,6 +8,7 @@ import com.mts.publication.action.IssueAction;
 import com.mts.publication.action.IssueArticleAction;
 import com.mts.publication.action.MTSDocumentAction;
 import com.mts.publication.action.PublicationAction;
+import com.mts.security.IPSecurityAction;
 
 // RP Libs
 
@@ -79,6 +80,8 @@ public class AjaxControllerFacadeAction extends FacadeActionAdapter {
 		actionMap.put(UserAction.AJAX_KEY, UserAction.class);
 		actionMap.put(MTSDocumentAction.AJAX_KEY, MTSDocumentAction.class);
 		actionMap.put(MTSApprovalAction.AJAX_KEY, MTSApprovalAction.class);
+		actionMap.put(IPSecurityAction.AJAX_KEY, IPSecurityAction.class);
+		
 	}
 
 	/*
