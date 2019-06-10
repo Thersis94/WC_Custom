@@ -1,15 +1,8 @@
 package com.wsla.util.migration;
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
-import com.siliconmtn.util.StringUtil;
-import com.wsla.data.provider.ProviderType;
-import com.wsla.data.provider.ProviderVO;
 import com.wsla.util.migration.vo.SOExtendedFileVO;
-import com.wsla.util.migration.vo.SOLineItemFileVO;
 
 /****************************************************************************
  * <p><b>Title:</b> SOLineItems.java</p>
@@ -33,10 +26,10 @@ public class SOExtendedData extends AbsImporter {
 	void run() throws Exception {
 		data = readFile(props.getProperty("soExtendedDataFile"), SOExtendedFileVO.class, SHEET_1);
 
-//		String sql = StringUtil.join("delete from ", schema, "wsla_provider where provider_type_id='CAS'");
-//		delete(sql);
+		//		String sql = StringUtil.join("delete from ", schema, "wsla_provider where provider_type_id='CAS'");
+		//		delete(sql);
 		log.debug(data.size());
-//		save();
+		//		save();
 	}
 
 
@@ -48,16 +41,16 @@ public class SOExtendedData extends AbsImporter {
 	@Override
 	protected void save() throws Exception {
 		//turn the list of data into a unique list of providers we write to the database
-//		Map<String, ProviderVO> providers = new HashMap<>(data.size());
-//		for (SOLineItemFileVO dataVo : data) {
-//			boolean isWSLA = StringUtil.stringContainsItem(dataVo.getCasId(), WSLA_CAS_IDS);
-//			if (isWSLA || providers.containsKey(dataVo.getCasId())) continue;
-//
-//			ProviderVO vo = transposeProviderData(dataVo, new ProviderVO());
-//			providers.put(vo.getProviderId(), vo);
-//		}
-//
-//		writeToDB(new ArrayList<>(providers.values()));
+		//		Map<String, ProviderVO> providers = new HashMap<>(data.size());
+		//		for (SOLineItemFileVO dataVo : data) {
+		//			boolean isWSLA = StringUtil.stringContainsItem(dataVo.getCasId(), WSLA_CAS_IDS);
+		//			if (isWSLA || providers.containsKey(dataVo.getCasId())) continue;
+		//
+		//			ProviderVO vo = transposeProviderData(dataVo, new ProviderVO());
+		//			providers.put(vo.getProviderId(), vo);
+		//		}
+		//
+		//		writeToDB(new ArrayList<>(providers.values()));
 	}
 
 
