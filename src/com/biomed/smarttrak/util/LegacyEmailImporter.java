@@ -194,20 +194,20 @@ public class LegacyEmailImporter extends CommandLineUtil {
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
-				EmailLogVO vo = new EmailLogVO();
-				vo.setProfileId(rs.getString("profile_id"));
-				vo.setCampaignLogId("SMARTTRAK_" + rs.getInt("id"));
-				vo.setSubject(rs.getString("subject"));
-				vo.setOpenCnt(rs.getInt("view_count"));
-				vo.setMessageBody(minify(rs.getString("message")));
-				vo.setSentDate(rs.getDate("last_update"));
-
-				if (!lastId.equals(vo.getCampaignLogId())) {
-					records.add(vo);
-					lastId = vo.getCampaignLogId();
-				} else {
-					//these can be ignored - We're picking up dups on the profileId side, not the email side. (same profile_id, multiple legacy user accounts)
-				}
+//				EmailLogVO vo = new EmailLogVO();
+//				vo.setProfileId(rs.getString("profile_id"));
+//				vo.setCampaignLogId("SMARTTRAK_" + rs.getInt("id"));
+//				vo.setSubject(rs.getString("subject"));
+//				vo.setOpenCnt(rs.getInt("view_count"));
+//				vo.setMessageBody(minify(rs.getString("message")));
+//				vo.setSentDate(rs.getDate("last_update"));
+//
+//				if (!lastId.equals(vo.getCampaignLogId())) {
+//					records.add(vo);
+//					lastId = vo.getCampaignLogId();
+//				} else {
+//					//these can be ignored - We're picking up dups on the profileId side, not the email side. (same profile_id, multiple legacy user accounts)
+//				}
 			}
 
 		} catch (SQLException sqle) {
