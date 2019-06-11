@@ -13,6 +13,7 @@ import com.siliconmtn.data.parser.BeanDataVO;
 import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
+import com.siliconmtn.util.Convert;
 
 /****************************************************************************
  * <b>Title</b>: IPSecurityVO.java
@@ -36,8 +37,9 @@ public class IPSecurityVO extends BeanDataVO {
 	
 	// Members
 	private String ipSecurityId;
-	private String ipStart;
-	private String ipEnd;
+	private String ipBase;
+	private int ipStart;
+	private int ipEnd;
 	private String userId;
 	private String companyName;
 	private Date createDate;
@@ -68,6 +70,17 @@ public class IPSecurityVO extends BeanDataVO {
 	}
 
 	/**
+	 * Determines if the provide IP address falls into the range of the ipStart and ipEnd
+	 * @param ip
+	 * @return
+	 */
+	public boolean insideIPRange(String ip) {
+		String base = ip.substring(0, ip.lastIndexOf('.'));
+		int host = Convert.formatInteger(ip.substring(ip.lastIndexOf('.') + 1));
+		return (base.equalsIgnoreCase(ipBase) && host >= ipStart && host <= ipEnd);
+	}
+
+	/**
 	 * @return the ipSecurityId
 	 */
 	@Column(name="ip_security_id", isPrimaryKey=true)
@@ -78,16 +91,16 @@ public class IPSecurityVO extends BeanDataVO {
 	/**
 	 * @return the ipStart
 	 */
-	@Column(name="ip_start_txt")
-	public String getIpStart() {
+	@Column(name="ip_start_no")
+	public int getIpStart() {
 		return ipStart;
 	}
 
 	/**
 	 * @return the ipEnd
 	 */
-	@Column(name="ip_end_txt")
-	public String getIpEnd() {
+	@Column(name="ip_end_no")
+	public int getIpEnd() {
 		return ipEnd;
 	}
 
@@ -140,14 +153,14 @@ public class IPSecurityVO extends BeanDataVO {
 	/**
 	 * @param ipStart the ipStart to set
 	 */
-	public void setIpStart(String ipStart) {
+	public void setIpStart(int ipStart) {
 		this.ipStart = ipStart;
 	}
 
 	/**
 	 * @param ipEnd the ipEnd to set
 	 */
-	public void setIpEnd(String ipEnd) {
+	public void setIpEnd(int ipEnd) {
 		this.ipEnd = ipEnd;
 	}
 
@@ -185,6 +198,21 @@ public class IPSecurityVO extends BeanDataVO {
 	@BeanSubElement
 	public void setUser(MTSUserVO user) {
 		this.user = user;
+	}
+
+	/**
+	 * @return the ipBase
+	 */
+	@Column(name="ip_base_txt")
+	public String getIpBase() {
+		return ipBase;
+	}
+
+	/**
+	 * @param ipBase the ipBase to set
+	 */
+	public void setIpBase(String ipBase) {
+		this.ipBase = ipBase;
 	}
 
 }

@@ -1,12 +1,15 @@
 package com.mts.security;
 
+// JDK 1.8.x
+import java.util.Map;
 import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.List;
-// JDK 1.8.x
-import java.util.Map;
 
+// MTS Libs
 import com.mts.subscriber.data.MTSUserVO;
+
+// SMT Base libs
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.common.constants.GlobalConfig;
 import com.siliconmtn.db.DBUtil;
@@ -14,8 +17,9 @@ import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.security.AbstractRoleModule;
 import com.siliconmtn.security.AuthenticationException;
 import com.siliconmtn.security.UserDataVO;
+
+// WC Libs
 import com.smt.sitebuilder.common.constants.Constants;
-// WC Lobs
 import com.smt.sitebuilder.security.DBLoginModule;
 
 /****************************************************************************
@@ -33,6 +37,10 @@ import com.smt.sitebuilder.security.DBLoginModule;
  ****************************************************************************/
 
 public class MTSLoginModule extends DBLoginModule {
+	/**
+	 * Email/User Name that is passed for the IP address validation
+	 */
+	public static final String CORPORATE_DEFAULT_EMAIL = "ip@mtssecurity.com";
 
 	/**
 	 * 
@@ -55,7 +63,10 @@ public class MTSLoginModule extends DBLoginModule {
 	@Override
 	public UserDataVO authenticateUser(String encProfileId) throws AuthenticationException {
 		UserDataVO authUser = super.authenticateUser(encProfileId);
-		loadSubscribers(authUser);
+		if (authUser != null) {
+			Connection conn = (Connection)getAttribute(GlobalConfig.KEY_DB_CONN);
+			loadSubscribers(authUser, conn);
+		}
 		
 		return super.authenticateUser(encProfileId);
 	}
@@ -66,22 +77,45 @@ public class MTSLoginModule extends DBLoginModule {
 	 */
 	@Override
 	public UserDataVO authenticateUser(String user, String pwd) throws AuthenticationException {
-		UserDataVO authUser = super.authenticateUser(user, pwd);
-		loadSubscribers(authUser);
-		ActionRequest req = (ActionRequest) getAttribute(AbstractRoleModule.HTTP_REQUEST);
-		log.info("Address: " + req.getRemoteAddr());
-		log.info("MTS DB Login: " + authUser.getUserExtendedInfo());
+		UserDataVO authUser = null;
+		Connection conn = (Connection)getAttribute(GlobalConfig.KEY_DB_CONN);
+		
+		// Authenticate the user by IP address or form the std db login
+		if (CORPORATE_DEFAULT_EMAIL.equalsIgnoreCase(user)) {
+			ActionRequest req = (ActionRequest) getAttribute(AbstractRoleModule.HTTP_REQUEST);
+			authUser = getUserByIPAddr(req.getRemoteAddr(), conn);
+			
+		} else {
+			authUser = super.authenticateUser(user, pwd);
+		}
+		
+		// If the user was successfully authenticated, get the extended user data
+		if (authUser != null)  loadSubscribers(authUser, conn);
 		
 		return authUser;
+	}
+	
+	/**
+	 * Loads the user data vo associated to the ip address
+	 * @param ip
+	 * @param conn
+	 * @return
+	 */
+	public UserDataVO getUserByIPAddr(String ip, Connection conn) {
+		IPSecurityAction isa = new IPSecurityAction(conn, getAttributes());
+		String profileId = isa.getProfileIdByIP(ip);
+		if (profileId == null) return null;
+		
+		return loadUserData(profileId, null);
 	}
 	
 	/**
 	 * Gets the extended user and subscriber info
 	 * @param authUser
 	 */
-	protected void loadSubscribers(UserDataVO authUser) {
+	protected void loadSubscribers(UserDataVO authUser, Connection conn) {
 		// Set the config info
-		Connection conn = (Connection)getAttribute(GlobalConfig.KEY_DB_CONN);
+		
 		String schema = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		List<Object>vals = new ArrayList<>();
 		vals.add(authUser.getProfileId());
@@ -92,7 +126,7 @@ public class MTSLoginModule extends DBLoginModule {
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema);
 		sql.append("mts_subscription_publication_xr b on a.user_id = b.user_id ");
 		sql.append("where profile_id = ? ");
-		log.info(sql.length() + "|" + sql + "|" + vals);
+		log.debug(sql.length() + "|" + sql + "|" + vals);
 		
 		// Get the user extended info and assign it to the user object  
 		DBProcessor db = new DBProcessor(conn);

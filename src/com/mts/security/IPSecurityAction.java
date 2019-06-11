@@ -1,11 +1,14 @@
 package com.mts.security;
 
+import java.sql.Connection;
 import java.util.List;
+import java.util.Map;
 
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.DBProcessor;
+import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.smt.sitebuilder.action.SBActionAdapter;
@@ -45,6 +48,17 @@ public class IPSecurityAction extends SBActionAdapter {
 		super(actionInit);
 	}
 	
+	/**
+	 * 
+	 * @param dbConn
+	 * @param attributes
+	 */
+	public IPSecurityAction(Connection dbConn, Map<String, Object> attributes) {
+		super();
+		setDBConnection(new SMTDBConnection(dbConn));
+		setAttributes(attributes);
+	}
+	
 	/*
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.action.ActionRequest)
@@ -64,11 +78,25 @@ public class IPSecurityAction extends SBActionAdapter {
 		sql.append(getCustomSchema()).append("mts_ip_security a ");
 		sql.append("inner join ").append(getCustomSchema());
 		sql.append("mts_user b on a.user_id = b.user_id ");
-		sql.append("order by company_nm, ip_start_txt ");
+		sql.append("order by company_nm, ip_base_txt ");
 		log.debug(sql.length() + "|" + sql);
 		
 		DBProcessor db = new DBProcessor(getDBConnection());
 		return db.executeSelect(sql.toString(), null, new IPSecurityVO());
+	}
+	
+	/**
+	 * Gets the profile id of the user for the matching ip address 
+	 * @param ip request IP address
+	 * @return profile id, null if not in range
+	 */
+	public String getProfileIdByIP(String ip) {
+		List<IPSecurityVO> ips = getListRanges();
+		for (IPSecurityVO ipvo : ips) {
+			if (ipvo.insideIPRange(ip)) return ipvo.getUser().getProfileId();
+		}
+		
+		return null;
 	}
 
 	/*
