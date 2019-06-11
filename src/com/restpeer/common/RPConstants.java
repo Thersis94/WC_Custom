@@ -72,6 +72,24 @@ public class RPConstants {
 	 * Has Schedule Product Attribute Id
 	 */
 	public static final String HAS_SCHEDULE = "RP_HAS_SCHEDULE";
+	
+	/**
+	 * Category used for membership products
+	 */
+	public static final String MEMBERSHIP_CAT = "RP_MEMBERSHIP";
+	
+	/**
+	 * Workflow lookup keys
+	 */
+	public enum WorkflowKey {
+		RP_CHECKOUT
+	}
+
+	/**
+	 * Required redirect paths
+	 */
+	public static final String PORTAL_PATH = "/portal";
+	public static final String CART_PATH = PORTAL_PATH + "/cart";
 
 	private RPConstants() {
 		//don't need a constructor - static class

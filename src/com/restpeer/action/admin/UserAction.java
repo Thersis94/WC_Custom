@@ -203,22 +203,37 @@ public class UserAction extends UserBaseWidget {
 		RPUserVO user = new RPUserVO(this.extUser);
 		user.setDriverLicense(req.getParameter("driverLicense"));
 		user.setDriverLicensePath(req.getParameter("driverLicensePath"));
+		
+		try {
+			saveCustomUser(user, req);
+			setModuleData(user);
+		} catch (Exception e) {
+			setModuleData(user, 0, e.getLocalizedMessage());
+		}
+	}
+	
+	/**
+	 * Saves a custom user record.
+	 * 
+	 * @param user
+	 * @param req
+	 * @throws ActionException
+	 */
+	public void saveCustomUser(RPUserVO user, ActionRequest req) throws ActionException {
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+
 		try {
 			if (req.getBooleanParameter("isInsert")) {
 				db.insert(user);
-				
-				if (! StringUtil.isEmpty(req.getParameter("dealerLocationId"))) {
+				if (!StringUtil.isEmpty(req.getParameter("dealerLocationId"))) {
 					saveRoleInfo(user, req);
 				}
 			} else {
 				db.update(user);
 			}
-			
-			setModuleData(user);
 		} catch (Exception e) {
 			log.error("Unable to add user: " + user, e);
-			setModuleData(user, 0, e.getLocalizedMessage());
+			throw new ActionException(e);
 		}
 	}
 	
