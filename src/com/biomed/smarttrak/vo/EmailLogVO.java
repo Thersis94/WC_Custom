@@ -3,8 +3,10 @@ package com.biomed.smarttrak.vo;
 // Java 8
 import java.util.Date;
 
+import com.siliconmtn.db.orm.Column;
 // SMTBaseLibs
 import com.siliconmtn.security.UserDataVO;
+import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.user.HumanNameIntfc;
 
 /*****************************************************************************
@@ -27,6 +29,7 @@ public class EmailLogVO extends UserDataVO implements HumanNameIntfc {
 	private String status;
 	private Date sentDate;
 	private String subject;
+	private int  fileWritten;
 
 	public EmailLogVO() {
 		super();
@@ -87,4 +90,28 @@ public class EmailLogVO extends UserDataVO implements HumanNameIntfc {
 	public void setMessageBody(String messageBody) {
 		this.messageBody = messageBody;
 	}
+
+	/**
+	 * @return
+	 */
+	@Column(name="file_written")
+	public int getFileWritten() {
+		return fileWritten;
+	}
+
+	/**
+	 * 
+	 * @param fileWritten
+	 */
+	public void setFileWritten(int fileWritten) {
+		this.fileWritten = fileWritten;
+	}
+
+	/**
+	 * @return
+	 */
+	public boolean isFileWritten() {
+		return Convert.formatBoolean(fileWritten);
+	}
+
 }
