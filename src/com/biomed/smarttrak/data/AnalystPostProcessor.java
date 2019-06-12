@@ -88,6 +88,11 @@ public class AnalystPostProcessor extends SBActionAdapter {
 			email.setFrom((String)getAttribute(CFG_SMARTTRAK_EMAIL));
 			email.setHtmlBody(body.toString());
 			email.setSubject(subject.toString());
+			
+			String [] emails = StringUtil.checkVal(attributes.get("supportAdminEmails")).split(",");
+			for(String e : emails) {
+				email.addCC(e);
+			}
 
 			new MessageSender(attributes, dbConn).sendMessage(email);
 		} catch (InvalidDataException e) {
