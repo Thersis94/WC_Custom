@@ -79,7 +79,7 @@ public class EmailReportAction extends SBActionAdapter {
 		if(!vo.isFileWritten()) {
 			populateEmail(vo);
 		} else {
-			loadEmiData(vo);
+			loadEmailArchive(vo);
 		}
 
 		return vo;
@@ -87,10 +87,10 @@ public class EmailReportAction extends SBActionAdapter {
 
 
 	/**
-	 * Helper method for loading html data from EMI File.
+	 * Helper method for loading html data from Email File.
 	 * @param vo
 	 */
-	private void loadEmiData(EmailLogVO vo) {
+	private void loadEmailArchive(EmailLogVO vo) {
 		EmailMessageVO eml = (EmailMessageVO) MessageSerializer.getInstance(attributes, BaseMessageVO.Type.EMAIL).retrieveMessage(vo.getCampaignLogId());
 		vo.setMessageBody(eml.getHtmlBody());
 	}
