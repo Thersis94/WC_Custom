@@ -7,6 +7,7 @@ import com.siliconmtn.db.orm.Column;
 // SMTBaseLibs
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.user.HumanNameIntfc;
 
 /*****************************************************************************
@@ -29,7 +30,7 @@ public class EmailLogVO extends UserDataVO implements HumanNameIntfc {
 	private String status;
 	private Date sentDate;
 	private String subject;
-	private int  fileWritten;
+	private String filePathText;
 
 	public EmailLogVO() {
 		super();
@@ -94,24 +95,23 @@ public class EmailLogVO extends UserDataVO implements HumanNameIntfc {
 	/**
 	 * @return
 	 */
-	@Column(name="file_written")
-	public int getFileWritten() {
-		return fileWritten;
+	@Column(name="file_path_txt")
+	public String getFilePathText() {
+		return filePathText;
 	}
 
 	/**
 	 * 
 	 * @param fileWritten
 	 */
-	public void setFileWritten(int fileWritten) {
-		this.fileWritten = fileWritten;
+	public void setFilePathText(String filePathText) {
+		this.filePathText = filePathText;
 	}
 
 	/**
 	 * @return
 	 */
 	public boolean isFileWritten() {
-		return Convert.formatBoolean(fileWritten);
+		return StringUtil.isEmpty(filePathText);
 	}
-
 }
