@@ -14,9 +14,6 @@ import org.quartz.JobExecutionException;
 // GSON 2.3
 import com.google.gson.Gson;
 
-// WC Libs
-import com.mts.publication.data.MTSDocumentVO;
-
 // SMT Base libs
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.http.filter.fileupload.Constants;
@@ -56,20 +53,30 @@ public class ContentFeedJob extends AbstractSMTJob {
 	@Override
 	public void execute(JobExecutionContext ctx) throws JobExecutionException {
 		super.execute(ctx);
-		log.info("Starting processing");
 		attributes = ctx.getMergedJobDataMap().getWrappedMap();
-		log.info("Attributes: " + attributes.size());
-		processDocuments();
-		log.info("complete");
+		String message = "Success";
+		boolean success = true;
+		log.info(attributes);
+		
+		// Process the data feed
+		try {
+			processDocuments();
+		} catch (Exception e) {
+			message = "Fail: " + e.getLocalizedMessage();
+			success = false;
+		}
+		
+		// Close out the database and the transaction log
+		try {
+			this.finalizeJob(success, message);
+		} catch (Exception e) { /** nothing to do here **/ }
 	}
 	
 	/**
-	 * Runs the workflow for sendingthe documents
+	 * Runs the workflow for sending the documents
 	 */
 	public void processDocuments() {
-		log.info("getting articles");
-		List<MTSDocumentVO> docs = getArticles();
-		log.info("converting to json");
+		ContentFeedVO docs = getArticles();
 		String json = convertArticlesJson(docs);
 		log.info("Json: " + json);
 	}
@@ -78,14 +85,17 @@ public class ContentFeedJob extends AbstractSMTJob {
 	 * 
 	 * @return
 	 */
-	public List<MTSDocumentVO> getArticles() {
+	public ContentFeedVO getArticles() {
 		// Build the SQL
 		String schema = (String)this.attributes.get(Constants.CUSTOM_DB_SCHEMA);
-		StringBuilder sql = new StringBuilder(128);
-		sql.append("select * from ").append(schema).append("mts_document a ");
-		sql.append("inner join sb_action b ");
+		StringBuilder sql = new StringBuilder(400);
+		sql.append("select first_nm || ' ' || last_nm as author_nm, a.unique_cd, action_desc, ");
+		sql.append("action_nm, publish_dt, document_txt from ").append(schema);
+		sql.append("mts_document a ").append("inner join sb_action b ");
 		sql.append("on a.document_id = b.action_group_id and b.pending_sync_flg = 0 ");
 		sql.append("inner join document c on b.action_id = c.action_id ");
+		sql.append("left outer join ").append(schema);
+		sql.append("mts_user u on a.author_id = u.user_id ");
 		sql.append("where publish_dt between ? and ? ");
 		
 		Date yesterday = Convert.formatDate(new Date(), Calendar.DAY_OF_YEAR, -1);
@@ -94,8 +104,15 @@ public class ContentFeedJob extends AbstractSMTJob {
 		vals.add(Convert.formatEndDate(yesterday));
 		log.info(sql.length() + "|" + sql + "|" + vals);
 		
+		// Create the wrapper bean
+		ContentFeedVO feed = new ContentFeedVO();
+		feed.setTitle("MTS Publications News Feed");
+		feed.setDescription("We help you better understand your world as you make key decisions impacting your day-to-day business and long-term strategic goals.");
+		feed.setLink("https://www.medtechstrategist.com/");
+		
 		DBProcessor db = new DBProcessor(conn);		
-		return db.executeSelect(sql.toString(), vals, new MTSDocumentVO());
+		feed.setItems(db.executeSelect(sql.toString(), vals, new ContentFeedItemVO()));
+		return feed;
 		
 	}
 	
@@ -104,9 +121,9 @@ public class ContentFeedJob extends AbstractSMTJob {
 	 * @param docs
 	 * @return
 	 */
-	public String convertArticlesJson(List<MTSDocumentVO> docs) {
+	public String convertArticlesJson(ContentFeedVO doc) {
 		Gson g = new Gson();
-		return g.toJson(docs);
+		return g.toJson(doc);
 	}
 }
 
