@@ -191,7 +191,15 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 			CreditMemoVO cmvo = new CreditMemoVO(req);
 			cmvo.setAssetId(td.getDataEntryId());
 			cmvo.setCustomerMemoCode(req.getStringParameter("customerMemoCode", cmvo.getCustomerMemoCode()));
-			cmt.saveCreditMemoApproval(cmvo);
+			
+			log.debug(cmvo);
+			
+			if (req.getBooleanParameter("isAssetLocked")) {
+				cmt.saveBankInfo(cmvo);
+			}else {
+				cmt.saveCreditMemoApproval(cmvo);
+			}
+			
 			
 			if (status == StatusCode.CREDIT_MEMO_WSLA && !cmt.hasUnapprovedCreditMemos(td.getTicketId())) {
 				changeStatus(td.getTicketId(), user.getUserId(), StatusCode.CLOSED, LedgerSummary.CREDIT_MEMO_APPROVED.summary, null);
