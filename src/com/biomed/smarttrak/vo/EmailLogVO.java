@@ -95,7 +95,7 @@ public class EmailLogVO extends UserDataVO implements HumanNameIntfc {
 	/**
 	 * @return
 	 */
-	@Column(name="file_path_text")
+	@Column(name="file_path_txt")
 	public String getFilePathText() {
 		return filePathText;
 	}

@@ -145,7 +145,7 @@ public class EmailReportAction extends SBActionAdapter {
 				vo.setCampaignInstanceId(rs.getString("campaign_instance_id"));
 				vo.setOpenCnt(rs.getInt("cnt"));
 				vo.setSubject(rs.getString("subject_txt"));
-				vo.setFilePathText(rs.getString("file_path_text"));
+				vo.setFilePathText(rs.getString("file_path_txt"));
 				data.add(vo);
 			}
 
@@ -181,7 +181,7 @@ public class EmailReportAction extends SBActionAdapter {
 		StringBuilder sql = new StringBuilder(250);
 		sql.append("select inst.campaign_instance_id, coalesce(l.attempt_dt,l.create_dt) as attempt_dt, l.success_flg, p.email_address_txt, p.profile_id, ");
 		sql.append("p.first_nm, p.last_nm, l.campaign_log_id, count(resp.email_response_id) as cnt, ");
-		sql.append("l.subject_txt, l.file_path_text ");
+		sql.append("l.subject_txt, l.file_path_txt ");
 		sql.append("from email_campaign camp ");
 		sql.append("inner join email_campaign_instance inst on camp.email_campaign_id=inst.email_campaign_id ");
 		sql.append("inner join email_campaign_log l on inst.campaign_instance_id=l.campaign_instance_id ");
@@ -198,7 +198,7 @@ public class EmailReportAction extends SBActionAdapter {
 		if (campaignLogId != null) sql.append("and l.campaign_log_id=? ");
 		sql.append("and l.create_dt > ? ");
 		sql.append("group by inst.campaign_instance_id, l.attempt_dt, p.profile_id, p.email_address_txt, ");
-		sql.append("p.first_nm, p.last_nm, success_flg, l.campaign_log_id, l.subject_txt, file_path_text ");
+		sql.append("p.first_nm, p.last_nm, success_flg, l.campaign_log_id, l.subject_txt, file_path_txt ");
 		sql.append("order by ").append(getOrderBy(sort, dir)).append(" limit ? offset ? ");
 		return sql.toString();
 	}
