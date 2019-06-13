@@ -133,6 +133,7 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 	 * @throws InvalidDataException 
 	 */
 	public void saveAsset(ActionRequest req) throws InvalidDataException, DatabaseException {
+		//TODO his method seems to be doing more then one method should, please break this method out into other methods in the future
 		TicketDataVO td = new TicketDataVO(req);
 		td.setApprovalCode(ApprovalCode.PENDING);
 		
@@ -358,6 +359,7 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 	 * @throws DatabaseException
 	 */
 	protected void manageTicketApproval(String ticketId, ActionRequest req) throws DatabaseException {
+		//TODO his method seems to be doing more then one method should, please break this method out into other methods in the future
 		TicketEditAction tea = new TicketEditAction(getDBConnection(), getAttributes());
 		List<TicketDataVO> assets = tea.getExtendedData(ticketId, "ASSET_GROUP");
 		Map<String, ApprovalCode> approvals = new HashMap<>();

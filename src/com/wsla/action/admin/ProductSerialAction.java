@@ -86,6 +86,7 @@ public class ProductSerialAction extends BatchImport {
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		log.debug("pro serial action retreve called");
+		//TODO his method seems to be doing more then one method should, please break this method out into other methods in the future
 		String productId = req.getParameter(REQ_PRODUCT_ID);
 
 		if (!StringUtil.isEmpty(productId) && req.hasParameter("serialNo")) {
