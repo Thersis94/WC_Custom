@@ -133,8 +133,12 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 	 * @throws InvalidDataException 
 	 */
 	public void saveAsset(ActionRequest req) throws InvalidDataException, DatabaseException {
+		//TODO his method seems to be doing more then one method should, please break this method out into other methods in the future
 		TicketDataVO td = new TicketDataVO(req);
 		td.setApprovalCode(ApprovalCode.PENDING);
+		
+		boolean hasIncompleteCallData = req.getBooleanParameter("hasIncompleteCallData");
+		boolean hasApprovableImageAttribute = (PROOF_PURCHASE.equals(td.getAttributeCode()) ||EQUIPMENT_IMAGE.equals(td.getAttributeCode()) || SERIAL_NO.equals(td.getAttributeCode()) );
 		
 		// Get the DB Processor
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
@@ -151,12 +155,13 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 		}
 		
 		
+		
 		// Add a ledger entry, but only change status if the uploaded asset
 		// triggers a need for approval.
 		TicketLedgerVO ledger;
 		StatusCode status;
 		
-		if (isReadyForApproval(td) && req.getBooleanParameter("hasIncompleteCallData")) {
+		if (isReadyForApproval(td) && hasIncompleteCallData) {
 			ledger = changeStatus(td.getTicketId(), user.getUserId(), StatusCode.USER_DATA_APPROVAL_PENDING, LedgerSummary.ASSET_LOADED.summary, null);
 			status = ledger.getStatusCode();
 		} else {
@@ -175,6 +180,11 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 		td.setLedgerEntryId(ledger.getLedgerEntryId());
 		td.setMetaValue(req.getParameter("fileName"));
 		
+		//if we are past the point where we can approve call data
+		if(!hasIncompleteCallData && hasApprovableImageAttribute) {
+			td.setApprovalCode(ApprovalCode.APPROVED);
+		}
+		
 		db.save(td);
 
 		if("attr_credit_memo".equalsIgnoreCase(req.getParameter("attributeCode"))) {
@@ -182,7 +192,15 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 			CreditMemoVO cmvo = new CreditMemoVO(req);
 			cmvo.setAssetId(td.getDataEntryId());
 			cmvo.setCustomerMemoCode(req.getStringParameter("customerMemoCode", cmvo.getCustomerMemoCode()));
-			cmt.saveCreditMemoApproval(cmvo);
+			
+			log.debug(cmvo);
+			
+			if (req.getBooleanParameter("isAssetLocked")) {
+				cmt.saveBankInfo(cmvo);
+			}else {
+				cmt.saveCreditMemoApproval(cmvo);
+			}
+			
 			
 			if (status == StatusCode.CREDIT_MEMO_WSLA && !cmt.hasUnapprovedCreditMemos(td.getTicketId())) {
 				changeStatus(td.getTicketId(), user.getUserId(), StatusCode.CLOSED, LedgerSummary.CREDIT_MEMO_APPROVED.summary, null);
@@ -341,6 +359,7 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 	 * @throws DatabaseException
 	 */
 	protected void manageTicketApproval(String ticketId, ActionRequest req) throws DatabaseException {
+		//TODO his method seems to be doing more then one method should, please break this method out into other methods in the future
 		TicketEditAction tea = new TicketEditAction(getDBConnection(), getAttributes());
 		List<TicketDataVO> assets = tea.getExtendedData(ticketId, "ASSET_GROUP");
 		Map<String, ApprovalCode> approvals = new HashMap<>();

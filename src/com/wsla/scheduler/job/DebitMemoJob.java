@@ -124,7 +124,15 @@ public class DebitMemoJob extends AbstractSMTJob {
 		super.execute(ctx);
 		attributes = ctx.getMergedJobDataMap().getWrappedMap();
 		getResourceBundleData("es", "MX", "WSLA_BUNDLE");
-		processDebitMemos(StringUtil.checkVal(attributes.get(Constants.CUSTOM_DB_SCHEMA)));
+        boolean success = true;
+        
+        String message = "Success " + processDebitMemos(StringUtil.checkVal(attributes.get(Constants.CUSTOM_DB_SCHEMA)));
+		
+		try {
+			this.finalizeJob(success, message);
+		} catch (Exception e) {
+			/** nothing to do here **/ 
+		}
 	}
 
 	/**
@@ -133,9 +141,9 @@ public class DebitMemoJob extends AbstractSMTJob {
 	 * @param schema
 	 * @return
 	 */
-	public List<DebitMemoVO> processDebitMemos(String schema) {
+	public String processDebitMemos(String schema) {
 		List<DebitMemoVO> memos = getGroupData(schema);
-
+		StringBuilder messages = new StringBuilder(100);
 		log.debug(memos);
 		for (DebitMemoVO memo : memos) {
 			try {
@@ -159,10 +167,11 @@ public class DebitMemoJob extends AbstractSMTJob {
 
 			} catch (Exception e) {
 				log.error("Unable to create debit memo", e);
+				messages.append(e.getLocalizedMessage()).append("|");
 			}
+			
 		}
-
-		return new ArrayList<>();
+		return messages.toString();
 	}
 	/**
 	 * When run, it creates a debit memo for all approved credit memos that 

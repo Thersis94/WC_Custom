@@ -93,4 +93,29 @@ public class CreditMemoTransaction extends BaseTransactionAction {
 			putModuleData(cmvo, 0, false, e.getLocalizedMessage(), true);
 		}
 	}
+
+	/**
+	 * saves just the banking info for the credit memo
+	 * @param cmvo
+	 */
+	public void saveBankInfo(CreditMemoVO cmvo) {
+
+		List<String> fields = Arrays.asList("bank_nm", "account_no", "transfer_cd", "credit_memo_id");
+		
+		StringBuilder sql = new StringBuilder(93);
+		sql.append(DBUtil.UPDATE_CLAUSE).append(getCustomSchema()).append("wsla_credit_memo ");
+		sql.append("set bank_nm = ?, account_no = ?, transfer_cd = ? ");
+		sql.append(DBUtil.WHERE_CLAUSE).append("credit_memo_id = ? ");
+		
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		try {
+			db.executeSqlUpdate(sql.toString(), cmvo, fields);
+		} catch (DatabaseException e) {
+			log.error("could not save credit memo approval",e);
+			putModuleData(cmvo, 0, false, e.getLocalizedMessage(), true);
+		}
+		
+	}
+	
+	
 }

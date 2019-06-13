@@ -100,7 +100,7 @@ public class RefundVerificationAction extends BaseTransactionAction {
 		List<Object> vals = new ArrayList<>();
 		
 		sql.append("select d.ticket_id, ticket_no, first_nm, last_nm, e.main_phone_txt, ");
-		sql.append("b.refund_amount_no, a.approval_dt, e.email_address_txt, data_entry_id ");
+		sql.append("b.refund_amount_no, b.approval_dt, e.email_address_txt, data_entry_id ");
 		sql.append("from ").append(getCustomSchema()).append("wsla_debit_memo a ");
 		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("wsla_credit_memo b ");
 		sql.append("on a.debit_memo_id = b.debit_memo_id ");
@@ -112,7 +112,7 @@ public class RefundVerificationAction extends BaseTransactionAction {
 		sql.append("on d.originator_user_id = e.user_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(getCustomSchema()).append("wsla_ticket_data f  ");
 		sql.append("on d.ticket_id = f.ticket_id and f.attribute_cd = '").append(REFUND_ATTR_KEY).append("' ");
-		sql.append("where a.approval_dt is not null and (f.value_txt is null or f.value_txt = '0') ");
+		sql.append("where b.approval_dt is not null and (f.value_txt is null or f.value_txt = '0') ");
 		
 		// Add the search filters
 		if (bst.hasSearch()) {
@@ -125,7 +125,7 @@ public class RefundVerificationAction extends BaseTransactionAction {
 			vals.add(bst.getLikeSearch().toLowerCase());
 		}
 		
-		sql.append("order by a.approval_dt desc, last_nm, first_nm ");
+		sql.append("order by b.approval_dt desc, last_nm, first_nm ");
 		log.debug(sql.length() + "|" + sql);
 		
 		DBProcessor db = new DBProcessor(getDBConnection());

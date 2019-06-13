@@ -26,6 +26,7 @@ import com.wsla.data.ticket.LedgerSummary;
 import com.wsla.data.ticket.StatusCode;
 import com.wsla.data.ticket.TicketDataVO;
 import com.wsla.data.ticket.TicketLedgerVO;
+import com.wsla.data.ticket.TicketVO.UnitLocation;
 import com.wsla.data.ticket.UserVO;
 
 /****************************************************************************
@@ -68,15 +69,36 @@ public class DiagnosticTransaction extends BaseTransactionAction {
 	@Override
 	public void build(ActionRequest req) throws ActionException {
 		try {
+			
 			if (req.hasParameter("isDisposition")) {
 				saveDisposition(req);
-			} else {
+			}else if(req.hasParameter("isBypass") && req.hasParameter("isClose")) {
+				closeTicket(req);
+			}else {
 				saveDiagnosticRun(req);
 			}
 		} catch (Exception e) {
-			log.error("Unable to save asset", e);
+			log.error("Unable to save Diagnostic", e);
 			putModuleData("", 0, false, e.getLocalizedMessage(), true);
 		}
+	}
+
+	/**
+	 * closes the ticket early if a by pass was triggered
+	 * @param req
+	 * @throws DatabaseException 
+	 */
+	private void closeTicket(ActionRequest req) throws DatabaseException {
+		UserVO user = (UserVO)getAdminUser(req).getUserExtendedInfo();
+		String ticketId = req.getParameter(TicketEditAction.TICKET_ID);
+		
+		TicketLedgerVO ledger = changeStatus(ticketId, user.getUserId(), StatusCode.CLOSED, LedgerSummary.TICKET_CLONED.summary, UnitLocation.CALLER);
+		
+		// Build next step
+		Map<String, Object> params = new HashMap<>();
+		params.put("ticketId", ledger.getTicketId());
+		buildNextStep(ledger.getStatusCode(), params, false);
+		
 	}
 
 	/**

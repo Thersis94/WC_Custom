@@ -86,6 +86,7 @@ public class ProductSerialAction extends BatchImport {
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		log.debug("pro serial action retreve called");
+		//TODO his method seems to be doing more then one method should, please break this method out into other methods in the future
 		String productId = req.getParameter(REQ_PRODUCT_ID);
 
 		if (!StringUtil.isEmpty(productId) && req.hasParameter("serialNo")) {
@@ -96,11 +97,11 @@ public class ProductSerialAction extends BatchImport {
 			TicketVO ticket = lookupServiceOrder(productId, req.getParameter("serialNo"));
 			
 			//check the date and warranty max date
-			if(!StringUtil.isEmpty(pwvo.getProviderId())){
+			if(!StringUtil.isEmpty(pwvo.getProviderId()) && req.hasParameter("purchaseDate")){
 				
 				int max = getMaxWarrantyLength(pwvo.getProviderId());
 				Date purchaseDate = req.getDateParameter("purchaseDate");
-				
+
 				long diff = new Date().getTime() - purchaseDate.getTime();
 				long numDays = TimeUnit.DAYS.convert(diff, TimeUnit.MILLISECONDS);
 				
