@@ -23,10 +23,7 @@ import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.util.StringUtil;
 // WC Libs
 import com.smt.sitebuilder.action.SimpleActionAdapter;
-import com.smt.sitebuilder.action.dealer.DealerInfoAction;
 import com.smt.sitebuilder.action.dealer.DealerLocationVO;
-import com.smt.sitebuilder.common.SiteVO;
-import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
  * <b>Title</b>: MobileRestAction.java
@@ -80,14 +77,8 @@ public class MobileRestAction extends SimpleActionAdapter {
 	 * @throws DatabaseException
 	 */
 	public List<DealerLocationVO> getClosestSearch(ActionRequest req) throws DatabaseException {
-		String orgId = ((SiteVO) req.getAttribute(Constants.SITE_DATA)).getOrganizationId();
-		DealerInfoAction dia = new DealerInfoAction(getDBConnection(), getAttributes());
-		DealerLocationVO dl;
-		try {
-			dl = dia.getDealerLocationInfo(req.getParameter("dealerLocationId"), orgId);
-		} catch (com.siliconmtn.exception.DatabaseException e) {
-			throw new DatabaseException(e);
-		}
+		double latitude = req.getDoubleParameter("latitude", 0.0);
+		double longitude = req.getDoubleParameter("longitude", 0.0);
 		
 		List<Object> vals = new ArrayList<>();
 		StringBuilder sql = new StringBuilder(384);
@@ -95,8 +86,8 @@ public class MobileRestAction extends SimpleActionAdapter {
 		sql.append("b.geo_lat_no, b.geo_long_no, 'mi') as distance  ");
 		sql.append(DBUtil.FROM_CLAUSE).append("dealer a ");
 		sql.append(DBUtil.INNER_JOIN).append("dealer_location b on a.dealer_id = b.dealer_id ");
-		vals.add(dl.getLatitude());
-		vals.add(dl.getLongitude());
+		vals.add(latitude);
+		vals.add(longitude);
 		
 		// Add in the search filters
 		if (!StringUtil.isEmpty(req.getParameter("productId"))) addClosestSearchFilters(req, sql, vals);
