@@ -83,6 +83,7 @@ public class SubscriptionAction extends SimpleActionAdapter {
 	protected boolean checkUpgrade(ActionRequest req, MemberVO member, Product membershipId) throws ActionException {
 		String schema = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		boolean needsUpgrade = true;
+		int usageQty = getUsageQty(member.getMemberId(), membershipId);
 
 		StringBuilder sql = new StringBuilder(350);
 		sql.append("select sum(s.qty_no) ");
@@ -98,13 +99,12 @@ public class SubscriptionAction extends SimpleActionAdapter {
 			if (rs.next()) {
 				// Check their purchases against their usage
 				int purchaseQty = rs.getInt(1);
-				int usageQty = getUsageQty(member.getMemberId(), membershipId);
 				needsUpgrade = purchaseQty - usageQty <= 0;
 			} else {
 				// No purchases were found (free or otherwise), add the free one they get for signing up.
 				MembershipAction ma = new MembershipAction(dbConn, attributes);
 				PromotionAction pa = new PromotionAction(dbConn, attributes);
-				addSubscription(member, ma.retrieveDefaultMembership(req, membershipId.name()), pa.retrieveFreePromotion());
+				addSubscription(member, ma.retrieveDefaultMembership(req, membershipId.name()), pa.retrieveFreePromotion(), null);
 				needsUpgrade = false;
 			}
 		} catch (SQLException e) {
@@ -202,15 +202,16 @@ public class SubscriptionAction extends SimpleActionAdapter {
 		return usageQty;
 	}
 
+
 	/**
 	 * Adds a membership subscription for a given member
-	 * 
 	 * @param member
 	 * @param membership
 	 * @param promotion
 	 * @throws ActionException 
 	 */
-	public void addSubscription(MemberVO member, MembershipVO membership, PromotionVO promotion) throws ActionException {
+	public void addSubscription(MemberVO member, MembershipVO membership, 
+			PromotionVO promotion, String businessId) throws ActionException {
 		SubscriptionVO subscription = new SubscriptionVO();
 		subscription.setMember(member);
 		subscription.setMembership(membership);
@@ -218,6 +219,7 @@ public class SubscriptionAction extends SimpleActionAdapter {
 		subscription.setCostNo(membership.getCostNo());
 		subscription.setDiscountNo(membership.getCostNo() * promotion.getDiscountPctNo() * -1);
 		subscription.setQuantityNo(membership.getQuantityNo());
+		subscription.setBusinessId(businessId);
 
 		// Save the member's subscription
 		DBProcessor dbp = new DBProcessor(dbConn, getCustomSchema());

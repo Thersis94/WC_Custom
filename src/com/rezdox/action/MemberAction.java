@@ -323,10 +323,12 @@ public class MemberAction extends SimpleActionAdapter {
 	 * @throws ActionException
 	 */
 	private void setupMembership(MemberVO member, ActionRequest req) throws ActionException {
-		// Get default member subscription... the only default after 6/1/2019 is HomeOwner.
 		// Free business and residence subscriptions are added by member selection after signing up.
 		MembershipAction ma = new MembershipAction(dbConn, attributes);
-		MembershipVO membership = ma.retrieveDefaultMembership(req, Product.BUSINESS.name());
+		MembershipVO freeBiz = ma.retrieveDefaultMembership(req, Product.BUSINESS.name());
+		freeBiz.setCostNo(0); // free the 1st time
+		MembershipVO freeRez = ma.retrieveDefaultMembership(req, Product.RESIDENCE.name());
+		freeRez.setCostNo(0); // free the 1st time
 
 		// Get the "Free" promotion used when signing up
 		PromotionAction pa = new PromotionAction(dbConn, attributes);
@@ -334,7 +336,8 @@ public class MemberAction extends SimpleActionAdapter {
 
 		// Give the member their free subscription
 		SubscriptionAction sa = new SubscriptionAction(dbConn, attributes);
-		sa.addSubscription(member, membership, promotion);
+		sa.addSubscription(member, freeBiz, promotion, null);
+		sa.addSubscription(member, freeRez, promotion, null);
 
 		//apply the default reward give to all new users at first login
 		RewardsAction ra = new RewardsAction(getDBConnection(), getAttributes());

@@ -43,6 +43,7 @@ public class DirectoryReportVO extends BeanDataVO implements Serializable {
 	private String categoryLvl2Code;
 	private int privacyFlag;
 	private String uniqueId;
+	private String type;
 
 	private String myProId;
 	private String combinedSearch = "";
@@ -276,5 +277,12 @@ public class DirectoryReportVO extends BeanDataVO implements Serializable {
 	}
 	private void addCombinedSearch(String combinedSearch) {
 		this.combinedSearch += " " + combinedSearch;
+	}
+	@Column(name="type", isReadOnly=true)
+	public String getType() {
+		return type;
+	}
+	public void setType(String type) {
+		this.type = type;
 	}
 }

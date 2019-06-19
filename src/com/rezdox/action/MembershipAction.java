@@ -33,7 +33,7 @@ public class MembershipAction extends SBActionAdapter {
 
 	public static final String MEMBERSHIP_ID = "membershipId";
 
-	private static final String RD_STORE = "RD_STORE"; //the session attribute, used in view too
+	public static final String RD_STORE = "RD_STORE"; //the session attribute, used in view too
 
 	public MembershipAction() {
 		super();
