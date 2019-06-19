@@ -309,7 +309,7 @@ public class BusinessReviewAction extends SimpleActionAdapter {
 		//quit while we're ahead if there's nobody to inform
 		if (profileIds == null || profileIds.length == 0) return;
 		Map<String, Object> params = new HashMap<>();
-		params.put("url", "/member/reviews");
+		params.put("url", "/member/review");
 		notifyUtil.send(Message.REVIEW_RCVD, params, null, profileIds);
 	}
 
