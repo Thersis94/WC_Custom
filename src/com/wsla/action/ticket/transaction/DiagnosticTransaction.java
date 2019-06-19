@@ -174,7 +174,15 @@ public class DiagnosticTransaction extends BaseTransactionAction {
 			StatusCode nextStatus = StatusCode.valueOf(req.getParameter("nonRepairType"));
 			String notes = req.getParameter("attr_partsNotes", "");
 			String summary = StringUtil.join(LedgerSummary.REPAIR_STATUS_CHANGED.summary, ": ", notes);
-			ledger = changeStatus(td.getTicketId(), user.getUserId(), nextStatus, summary, null);
+			
+			if (nextStatus == StatusCode.PENDING_UNIT_RETURN) {
+				//set the status to pending return if its not repair able under warranty
+				ledger = changeStatus(td.getTicketId(), user.getUserId(), nextStatus, summary, null);
+			}else {
+				//set the status to pending notification of rar by oem
+				ledger = changeStatus(td.getTicketId(), user.getUserId(), StatusCode.RAR_PENDING_NOTIFICATION, summary, null);
+			}
+			
 			
 			TicketDataVO notesData = new TicketDataVO(req);
 			notesData.setAttributeCode("attr_partsNotes");
