@@ -16,7 +16,7 @@ import com.smt.sitebuilder.action.SBActionAdapter;
 /****************************************************************************
  * <b>Title</b>: SubscriptionAction.java
  * <b>Project</b>: WC_Custom
- * <b>Description: </b> ***Change Me
+ * <b>Description: </b> Widget tp manage user subscriptions
  * <b>Copyright:</b> Copyright (c) 2019
  * <b>Company:</b> Silicon Mountain Technologies
  * 

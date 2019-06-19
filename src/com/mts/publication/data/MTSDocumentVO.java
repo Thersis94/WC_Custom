@@ -2,6 +2,7 @@ package com.mts.publication.data;
 
 // JDK 1.8.x
 import java.sql.ResultSet;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
@@ -9,8 +10,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.mts.publication.data.AssetVO.AssetType;
 // MTS Libs
+import com.mts.publication.data.AssetVO.AssetType;
 import com.mts.subscriber.data.MTSUserVO;
 
 // SMT Base Libs
@@ -18,10 +19,11 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
+import com.siliconmtn.util.StringUtil;
+
+// WC Libs
 import com.smt.sitebuilder.action.content.DocumentVO;
 import com.smt.sitebuilder.action.metadata.WidgetMetadataVO;
-
-import com.siliconmtn.util.StringUtil;
 
 /****************************************************************************
  * <b>Title</b>: MTSDocumentVO.java
@@ -81,6 +83,16 @@ public class MTSDocumentVO extends DocumentVO {
 	 */
 	public MTSDocumentVO(ResultSet rs) {
 		super(rs);
+	}
+	
+	/**
+	 * Returns the age of the article in days since it was published
+	 * @return
+	 */
+	public long getNumDaysPublished() {
+		Date now = new Date();
+		if (publishDate == null || publishDate .after(now)) return 0;
+		return ChronoUnit.DAYS.between(publishDate.toInstant(), now.toInstant());
 	}
 	
 	/**
