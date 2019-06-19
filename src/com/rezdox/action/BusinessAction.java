@@ -16,6 +16,8 @@ import com.rezdox.vo.BusinessAttributeVO;
 import com.rezdox.vo.BusinessVO;
 import com.rezdox.vo.ConnectionReportVO;
 import com.rezdox.vo.MemberVO;
+import com.rezdox.vo.MembershipVO;
+import com.rezdox.vo.PromotionVO;
 import com.siliconmtn.action.ActionControllerFactoryImpl;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -381,6 +383,9 @@ public class BusinessAction extends SBActionAdapter {
 				try {
 					changeMembersRole(req, false);
 
+					//flush the cached store options so they're refreshed
+					req.getSession().removeAttribute(MembershipAction.RD_STORE);
+
 					// This is the user's first business, give a reward to anyone that might have invited them
 					InvitationAction ia = new InvitationAction(dbConn, attributes);
 					ia.applyInviterRewards(req, RezDoxUtils.REWARD_BUSINESS_INVITE);
@@ -561,7 +566,7 @@ public class BusinessAction extends SBActionAdapter {
 		String newRoleName = RezDoxUtils.REZDOX_BUSINESS_ROLE_NAME;
 		int newRoleLevel = RezDoxUtils.REZDOX_BUSINESS_ROLE_LEVEL;
 
-		//downgrade from hybrid to residence - they have no more businesses
+		// Downgrade from hybrid to residence - they have no more businesses
 		if (isHybridDowngrade) {
 			newRoleId = RezDoxUtils.REZDOX_RESIDENCE_ROLE;
 			newRoleName = RezDoxUtils.REZDOX_RESIDENCE_ROLE_NAME;
@@ -572,6 +577,10 @@ public class BusinessAction extends SBActionAdapter {
 			newRoleId = RezDoxUtils.REZDOX_RES_BUS_ROLE;
 			newRoleName = RezDoxUtils.REZDOX_RES_BUS_ROLE_NAME;
 			newRoleLevel = RezDoxUtils.REZDOX_RES_BUS_ROLE_LEVEL;
+
+			// If the user is hybrid already, and this isn't a downgrade, don't make any changes
+		} else if (RezDoxUtils.REZDOX_RES_BUS_ROLE.equals(role.getRoleId())) {
+			return;
 		}
 
 		prm.removeRole(role.getProfileRoleId(), dbConn);
@@ -628,6 +637,23 @@ public class BusinessAction extends SBActionAdapter {
 			}
 		} catch(Exception e) {
 			throw new DatabaseException(e);
+		}
+
+		//when a new business is created, add 100 connections (the free offering) to it
+		if (newBusiness) {
+			MembershipAction ma = new MembershipAction(dbConn, attributes);
+			req.setParameter(MembershipAction.MEMBERSHIP_ID, RezDoxUtils.FREE_CONNECTIONS_PKID);
+			List<MembershipVO> data = ma.retrieveMemberships(req);
+			if (!data.isEmpty()) {
+				SubscriptionAction sa = new SubscriptionAction(dbConn, attributes);
+				try {
+					MembershipVO vo = data.get(0);
+					vo.setCostNo(0); // these are free the 1st time
+					sa.addSubscription(RezDoxUtils.getMember(req), vo, new PromotionVO(), business.getBusinessId());
+				} catch (ActionException e) {
+					log.error("could not give business " + business.getBusinessId() + " its free connections", e);
+				}
+			}
 		}
 
 		// Save the Business/Member XR and Category XR

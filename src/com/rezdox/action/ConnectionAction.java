@@ -28,6 +28,7 @@ import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.io.mail.EmailRecipientVO;
+import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.EnumUtil;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
@@ -105,6 +106,9 @@ public class ConnectionAction extends SimpleActionAdapter {
 
 		if (req.hasParameter("ListBusinesses")) {
 			putModuleData(loadBusinessOptions(StringUtil.checkVal(RezDoxUtils.getMemberId(req))));
+
+		} else if (req.hasParameter("getQuota")) {
+			putModuleData(getConnectionLimit(req.getParameter("businessId")));
 		}
 
 		if (req.getBooleanParameter("addConn")) {
@@ -131,6 +135,23 @@ public class ConnectionAction extends SimpleActionAdapter {
 
 		if (req.getBooleanParameter("generateCookie"))
 			generateConnCookie(req);
+	}
+
+
+	/**
+	 * Fetch the number of available Connections this business has.
+	 * Query evaluates valid & pending connections against what's in the subscription
+	 * @param req
+	 * @return
+	 */
+	private int getConnectionLimit(String businessId) {
+		String schema = getCustomSchema();
+		String sql = StringUtil.join("select quota_no as value from ", schema, "rezdox_connection_quota_view where business_id=?");
+
+		DBProcessor db = new DBProcessor(getDBConnection(), schema);
+		db.setGenerateExecutedSQL(log.isDebugEnabled());
+		List<GenericVO> data = db.executeSelect(sql, Arrays.asList(businessId), new GenericVO());
+		return !data.isEmpty() ? Convert.formatInteger(""+data.get(0).getValue()) : 0;
 	}
 
 
@@ -229,6 +250,8 @@ public class ConnectionAction extends SimpleActionAdapter {
 
 		sql.append("select * from ").append(schema).append("rezdox_business b ");
 		sql.append(DBUtil.INNER_JOIN).append("(select business_id from ").append(schema).append("rezdox_business_member_xr where status_flg = 1 group by business_id) bmxa on b.business_id = bmxa.business_id ");
+		//omit business over their connection quota
+		sql.append(DBUtil.INNER_JOIN).append(schema).append("rezdox_connection_quota_view q on b.business_id=q.business_id and q.quota_no > 0 ");
 
 		sql.append("where (lower(b.business_nm) like ? or lower(b.email_address_txt) like ? or lower(b.address_txt) like ?) ");
 		params.add(searchTerm);
@@ -347,7 +370,7 @@ public class ConnectionAction extends SimpleActionAdapter {
 	 * @param b
 	 * @return 
 	 */
-	protected List<ConnectionReportVO> generateConnections(String targetId, String inquiryType, ActionRequest req) {
+	protected List<ConnectionReportVO> generateConnections(String targetId, String idField, ActionRequest req) {
 		log.debug("generating connections");
 
 		// Sort on two fields in default view
@@ -362,14 +385,13 @@ public class ConnectionAction extends SimpleActionAdapter {
 
 		String schema = getCustomSchema();
 		List<Object> params = new ArrayList<>();
-		String idField = (inquiryType.equals(MEMBER)) ? MEMBER : BUSINESS;
 
-		//getting the records where target id sent the connection to an other member
+		//getting the records where target id sent the connection to another member
 		String andIsApproved = "and a.approved_flg >= 0 ";
-		StringBuilder sql = new StringBuilder(2680);
+		StringBuilder sql = new StringBuilder(3000);
 		sql.append(DBUtil.SELECT_FROM_STAR);
 		sql.append("( select connection_id, sndr_").append(idField).append("_id as sndr_id, b.member_id as rcpt_id, 'sending' as direction_cd, b.first_nm, b.last_nm, b.profile_pic_pth, ");
-		sql.append("pa.city_nm, pa.state_cd, '' as business_summary, cast(0 as numeric) as rating, b.create_dt, 'MEMBER' as category_cd, '' as sub_category_cd, a.approved_flg, privacy_flg, concat(b.first_nm, ' ', b.last_nm) as sortable_nm ");
+		sql.append("pa.city_nm, pa.state_cd, '' as business_summary, cast(0 as numeric) as rating, b.create_dt, 'MEMBER' as category_cd, '' as sub_category_cd, a.approved_flg, privacy_flg, concat(b.first_nm, ' ', b.last_nm) as sortable_nm, 'MEMBER' as type ");
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append(REZDOX_CONNECTION_A);
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("rezdox_member b on a.rcpt_member_id = b.member_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(" profile_address pa on b.profile_id = pa.profile_id ");
@@ -383,7 +405,7 @@ public class ConnectionAction extends SimpleActionAdapter {
 		//getting the records where target id was sent a connection by an other memeber
 		sql.append(DBUtil.UNION_ALL);
 		sql.append("select connection_id, b.member_id as sender_id, rcpt_").append(idField).append("_id as rcpt_id, 'receiving' as directionCd, b.first_nm, b.last_nm, b.profile_pic_pth, ");
-		sql.append("pa.city_nm, pa.state_cd, '', cast(0 as numeric) as rating, b.create_dt, 'MEMBER', '' as sub_category_cd, a.approved_flg, privacy_flg, concat(b.first_nm, ' ', b.last_nm)  ");
+		sql.append("pa.city_nm, pa.state_cd, '', cast(0 as numeric) as rating, b.create_dt, 'MEMBER', '' as sub_category_cd, a.approved_flg, privacy_flg, concat(b.first_nm, ' ', b.last_nm), 'MEMBER' as type  ");
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append(REZDOX_CONNECTION_A );
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("rezdox_member b on a.sndr_member_id = b.member_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(" profile_address pa on b.profile_id = pa.profile_id ");
@@ -397,7 +419,7 @@ public class ConnectionAction extends SimpleActionAdapter {
 		//getting the records where target id sent a connection to a business
 		sql.append(DBUtil.UNION_ALL);
 		sql.append("select connection_id, sndr_").append(idField).append("_id , b.business_id, 'sending', '', business_nm, b.photo_url, ");
-		sql.append("city_nm, state_cd, value_txt, cast(coalesce(rating, 0) as numeric) , b.create_dt, business_category_cd, sub_category_cd, a.approved_flg, privacy_flg, business_nm ");
+		sql.append("city_nm, state_cd, value_txt, cast(coalesce(rating, 0) as numeric) , b.create_dt, business_category_cd, sub_category_cd, a.approved_flg, privacy_flg, business_nm, 'BUSINESS' as type ");
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append(REZDOX_CONNECTION_A);
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("rezdox_business b on a.rcpt_business_id = b.business_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN);
@@ -418,7 +440,7 @@ public class ConnectionAction extends SimpleActionAdapter {
 		//getting the records where a business sent a connection to the target id
 		sql.append(DBUtil.UNION_ALL);
 		sql.append("select connection_id, b.business_id, rcpt_").append(idField).append("_id, 'receiving', '', business_nm, b.photo_url, ");
-		sql.append("city_nm, state_cd, value_txt, cast( coalesce(rating, 0)as numeric), b.create_dt, business_category_cd, sub_category_cd, a.approved_flg, privacy_flg, business_nm ");
+		sql.append("city_nm, state_cd, value_txt, cast( coalesce(rating, 0)as numeric), b.create_dt, business_category_cd, sub_category_cd, a.approved_flg, privacy_flg, business_nm, 'BUSINESS' as type ");
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append(REZDOX_CONNECTION_A);
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("rezdox_business b on a.sndr_business_id = b.business_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN);
@@ -595,8 +617,8 @@ public class ConnectionAction extends SimpleActionAdapter {
 		dataMap.put("url", "/member/connections");
 		String notifyProfileId = emailMap.entrySet().iterator().next().getKey();
 		notifyUtil.send(RezDoxNotifier.Message.CONNECTION_REQ, dataMap, null, notifyProfileId);
-
 	}
+
 
 	/**
 	 * Email received by a sender when connection is approved.
@@ -626,16 +648,17 @@ public class ConnectionAction extends SimpleActionAdapter {
 		notifyUtil.send(RezDoxNotifier.Message.CONNECTION_APPRVD, dataMap, null, notifyProfileId);
 	}
 
+
 	/**
 	 * Only pass the email map if you intend to send the email/notification to this user.
-	 * 
 	 * @param memberId
 	 * @param businessId
 	 * @param key
 	 * @param dataMap
 	 * @param emailMap
 	 */
-	private void addUserToMap(String memberId, String businessId, String key, Map<String, Object> dataMap, Map<String, String> emailMap) {
+	private void addUserToMap(String memberId, String businessId, String key, 
+			Map<String, Object> dataMap, Map<String, String> emailMap) {
 		String name = null;
 		String profileId = null;
 		String emailAddress = null;
