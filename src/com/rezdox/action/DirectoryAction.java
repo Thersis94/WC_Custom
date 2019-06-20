@@ -78,7 +78,7 @@ public class DirectoryAction extends SimpleActionAdapter {
 		memberId = RezDoxUtils.getMemberId(req);
 		sql.append("select m.member_id as user_id, c.connection_id, m.first_nm, m.last_nm, m.profile_pic_pth, pa.city_nm, ");
 		sql.append("pa.state_cd, '' as business_summary, cast(0 as numeric) as rating, 'MEMBER' as category_cd, '' as category_lvl2_cd, ");
-		sql.append("m.privacy_flg, m.create_dt, m.member_id || '_m' as unique_id, '' as my_pro_id, 'MEMBER' as type ");
+		sql.append("m.privacy_flg, m.create_dt, m.profile_id || '_m' as unique_id, '' as my_pro_id, 'MEMBER' as type ");
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("rezdox_member m ");
 		sql.append(DBUtil.INNER_JOIN).append("profile_address pa on m.profile_id = pa.profile_id ");
 		//only display people who are ACTIVE and are NOT business members (hybrid or residence, OK)
