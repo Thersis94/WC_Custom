@@ -14,6 +14,7 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.report.PDFGenerator;
 import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
+import com.siliconmtn.security.UserDataVO;
 import com.smt.sitebuilder.action.AbstractSBReportVO;
 // WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
@@ -23,7 +24,9 @@ import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.resource.WCResourceBundle;
 import com.wsla.action.ticket.TicketEditAction;
 import com.wsla.action.ticket.TicketLedgerAction;
+import com.wsla.common.LocaleWrapper;
 import com.wsla.data.ticket.TicketVO;
+import com.wsla.data.ticket.UserVO;
 
 import freemarker.template.TemplateException;
 
@@ -70,7 +73,15 @@ public class TicketPDFCreator extends SBActionAdapter {
 		String templateDir = req.getRealPath() + attributes.get(Constants.INCLUDE_DIRECTORY) + "templates/";
 		String path = templateDir + "service_order.ftl";
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
-		ResourceBundle rb = WCResourceBundle.getBundle(site, getAdminUser(req));
+		//Set the smt User locale to match the WSLA locale.
+		UserDataVO user = getAdminUser(req);
+		UserVO wslaUser = (UserVO) user.getUserExtendedInfo();
+		LocaleWrapper lw = new LocaleWrapper(wslaUser.getLocale());
+		
+		user.setLanguage(lw.getLocale().getLanguage());
+		user.setCountryCode(lw.getLocale().getCountry());
+		
+		ResourceBundle rb = WCResourceBundle.getBundle(site, user);
 		String ticketIdText = req.getParameter("ticketIdText");
 
 		try {

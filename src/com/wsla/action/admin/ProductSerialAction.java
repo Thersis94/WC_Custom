@@ -9,6 +9,7 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -85,6 +86,7 @@ public class ProductSerialAction extends BatchImport {
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		log.debug("pro serial action retreve called");
+		//TODO his method seems to be doing more then one method should, please break this method out into other methods in the future
 		String productId = req.getParameter(REQ_PRODUCT_ID);
 
 		if (!StringUtil.isEmpty(productId) && req.hasParameter("serialNo")) {
@@ -94,6 +96,23 @@ public class ProductSerialAction extends BatchImport {
 			// Check for another record
 			TicketVO ticket = lookupServiceOrder(productId, req.getParameter("serialNo"));
 			
+			//check the date and warranty max date
+			if(!StringUtil.isEmpty(pwvo.getProviderId()) && req.hasParameter("purchaseDate")){
+				
+				int max = getMaxWarrantyLength(pwvo.getProviderId());
+				Date purchaseDate = req.getDateParameter("purchaseDate");
+
+				long diff = new Date().getTime() - purchaseDate.getTime();
+				long numDays = TimeUnit.DAYS.convert(diff, TimeUnit.MILLISECONDS);
+				
+				log.debug("max days allowed " + max + " number of days ago it was purchased " + numDays);
+				if(max < numDays) {
+					log.debug("quit early no reason to look up anything they purchased it too long ago");
+					putModuleData(new GenericVO(pwvo, ticket));
+				}
+				
+			} 
+			
 			if(req.hasParameter("ticketId") && pwvo.getDisposeFlag() == 1 && ticket.getTicketId() == null ) {
 				TicketEditAction tea = new TicketEditAction();
 				tea.setActionInit(actionInit);
@@ -101,7 +120,7 @@ public class ProductSerialAction extends BatchImport {
 				tea.setDBConnection(getDBConnection());
 				
 				ticket = tea.getBaseTicket(req.getStringParameter("ticketId"));
-			}	
+			}
 			
 			//if its not found and the owner is retail trust them generate a new approved product serial vo 
 			//  that is already approved
@@ -145,6 +164,33 @@ public class ProductSerialAction extends BatchImport {
 		} else {
 			setModuleData(getSet(productId, new BSTableControlVO(req, ProductSerialNumberVO.class)));
 		}
+	}
+
+	/**
+	 * checks the data base for the longest max warranty length and returns it returns -1 if it can not find a max length
+	 * @param providerId
+	 * @return
+	 */
+	private int getMaxWarrantyLength(String providerId) {
+		StringBuilder sql = new StringBuilder(158);
+		sql.append(DBUtil.SELECT_CLAUSE).append("'max' as key, max(warranty_days_no) as value ").append(DBUtil.FROM_CLAUSE);
+		sql.append(getCustomSchema()).append("wsla_warranty ").append(DBUtil.WHERE_CLAUSE).append("provider_id = ? ");
+		sql.append(DBUtil.GROUP_BY).append("warranty_days_no ");
+		
+		List<Object> vals = new ArrayList<>();
+		vals.add(providerId);				
+
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		db.setGenerateExecutedSQL(log.isDebugEnabled());
+		List<GenericVO> data = db.executeSelect(sql.toString(), vals, new GenericVO());
+		
+		if (data != null && ! data.isEmpty()) {
+			return (int) data.get(0).getValue();
+		}else {
+			return -1;
+		}
+			
+		
 	}
 
 	/**
@@ -381,7 +427,7 @@ public class ProductSerialAction extends BatchImport {
 			return new ProductWarrantyVO();
 
 		StringBuilder sql = new StringBuilder(256);
-		sql.append(DBUtil.SELECT_FROM_STAR).append(getCustomSchema());
+		sql.append("select a.*, c.*, b.product_warranty_id, b.expiration_dt from ").append(getCustomSchema());
 		sql.append("wsla_product_serial a ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(getCustomSchema());
 		sql.append("wsla_product_warranty b ");
@@ -394,7 +440,7 @@ public class ProductSerialAction extends BatchImport {
 		List<Object> vals = new ArrayList<>();
 		vals.add(serialNo.toLowerCase());
 		vals.add(productId);
-
+		
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		db.setGenerateExecutedSQL(log.isDebugEnabled());
 		List<ProductWarrantyVO> lpwvo = db.executeSelect(sql.toString(), vals, new ProductWarrantyVO());

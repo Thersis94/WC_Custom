@@ -3,6 +3,7 @@ package com.wsla.action.report;
 // JDK 1.8.x
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
@@ -69,14 +70,16 @@ public class OpenPendingReport extends SBActionAdapter {
 		Date startDate = req.getDateParameter("startDate");
 		Date endDate = req.getDateParameter("endDate");
 		String[] oemId = req.getParameterValues("oemId");
-		String statusCode  = req.getParameter("statusCode");
+		List<String> statusCodes = new ArrayList<>();
+		if (! StringUtil.isEmpty(req.getParameter("statusCode"))) 
+			statusCodes = Arrays.asList(req.getParameter("statusCode").split("\\,"));
 		String appTypeCode = req.getParameter("appTypeCode");
 		String disTypeCode = req.getParameter("disTypeCode");
 		
 		oemId = oemId[0].split(",");
 		
 		try {
-			setModuleData(getOpenPendingData(oemId, startDate, endDate, statusCode, appTypeCode, disTypeCode, new BSTableControlVO(req)));
+			setModuleData(getOpenPendingData(oemId, startDate, endDate, statusCodes, appTypeCode, disTypeCode, new BSTableControlVO(req)));
 		} catch (Exception e) {
 			log.error("Unable to get pivot", e);
 		}
@@ -95,7 +98,7 @@ public class OpenPendingReport extends SBActionAdapter {
 	 * @param limit 
 	 * @return
 	 */
-	public GridDataVO<TicketVO> getOpenPendingData(String[] oemId, Date sd, Date ed, String statusCode, String appTypeCode, String disTypeCode, BSTableControlVO bstc) {
+	public GridDataVO<TicketVO> getOpenPendingData(String[] oemId, Date sd, Date ed, List<String> statusCodes, String appTypeCode, String disTypeCode, BSTableControlVO bstc) {
 		
 		List<Object> vals = new ArrayList<>();
 
@@ -104,11 +107,11 @@ public class OpenPendingReport extends SBActionAdapter {
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(getCustomSchema()).append("wsla_ticket_ref_rep rr on t.ticket_id = rr.ticket_id ");
 		sql.append(DBUtil.WHERE_1_CLAUSE);
 		
-		if(StringUtil.isEmpty(statusCode)) {
+		if(statusCodes == null || statusCodes.isEmpty()) {
 			sql.append("and status_cd != 'CLOSED' ");
 		}else {
-			sql.append("and status_cd = ? ");
-			vals.add(statusCode);
+			sql.append(" and status_cd in ( ").append(DBUtil.preparedStatmentQuestion(statusCodes.size())).append(") ");
+			vals.addAll(statusCodes);
 		}
 		
 		if(!StringUtil.isEmpty(appTypeCode)) {
