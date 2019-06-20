@@ -149,28 +149,34 @@ public class LinkReportAction extends SimpleActionAdapter {
 		String sec;
 		String actionType;
 		String contentType;
+		String nameType;
 		if (Section.COMPANY.name().equals(vo.getSection())) {
 			sec = Section.COMPANY.getPageURL();
 			actionType="companyAdmin&companyId=";
-			contentType="&attributeTypeCd=HTML&actionTarget=COMPANYATTRIBUTE&companyAttributeId=";
+			contentType="&actionTarget=UNKNOWNATTRIBUTE&companyAttributeId=";
+			nameType="&companyName=";
 		} else if (Section.PRODUCT.name().equals(vo.getSection())) {
 			sec = Section.PRODUCT.getPageURL();
 			actionType="productAdmin&productId=";
-			contentType="&actionTarget=PRODUCTATTRIBUTE&attributeTypeCd=HTML&productAttributeId=";
+			contentType="&actionTarget=UNKNOWNATTRIBUTE&productAttributeId=";
+			nameType="&productName=";
 		} else if (Section.INSIGHT.name().equals(vo.getSection())) {
 			sec = Section.INSIGHT.getPageURL();
 			actionType="insights&insightId=";
 			vo.setSection("ANALYSIS"); //override cosmetic label
 			contentType="&activeTab=";
+			nameType="&insightName";
 		} else if (Section.MARKET.name().equals(vo.getSection())) {
 			sec = Section.MARKET.getPageURL();
 			actionType="marketAdmin&marketId=";
-			contentType="&actionTarget=MARKETATTRIBUTE&attributeTypeCd=HTML&marketAttributeId=";
+			contentType="&actionTarget=UNKNOWNATTRIBUTE&marketAttributeId=";
+			nameType="&marketName=";
 		} else {
 			//updates - they don't have a page - just link to the homepage /qs/<id>
 			sec = "";
 			actionType="updates&updateId=";
 			contentType="";
+			nameType="&updateName=";
 		}
 
 		//add FQDN to relative (presumed local) URLs
@@ -178,6 +184,6 @@ public class LinkReportAction extends SimpleActionAdapter {
 			vo.setUrl(fqdn + vo.getUrl());
 
 		vo.setPublicUrl(StringUtil.join(fqdn, sec, qsPath, vo.getObjectId()));
-		vo.setAdminUrl(StringUtil.join(fqdn, "/manage?actionType=", actionType, vo.getObjectId(), contentType, vo.getContentId()));
+		vo.setAdminUrl(StringUtil.join(fqdn, "/manage?actionType=", actionType, vo.getObjectId(), contentType, vo.getContentId(), nameType, vo.getPageNm()));
 	}
 }

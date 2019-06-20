@@ -3,12 +3,10 @@ package com.wsla.action.ticket.transaction;
 //JDK 1.8.x
 import java.io.IOException;
 import java.sql.SQLException;
-import java.util.Locale;
 import java.util.ResourceBundle;
 
 // itext 2.2
 import com.lowagie.text.DocumentException;
-
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -17,16 +15,15 @@ import com.siliconmtn.data.report.PDFGenerator;
 import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.smt.sitebuilder.action.AbstractSBReportVO;
-
 // WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.report.vo.DownloadReportVO;
+import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
+import com.smt.sitebuilder.resource.WCResourceBundle;
 import com.wsla.action.ticket.TicketEditAction;
 import com.wsla.action.ticket.TicketLedgerAction;
-import com.wsla.common.WSLAConstants;
 import com.wsla.data.ticket.TicketVO;
-import com.wsla.data.ticket.UserVO;
 
 import freemarker.template.TemplateException;
 
@@ -48,7 +45,7 @@ public class TicketPDFCreator extends SBActionAdapter {
 	 * Transaction key for the facade
 	 */
 	public static final String AJAX_KEY = "pdf";
-	
+
 	/**
 	 * 
 	 */
@@ -72,18 +69,19 @@ public class TicketPDFCreator extends SBActionAdapter {
 		// Determine path dynamically to the template file
 		String templateDir = req.getRealPath() + attributes.get(Constants.INCLUDE_DIRECTORY) + "templates/";
 		String path = templateDir + "service_order.ftl";
-		UserVO user = (UserVO) this.getAdminUser(req).getUserExtendedInfo();
+		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
+		ResourceBundle rb = WCResourceBundle.getBundle(site, getAdminUser(req));
 		String ticketIdText = req.getParameter("ticketIdText");
-		
+
 		try {
-			byte[] pdfFile = getServiceOrderPDF(ticketIdText, path, user.getUserLocale());
+			byte[] pdfFile = getServiceOrderPDF(ticketIdText, path, rb);
 			getReportObj(ticketIdText, pdfFile, req);
 		} catch(Exception e) {
 			setModuleData(null,  0, e.getLocalizedMessage());
 		}
-		
+
 	}
-	
+
 	/**
 	 * Builds the PDF File and returns in a byte array
 	 * @param ticketIdText
@@ -97,23 +95,22 @@ public class TicketPDFCreator extends SBActionAdapter {
 	 * @throws TemplateException
 	 * @throws DocumentException
 	 */
-	public byte[] getServiceOrderPDF(String ticketIdText, String path2Templ, Locale locale) 
-	throws DatabaseException, SQLException, InvalidDataException, IOException, TemplateException, DocumentException {
+	public byte[] getServiceOrderPDF(String ticketIdText, String path2Templ, ResourceBundle rb) 
+			throws Exception {
 		TicketEditAction tea = new TicketEditAction(getDBConnection(), getAttributes());
 		TicketLedgerAction tla = new TicketLedgerAction(getDBConnection(), getAttributes());
-		ResourceBundle rb = ResourceBundle.getBundle(WSLAConstants.RESOURCE_BUNDLE, locale);
 
 		// Retrieve all of the ticket data
 		TicketVO ticket = tea.getCompleteTicket(ticketIdText);
 		ticket.setTimeline(tla.getLedgerForTicket(ticketIdText));
 		ticket.setDiagnosticRun(tea.getDiagnostics(ticket.getTicketId()));
-		
+
 		// Generate the pdf
 		PDFGenerator pdf = new PDFGenerator(path2Templ, ticket, rb);
 		return pdf.generate();
 
 	}
-	
+
 	/**
 	 * Builds the WC Report Object to be streamed
 	 * @param ticket
@@ -122,7 +119,6 @@ public class TicketPDFCreator extends SBActionAdapter {
 	 * @return
 	 */
 	public void getReportObj(String ticketIdText, byte[] pdf, ActionRequest req) {
-		
 		AbstractSBReportVO report = new DownloadReportVO();
 		report.setFileName("so_" + ticketIdText + ".pdf");
 		report.setData(pdf);

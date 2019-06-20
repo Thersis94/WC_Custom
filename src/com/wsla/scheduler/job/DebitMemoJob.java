@@ -1,14 +1,15 @@
 package com.wsla.scheduler.job;
 
-import java.io.IOException;
 // JDK 1.8.x
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.Reader;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 
 // Quartz 2.2.3
@@ -21,6 +22,7 @@ import com.siliconmtn.data.report.PDFGenerator;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.DatabaseConnection;
 import com.siliconmtn.db.orm.DBProcessor;
+import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.http.filter.fileupload.Constants;
@@ -30,8 +32,7 @@ import com.siliconmtn.util.RandomAlphaNumeric;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
 import com.smt.sitebuilder.action.FileLoader;
-import com.smt.sitebuilder.resource.SMTBaseResourceBundle;
-
+import com.smt.sitebuilder.resource.ResourceBundleLoader;
 // WC Libs
 import com.smt.sitebuilder.scheduler.AbstractSMTJob;
 import com.wsla.common.WSLAConstants;
@@ -54,13 +55,13 @@ import com.wsla.data.ticket.DebitMemoVO;
  ****************************************************************************/
 
 public class DebitMemoJob extends AbstractSMTJob {
-	
+
 	/**
 	 * Field for the database schema name
 	 */
 	private Map<String, Object> attributes;
 	private Map<String, String> resourceBundle = new HashMap<>();
-	
+
 	/**
 	 * 
 	 */
@@ -75,30 +76,30 @@ public class DebitMemoJob extends AbstractSMTJob {
 	 */
 	public static void main(String[] args) throws Exception {
 		DebitMemoJob job = new DebitMemoJob();
-		
+
 		// Assign the needed attributes
 		job.attributes = new HashMap<>();
-		job.attributes.put(Constants.PATH_TO_BINARY, "/Users/james/Code/git/java/WebCrescendo/binary");
+		job.attributes.put(Constants.PATH_TO_BINARY, "/home/etewa/Code/git/java/WebCrescendo/binary");
 		job.attributes.put(Constants.CUSTOM_DB_SCHEMA, "custom.");
 		job.attributes.put(Constants.INCLUDE_DIRECTORY, "/WEB-INF/include/");
 		job.attributes.put("fileManagerType", "2");
-		
+
 		// Get a db connection
 		DatabaseConnection dbc = new DatabaseConnection();
 		dbc.setDriverClass("org.postgresql.Driver");
-		dbc.setUrl("jdbc:postgresql://sonic:5432/webcrescendo_wsla_sb?defaultRowFetchSize=25&amp;prepareThreshold=3");
+		dbc.setUrl("jdbc:postgresql://sonic:5432/webcrescendo_dev032019_sb?defaultRowFetchSize=25&amp;prepareThreshold=3");
 		dbc.setUserName("ryan_user_sb");
 		dbc.setPassword("sqll0gin");
 		job.conn = dbc.getConnection();
-		
+
 		// Load the resource bundle
 		job.getResourceBundleData("en", "US", "WSLA_BUNDLE");
-		
+
 		// Process the job
-		job.log.info("Starting ...");
+		job.log.debug("Starting ...");
 		job.processDebitMemos(StringUtil.checkVal(job.attributes.get(Constants.CUSTOM_DB_SCHEMA)));
 	}
-	
+
 	/**
 	 * 
 	 * @param language
@@ -106,15 +107,14 @@ public class DebitMemoJob extends AbstractSMTJob {
 	 */
 	public void getResourceBundleData(String language, String country, String bundleId) {
 		// Get the resource bundle map
-		SMTBaseResourceBundle bundle = new SMTBaseResourceBundle();
-		Locale locale = new Locale(language, country);
-		List<GenericVO> data = bundle.getResourceData(locale, bundleId, conn);
-		
+		ResourceBundleLoader loader = new ResourceBundleLoader(new SMTDBConnection(conn));
+		List<GenericVO> data = loader.getBundle(bundleId, language, country);
+
 		for (GenericVO val : data) { 
 			resourceBundle.put(val.getKey() + "", val.getValue() + ""); 
 		}
 	}
-	
+
 	/*
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.scheduler.AbstractSMTJob#execute(org.quartz.JobExecutionContext)
@@ -126,7 +126,7 @@ public class DebitMemoJob extends AbstractSMTJob {
 		getResourceBundleData("es", "MX", "WSLA_BUNDLE");
 		processDebitMemos(StringUtil.checkVal(attributes.get(Constants.CUSTOM_DB_SCHEMA)));
 	}
-	
+
 	/**
 	 * Query to find unique retailer, oem pairs that have unassigned and 
 	 * Approved credit memos
@@ -134,34 +134,34 @@ public class DebitMemoJob extends AbstractSMTJob {
 	 * @return
 	 */
 	public List<DebitMemoVO> processDebitMemos(String schema) {
-		// 
 		List<DebitMemoVO> memos = getGroupData(schema);
-		
+
+		log.debug(memos);
 		for (DebitMemoVO memo : memos) {
 			try {
 				// get the credit memos
 				this.getCreditMemos(schema, memo);
-				
+
 				// get the oem data
 				this.assignOEM(schema, memo);
-				
+
 				// get the retailer data
 				this.assignRetailer(schema, memo);
-				
+
 				// Assign a human readable value and misc values
 				String slug = RandomAlphaNumeric.generateRandom(WSLAConstants.TICKET_RANDOM_CHARS);
 				memo.setDebitMemoId(new UUIDGenerator().getUUID());
 				memo.setCustomerMemoCode(slug.toUpperCase());
 				memo.setCreateDate(new Date());
-				
+
 				// process the memo
 				processDebitMemo(memo, schema);
-				
+
 			} catch (Exception e) {
 				log.error("Unable to create debit memo", e);
 			}
 		}
-		
+
 		return new ArrayList<>();
 	}
 	/**
@@ -174,15 +174,15 @@ public class DebitMemoJob extends AbstractSMTJob {
 
 		// Create the actual debit memo and attach as an asset and asset
 		memo.setFilePathUrl(this.buildMemoPDF(memo));
-		
+
 		// Create a debit memo for each oem/retailer pair
 		DBProcessor db = new DBProcessor(conn, schema);
 		db.insert(memo);
-		
+
 		// Add the debit memo id to each of the credit memos assigned to the debit memo
 		this.updateCreditMemos(schema, memo.getDebitMemoId(), memo.getCreditMemos());
 	}
-	
+
 	/**
 	 * Builds the PDF file and stores it to the file system
 	 * @param memo
@@ -191,25 +191,26 @@ public class DebitMemoJob extends AbstractSMTJob {
 	 * @throws FileWriterException 
 	 */
 	public String buildMemoPDF(DebitMemoVO memo) 
-	throws FileWriterException {
+			throws FileWriterException {
 		// Get the file name and path
 		FileTransferStructureImpl fs = new FileTransferStructureImpl(null, "12345678.pdf", attributes);
-		
+		log.info("FS: " + fs.getFullPath());
 		// Create the file loader and write to the file system
 		FileLoader fl = new FileLoader(attributes);
 		fl.setPath(fs.getFullPath());
-		fl.setFileName("test.pdf");
+		fl.setFileName(fs.getStorageFileName());
+		log.info("File Name: " + fs.getStorageFileName());
 		try {
 			fl.setData(createPDF(memo));
 			fl.writeFiles();
 		} catch(Exception e) {
 			throw new FileWriterException(e);
 		}
-		
+
 		// Return the full path
-		return "/binary/file_transfer/" + fs.getCanonicalPath() + fs.getStorageFileName();
+		return "/binary/file_transfer" + fs.getCanonicalPath() + fs.getStorageFileName();
 	}
-	
+
 	/**
 	 * Creates the PDF file
 	 * @param memo
@@ -218,20 +219,22 @@ public class DebitMemoJob extends AbstractSMTJob {
 	 * @throws InvalidDataException 
 	 */
 	protected byte[] createPDF(DebitMemoVO memo) throws IOException {
-		
+
 		// Generate the pdf
-		String path = getClass().getResource("debit_memo.ftl").getPath();
+		//String path = getClass().getResource("debit_memo.ftl").getPath();
+		//log.info("PATH: " + getClass().getResource("debit_memo.ftl"));
 		
 		try{
-			PDFGenerator pdf = new PDFGenerator(path, memo, resourceBundle);
+			Reader reader = new InputStreamReader(getClass().getResourceAsStream("debit_memo.ftl"));
+			PDFGenerator pdf = new PDFGenerator(reader, memo, resourceBundle);
 			return pdf.generate();
 		} catch (Exception e) {
 			throw new IOException(e);
 		}
-		
-		
+
+
 	}
-	
+
 	/**
 	 * Updates the credit memos with the debit memo id to assign these values
 	 * @param schema
@@ -240,29 +243,29 @@ public class DebitMemoJob extends AbstractSMTJob {
 	 * @throws SQLException
 	 */
 	public void updateCreditMemos(String schema, String slug, List<CreditMemoVO> creditMemos) 
-	throws SQLException {
+			throws SQLException {
 		// Build the SQL Statement
 		StringBuilder sql = new StringBuilder();
 		sql.append("update ").append(schema).append("wsla_credit_memo ");
 		sql.append("set debit_memo_id = ? where credit_memo_id in (");
 		DBUtil.preparedStatmentQuestion(creditMemos.size(), sql);
 		sql.append(")");
-		
+
 		try(PreparedStatement ps = conn.prepareStatement(sql.toString())) {
 			int ctr = 1;
 			ps.setString(ctr++, slug);
-			
+
 			// Add all of the credit memos as params
 			for (CreditMemoVO memo : creditMemos) {
 				ps.setString(ctr++, memo.getCreditMemoId());
 			}
-			
+
 			// Update the credit memos
 			ps.executeUpdate();
-			
+
 		}
 	}
-	
+
 	/**
 	 * Gets the debit memos by rolling up the provider / oem grouping
 	 * @return
@@ -283,11 +286,11 @@ public class DebitMemoJob extends AbstractSMTJob {
 		sql.append("group by oem_id, provider_id ");
 		sql.append("order by oem_id, provider_id ");
 		log.debug(sql.length() + "|" + sql);
-		
+
 		DBProcessor db = new DBProcessor(conn);
 		return db.executeSelect(sql.toString(), null, new DebitMemoVO());
 	}
-	
+
 	/**
 	 * Gets the credit memos for the given debit memo
 	 * @param schema
@@ -298,7 +301,7 @@ public class DebitMemoJob extends AbstractSMTJob {
 		List<Object> vals = new ArrayList<>();
 		vals.add(memo.getOemId());
 		vals.add(memo.getRetailId());
-		
+
 		StringBuilder sql = new StringBuilder(400);
 		sql.append("select c.oem_id, ticket_no, d.provider_id, product_nm, a.* ");
 		sql.append(DBUtil.FROM_CLAUSE).append(schema);
@@ -316,12 +319,12 @@ public class DebitMemoJob extends AbstractSMTJob {
 		sql.append("where debit_memo_id is null and approval_dt is not null ");
 		sql.append("and oem_id = ? and d.provider_id = ? ");
 		log.debug(sql.length() + "|" + sql + "|" + vals);
-		
+
 		// Get the memos
 		DBProcessor db = new DBProcessor(conn);
 		memo.setCreditMemos(db.executeSelect(sql.toString(), vals, new CreditMemoVO()));
 	}
-	
+
 	/**
 	 * Gets the OEM information from the database and assigns it to the memo
 	 * @param schema
@@ -330,15 +333,15 @@ public class DebitMemoJob extends AbstractSMTJob {
 	 * @throws DatabaseException
 	 */
 	protected void assignOEM(String schema, DebitMemoVO memo) 
-	throws InvalidDataException, DatabaseException {
+			throws InvalidDataException, DatabaseException {
 		ProviderVO prov = new ProviderVO();
 		prov.setProviderId(memo.getOemId());
-		
+
 		DBProcessor db = new DBProcessor(conn, schema);
 		db.getByPrimaryKey(prov);
 		memo.setOem(prov);
 	}
-	
+
 	/**
 	 * Gets the OEM information from the database and assigns it to the memo
 	 * @param schema
@@ -347,13 +350,12 @@ public class DebitMemoJob extends AbstractSMTJob {
 	 * @throws DatabaseException
 	 */
 	protected void assignRetailer(String schema, DebitMemoVO memo) 
-	throws InvalidDataException, DatabaseException {
+			throws InvalidDataException, DatabaseException {
 		ProviderVO prov = new ProviderVO();
 		prov.setProviderId(memo.getRetailId());
-		
+
 		DBProcessor db = new DBProcessor(conn, schema);
 		db.getByPrimaryKey(prov);
 		memo.setRetailer(prov);
 	}
 }
-

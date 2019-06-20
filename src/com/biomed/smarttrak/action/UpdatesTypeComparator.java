@@ -30,11 +30,15 @@ public class UpdatesTypeComparator implements Comparator<UpdateVO> {
 		int val = o1.getType().compareTo(o2.getType());
 		if (val != 0) return val;
 
-		//Second compare by order number
-		val = Integer.valueOf(o1.getOrderNo()).compareTo(o2.getOrderNo());
+		//Second compare by Publish Sort Date
+		val = o2.getPublishDtSort().compareTo(o1.getPublishDtSort());
 		if (val != 0) return val;
 
-		//Same type and order - compare by date - newest first.
-		return Integer.valueOf(o1.getPublishDate().compareTo(o2.getPublishDate()));
+		//Second compare by order number
+		val = Integer.valueOf(o2.getOrderNo()).compareTo(o1.getOrderNo());
+		if (val != 0) return val;
+
+		//Same type and order - compare by date time - newest first.
+		return o1.getPublishDate().compareTo(o2.getPublishDate());
 	}
 }

@@ -147,8 +147,11 @@ public class RefundReplacementTransaction extends BaseTransactionAction {
 	 */
 	private void handleRefundRequest(RefundReplacementVO rrvo, UserVO user) {
 		try {
+			changeStatus(rrvo.getTicketId(), user.getUserId(), StatusCode.REFUND_REQUEST, null, null);
 			createCreditMemo(rrvo);
+			addLedger(rrvo.getTicketId(), user.getUserId(), null , LedgerSummary.CREDIT_MEMO_CREATED.summary, null);
 			processDispostion(rrvo, user);
+			
 		} catch (Exception e) {
 			log.error("could not create credit memo or process dispostion", e);
 			putModuleData(rrvo, 0, false, e.getLocalizedMessage(), true);
@@ -489,8 +492,13 @@ public class RefundReplacementTransaction extends BaseTransactionAction {
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 
 		StringBuilder sql = new StringBuilder(93);
-		sql.append(DBUtil.SELECT_FROM_STAR).append(getCustomSchema()).append("wsla_credit_memo cm ");
+		sql.append("select pm.msrp_cost_no, cm.*,rr.* from ").append(getCustomSchema()).append("wsla_credit_memo cm ");
 		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("wsla_ticket_ref_rep rr on cm.ticket_ref_rep_id = rr.ticket_ref_rep_id ");
+		
+		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("wsla_ticket t on rr.ticket_id = t.ticket_id ");
+		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("wsla_product_serial ps on t.product_serial_id = ps.product_serial_id ");
+		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("wsla_product_master pm on ps.product_id = pm.product_id ");
+		
 		sql.append("where credit_memo_id = ? "); 
 		
 		List<CreditMemoVO> data = db.executeSelect(sql.toString(), params, new CreditMemoVO());

@@ -3,12 +3,10 @@ package com.wsla.action.ticket.transaction;
 //JDK 1.8.x
 import java.io.IOException;
 import java.sql.SQLException;
-import java.util.Locale;
 import java.util.ResourceBundle;
 
 // itext 2.2
 import com.lowagie.text.DocumentException;
-
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -18,17 +16,16 @@ import com.siliconmtn.data.report.PDFGenerator;
 import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.smt.sitebuilder.action.AbstractSBReportVO;
-
 // WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.report.vo.DownloadReportVO;
+import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
+import com.smt.sitebuilder.resource.WCResourceBundle;
 import com.wsla.action.ticket.TicketEditAction;
 import com.wsla.action.ticket.TicketLedgerAction;
-import com.wsla.common.WSLAConstants;
 import com.wsla.data.ticket.CreditMemoVO;
 import com.wsla.data.ticket.TicketVO;
-import com.wsla.data.ticket.UserVO;
 
 import freemarker.template.TemplateException;
 
@@ -50,7 +47,7 @@ public class CreditMemoPDFCreator extends SBActionAdapter {
 	 * Transaction key for the facade
 	 */
 	public static final String AJAX_KEY = "CMemoTemplate";
-	
+
 	/**
 	 * 
 	 */
@@ -75,18 +72,19 @@ public class CreditMemoPDFCreator extends SBActionAdapter {
 		// Determine path dynamically to the template file
 		String templateDir = req.getRealPath() + attributes.get(Constants.INCLUDE_DIRECTORY) + "templates/";
 		String path = templateDir + "credit_memo.ftl";
-		UserVO user = (UserVO) this.getAdminUser(req).getUserExtendedInfo();
+		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
+		ResourceBundle rb = WCResourceBundle.getBundle(site, getAdminUser(req));
 		String creditMemoId = req.getParameter("creditMemoId");
 		try {
-			byte[] pdfFile = getCreditMemoPDF(creditMemoId, path, user.getUserLocale());
+			byte[] pdfFile = getCreditMemoPDF(creditMemoId, path, rb);
 			getReportObj(creditMemoId, pdfFile, req);
 		} catch(Exception e) {
 			log.debug("can not generate report" +e);
 			setModuleData(null,  0, e.getLocalizedMessage());
 		}
-		
+
 	}
-	
+
 	/**
 	 * Builds the PDF File and returns in a byte array
 	 * @param ticketIdText
@@ -100,17 +98,17 @@ public class CreditMemoPDFCreator extends SBActionAdapter {
 	 * @throws TemplateException
 	 * @throws DocumentException
 	 */
-	public byte[] getCreditMemoPDF(String creditMemoId, String path2Templ, Locale locale) throws Exception {
+	public byte[] getCreditMemoPDF(String creditMemoId, String path2Templ, ResourceBundle rb) 
+			throws Exception {
 		log.debug("getting credit memo pdf");
 		TicketEditAction tea = new TicketEditAction(getDBConnection(), getAttributes());
 		TicketLedgerAction tla = new TicketLedgerAction(getDBConnection(), getAttributes());
-		ResourceBundle rb = ResourceBundle.getBundle(WSLAConstants.RESOURCE_BUNDLE, locale);
 
 		RefundReplacementTransaction rrt = new RefundReplacementTransaction();
 		rrt.setActionInit(actionInit);
 		rrt.setAttributes(getAttributes());
 		rrt.setDBConnection(getDBConnection());
-		
+
 		CreditMemoVO cMemo = rrt.getCompleteCreditMemo(creditMemoId);
 
 		TicketVO ticket = tea.getCompleteTicket(cMemo.getTicketId());
@@ -120,13 +118,13 @@ public class CreditMemoPDFCreator extends SBActionAdapter {
 		GenericVO gvo = new GenericVO();
 		gvo.setKey(ticket);
 		gvo.setValue(cMemo);
-		
+
 		// Generate the pdf
 		PDFGenerator pdf = new PDFGenerator(path2Templ, gvo, rb);
 		return pdf.generate();
 
 	}
-	
+
 	/**
 	 * Builds the WC Report Object to be streamed
 	 * @param ticket

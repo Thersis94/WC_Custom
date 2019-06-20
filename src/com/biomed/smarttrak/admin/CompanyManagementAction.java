@@ -5,14 +5,18 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 
-import com.biomed.smarttrak.security.SmarttrakRoleVO;
+import org.apache.commons.lang.ArrayUtils;
+import org.apache.solr.common.SolrDocument;
+
+import com.biomed.smarttrak.action.AdminControllerAction;
 import com.biomed.smarttrak.action.AdminControllerAction.Section;
 import com.biomed.smarttrak.action.AdminControllerAction.Status;
-import com.biomed.smarttrak.action.AdminControllerAction;
 import com.biomed.smarttrak.action.CompanyAction;
+import com.biomed.smarttrak.security.SmarttrakRoleVO;
 import com.biomed.smarttrak.util.BiomedCompanyIndexer;
 import com.biomed.smarttrak.util.BiomedProductIndexer;
 import com.biomed.smarttrak.util.ManagementActionUtil;
@@ -24,6 +28,7 @@ import com.biomed.smarttrak.vo.LocationVO;
 import com.biomed.smarttrak.vo.ProductAllianceVO;
 import com.biomed.smarttrak.vo.SectionVO;
 import com.siliconmtn.action.ActionException;
+import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.Node;
 import com.siliconmtn.data.Tree;
@@ -35,8 +40,13 @@ import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
+import com.smt.sitebuilder.action.search.SolrAction;
+import com.smt.sitebuilder.action.search.SolrResponseVO;
+import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.constants.Constants;
+import com.smt.sitebuilder.search.SearchDocumentHandler;
+import com.smt.sitebuilder.util.WCConfigUtil;
 
 /****************************************************************************
  * <b>Title</b>: CompanyManagementAction.java <p/>
@@ -49,16 +59,21 @@ import com.smt.sitebuilder.common.constants.Constants;
  * @version 1.0
  * @since Jan 16, 2017<p/>
  * <b>Changes: </b>
+ * TODO - Next time we work in this class, we need to look at splitting it up into
+ * a controller/Facade and related sub classes.
+ * This class has grown too large to maintain adequately.
  ****************************************************************************/
 public class CompanyManagementAction extends ManagementAction {
 
 	public static final String ACTION_TYPE = "actionTarget";
 	public static final String COMPANY_ID = "companyId";
 	public static final String CONTENT_ATTRIBUTE_ID = "LVL1_1";
-
+	public static final String TYPE_CD = "attributeTypeCd";
+	private static final String COMPANY_SOLR_KEY = "COMPANY_SOLR_KEY";
+	private static final String STATUS_S = "status_s:";
 
 	private enum ActionType {
-		COMPANY, LOCATION, ALLIANCE, COMPANYATTRIBUTE, COMPANYATTACH, COMPANYLINK, ATTRIBUTE, PREVIEW, COMPANYATTRIBUTEARCHIVE, COMPANYATTRIBUTEARCHIVEUPDATE
+		COMPANY, LOCATION, ALLIANCE, UNKNOWNATTRIBUTE, COMPANYATTRIBUTE, COMPANYATTACH, COMPANYLINK, ATTRIBUTE, PREVIEW, COMPANYATTRIBUTEARCHIVE, COMPANYATTRIBUTEARCHIVEUPDATE
 	}
 
 
@@ -172,10 +187,11 @@ public class CompanyManagementAction extends ManagementAction {
 			case COMPANYATTRIBUTEARCHIVE:
 				retrieveArchives(req);
 				break;
+			case UNKNOWNATTRIBUTE:
 			case COMPANYATTRIBUTE:
 			case COMPANYLINK:
 			case COMPANYATTACH:
-				companyAttributeRetrieve(req);
+				companyAttributeRetrieve(req, type);
 				break;
 			case LOCATION:
 				locationRetrieve(req);
@@ -201,7 +217,7 @@ public class CompanyManagementAction extends ManagementAction {
 	 * @throws ActionException 
 	 */
 	private void retrieveArchives(ActionRequest req) throws ActionException {
-		String attributeType = req.getParameter("attributeTypeCd");
+		String attributeType = req.getParameter(TYPE_CD);
 		String companyAttributeGroupId = req.getParameter("companyAttributeGroupId");
 		List<Object> params = new ArrayList<>();
 
@@ -275,7 +291,7 @@ public class CompanyManagementAction extends ManagementAction {
 	protected void companyRetrieve(ActionRequest req) throws ActionException {
 		if (req.hasParameter(COMPANY_ID) && !req.hasParameter("add")) {
 			retrieveCompany(req.getParameter(COMPANY_ID), req);
-		} else if (!req.hasParameter("add")) {
+		} else if (!req.hasParameter("add") && req.hasParameter("json")) {
 			retrieveCompanies(req);
 		}else{
 			loadAuthors(req); //load list of BiomedGPS Staff for the "Author" drop-down
@@ -307,12 +323,13 @@ public class CompanyManagementAction extends ManagementAction {
 	/**
 	 * Determine how to retrieve company information and do so.
 	 * @param req
+	 * @param type 
 	 * @throws ActionException
 	 */
-	protected void companyAttributeRetrieve(ActionRequest req) {
+	protected void companyAttributeRetrieve(ActionRequest req, ActionType type) {
 		if (req.hasParameter("companyAttributeId"))
-			retrieveAttribute(req);
-		if ("HTML".equals(req.getParameter("attributeTypeCd")))
+			retrieveAttribute(req, type);
+		if ("HTML".equals(req.getParameter(TYPE_CD)))
 			retrieveAttributes(req);
 	}
 
@@ -397,9 +414,9 @@ public class CompanyManagementAction extends ManagementAction {
 			sql.append("WHERE lower(ATTRIBUTE_NM) like ? ");
 			params.add("%" + req.getParameter("searchData").toLowerCase() + "%");
 		}
-		if (req.hasParameter("attributeTypeCd")) {
+		if (req.hasParameter(TYPE_CD)) {
 			sql.append("WHERE TYPE_NM = ? ");
-			params.add(req.getParameter("attributeTypeCd"));
+			params.add(req.getParameter(TYPE_CD));
 		}
 
 		sql.append("ORDER BY DISPLAY_ORDER_NO ");
@@ -417,7 +434,7 @@ public class CompanyManagementAction extends ManagementAction {
 		// If all attributes of a type is being requested set it as a request attribute since it is
 		// being used to supplement the attribute xr editing.
 		// Search data should not be turned into a tree after a search as requisite nodes may be missing
-		if (req.hasParameter("attributeTypeCd")) {
+		if (req.hasParameter(TYPE_CD)) {
 			req.getSession().setAttribute("attributeList", new Tree(orderedResults).getPreorderList());
 		} else if (req.hasParameter("searchData")) {
 			super.putModuleData(orderedResults, orderedResults.size(), false);
@@ -448,9 +465,10 @@ public class CompanyManagementAction extends ManagementAction {
 
 	/**
 	 * Get the details of the supplied company attribute
+	 * @param type 
 	 * @param attributeId
 	 */
-	protected void retrieveAttribute(ActionRequest req) {
+	protected void retrieveAttribute(ActionRequest req, ActionType type) {
 		StringBuilder sql = new StringBuilder(100);
 		sql.append(DBUtil.SELECT_FROM_STAR).append(customDbSchema).append("BIOMEDGPS_COMPANY_ATTRIBUTE_XR xr ");
 		sql.append(LEFT_OUTER_JOIN).append(customDbSchema).append("BIOMEDGPS_COMPANY_ATTRIBUTE a ");
@@ -462,6 +480,14 @@ public class CompanyManagementAction extends ManagementAction {
 		DBProcessor db = new DBProcessor(dbConn);
 		CompanyAttributeVO attr = (CompanyAttributeVO) db.executeSelect(sql.toString(), params, new CompanyAttributeVO()).get(0);
 		super.putModuleData(attr);
+		if (ActionType.UNKNOWNATTRIBUTE == type) {
+			if ("LINK".equals(attr.getAttributeTypeName())) {
+				req.setParameter(ACTION_TYPE, ActionType.COMPANYLINK.toString());
+			} else {
+				req.setParameter(ACTION_TYPE, ActionType.COMPANYATTRIBUTE.toString());
+			}
+			req.setParameter(TYPE_CD, attr.getAttributeTypeName());
+		}
 		if (!req.hasParameter("attributeTypeName"))
 			req.setParameter("attributeTypeName", attr.getAttributeTypeName());
 	}
@@ -491,52 +517,140 @@ public class CompanyManagementAction extends ManagementAction {
 	 * @throws ActionException
 	 */
 	protected void retrieveCompanies(ActionRequest req) throws ActionException {
-		List<Object> params = new ArrayList<>();
+		//Get the Filtered Updates according to Request.
+		getFilteredCompanies(req);
+
+		ModuleVO mod = (ModuleVO) attributes.get(Constants.MODULE_DATA);
+		SolrResponseVO resp = (SolrResponseVO)mod.getActionData();
+		int count = (int) resp.getTotalResponses();
+		List<CompanyVO> data = null;
+		if (count > 0 && !resp.getResultDocuments().isEmpty()) {
+			List<Object> ids = getIdsFromDocs(resp);
+			data = loadDetails(req, ids);
+		} else {
+			data = Collections.emptyList();
+		}
+
+		super.putModuleData(data, count, false);
+	}
+
+	private List<CompanyVO> loadDetails(ActionRequest req, List<Object> ids) {
 		StringBuilder sql = new StringBuilder(400);
 		sql.append("select c.COMPANY_NM, c.COMPANY_ID, c.COMPLETION_SCORE_NO, c.STATUS_NO, ");
 		sql.append("CASE WHEN (ci.investee_company_id  is null) THEN 0 ELSE 1 end as INVESTED_FLG ");
 		sql.append("FROM ").append(customDbSchema).append("BIOMEDGPS_COMPANY c ");
 		sql.append(LEFT_OUTER_JOIN).append(customDbSchema).append("biomedgps_company_investor ci ");
-		sql.append("on c.COMPANY_ID = ci.investee_company_id WHERE 1=1 ");
-
-		if (!req.hasParameter("inactive")) {
-			sql.append("and (c.STATUS_NO = '").append(Status.P.toString()).append("' ");
-			sql.append("or c.STATUS_NO = '").append(Status.E.toString()).append("') ");
-		}
-
-		// If the request has search terms on it add them here
-		if (req.hasParameter(DBUtil.TABLE_SEARCH)) {
-			sql.append("and lower(COMPANY_NM) like ?");
-			params.add("%" + req.getParameter(DBUtil.TABLE_SEARCH).toLowerCase() + "%");
-		}
-
-		// If this is a request for the dashboard an author id will be provided
-		if (req.hasParameter("authorId")) {
-			sql.append("and creator_profile_id = ? ");
-			params.add(req.getParameter("authorId"));
-		}
-
-		sql.append("group by c.COMPANY_NM, c.COMPANY_ID, INVESTED_FLG ");
+		sql.append("on c.COMPANY_ID = ci.investee_company_id WHERE c.company_id in (");
+		DBUtil.preparedStatmentQuestion(ids.size(), sql);
+		sql.append(") group by c.COMPANY_NM, c.COMPANY_ID, INVESTED_FLG ");
 
 		SortField s = SortField.getFromString(req.getParameter("sort"));
 
 		sql.append("ORDER BY ").append(s.getDbField());
 		sql.append(" ").append(req.hasParameter(DBUtil.TABLE_ORDER)? req.getParameter(DBUtil.TABLE_ORDER):DBUtil.SortDirection.ASC.name()).append(" ");
 
-		int limit  = Convert.formatInteger(req.getParameter(DBUtil.TABLE_LIMIT));
-		if (limit != 0) {
-			sql.append("LIMIT ? OFFSET ? ");
-			params.add(Convert.formatInteger(req.getParameter(DBUtil.TABLE_LIMIT)));
-			params.add(Convert.formatInteger(req.getParameter(DBUtil.TABLE_OFFSET)));
-		}
 		log.debug(sql);
 
 		DBProcessor db = new DBProcessor(dbConn);
-		List<Object> companies = db.executeSelect(sql.toString(), params, new CompanyVO());
-
-		super.putModuleData(companies, getCompanyCount(req.getParameter(DBUtil.TABLE_SEARCH), !req.hasParameter("inactive"), req.getParameter("authorId")), false);
+		return db.executeSelect(sql.toString(), ids, new CompanyVO());
 	}
 
+	/**
+	 * Helper method that returns list of Updates filtered by ActionRequest
+	 * parameters.
+	 * @param req
+	 * @param dir 
+	 * @param order
+	 * @return
+	 * @throws ActionException 
+	 */
+	private void getFilteredCompanies(ActionRequest req) throws ActionException {
+		//parse the requet object
+		setSolrParams(req);
+
+		String solrActionId = WCConfigUtil.getActionConfig(dbConn, actionInit.getActionId()).get(COMPANY_SOLR_KEY);
+		// Pass along the proper information for a search to be done.
+		ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
+		actionInit.setActionId(solrActionId);
+		req.setParameter("pmid", mod.getPageModuleId());
+
+		// Build the solr action
+		ActionInterface sa = new SolrAction(actionInit);
+		sa.setDBConnection(dbConn);
+		sa.setAttributes(attributes);
+		sa.retrieve(req);
+	}
+
+	/**
+	 * Set all paramters neccesary for solr to be able to properly search for the desired documents.
+	 * @param req
+	 * @param dir 
+	 * @param order
+	 */
+	private void setSolrParams(ActionRequest req) {
+		int rpp = Convert.formatInteger(req.getParameter("limit"), 10);
+		int page = Convert.formatInteger(req.getParameter("offset"), 0)/rpp;
+		req.setParameter("rpp", StringUtil.checkVal(rpp));
+		req.setParameter("page", StringUtil.checkVal(page));
+		if(req.hasParameter("search")) 
+			req.setParameter("searchData", req.getParameter("search"));
+
+		//build a list of filter queries
+		List<String> fq = new ArrayList<>();
+
+		String [] hierarchies = req.getParameterValues("sections");
+		if (!ArrayUtils.isEmpty(hierarchies)) {
+			for (String s : hierarchies)
+				if(!StringUtil.isEmpty(s)) {
+					fq.add(SearchDocumentHandler.HIERARCHY + ":Select Market~" + s);
+				}
+		}
+
+		//Override Product Limit Filter on Public side.
+		fq.add("productcount_i:[0 TO *]");
+
+		//Override Status Filter on Public Side.
+		fq.add(StringUtil.join(STATUS_S, Status.P.toString()));
+		fq.add(StringUtil.join(STATUS_S, Status.E.toString()));
+		if (Convert.formatBoolean(req.getParameter("inactive"))) {
+			fq.add(StringUtil.join(STATUS_S, Status.A.toString()));
+			fq.add(StringUtil.join(STATUS_S, Status.D.toString()));
+			fq.add(StringUtil.join(STATUS_S, "C"));
+			fq.add(StringUtil.join(STATUS_S, "I"));
+		}
+
+		// If this is a request for the dashboard an author id will be provided
+		if (req.hasParameter("authorId")) {
+			fq.add(StringUtil.join("author:", req.getParameter("authorId")));
+		}
+
+		req.setParameter("fq", fq.toArray(new String[fq.size()]), true);
+		req.setParameter("allowCustom", "true");
+		String [] fieldOverrides = new String [] {"status_s", "productcount_i"};
+		req.setParameter("fieldOverride", fieldOverrides, true);
+
+	}
+
+	/**
+	 * Get all the document ids from the solr documents and remove the
+	 * custom identifier if it is present.
+	 * @param resp
+	 * @return
+	 */
+	private List<Object> getIdsFromDocs(SolrResponseVO resp) {
+		List<Object> params = new ArrayList<>();
+		String prefix = StringUtil.join(Section.COMPANY.name(), "_");
+		for (SolrDocument doc : resp.getResultDocuments()) {
+			String id = (String) doc.getFieldValue(SearchDocumentHandler.DOCUMENT_ID);
+
+			// Replace the biomed update prefix if it exists.
+			if (id.contains(prefix))
+				id = id.replace(prefix, "");
+
+			params.add(id);
+		}
+		return params;
+	}
 
 	/**
 	 * Get a count of how many companies are in the database
@@ -606,7 +720,7 @@ public class CompanyManagementAction extends ManagementAction {
 		if ("alliance".equals(jsonType))
 			addAlliances(company);
 		if ("attribute".equals(jsonType))
-			addAttributes(company, req.getParameter("attributeTypeCd"));
+			addAttributes(company, req.getParameter(TYPE_CD));
 
 		getActiveSections(company);
 		loadAuthors(req); //load list of BiomedGPS Staff for the "Author" drop-down
