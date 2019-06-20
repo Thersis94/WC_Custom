@@ -251,7 +251,7 @@ public class EmailReportAction extends SBActionAdapter {
 		}
 		sql.append("inner join email_campaign_instance b on a.campaign_instance_id=b.campaign_instance_id ");
 		sql.append("inner join email_campaign c on b.email_campaign_id=c.email_campaign_id and c.organization_id=? ");
-		sql.append("where a.attempt_dt < ?");
+		sql.append("where a.attempt_dt > ?");
 		log.debug(sql);
 
 		int x=0;
