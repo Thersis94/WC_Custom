@@ -546,6 +546,7 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 		data.add(RegistrationMap.TITLE);
 		data.add(RegistrationMap.UPDATES);
 		data.add(RegistrationMap.FAVORITEUPDATES);
+		data.add(RegistrationMap.TYPE);
 		return data;
 	}
 
