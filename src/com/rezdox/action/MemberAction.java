@@ -20,6 +20,7 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.common.http.CookieUtil;
+import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.pool.SMTDBConnection;
@@ -119,18 +120,24 @@ public class MemberAction extends SimpleActionAdapter {
 	 * @return
 	 */
 	public MemberVO retrieveMemberData(String memberId, String profileId) {
-		String sql;
-		List<Object> params;
 		if (!StringUtil.isEmpty(profileId)) {
-			sql = StringUtil.join(DBUtil.SELECT_FROM_STAR, getCustomSchema(), "rezdox_member where profile_id=?");
-			params = Arrays.asList(profileId);
+			return retrieveMemberDataByColumn("profile_id", profileId);
 		} else {
-			sql = StringUtil.join(DBUtil.SELECT_FROM_STAR, getCustomSchema(), "rezdox_member where member_id=?");
-			params = Arrays.asList(memberId);
+			return retrieveMemberDataByColumn("member_id", memberId);
 		}
+	}
 
+	/**
+	 * Reuseable "find row using this data in this column" lookup method
+	 * @param column
+	 * @param value
+	 * @return
+	 */
+	private MemberVO retrieveMemberDataByColumn(String column, String value) {
+		String sql =StringUtil.join(DBUtil.SELECT_FROM_STAR, getCustomSchema(), "rezdox_member where ",column, "=?");
 		DBProcessor dbp = new DBProcessor(getDBConnection());
-		List<MemberVO> data = dbp.executeSelect(sql, params, new MemberVO());
+		dbp.setGenerateExecutedSQL(log.isDebugEnabled());
+		List<MemberVO> data = dbp.executeSelect(sql, Arrays.asList(value), new MemberVO());
 		return !data.isEmpty() ? data.get(0) : new MemberVO();
 	}
 
@@ -153,15 +160,29 @@ public class MemberAction extends SimpleActionAdapter {
 			return;
 		}
 
-		//capture if this is a new user signing up for the first time.
-		boolean isNewUser = member == null || StringUtil.isEmpty(member.getProfileId());
-
 		//set orgProfileComm=1 for all users - they can only opt out from email campaigns
 		req.setParameter("allowCommunication", "1");
 		req.setParameter("countryCode", "US"); //for good measure - until they add it to the UI
 
 		//save the FormBuilder piece - this will save through to ProfileManager for us
 		saveForm(req);
+
+		//capture if this is a new user signing up for the first time.
+		boolean isNewUser = member == null || StringUtil.isEmpty(member.getProfileId());
+		boolean isReEnroll =  isNewUser; //presume every new user is reregistering, will be verified
+
+		if (isReEnroll || StringUtil.isEmpty(req.getParameter(REQ_MEMBER_ID))) {
+			String memberId = findExistingMember(req);
+			if (!StringUtil.isEmpty(memberId)) {
+				req.setParameter(REQ_MEMBER_ID, memberId);
+				isReEnroll = true;
+				isNewUser = false;
+			} else {
+				isReEnroll = false; //not reusing an existing record
+				isNewUser = true; //this should already be true, but to assert
+			}
+		}
+		log.debug("isNewUser? " + isNewUser + " isReEnroll? " + isReEnroll);
 
 		//save the custom table - REZDOX_MEMBER
 		member = saveMember(req, false);
@@ -174,14 +195,29 @@ public class MemberAction extends SimpleActionAdapter {
 
 		//if new user - create a login account & log the user in for the first time
 		if (isNewUser) {
-			createProfileRole(member, site);
+			createProfileRole(member, site, false);
 			performLogin(member, site, req);
 			setupMembership(member, req);
 			connectionToRezdox(member, req);
+		} else if (isReEnroll) {
+			createProfileRole(member, site, true);
+			performLogin(member, site, req);
+			//re-enroll omits the downstream-from-member-table writes, since the member already exists those records should also exist 
 		}
 
 		//put the member VO onto their session, refreshing any data that's already there.
 		session.setAttribute(Constants.USER_DATA, member);
+	}
+
+
+	/**
+	 * @param req
+	 * @return
+	 */
+	private String findExistingMember(ActionRequest req) {
+		String email = StringUtil.checkVal(req.getParameter("emailAddress")).toLowerCase();
+		MemberVO vo = retrieveMemberDataByColumn("lower(email_address_txt)", email);
+		return vo != null ? vo.getMemberId() : null;
 	}
 
 
@@ -224,19 +260,47 @@ public class MemberAction extends SimpleActionAdapter {
 	 * @param site
 	 * @throws ActionException
 	 */
-	private void createProfileRole(UserDataVO user, SiteVO site) throws ActionException {
+	private void createProfileRole(MemberVO user, SiteVO site, boolean isReEnroll) throws ActionException {
 		ProfileRoleManager prm = new ProfileRoleManager();
 		try {
 			if (!prm.roleExists(user.getProfileId(), site.getSiteId(), null, getDBConnection())) {
+				//if the user is re-enrolling, determine their role based on whether they have existing residences or businesses (or both)
+				String roleId = isReEnroll ? determineRoleId(user.getMemberId()) : Integer.toString(SecurityController.PUBLIC_REGISTERED_LEVEL);
+				log.debug("creating user role " + roleId);
 				SBUserRole role = new SBUserRole(site.getSiteId());
 				role.setProfileId(user.getProfileId());
-				role.setRoleId(Integer.toString(SecurityController.PUBLIC_REGISTERED_LEVEL));
+				role.setRoleId(roleId);
 				role.setStatusId(SecurityController.STATUS_ACTIVE);
 				prm.addRole(role, getDBConnection());
 			}
 		} catch (Exception e) {
 			throw new ActionException("could not create profile role", e);
 		}
+	}
+
+
+	/**
+	 * Query for residences and businesses tied to this member.  Return a SiteRole accordingly
+	 * @param memberId
+	 * @return
+	 */
+	private String determineRoleId(String memberId) {
+		String schema = getCustomSchema();
+		StringBuilder sql = new StringBuilder(200);
+		sql.append("select 'b' as key , count(*) as value from ").append(schema);
+		sql.append("rezdox_business_member_xr where member_id=? group by member_id ");
+		sql.append(DBUtil.UNION);
+		sql.append("select 'r' as key , count(*) as value from ").append(schema);
+		sql.append("rezdox_residence_member_xr where member_id=? group by member_id");
+		
+		DBProcessor dbp = new DBProcessor(getDBConnection(), schema);
+		dbp.setGenerateExecutedSQL(log.isDebugEnabled());
+		List<GenericVO> data = dbp.executeSelect(sql.toString(), Arrays.asList(memberId, memberId), new GenericVO());
+
+		if (data.size() == 2) return RezDoxUtils.REZDOX_RES_BUS_ROLE; //hybrid user if they have both
+		if ("b".equals(data.get(0).getKey())) return RezDoxUtils.REZDOX_BUSINESS_ROLE;
+		if ("r".equals(data.get(0).getKey())) return RezDoxUtils.REZDOX_RESIDENCE_ROLE;
+		else return Integer.toString(SecurityController.PUBLIC_REGISTERED_LEVEL);
 	}
 
 
