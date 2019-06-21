@@ -182,9 +182,7 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 			td.setApprovalCode(ApprovalCode.APPROVED);
 		}
 		//if its not the credit memo save it but if ti si the credit memo and its not asset locked save it
-		if (!"attr_credit_memo".equalsIgnoreCase(req.getParameter("attributeCode"))) {
-			db.save(td);
-		}else if ("attr_credit_memo".equalsIgnoreCase(req.getParameter("attributeCode")) && !req.getBooleanParameter("isAssetLocked")) {
+		if ((!"attr_credit_memo".equalsIgnoreCase(req.getParameter("attributeCode"))) || ("attr_credit_memo".equalsIgnoreCase(req.getParameter("attributeCode")) && !req.getBooleanParameter("isAssetLocked"))) {
 			db.save(td);
 		}
 		
