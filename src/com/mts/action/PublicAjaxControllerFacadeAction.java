@@ -2,6 +2,7 @@ package com.mts.action;
 
 // MTS Libs
 import com.mts.publication.action.ArticleByCategoryAction;
+import com.mts.publication.action.DocumentBrowseAction;
 
 // Base Libs
 
@@ -66,8 +67,7 @@ public class PublicAjaxControllerFacadeAction extends FacadeActionAdapter {
 	private void loadTypes() {
 		actionMap.put(DEFAULT_TYPE, SelectLookupAction.class);
 		actionMap.put(ArticleByCategoryAction.AJAX_KEY, ArticleByCategoryAction.class);
-
-		
+		actionMap.put(DocumentBrowseAction.AJAX_KEY, DocumentBrowseAction.class);
 	}
 
 	/*
