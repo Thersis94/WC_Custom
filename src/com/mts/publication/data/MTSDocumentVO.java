@@ -63,6 +63,7 @@ public class MTSDocumentVO extends DocumentVO {
 	private String issueName;
 	private String publicationId;
 	private String publicationName;
+	private String userInfoId;
 	
 	/**
 	 * 
@@ -274,6 +275,14 @@ public class MTSDocumentVO extends DocumentVO {
 	}
 
 	/**
+	 * @return the userInfoId
+	 */
+	@Column(name="user_info_id", isReadOnly=true)
+	public String getUserInfoId() {
+		return userInfoId;
+	}
+
+	/**
 	 * @param sbActionId the sbActionId to set
 	 */
 	public void setSbActionId(String sbActionId) {
@@ -387,6 +396,13 @@ public class MTSDocumentVO extends DocumentVO {
 	 */
 	public void setInfoBar(String infoBar) {
 		this.infoBar = infoBar;
+	}
+
+	/**
+	 * @param userInfoId the userInfoId to set
+	 */
+	public void setUserInfoId(String userInfoId) {
+		this.userInfoId = userInfoId;
 	}
 }
 

@@ -15,6 +15,8 @@ import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
+import com.smt.sitebuilder.common.constants.Constants;
+import com.smt.sitebuilder.security.SBUserRole;
 
 /****************************************************************************
  * <b>Title</b>: UserInfoWidget.java
@@ -32,7 +34,11 @@ import com.smt.sitebuilder.action.SimpleActionAdapter;
  ****************************************************************************/
 
 public class UserInfoWidget extends SimpleActionAdapter {
-
+	/**
+	 * Ajax Controller key for this action
+	 */
+	public static final String AJAX_KEY = "user-info";
+	
 	/**
 	 * 
 	 */
@@ -53,12 +59,13 @@ public class UserInfoWidget extends SimpleActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		log.info("******");
 		if (! req.getBooleanParameter("json")) return;
 		
 		UserDataVO user = this.getAdminUser(req);
 		String userId = ((MTSUserVO) user.getUserExtendedInfo()).getUserId();
-		if (! StringUtil.isEmpty(req.getParameter("typeCode")))
+		if ("BOOKMARK".equalsIgnoreCase(req.getParameter("typeCode"))) 
+			setModuleData(getBookmarks(userId));
+		else if (! StringUtil.isEmpty(req.getParameter("typeCode")))
 			setModuleData(getData(userId, TypeCode.valueOf(req.getParameter("typeCode"))));
 		else 
 			setModuleData(getData(userId, null));
@@ -100,15 +107,17 @@ public class UserInfoWidget extends SimpleActionAdapter {
 		List<Object> vals = new ArrayList<>();
 		vals.add(userId);
 		
-		StringBuilder sql = new StringBuilder(128);
+		StringBuilder sql = new StringBuilder(320);
 		sql.append("select * from ").append(getCustomSchema()).append("mts_user_info a ");
 		sql.append("inner join ").append(getCustomSchema()).append("mts_document d ");
-		sql.append("on a.value_txt = d.document_id ");
+		sql.append("on a.value_txt = d.unique_cd ");
 		sql.append("inner join sb_action b ");
 		sql.append("on d.document_id = b.action_group_id and pending_sync_flg = 0 ");
-		sql.append("where user_id = ? ");
+		sql.append("inner join ").append(getCustomSchema()).append("mts_user u ");
+		sql.append("on d.author_id = u.user_id ");
+		sql.append("where a.user_id = ? ");
 		sql.append("order by b.action_nm ");
-		log.info(sql.length() + "|" + sql + "|" + vals);
+		log.debug(sql.length() + "|" + sql + "|" + vals);
 		
 		DBProcessor db = new DBProcessor(getDBConnection());
 		return db.executeSelect(sql.toString(), vals, new MTSDocumentVO());
@@ -120,6 +129,12 @@ public class UserInfoWidget extends SimpleActionAdapter {
 	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
+		SBUserRole role = (SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA);
+		if ("0".equals(role.getRoleId())) {
+			setModuleData(null, 0, "UNAUTHORIZED");
+			return;
+		}
+		
 		UserExtendedVO vo = new UserExtendedVO(req);
 		try {
 			if (req.hasParameter("delete")) {
