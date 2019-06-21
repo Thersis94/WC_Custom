@@ -35,9 +35,9 @@ public class ContentFeedItemVO extends BeanDataVO {
 	private String title;
 	private String description;
 	private String link;
-	private String authorName;
-	private Date publishDate;
-	private String source;
+	private String creator;
+	private Date pubDate;
+	private String content;
 	
 	/**
 	 * 
@@ -96,24 +96,24 @@ public class ContentFeedItemVO extends BeanDataVO {
 	 * @return the authorName
 	 */
 	@Column(name="author_nm")
-	public String getAuthorName() {
-		return authorName;
+	public String getCreator() {
+		return creator;
 	}
 
 	/**
 	 * @return the publishDate
 	 */
 	@Column(name="publish_dt")
-	public Date getPublishDate() {
-		return publishDate;
+	public Date getPubDate() {
+		return pubDate;
 	}
 
 	/**
 	 * @return the source
 	 */
 	@Column(name="document_txt")
-	public String getSource() {
-		return source;
+	public String getContent() {
+		return content;
 	}
 
 	/**
@@ -147,22 +147,22 @@ public class ContentFeedItemVO extends BeanDataVO {
 	/**
 	 * @param authorName the authorName to set
 	 */
-	public void setAuthorName(String authorName) {
-		this.authorName = authorName;
+	public void setCreator(String creator) {
+		this.creator = creator;
 	}
 
 	/**
 	 * @param publishDate the publishDate to set
 	 */
-	public void setPublishDate(Date publishDate) {
-		this.publishDate = publishDate;
+	public void setPubDate(Date pubDate) {
+		this.pubDate = pubDate;
 	}
 
 	/**
 	 * @param source the source to set
 	 */
-	public void setSource(String source) {
-		this.source = source;
+	public void setContent(String content) {
+		this.content = content;
 	}
 
 }

@@ -51,7 +51,7 @@ public class PublicationDisplayAction extends SBActionAdapter {
 		super.retrieve(req);
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		String publicationId = (String) mod.getAttribute(ModuleVO.ATTRIBUTE_1);
-	
+		
 		IssueArticleAction iac = new IssueArticleAction(getDBConnection(), getAttributes());
 		setModuleData(iac.getArticleTeasers(publicationId));
 		

@@ -15,6 +15,7 @@ import java.util.Set;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.parser.BeanDataVO;
 import com.siliconmtn.db.orm.BeanSubElement;
+import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.metadata.WidgetMetadataVO;
 
@@ -53,6 +54,7 @@ public class PublicationTeaserVO extends BeanDataVO {
 	
 	// Members
 	private Map<String, List<AssetVO>> assets = new HashMap<>();
+	private String categoryCode;
 	
 	/**
 	 * 
@@ -196,5 +198,20 @@ public class PublicationTeaserVO extends BeanDataVO {
 	 */
 	public Map<String, List<AssetVO>> getAssets() {
 		return assets;
+	}
+
+	/**
+	 * @return the categoryCode
+	 */
+	@Column(name="category_cd")
+	public String getCategoryCode() {
+		return categoryCode;
+	}
+
+	/**
+	 * @param categoryCode the categoryCode to set
+	 */
+	public void setCategoryCode(String categoryCode) {
+		this.categoryCode = categoryCode;
 	}
 }

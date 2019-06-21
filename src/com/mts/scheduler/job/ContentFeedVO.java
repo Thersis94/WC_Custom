@@ -3,6 +3,7 @@ package com.mts.scheduler.job;
 // JDK 1.8.x
 import java.sql.ResultSet;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 // SMT Base Libs
@@ -35,6 +36,8 @@ public class ContentFeedVO extends BeanDataVO {
 	private String title;
 	private String description;
 	private String link;
+	private String locale;
+	private Date lastBuildDate;
 	
 	// Sub-Beans
 	private List<ContentFeedItemVO> items = new ArrayList<>();
@@ -84,6 +87,20 @@ public class ContentFeedVO extends BeanDataVO {
 	}
 
 	/**
+	 * @return the locale
+	 */
+	public String getLocale() {
+		return locale;
+	}
+
+	/**
+	 * @return the lastBuildDate
+	 */
+	public Date getLastBuildDate() {
+		return lastBuildDate;
+	}
+
+	/**
 	 * @return the items
 	 */
 	public List<ContentFeedItemVO> getItems() {
@@ -116,6 +133,20 @@ public class ContentFeedVO extends BeanDataVO {
 	 */
 	public void setItems(List<ContentFeedItemVO> items) {
 		this.items = items;
+	}
+
+	/**
+	 * @param locale the locale to set
+	 */
+	public void setLocale(String locale) {
+		this.locale = locale;
+	}
+
+	/**
+	 * @param lastBuildDate the lastBuildDate to set
+	 */
+	public void setLastBuildDate(Date lastBuildDate) {
+		this.lastBuildDate = lastBuildDate;
 	}
 
 }

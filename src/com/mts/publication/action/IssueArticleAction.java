@@ -176,12 +176,12 @@ public class IssueArticleAction extends SBActionAdapter {
 	 * @return
 	 */
 	public PublicationTeaserVO getArticleTeasers(String publicationId) {
-		StringBuilder sql = new StringBuilder(768);
+		StringBuilder sql = new StringBuilder(1024);
 		String schema = getCustomSchema();
 		
 		sql.append("select a.document_id, c.action_id, first_nm, last_nm, a.publish_dt, a.author_id, ");
 		sql.append("c.action_nm, c.action_desc, b.issue_nm, m.field_nm as value_txt, m.widget_meta_data_id, p.publication_id, ");
-		sql.append("publication_nm, p.publication_desc ");
+		sql.append("publication_nm, p.publication_desc, b.category_cd ");
 		sql.append("from ").append(schema).append("mts_document a ");
 		sql.append("inner join ").append(schema).append("mts_issue b on a.issue_id = b.issue_id ");
 		sql.append("inner join ").append(schema).append("mts_publication p on b.publication_id = p.publication_id ");
@@ -197,7 +197,8 @@ public class IssueArticleAction extends SBActionAdapter {
 		sql.append("select max(issue_dt) as latest ");
 		sql.append("from ").append(schema).append("mts_issue ");
 		sql.append("where publication_id = ? ");
-		sql.append(") and publish_dt is not null ");
+		sql.append(") and publish_dt is not null order by document_id ");
+		log.debug(sql.length() + "|" + sql + "|" + publicationId);
 		
 		PublicationTeaserVO ptvo = null;
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
@@ -239,6 +240,7 @@ public class IssueArticleAction extends SBActionAdapter {
 		sql.append("and object_key_id in ( ");
 		sql.append(DBUtil.preparedStatmentQuestion(ids.size())).append(") ");
 		sql.append("order by object_key_id");
+		log.debug(sql.length() + "|" + sql + "|" + ids);
 		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			DBUtil.preparedStatementValues(ps, 1, new ArrayList<Object>(ids));

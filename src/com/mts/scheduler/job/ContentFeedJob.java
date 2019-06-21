@@ -1,6 +1,10 @@
 package com.mts.scheduler.job;
 
 // JDK 1.8.x
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
@@ -16,6 +20,7 @@ import com.google.gson.Gson;
 
 // SMT Base libs
 import com.siliconmtn.db.orm.DBProcessor;
+import com.siliconmtn.html.tool.HTMLFeedParser;
 import com.siliconmtn.http.filter.fileupload.Constants;
 import com.siliconmtn.util.Convert;
 
@@ -37,6 +42,12 @@ import com.smt.sitebuilder.scheduler.AbstractSMTJob;
  ****************************************************************************/
 
 public class ContentFeedJob extends AbstractSMTJob {
+	/**
+	 * Base URL for links and images
+	 */
+	private static final String BASE_URL = "https://www.innovationinmedtech.com/";
+	
+	// Members
 	private Map<String, Object> attributes;
 	
 	/**
@@ -56,7 +67,6 @@ public class ContentFeedJob extends AbstractSMTJob {
 		attributes = ctx.getMergedJobDataMap().getWrappedMap();
 		String message = "Success";
 		boolean success = true;
-		log.info(attributes);
 		
 		// Process the data feed
 		try {
@@ -74,18 +84,40 @@ public class ContentFeedJob extends AbstractSMTJob {
 	
 	/**
 	 * Runs the workflow for sending the documents
+	 * @throws IOException 
 	 */
-	public void processDocuments() {
-		ContentFeedVO docs = getArticles();
+	public void processDocuments() throws IOException {
+		String fileLoc = (String)attributes.get("FEED_RECPT");
+		String feedTitle = (String)attributes.get("FEED_TITLE");
+		String feedDesc = (String)attributes.get("FEED_DESC");
+		
+		ContentFeedVO docs = getArticles(feedTitle, feedDesc);
 		String json = convertArticlesJson(docs);
-		log.info("Json: " + json);
+		
+		// Save document
+		saveFile(json, fileLoc);
+	}
+	
+	/**
+	 * Write the file to the file system
+	 * @param json
+	 * @param fileLoc
+	 * @throws IOException
+	 */
+	protected void saveFile(String json, String fileLoc) throws IOException {
+		File file = new File (fileLoc);
+		try (FileWriter fw = new FileWriter(file)) {
+			try (BufferedWriter out = new BufferedWriter(fw)) {
+				out.write(json);
+			}
+		}
 	}
 	
 	/**
 	 * 
 	 * @return
 	 */
-	public ContentFeedVO getArticles() {
+	public ContentFeedVO getArticles(String title, String desc) {
 		// Build the SQL
 		String schema = (String)this.attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(400);
@@ -102,18 +134,36 @@ public class ContentFeedJob extends AbstractSMTJob {
 		List<Object> vals = new ArrayList<>();
 		vals.add(Convert.formatStartDate(yesterday));
 		vals.add(Convert.formatEndDate(yesterday));
-		log.info(sql.length() + "|" + sql + "|" + vals);
+		log.debug(sql.length() + "|" + sql + "|" + vals);
 		
 		// Create the wrapper bean
 		ContentFeedVO feed = new ContentFeedVO();
-		feed.setTitle("MTS Publications News Feed");
-		feed.setDescription("We help you better understand your world as you make key decisions impacting your day-to-day business and long-term strategic goals.");
-		feed.setLink("https://www.medtechstrategist.com/");
+		feed.setTitle(title);
+		feed.setDescription(desc);
+		feed.setLink(BASE_URL);
+		feed.setLastBuildDate(new Date());
+		feed.setLocale("en-US");
 		
+		// Get the articles and update the links
 		DBProcessor db = new DBProcessor(conn);		
 		feed.setItems(db.executeSelect(sql.toString(), vals, new ContentFeedItemVO()));
+		updateRelativeLinks(feed);
+
 		return feed;
 		
+	}
+	
+	/**
+	 * Updates the relative URLs/links to be fully qualified
+	 * @param feed
+	 */
+	protected void updateRelativeLinks(ContentFeedVO feed) {
+		// Update the relative links and image sources to be fully qualified
+		for (ContentFeedItemVO item : feed.getItems()) {
+			HTMLFeedParser parser = new HTMLFeedParser();
+			String html = parser.updateDocumentPaths(BASE_URL, item.getContent());
+			item.setContent(html);
+		}
 	}
 	
 	/**

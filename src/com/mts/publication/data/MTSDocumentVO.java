@@ -313,6 +313,7 @@ public class MTSDocumentVO extends DocumentVO {
 	 */
 	@BeanSubElement
 	public void addAsset(AssetVO asset) {
+		if (asset == null || StringUtil.isEmpty(asset.getDocumentAssetId())) return;
 		this.assets.add(asset);
 	}
 
