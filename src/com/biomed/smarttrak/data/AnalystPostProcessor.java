@@ -3,8 +3,6 @@
  */
 package com.biomed.smarttrak.data;
 
-import java.util.Map.Entry;
-
 import com.biomed.smarttrak.util.BiomedSupportEmailUtil;
 import com.biomed.smarttrak.vo.UserVO;
 import com.siliconmtn.action.ActionException;
@@ -18,7 +16,6 @@ import com.siliconmtn.io.mail.EmailRecipientVO;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
-import com.smt.sitebuilder.action.contact.SubmittalAction;
 import com.smt.sitebuilder.action.support.SupportTicketAction.ChangeType;
 import com.smt.sitebuilder.action.support.TicketActivityVO;
 import com.smt.sitebuilder.action.support.TicketVO;
@@ -78,11 +75,6 @@ public class AnalystPostProcessor extends SBActionAdapter {
 
 		StringBuilder subject = new StringBuilder(75);
 		subject.append("Smarttrak Bug Request");
-		
-		for (Entry<String, String[]> e : req.getParameterMap().entrySet()) {
-			for (String s : req.getParameterValues(e.getKey()))
-			log.debug(e.getKey()+"|"+s);
-		}
 
 		String msg = StringUtil.checkVal(req.getParameter((String)getAttribute(CFG_ASK_AN_ANALYST_MESSAGE_ID)));
 		StringBuilder body = new StringBuilder(150 + msg.length());
