@@ -154,8 +154,6 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 			user = (UserVO)getAdminUser(req).getUserExtendedInfo();
 		}
 		
-		
-		
 		// Add a ledger entry, but only change status if the uploaded asset
 		// triggers a need for approval.
 		TicketLedgerVO ledger;
@@ -170,7 +168,6 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 			status = ticket.getStatusCode();
 		}
 		
-		
 		// Build the next step
 		Map<String, Object> params = new HashMap<>();
 		params.put("ticketId", ledger.getTicketId());
@@ -184,9 +181,13 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 		if(!hasIncompleteCallData && hasApprovableImageAttribute) {
 			td.setApprovalCode(ApprovalCode.APPROVED);
 		}
+		//if its not the credit memo save it but if ti si the credit memo and its not asset locked save it
+		if (!"attr_credit_memo".equalsIgnoreCase(req.getParameter("attributeCode"))) {
+			db.save(td);
+		}else if ("attr_credit_memo".equalsIgnoreCase(req.getParameter("attributeCode")) && !req.getBooleanParameter("isAssetLocked")) {
+			db.save(td);
+		}
 		
-		db.save(td);
-
 		if("attr_credit_memo".equalsIgnoreCase(req.getParameter("attributeCode"))) {
 			CreditMemoTransaction cmt = new CreditMemoTransaction(getDBConnection(), getAttributes());
 			CreditMemoVO cmvo = new CreditMemoVO(req);
@@ -200,7 +201,6 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 			}else {
 				cmt.saveCreditMemoApproval(cmvo);
 			}
-			
 			
 			if (status == StatusCode.CREDIT_MEMO_WSLA && !cmt.hasUnapprovedCreditMemos(td.getTicketId())) {
 				changeStatus(td.getTicketId(), user.getUserId(), StatusCode.CLOSED, LedgerSummary.CREDIT_MEMO_APPROVED.summary, null);
