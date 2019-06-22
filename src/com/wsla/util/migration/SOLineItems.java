@@ -1,5 +1,6 @@
 package com.wsla.util.migration;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -29,7 +30,7 @@ import com.wsla.util.migration.vo.SOLineItemFileVO;
  ****************************************************************************/
 public class SOLineItems extends AbsImporter {
 
-	private List<SOLineItemFileVO> data;
+	private List<SOLineItemFileVO> data = new ArrayList<>(50000);
 	private Map<String, String> ticketIds = new HashMap<>(5000);
 	private Map<String, String> productIds = new HashMap<>(10000);
 
@@ -38,7 +39,10 @@ public class SOLineItems extends AbsImporter {
 	 */
 	@Override
 	void run() throws Exception {
-		data = readFile(props.getProperty("soLineItemsFile"), SOLineItemFileVO.class, SHEET_1);
+		File[] files = listFilesMatching(props.getProperty("soLineItemsFile"), "(.*)SOLNI(.*)");
+
+		for (File f : files)
+			data.addAll(readFile(f, SOLineItemFileVO.class, SHEET_1));
 
 		loadTicketIds();
 		loadProductIds();
@@ -76,9 +80,9 @@ public class SOLineItems extends AbsImporter {
 
 		verifyInventory(inventory);
 
-//		super.writeToDB(inventory);
-//		super.writeToDB(comments);
-//		super.writeToDB(credits);
+		//		super.writeToDB(inventory);
+		//		super.writeToDB(comments);
+		//		super.writeToDB(credits);
 	}
 
 

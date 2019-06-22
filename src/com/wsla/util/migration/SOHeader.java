@@ -1,5 +1,6 @@
 package com.wsla.util.migration;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -22,9 +23,12 @@ import com.siliconmtn.util.UUIDGenerator;
 import com.smt.sitebuilder.action.user.ProfileManager;
 import com.smt.sitebuilder.action.user.ProfileManagerFactory;
 import com.smt.sitebuilder.common.constants.Constants;
+import com.wsla.action.admin.WarrantyAction;
 import com.wsla.data.product.ProductCategoryVO;
 import com.wsla.data.product.ProductSerialNumberVO;
 import com.wsla.data.product.ProductVO;
+import com.wsla.data.product.ProductWarrantyVO;
+import com.wsla.data.product.WarrantyVO;
 import com.wsla.data.provider.ProviderType;
 import com.wsla.data.provider.ProviderVO;
 import com.wsla.data.ticket.TicketAssignmentVO;
@@ -48,13 +52,14 @@ import com.wsla.util.migration.vo.SOHeaderFileVO;
  ****************************************************************************/
 public class SOHeader extends AbsImporter {
 
-	private List<SOHeaderFileVO> data;
+	private List<SOHeaderFileVO> data = new ArrayList<>(50000);
 
 	private static List<String> fakeSKUs = new ArrayList<>();
 
-	private static Map<String, String> oemMap = new HashMap<>();
+	private static Map<String, String> oemMap = new HashMap<>(100);
 
-	private static Map<String, String> countryMap = new HashMap<>();
+	private static Map<String, String> countryMap = new HashMap<>(100);
+
 
 	static {
 		oemMap.put("1ecc07d03101fe41ac107866a7995adf", "RCA1000");
@@ -76,10 +81,14 @@ public class SOHeader extends AbsImporter {
 	 */
 	@Override
 	void run() throws Exception {
-		data = readFile(props.getProperty("soHeaderFile"), SOHeaderFileVO.class, SHEET_1);
+		File[] files = listFilesMatching(props.getProperty("soHeaderFile"), "(.*)SOHDR(.*)");
+
+		for (File f : files)
+			data.addAll(readFile(f, SOHeaderFileVO.class, SHEET_1));
 
 		String sql = StringUtil.join("delete from ", schema, "wsla_ticket where historical_flg=1");
-		//		delete(sql);
+		delete(sql);
+
 		save();
 
 		//update all of the tickets we just created to have traceability to Southware
@@ -113,31 +122,35 @@ public class SOHeader extends AbsImporter {
 				log.debug(String.format("duplicate ticket %s", vo.getTicketId()));
 				//TODO this will need a hook for compiling transactional data
 			}
-			//			if ("INF".equalsIgnoreCase(dataVo.getSoType())) continue;
 			tickets.put(vo.getTicketId(), vo);
-			//			if (tickets.size() > 50) break;
 		}
 
-		//create user profiles in the WC core & wsla_user table
-		//		createUserProfiles(tickets);
+		//transpose OEMs.  Replace value in vo.getOemId()
+		bindOEMs(tickets.values());
 
-		//transpose manufs.  replace value in vo.getOemId()
-		//		bindOEMs(tickets.values());
+		//tie the OEM's 800# to each ticket
+		bind800Numbers(tickets.values());
 
 		//create product serials, presume all are approved.  replace value in vo.getProductSerialId()
-		//		bindSerialNos(tickets.values());
+		bindSerialNos(tickets.values());
 
-		//create product warranties - JC to define who to pick if multiple exist for a product
-		//		bindWarranties(tickets.values());
+		//create warranties.  This populates vo.productWarrantyId() with the OEM's warrantyId
+		bindWarranties(tickets.values());
+
+		//transpose warranties into product warranties.  replaces value in vo.productWarrantyId()
+		bindProductWarranties(tickets.values());
 
 		//transpose product categories
-		//		bindProductCategories(tickets.values());
+		bindProductCategories(tickets.values());
+
+		//create user profiles in the WC core & wsla_user table
+		createUserProfiles(tickets);
 
 		//save the tickets
-		//		writeToDB(new ArrayList<>(tickets.values()));
+		writeToDB(new ArrayList<>(tickets.values()));
 
 		//create ticket attributes
-		//		saveTicketAttributes(tickets.values());
+		saveTicketAttributes(tickets.values());
 	}
 
 
@@ -259,48 +272,21 @@ public class SOHeader extends AbsImporter {
 
 
 	/**
-	 * @param values
+	 * Attach an 800# to each ticket - take the 1st listed for the OEM
+	 * @param tickets
 	 */
-	private void bindSerialNos(Collection<ExtTicketVO> tickets) {
-		String sql = StringUtil.join("select coalesce(s.product_serial_id,'blank'||newid()) as product_serial_id, ",
-				"s.serial_no_txt, p.product_id, p.provider_id, p.cust_product_id from ",
-				schema, "wsla_product_master p  left join ", schema, "wsla_product_serial s ",
-				"on s.product_id=p.product_id where p.set_flg=1");
+	private void bind800Numbers(Collection<ExtTicketVO> tickets) {
+		Map<String, String> oemPhones = new HashMap<>(50);
+		String sql = StringUtil.join("select provider_id as key, phone_number_txt as value from ", schema, 
+				"wsla_provider_phone where country_cd='MX' and active_flg=1");
 		DBProcessor db = new DBProcessor(dbConn, schema);
-		db.setGenerateExecutedSQL(log.isDebugEnabled());
-		List<ProductSerialNumberVO> serials = db.executeSelect(sql, null, new ProductSerialNumberVO());
+		MapUtil.asMap(oemPhones, db.executeSelect(sql, null, new GenericVO()));
 
-		//update our tickets and give them the proper serial# pkId.  If they don't exist, add them to a list to add to the DB
-		boolean isFound;
-		String tktProdNm;
-		List<ExtTicketVO> missing = new ArrayList<>(1000);
-		for (ExtTicketVO tkt : tickets) {
-			isFound = false;
-			tktProdNm = tkt.getCustProductId(); //this is raw EquipmentId in the file, not yet converted to a GUID
-			if (!isValidSKU(tkt)) continue;
+		//add the database lookups to the hard-coded 'special' mappings already in this file
+		for (ExtTicketVO tkt : tickets)
+			tkt.setPhoneNumber(oemPhones.get(tkt.getOemId()));
 
-			for (ProductSerialNumberVO serial : serials) {
-				//ensure the product matches
-				if (!tktProdNm.equalsIgnoreCase(serial.getCustomerProductId())) continue;
-
-				//if the products match, push the actual productId (GUID) through to the ticket - so we have it if we need to create the SKU record
-				tkt.setProductId(serial.getProductId());
-
-				//if we can align serial#s, we're done.  If not continue searching.
-				if (StringUtil.checkVal(tkt.getSerialNoText()).equalsIgnoreCase(serial.getSerialNumber())) {
-					tkt.setProductSerialId(serial.getProductSerialId());
-					isFound = true;
-					break;
-				}
-			}
-			//no serial# found, put it to the list to add.  Note we are capturing the ticket here.
-			if (!isFound)
-				missing.add(tkt);
-		}
-		log.info("missing " + missing.size() + " skus in the database");
-		if (missing.isEmpty()) return;  //done here, everyone has a productId & productSerialId
-
-		createNewProducts(missing, tickets);
+		log.info("phone numbers set");
 	}
 
 
@@ -370,13 +356,58 @@ public class SOHeader extends AbsImporter {
 		}
 
 		//recusively call this method.  Now that we've added data we should be able to marry more records.
-		try {
-			Thread.sleep(500);
-		} catch (Exception e ) {/* don't care */ }
+		sleepThread(1000);
 
 		// make a recursive callback to ensure all records exist and are accounted for
 		// NOTE: endless looping will occur here if something goes wrong, watch for it.
-		this.bindSerialNos(tickets);
+		bindSerialNos(tickets);
+	}
+
+
+	/**
+	 * @param values
+	 */
+	private void bindSerialNos(Collection<ExtTicketVO> tickets) {
+		String sql = StringUtil.join("select coalesce(s.product_serial_id,'blank'||newid()) as product_serial_id, ",
+				"s.serial_no_txt, p.product_id, p.provider_id, p.cust_product_id from ",
+				schema, "wsla_product_master p  left join ", schema, "wsla_product_serial s ",
+				"on s.product_id=p.product_id where p.set_flg=1");
+		DBProcessor db = new DBProcessor(dbConn, schema);
+		db.setGenerateExecutedSQL(log.isDebugEnabled());
+		List<ProductSerialNumberVO> serials = db.executeSelect(sql, null, new ProductSerialNumberVO());
+
+		//update our tickets and give them the proper serial# pkId.  If they don't exist, add them to a list to add to the DB
+		boolean isFound;
+		String tktProdNm;
+		List<ExtTicketVO> missing = new ArrayList<>(1000);
+		for (ExtTicketVO tkt : tickets) {
+			isFound = false;
+			tktProdNm = tkt.getCustProductId(); //this is raw EquipmentId in the file, not yet converted to a GUID
+			if (!isValidSKU(tkt)) continue;
+
+			for (ProductSerialNumberVO serial : serials) {
+				//ensure the product matches
+				if (!tktProdNm.equalsIgnoreCase(serial.getCustomerProductId())) continue;
+
+				//if the products match, push the actual productId (GUID) through to the ticket - so we have it if we need to create the SKU record
+				tkt.setProductId(serial.getProductId());
+
+				//if we can align serial#s, we're done.  If not continue searching.
+				if (StringUtil.checkVal(tkt.getSerialNoText()).equalsIgnoreCase(serial.getSerialNumber())) {
+					tkt.setProductSerialId(serial.getProductSerialId());
+					isFound = true;
+					break;
+				}
+			}
+			//no serial# found, put it to the list to add.  Note we are capturing the ticket here.
+			if (!isFound)
+				missing.add(tkt);
+		}
+		log.info("missing " + missing.size() + " skus in the database");
+		if (missing.isEmpty()) return;  //done here, everyone has a productId & productSerialId
+
+		createNewProducts(missing, tickets);
+		log.info("serial #s finished");
 	}
 
 
@@ -389,6 +420,8 @@ public class SOHeader extends AbsImporter {
 		String sn = tkt.getSerialNoText();
 		if (StringUtil.isEmpty(sn) || sn.length() < 3 || sn.matches("0+") || fakeSKUs.contains(sn.toUpperCase())) {
 			tkt.setProductSerialId(null);
+			//if we don't have a product we can't have a productWarranty
+			tkt.setProductWarrantyId(null);
 			return false;
 		} else {
 			return true;
@@ -397,25 +430,121 @@ public class SOHeader extends AbsImporter {
 
 
 	/**
+	 * Add an exisitng warranty to every ticket
 	 * @param values
 	 */
 	private void bindWarranties(Collection<ExtTicketVO> tickets) {
-		//build a set of warranties for the product SKUs being imported
-		Set<String> serialIds = new HashSet<>(tickets.size());
+		Map<String, String> warrMap = new HashMap<>(100);
+		String sql = StringUtil.join("select provider_id as key, warranty_id as value from ", 
+				schema, "wsla_warranty where warranty_type_cd='MANUFACTURER' ",
+				"order by warranty_service_type_cd, provider_id");
+		DBProcessor dbp = new DBProcessor(dbConn, schema);
+		dbp.setGenerateExecutedSQL(log.isDebugEnabled());
+		MapUtil.asMap(warrMap, dbp.executeSelect(sql, null, new GenericVO()));
 
-		//skip any with warrantyFlag = 0
+		Set<String> newWarrs = new HashSet<>(100);
 		for (ExtTicketVO tkt : tickets) {
-			if (tkt.getWarrantyValidFlag() == 1)
-				serialIds.add(tkt.getProductSerialId());
+			//warranty is based on product serial#.  no product, skip it!
+			if (StringUtil.isEmpty(tkt.getProductSerialId())) continue;
+
+			tkt.setProductWarrantyId(warrMap.get(tkt.getOemId()));
+			if (StringUtil.isEmpty(tkt.getProductWarrantyId()))
+				newWarrs.add(tkt.getOemId());
 		}
-		log.debug(String.format("need to find warranties for %d serial#s", serialIds.size()));
 
-		StringBuilder sql = new StringBuilder(500);
-		sql.append("select ");
-		//TODO finish warranties
+		// Go around again, this will populate the blank tickets from the 1st round.
+		// This loop should never go around more than 2x.
+		if (!newWarrs.isEmpty()) {
+			createWarranties(newWarrs);
+			sleepThread(2000);
+			bindWarranties(tickets);
+		}
+		log.info("warranties set");
+	}
 
-		//if we can't marry a warranty, the import script should fail.  print SQL like we did for OEMs
 
+	/**
+	 * Create stock warranties for the OEMs that don't have one
+	 * @param newWarrs
+	 */
+	private void createWarranties(Set<String> newWarrs) {
+		List<WarrantyVO> lst = new ArrayList<>(newWarrs.size());
+		for (String oemId : newWarrs) {
+			WarrantyVO vo = new WarrantyVO();
+			vo.setProviderId(oemId);
+			vo.setWarrantyLength(365);
+			vo.setWarrantyType("MANUFACTURER");
+			vo.setServiceTypeCode(WarrantyAction.ServiceTypeCode.ALL);
+			vo.setDescription("Legacy-Data - created during migration");
+			lst.add(vo);
+		}
+		log.info(String.format("Creating %d new OEM warranties", lst.size()));
+
+		try {
+			new DBProcessor(dbConn, schema).executeBatch(lst);
+		} catch (Exception e) {
+			log.error("could not create warranties", e);
+			throw new RuntimeException(e.getMessage());
+		}
+	}
+
+
+	/**
+	 * Add a product warranty to every ticket
+	 * @param values
+	 */
+	private void bindProductWarranties(Collection<ExtTicketVO> tickets) {
+		Map<String, String> prodWarrMap = new HashMap<>(1000);
+		String sql = StringUtil.join("select product_serial_id as key, product_warranty_id as value from ", 
+				schema, "wsla_product_warranty");
+		DBProcessor dbp = new DBProcessor(dbConn, schema);
+		dbp.setGenerateExecutedSQL(log.isDebugEnabled());
+		MapUtil.asMap(prodWarrMap, dbp.executeSelect(sql, null, new GenericVO()));
+
+		Map<String, String> newProdWarrs = new HashMap<>(100);
+		for (ExtTicketVO tkt : tickets) {
+			//can't set a productWarranty without a product.  Skip empties
+			if (StringUtil.isEmpty(tkt.getProductSerialId())) continue;
+
+			// Replace the warrantyId with a productWarrantyId
+			// If the record does exist add it (serial# + warrantyId = productWarrantyId) 
+			String warrantyId = tkt.getProductWarrantyId();
+			tkt.setProductWarrantyId(prodWarrMap.get(tkt.getProductSerialId()));
+			if (StringUtil.isEmpty(tkt.getProductWarrantyId()))
+				newProdWarrs.put(tkt.getProductSerialId(), warrantyId);
+		}
+
+		// Go around again, this will populate the blank tickets from the 1st round.
+		// This loop should never go around more than 2x.
+		if (!newProdWarrs.isEmpty()) {
+			createProductWarranties(newProdWarrs);
+			sleepThread(2000);
+			bindProductWarranties(tickets);
+		}
+		log.info("product warranties set");
+	}
+
+
+	/**
+	 * Create product warranties as needed based on serial#s
+	 * @param newWarrs
+	 */
+	private void createProductWarranties(Map<String, String> newProdWarrs) {
+		List<ProductWarrantyVO> lst = new ArrayList<>(newProdWarrs.size());
+		for (Map.Entry<String, String> entry : newProdWarrs.entrySet()) {
+			ProductWarrantyVO vo = new ProductWarrantyVO();
+			vo.setProductSerialId(entry.getKey());
+			vo.setWarrantyId(entry.getValue());
+			lst.add(vo);
+		}
+		log.info(String.format("Creating %d new product warranties", lst.size()));
+
+		try {
+			new DBProcessor(dbConn, schema).executeBatch(lst);
+		} catch (Exception e) {
+			log.error("could not create product warranties", e);
+			throw new RuntimeException(e.getMessage());
+		}
 	}
 
 
@@ -426,7 +555,8 @@ public class SOHeader extends AbsImporter {
 	 */
 	private void createUserProfiles(Map<String, ExtTicketVO> tickets) {
 		//get a list of emails->userIds first, so we can ignore existing users
-		String sql = StringUtil.join("select email_address_txt as key, user_id as value from ", schema, "wsla_user order by create_dt desc"); //if dups, the earliest/inital record will be used
+		String sql = StringUtil.join("select email_address_txt as key, user_id as value from ", 
+				schema, "wsla_user order by create_dt desc"); //if dups, the earliest/inital record will be used
 		Map<String, String> existingUsers = new HashMap<>(tickets.size());
 		DBProcessor dbp = new DBProcessor(dbConn, schema);
 		MapUtil.asMap(existingUsers, dbp.executeSelect(sql, null, new GenericVO()));
@@ -584,6 +714,15 @@ public class SOHeader extends AbsImporter {
 			vo.addTicketData(attr);
 		}
 
+		//problem/symptoms of issue
+		if (!StringUtil.isEmpty(dataVo.getProblemCode())) {
+			attr = new TicketDataVO();
+			attr.setTicketId(vo.getTicketId());
+			attr.setAttributeCode("attr_symptomsComments");
+			attr.setValue(dataVo.getProblemCode());
+			vo.addTicketData(attr);
+		}
+
 		//add attribute for Customer PO
 		if (!StringUtil.isEmpty(dataVo.getCustPO())) {
 			attr = new TicketDataVO();
@@ -593,14 +732,24 @@ public class SOHeader extends AbsImporter {
 			vo.addTicketData(attr);
 		}
 
-		//add attribute for Defect Code
-		if (!StringUtil.isEmpty(dataVo.getProblemCode())) {
+		//add attribute for Coverage Code
+		if (!StringUtil.isEmpty(dataVo.getCoverageCode())) {
 			attr = new TicketDataVO();
 			attr.setTicketId(vo.getTicketId());
-			attr.setAttributeCode("attr_unitDefect");
-			attr.setValue("defect-" + dataVo.getProblemCode());
+			attr.setAttributeCode("attr_dispositionCode");
+			attr.setValue(dataVo.getCoverageCode());
 			vo.addTicketData(attr);
 		}
+
+		//add attribute for Action Code 
+		//TODO Steve to add to HDR file first
+		//		if (!StringUtil.isEmpty(dataVo.getActionCode())) {
+		//			attr = new TicketDataVO();
+		//			attr.setTicketId(vo.getTicketId());
+		//			attr.setAttributeCode("attr_issueResolved");
+		//			attr.setValue("defect-" + dataVo.getActionCode());
+		//			vo.addTicketData(attr);
+		//		}
 
 		//add the assigned-to CAS
 		if (!StringUtil.isEmpty(dataVo.getServiceTech())) {
@@ -673,5 +822,19 @@ public class SOHeader extends AbsImporter {
 
 		wslaUser.setProfile(user);
 		return wslaUser;
+	}
+
+
+	/**
+	 * Put the thread to sleep.  We do this between writes and reads, to give 
+	 * the DB time to commit.
+	 * @param i
+	 */
+	private void sleepThread(int durationMillis) {
+		try {
+			Thread.sleep(durationMillis);
+		} catch (Exception e ) {
+			log.fatal("could not sleep thread", e);
+		}
 	}
 }
