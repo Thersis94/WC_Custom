@@ -110,10 +110,10 @@ public class SOExtendedFileVO {
 	public String getStoreNumber() {
 		return storeNumber;
 	}
+	@Column(name="attr_purchasePrice")
 	public double getCostPesos() {
 		return costPesos;
 	}
-	@Column(name="attr_purchasePrice")
 	public double getCostDollars() {
 		return costDollars;
 	}

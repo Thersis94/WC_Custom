@@ -1,10 +1,12 @@
 package com.wsla.util.migration;
 
+import java.io.File;
 import java.lang.reflect.Method;
 import java.sql.PreparedStatement;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -30,7 +32,7 @@ import com.wsla.util.migration.vo.SOExtendedFileVO;
  ****************************************************************************/
 public class SOExtendedData extends AbsImporter {
 
-	private List<SOExtendedFileVO> data;
+	private List<SOExtendedFileVO> data = new ArrayList<>(50000);
 
 	private static Map<String, String> ticketMap = new HashMap<>();
 
@@ -40,7 +42,11 @@ public class SOExtendedData extends AbsImporter {
 	 */
 	@Override
 	void run() throws Exception {
-		data = readFile(props.getProperty("soExtendedDataFile"), SOExtendedFileVO.class, SHEET_1);
+		File[] files = super.listFilesMatching(props.getProperty("soExtendedDataFile"), "(.*)SOXDD(.*)");
+
+		for (File f : files)
+			data.addAll(readFile(f, SOExtendedFileVO.class, SHEET_1));
+
 		log.debug(data.size());
 
 		loadTicketIds();
@@ -50,13 +56,51 @@ public class SOExtendedData extends AbsImporter {
 
 
 	/**
-	 * Save the imported providers to the database.
+	 * Loop through the tickets/rows and update the ticket data for each using 
+	 * the @Column annotations found on the bean
 	 * @param data
 	 * @throws Exception 
 	 */
 	@Override
 	protected void save() throws Exception {
-		saveTicketData();
+		//transpose soNumbers into ticketIds
+		setTicketIds();
+
+		//loop the tickets, save each individually so we can overcome failures
+		for (SOExtendedFileVO row : data) {
+			Map<String, TicketDataVO> tktData = findDataCols(row);
+			if (tktData == null || tktData.isEmpty() || StringUtil.isEmpty(row.getSoNumber())) continue;
+			log.debug(String.format("found %d data points in ticket %s", tktData.size(), row.getSoNumber()));
+
+			try {
+				deleteTicketData(tktData.keySet(), row.getSoNumber());
+				writeToDB(new ArrayList<>(tktData.values()));
+			} catch (Exception e) {
+				log.error("could not save ticket data", e);
+			}
+		}
+	}
+
+
+	/**
+	 * transpose ticketIds.  If some are missing print them, then throw a Runtime to stop the script
+	 */
+	private void setTicketIds() {
+		Set<String> blanks = new HashSet<>();
+		for (SOExtendedFileVO row : data) {
+			String soNum = row.getSoNumber();
+			row.setSoNumber(ticketMap.get(soNum));
+			if (StringUtil.isEmpty(row.getSoNumber()))
+				blanks.add(soNum);
+		}
+		if (blanks.isEmpty()) return;
+
+		//print the blanks, then throw an error so they can be added, or removed from the file
+		log.error("\nMISSING TICKETS, CANNOT PROCEED "
+				+ "UNTIL THESE ARE ADDED, OR REMOVED FROM THE XDD FILE:");
+		for (String s : blanks) 
+			System.err.println(s);
+		throw new RuntimeException();
 	}
 
 
@@ -72,27 +116,6 @@ public class SOExtendedData extends AbsImporter {
 			ticketMap.put(vo.getKey().toString(), vo.getValue().toString());
 
 		log.info("loaded " + ticketMap.size() + " ticketIds from database");
-	}
-
-
-	/**
-	 * Loop through the tickets/rows and update the ticket data for each using 
-	 * the @Column annotations found on the bean
-	 */
-	private void saveTicketData() {
-		for (SOExtendedFileVO row : data) {
-			row.setSoNumber(ticketMap.get(row.getSoNumber()));
-			Map<String, TicketDataVO> tktData = findDataCols(row);
-			if (tktData == null || tktData.isEmpty() || StringUtil.isEmpty(row.getSoNumber())) continue;
-			log.debug(String.format("found %d data points in ticket %s", tktData.size(), row.getSoNumber()));
-
-			try {
-				deleteTicketData(tktData.keySet(), row.getSoNumber());
-				writeToDB(new ArrayList<>(tktData.values()));
-			} catch (Exception e) {
-				log.error("could not save ticket data", e);
-			}
-		}
 	}
 
 
@@ -120,6 +143,7 @@ public class SOExtendedData extends AbsImporter {
 
 
 	/**
+	 * Find methods annotated @Column and return a list of those fields as data VOs
 	 * @param row
 	 * @return
 	 */
