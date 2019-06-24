@@ -24,6 +24,7 @@ import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.common.html.BSTableControlVO;
 import com.siliconmtn.data.GenericVO;
+import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.*;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -79,6 +80,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		keyMap.put("issues", new GenericVO("getIssues", Boolean.TRUE));
 		keyMap.put("subscriptions", new GenericVO("getSubscriptions", Boolean.FALSE));
 		keyMap.put("articles", new GenericVO("getArticles", Boolean.FALSE));
+		keyMap.put("searchAC", new GenericVO("getArticlesAC", Boolean.TRUE));
 	}
 
 	/**
@@ -326,6 +328,40 @@ public class SelectLookupAction extends SBActionAdapter {
 		sql.append("from ").append(getCustomSchema()).append("mts_document a ");
 		sql.append("inner join sb_action b on a.document_id = b.action_group_id and pending_sync_flg = 0 ");
 		sql.append("order by action_nm ");
+		log.debug(sql.length() + "|" + sql);
+		
+		DBProcessor db = new DBProcessor(getDBConnection());
+		return db.executeSelect(sql.toString(), null, new GenericVO());
+	}
+	
+	/**
+	 * 
+	 * @param req
+	 * @return
+	 */
+	public List<GenericVO> getArticlesAC(ActionRequest req) {
+		// Build the serach terms
+		StringBuilder term = new StringBuilder(32);
+		String[] terms = StringUtil.checkVal(req.getParameter(REQ_SEARCH)).split(" ");
+		for (int i=0; i < terms.length; i++) {
+			if (i > 0) term.append(" & ");
+			term.append(terms[i]).append(":*");
+		}
+		
+		// Build the sql using Full text indexing
+		StringBuilder sql = new StringBuilder(512);
+		sql.append("select key, value from ( ");
+		sql.append("select unique_cd as key, concat(substring(action_nm, 0, 50),'... by: ', first_nm, ' ', last_nm)  as value, ");
+		sql.append("to_tsvector(action_nm) || "); 
+		sql.append("to_tsvector(coalesce(action_desc, '')) || ");
+		sql.append("to_tsvector(coalesce(first_nm, '')) || ");
+		sql.append("to_tsvector(coalesce(last_nm, '')) as document ");
+		sql.append(DBUtil.FROM_CLAUSE).append(getCustomSchema()).append("mts_document a ");
+		sql.append(DBUtil.INNER_JOIN).append("sb_action b ");
+		sql.append("on a.action_group_id = b.action_group_id ");
+		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("mts_user c ");
+		sql.append("on a.author_id = c.user_id ) as search ");
+		sql.append("where search.document @@ to_tsquery('").append(term).append("') ");
 		log.debug(sql.length() + "|" + sql);
 		
 		DBProcessor db = new DBProcessor(getDBConnection());

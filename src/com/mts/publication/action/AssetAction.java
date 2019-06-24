@@ -5,6 +5,8 @@ import java.nio.file.Paths;
 // JDK 1.8.x
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 // MTS Libs
 import com.mts.publication.data.AssetVO;
@@ -13,8 +15,9 @@ import com.mts.publication.data.AssetVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.*;
-
+import com.siliconmtn.db.pool.SMTDBConnection;
 //WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -54,6 +57,17 @@ public class AssetAction extends SBActionAdapter {
 		super(actionInit);
 	}
 	
+	/**
+	 * 
+	 * @param db
+	 * @param attributes
+	 */
+	public AssetAction(SMTDBConnection db, Map<String, Object> attributes) {
+		super();
+		this.setDBConnection(db);
+		this.setAttributes(attributes);
+	}
+	
 	/*
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.action.ActionRequest)
@@ -62,6 +76,28 @@ public class AssetAction extends SBActionAdapter {
 	public void retrieve(ActionRequest req) throws ActionException {
 		String keyId = req.getParameter("objectKeyId");
 		setModuleData(getAssets(keyId));
+	}
+	
+	/**
+	 * Gets all of the assets for the given collection of IDs.
+	 * @return
+	 */
+	public List<AssetVO> getAllAssets(Set<String> ids) {
+		StringBuilder sql = new StringBuilder(96);
+		sql.append("select *  from ").append(getCustomSchema()).append("mts_document_asset a ");
+		sql.append("inner join ").append(getCustomSchema()).append("mts_asset_type b ");
+		sql.append("on a.asset_type_cd = b.asset_type_cd ");
+		sql.append("where object_key_id in (");
+		sql.append(DBUtil.preparedStatmentQuestion(ids.size())).append(") ");
+		sql.append("order by document_nm ");
+		log.debug(sql.length() + "|" + sql + "|" + ids);
+		
+		// Add the params
+		List<Object> vals = new ArrayList<>();
+		vals.addAll(ids);
+		
+		DBProcessor db = new DBProcessor(getDBConnection());
+		return db.executeSelect(sql.toString(), vals, new AssetVO());
 	}
 	
 	/**

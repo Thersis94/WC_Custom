@@ -7,8 +7,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 // MTS Libs
 import com.mts.publication.data.AssetVO.AssetType;
@@ -57,7 +59,7 @@ public class MTSDocumentVO extends DocumentVO {
 	// Sub-Beans
 	private List<AssetVO> assets = new ArrayList<>();
 	private List<WidgetMetadataVO> categories = new ArrayList<>();
-	private List<RelatedArticleVO> relatedArticles = new ArrayList<>();
+	private List<MTSDocumentVO> relatedArticles = new ArrayList<>();
 	private MTSUserVO author;
 	
 	// Helpers
@@ -92,13 +94,35 @@ public class MTSDocumentVO extends DocumentVO {
 	 * @return
 	 */
 	public WidgetMetadataVO getCategory() {
-		log.info("*******");
 		for (WidgetMetadataVO cat : categories) {
-			log.info(cat);
 			if ("CHANNELS".equals(cat.getParentId())) return cat;
 		}
 		
 		return null;
+	}
+	
+	/**
+	 * Returns the single channel that an article belongs
+	 * @return
+	 */
+	public List<WidgetMetadataVO> getTopics() {
+		List<WidgetMetadataVO> topics = new ArrayList<>();
+		for (WidgetMetadataVO cat : categories) {
+			if ("MARKETS".equals(cat.getParentId())) topics.add(cat);
+		}
+		
+		return topics;
+	}
+	
+	/**
+	 * Returns a set of ids for the categories. This is used to query the assets 
+	 * and get a collection of images for the document
+	 * @return
+	 */
+	public Set<String> getCategoryIds() {
+		Set<String> ids = new HashSet<>();
+		for (WidgetMetadataVO cat : categories) ids.add(cat.getWidgetMetadataId());
+		return ids;
 	}
 	
 	/**
@@ -109,6 +133,22 @@ public class MTSDocumentVO extends DocumentVO {
 		Date now = new Date();
 		if (publishDate == null || publishDate .after(now)) return 0;
 		return ChronoUnit.DAYS.between(publishDate.toInstant(), now.toInstant());
+	}
+	
+	/**
+	 * 
+	 * @return
+	 */
+	public AssetVO getPrimaryAsset() {
+		List<AssetVO> dAsset = new ArrayList<>();
+		for (AssetVO asset : assets) {
+			if (asset.getObjectKeyId().equals(documentId)) dAsset.add(asset);
+		}
+		
+		if (dAsset.isEmpty()) dAsset.add(getFeatureAsset());
+		Collections.shuffle(dAsset);
+		
+		return dAsset.get(0);
 	}
 	
 	/**
@@ -423,14 +463,14 @@ public class MTSDocumentVO extends DocumentVO {
 	/**
 	 * @return the relatedArticles
 	 */
-	public List<RelatedArticleVO> getRelatedArticles() {
+	public List<MTSDocumentVO> getRelatedArticles() {
 		return relatedArticles;
 	}
 
 	/**
 	 * @param relatedArticles the relatedArticles to set
 	 */
-	public void setRelatedArticles(List<RelatedArticleVO> relatedArticles) {
+	public void setRelatedArticles(List<MTSDocumentVO> relatedArticles) {
 		this.relatedArticles = relatedArticles;
 	}
 }
