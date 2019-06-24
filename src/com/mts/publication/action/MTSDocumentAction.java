@@ -7,9 +7,10 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
+import com.mts.admin.action.UserAction;
 // MTS Libs
 import com.mts.publication.data.MTSDocumentVO;
-
+import com.mts.subscriber.data.MTSUserVO;
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -19,9 +20,9 @@ import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.util.RandomAlphaNumeric;
 import com.siliconmtn.util.StringUtil;
-import com.smt.sitebuilder.action.SBActionAdapter;
 
 // WC Libs
+import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.action.content.DocumentAction;
 import com.smt.sitebuilder.action.metadata.WidgetMetadataVO;
 import com.smt.sitebuilder.approval.ApprovalDecoratorAction;
@@ -42,7 +43,7 @@ import com.smt.sitebuilder.common.constants.Constants;
  * @updates:
  ****************************************************************************/
 
-public class MTSDocumentAction extends SBActionAdapter {
+public class MTSDocumentAction extends SimpleActionAdapter {
 
 	/**
 	 * Ajax Controller key for this action
@@ -61,6 +62,31 @@ public class MTSDocumentAction extends SBActionAdapter {
 	 */
 	public MTSDocumentAction(ActionInitVO actionInit) {
 		super(actionInit);
+	}
+	
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.action.ActionRequest)
+	 */
+	@Override
+	public void retrieve(ActionRequest req) throws ActionException {
+		try {
+			IssueArticleAction iac = new IssueArticleAction(getDBConnection(), getAttributes());
+			MTSDocumentVO doc = iac.getDocument(null, req.getParameter("uniqueCode"));
+			doc.setRelatedArticles(iac.getRelatedArticles(doc.getActionGroupId()));
+			
+			// Get the article assets
+						
+			UserAction ua = new UserAction(getDBConnection(), getAttributes());
+			MTSUserVO user = ua.getUserProfile(doc.getAuthorId());
+			// Get author articles
+			
+			doc.setAuthor(user);
+			setModuleData(doc);
+		} catch (Exception e) {
+			log.error("Unable to retrieve document", e);
+			setModuleData(null, 0, e.getLocalizedMessage());
+		}
 	}
 	
 	/*

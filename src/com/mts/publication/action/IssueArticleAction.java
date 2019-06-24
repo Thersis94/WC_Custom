@@ -90,7 +90,7 @@ public class IssueArticleAction extends SBActionAdapter {
 			if (req.hasParameter("related")) {
 				setModuleData(getRelatedArticles(req.getParameter("actionGroupId")));
 			} else if (req.hasParameter("documentId")) {
-				setModuleData(getDocument(req.getParameter("documentId")));
+				setModuleData(getDocument(req.getParameter("documentId"), null));
 			} else {
 				setModuleData(getArticles(new BSTableControlVO(req, MTSDocumentVO.class), req));
 			}
@@ -129,7 +129,10 @@ public class IssueArticleAction extends SBActionAdapter {
 	 * @return
 	 * @throws SQLException
 	 */
-	public MTSDocumentVO getDocument(String documentId) throws SQLException {
+	public MTSDocumentVO getDocument(String documentId, String uniqueCode) throws SQLException {
+		if (StringUtil.isEmpty(documentId) && StringUtil.isEmpty(uniqueCode)) 
+			throw new SQLException("No identifier passed for the document");
+		
 		StringBuilder sql = new StringBuilder(640);
 		sql.append("select publication_nm, e.publication_id, d.issue_nm, a.*, b.*, c.* ");
 		sql.append(DBUtil.FROM_CLAUSE).append(getCustomSchema()).append("mts_document a ");
@@ -139,12 +142,14 @@ public class IssueArticleAction extends SBActionAdapter {
 		sql.append("mts_issue d on a.issue_id = d.issue_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(getCustomSchema());
 		sql.append("mts_publication e on d.publication_id = e.publication_id ");
-		sql.append("where b.action_id = ? ");
+		if (!StringUtil.isEmpty(documentId)) sql.append("where b.action_id = ? ");
+		else sql.append("where a.unique_cd = ? ");
+		
 		log.debug(sql.length() + "|" + sql + "|" + documentId);
 		
 		MTSDocumentVO doc = new MTSDocumentVO();
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			ps.setString(1, documentId);
+			ps.setString(1, StringUtil.isEmpty(documentId) ? uniqueCode : documentId);
 			
 			try (ResultSet rs = ps.executeQuery()) {
 				if (rs.next()) doc = new MTSDocumentVO(rs);

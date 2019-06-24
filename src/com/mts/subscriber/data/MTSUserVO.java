@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+import com.mts.publication.data.MTSDocumentVO;
 import com.mts.subscriber.action.SubscriptionAction.SubscriptionType;
 // SMT Base Libs
 import com.siliconmtn.action.ActionRequest;
@@ -45,7 +46,7 @@ public class MTSUserVO extends UserVO {
 	private String linkedinName;
 	private String notes;
 	
-	// Numeric Memebrs
+	// Numeric Members
 	private int activeFlag;
 	private int printCopyFlag;
 	private int yearsExperience;
@@ -56,6 +57,7 @@ public class MTSUserVO extends UserVO {
 		
 	// Sub Beans
 	private List<SubscriptionUserVO> subscriptions = new ArrayList<>();
+	private List<MTSDocumentVO> articles = new ArrayList<>();
 	
 	// Helpers
 	private Date lastLogin;
@@ -346,6 +348,20 @@ public class MTSUserVO extends UserVO {
 	 */
 	public void setExpirationDate(Date expirationDate) {
 		this.expirationDate = expirationDate;
+	}
+
+	/**
+	 * @return the articles
+	 */
+	public List<MTSDocumentVO> getArticles() {
+		return articles;
+	}
+
+	/**
+	 * @param articles the articles to set
+	 */
+	public void setArticles(List<MTSDocumentVO> articles) {
+		this.articles = articles;
 	}
 }
 

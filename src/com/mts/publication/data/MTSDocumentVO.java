@@ -57,6 +57,7 @@ public class MTSDocumentVO extends DocumentVO {
 	// Sub-Beans
 	private List<AssetVO> assets = new ArrayList<>();
 	private List<WidgetMetadataVO> categories = new ArrayList<>();
+	private List<RelatedArticleVO> relatedArticles = new ArrayList<>();
 	private MTSUserVO author;
 	
 	// Helpers
@@ -84,6 +85,20 @@ public class MTSDocumentVO extends DocumentVO {
 	 */
 	public MTSDocumentVO(ResultSet rs) {
 		super(rs);
+	}
+	
+	/**
+	 * Returns the single channel that an article belongs
+	 * @return
+	 */
+	public WidgetMetadataVO getCategory() {
+		log.info("*******");
+		for (WidgetMetadataVO cat : categories) {
+			log.info(cat);
+			if ("CHANNELS".equals(cat.getParentId())) return cat;
+		}
+		
+		return null;
 	}
 	
 	/**
@@ -403,6 +418,20 @@ public class MTSDocumentVO extends DocumentVO {
 	 */
 	public void setUserInfoId(String userInfoId) {
 		this.userInfoId = userInfoId;
+	}
+
+	/**
+	 * @return the relatedArticles
+	 */
+	public List<RelatedArticleVO> getRelatedArticles() {
+		return relatedArticles;
+	}
+
+	/**
+	 * @param relatedArticles the relatedArticles to set
+	 */
+	public void setRelatedArticles(List<RelatedArticleVO> relatedArticles) {
+		this.relatedArticles = relatedArticles;
 	}
 }
 
