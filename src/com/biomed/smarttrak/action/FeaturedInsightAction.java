@@ -157,8 +157,10 @@ public class FeaturedInsightAction extends InsightAction {
 		for (SolrDocument solDoc : solVo.getResultDocuments()){
 			checkDocumentForAuthorization(solDoc, userRoles, authorizedFeatures);
 		}
+		
+		int max = authorizedFeatures.size() < 10? authorizedFeatures.size() : 10;
 		//change out results sets
-		transposeResults(solVo, authorizedFeatures.subList(0, Convert.formatInteger((String) mod.getAttribute(ModuleVO.ATTRIBUTE_2),10)));
+		transposeResults(solVo, authorizedFeatures.subList(0, Convert.formatInteger((String) mod.getAttribute(ModuleVO.ATTRIBUTE_2),max)));
 	}
 	
 	
