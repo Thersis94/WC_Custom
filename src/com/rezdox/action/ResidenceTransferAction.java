@@ -18,12 +18,12 @@ import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.io.mail.EmailRecipientVO;
-import com.siliconmtn.sb.email.util.EmailCampaignBuilderUtil;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
+import com.smt.sitebuilder.util.CampaignMessageSender;
 
 /****************************************************************************
  * <p><b>Title</b>: ResidenceTransferAction.java</p>
@@ -162,7 +162,7 @@ public class ResidenceTransferAction extends SimpleActionAdapter {
 		List<EmailRecipientVO> rcpts = new ArrayList<>();
 		rcpts.add(new EmailRecipientVO(newOwner.getProfileId(), newOwner.getEmailAddress(), EmailRecipientVO.TO));
 
-		EmailCampaignBuilderUtil util = new EmailCampaignBuilderUtil(getDBConnection(), getAttributes());
+		CampaignMessageSender util = new CampaignMessageSender(getAttributes());
 		util.sendMessage(dataMap, rcpts, RezDoxUtils.EmailSlug.TRANSFER_WAITING.name());
 	}
 
@@ -181,7 +181,7 @@ public class ResidenceTransferAction extends SimpleActionAdapter {
 		List<EmailRecipientVO> rcpts = new ArrayList<>();
 		rcpts.add(new EmailRecipientVO(preOwner.getProfileId(), preOwner.getEmailAddress(), EmailRecipientVO.TO));
 
-		EmailCampaignBuilderUtil util = new EmailCampaignBuilderUtil(getDBConnection(), getAttributes());
+		CampaignMessageSender util = new CampaignMessageSender(getAttributes());
 		util.sendMessage(dataMap, rcpts, RezDoxUtils.EmailSlug.TRANSFER_COMPLETE.name());
 	}
 
