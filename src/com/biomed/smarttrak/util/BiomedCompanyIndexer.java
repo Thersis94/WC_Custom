@@ -55,6 +55,7 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 	private static final String COMPANY_ID  = "COMPANY_ID";
 	private static final String SECTION_ID = "sectionId";
 	private static final int MAX_COMPANY_INDEX = 500;
+	private static final String DOCUMENT_PREFIX = StringUtil.join(Section.COMPANY.name(), "_");
 	public BiomedCompanyIndexer(Properties config) {
 		this.config = config;
 	}
@@ -269,12 +270,12 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 
 				//Populate first In Clause
 				for(SecureSolrDocumentVO c : companies) {
-					ps.setString(i++, c.getDocumentId());
+					ps.setString(i++, c.getDocumentId().replace(DOCUMENT_PREFIX, ""));
 				}
 
 				//Populate Second in clause.
 				for(SecureSolrDocumentVO c : companies) {
-					ps.setString(i++, c.getDocumentId());
+					ps.setString(i++, c.getDocumentId().replace(DOCUMENT_PREFIX, ""));
 				}
 			}
 
@@ -311,9 +312,9 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 	 */
 	private void addAllProducts(ProductVO p, Map<String, List<ProductVO>> acls) {
 		if (p == null) return;
-		addProduct(p, Section.COMPANY.name()+"_"+p.getCompanyId(), acls);
+		addProduct(p, DOCUMENT_PREFIX + p.getCompanyId(), acls);
 		for (ProductAllianceVO a : p.getAlliances())
-			addProduct(p, Section.COMPANY.name()+"_"+a.getAllyId(), acls);
+			addProduct(p, DOCUMENT_PREFIX + a.getAllyId(), acls);
 	}
 
 	/**
@@ -413,7 +414,7 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 			if (!StringUtil.isEmpty(id)) ps.setString(i++, id);
 			else if(companies != null && !companies.isEmpty()){
 				for(SecureSolrDocumentVO c : companies) {
-					ps.setString(i++, c.getDocumentId());
+					ps.setString(i++, c.getDocumentId().replace(DOCUMENT_PREFIX, ""));
 				}
 			}
 			ResultSet rs = ps.executeQuery();
@@ -445,7 +446,7 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 	protected void addContent(String currentCompany, StringBuilder content,
 			Map<String, StringBuilder> contentMap) {
 		if (content.length() > 0) {
-			contentMap.put(Section.COMPANY+"_"+currentCompany, content);
+			contentMap.put(DOCUMENT_PREFIX + currentCompany, content);
 		}
 	}
 
@@ -590,7 +591,7 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 			LocationVO vo = (LocationVO) o;
 			// The first location for each company is it's primary location, others can be ignored.
 			if (!locations.containsKey(vo.getCompanyId()))
-				locations.put(Section.COMPANY + "_" + vo.getCompanyId(), vo);
+				locations.put(DOCUMENT_PREFIX + vo.getCompanyId(), vo);
 		}
 
 		return locations;

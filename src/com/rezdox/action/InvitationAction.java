@@ -15,9 +15,9 @@ import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.io.mail.EmailRecipientVO;
-import com.siliconmtn.sb.email.util.EmailCampaignBuilderUtil;
 import com.siliconmtn.util.Convert;
 import com.smt.sitebuilder.action.SBActionAdapter;
+import com.smt.sitebuilder.util.CampaignMessageSender;
 /****************************************************************************
  * <b>Title</b>: InvitationAction.java<p/>
  * <b>Description: Manages invitations sent by a member to a potential new member.</b> 
@@ -252,7 +252,7 @@ public class InvitationAction extends SBActionAdapter {
 		rcpts.add(new EmailRecipientVO(inviter.getProfileId(), inviter.getEmailAddress(), EmailRecipientVO.TO));
 
 		// Send the email
-		EmailCampaignBuilderUtil util = new EmailCampaignBuilderUtil(getDBConnection(), getAttributes());
+		CampaignMessageSender util = new CampaignMessageSender(getAttributes());
 		util.sendMessage(dataMap, rcpts, RezDoxUtils.EmailSlug.INVITE_ACCEPTED.name());
 	}
 
