@@ -90,6 +90,18 @@ public class MTSDocumentVO extends DocumentVO {
 	}
 	
 	/**
+	 * Builds a URL to the article display page
+	 * @return
+	 */
+	public String getDocumentUrl() {
+		StringBuilder url = new StringBuilder(128);
+		url.append("/").append(StringUtil.checkVal(publicationId).toLowerCase()).append("/");
+		url.append("article/").append(this.getDirectAccessPath());
+		
+		return url.toString();
+	}
+	
+	/**
 	 * Returns the single channel that an article belongs
 	 * @return
 	 */

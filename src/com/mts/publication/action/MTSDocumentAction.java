@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 // MTS Libs
@@ -21,6 +22,7 @@ import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
+import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.util.RandomAlphaNumeric;
 import com.siliconmtn.util.StringUtil;
@@ -68,6 +70,15 @@ public class MTSDocumentAction extends SimpleActionAdapter {
 		super(actionInit);
 	}
 	
+	/**
+	 * @param actionInit
+	 */
+	public MTSDocumentAction(SMTDBConnection dbConn, Map<String, Object> attributes) {
+		super();
+		this.setAttributes(attributes);
+		this.setDBConnection(dbConn);
+	}
+	
 	/*
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.action.ActionRequest)
@@ -76,8 +87,9 @@ public class MTSDocumentAction extends SimpleActionAdapter {
 	public void retrieve(ActionRequest req) throws ActionException {
 		try {
 			IssueArticleAction iac = new IssueArticleAction(getDBConnection(), getAttributes());
-			MTSDocumentVO doc = iac.getDocument(null, req.getParameter("uniqueCode"));
+			MTSDocumentVO doc = iac.getDocument(null, req.getParameter("reqParam_1"));
 			doc.setRelatedArticles(getRelatedArticles(doc.getActionGroupId()));
+			if (StringUtil.isEmpty(doc.getActionId())) throw new Exception("Unable to locate article");
 			
 			// Get the article assets
 			AssetAction aa = new AssetAction(getDBConnection(), getAttributes());

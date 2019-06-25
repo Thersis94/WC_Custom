@@ -54,7 +54,6 @@ public class PublicationDisplayAction extends SBActionAdapter {
 		
 		IssueArticleAction iac = new IssueArticleAction(getDBConnection(), getAttributes());
 		setModuleData(iac.getArticleTeasers(publicationId));
-		
 	}
 	
 	/*
@@ -69,5 +68,10 @@ public class PublicationDisplayAction extends SBActionAdapter {
 		sla.setDBConnection(getDBConnection());
 		sla.setAttributes(getAttributes());
 		req.setAttribute("mts_publications", sla.getPublications(req));
+		
+		// Add the categories
+		req.setParameter("parentId", "CHANNELS");
+		req.setAttribute("mts_channels", sla.getCategories(req));
+		
 	}
 }

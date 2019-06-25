@@ -129,8 +129,8 @@ public class IssueArticleAction extends SBActionAdapter {
 	 * @return
 	 * @throws SQLException
 	 */
-	public MTSDocumentVO getDocument(String documentId, String uniqueCode) throws SQLException {
-		if (StringUtil.isEmpty(documentId) && StringUtil.isEmpty(uniqueCode)) 
+	public MTSDocumentVO getDocument(String documentId, String directPath) throws SQLException {
+		if (StringUtil.isEmpty(documentId) && StringUtil.isEmpty(directPath)) 
 			throw new SQLException("No identifier passed for the document");
 		
 		StringBuilder sql = new StringBuilder(640);
@@ -143,13 +143,13 @@ public class IssueArticleAction extends SBActionAdapter {
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(getCustomSchema());
 		sql.append("mts_publication e on d.publication_id = e.publication_id ");
 		if (!StringUtil.isEmpty(documentId)) sql.append("where b.action_id = ? ");
-		else sql.append("where a.unique_cd = ? ");
+		else sql.append("where c.direct_access_pth = ? ");
 		
 		log.debug(sql.length() + "|" + sql + "|" + documentId);
 		
 		MTSDocumentVO doc = new MTSDocumentVO();
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			ps.setString(1, StringUtil.isEmpty(documentId) ? uniqueCode : documentId);
+			ps.setString(1, StringUtil.isEmpty(documentId) ? directPath : documentId);
 			
 			try (ResultSet rs = ps.executeQuery()) {
 				if (rs.next()) doc = new MTSDocumentVO(rs);
@@ -181,16 +181,17 @@ public class IssueArticleAction extends SBActionAdapter {
 	 * @return
 	 */
 	public PublicationTeaserVO getArticleTeasers(String publicationId) {
-		StringBuilder sql = new StringBuilder(1024);
+		StringBuilder sql = new StringBuilder(1088);
 		String schema = getCustomSchema();
 		
 		sql.append("select a.document_id, c.action_id, first_nm, last_nm, a.publish_dt, a.author_id, ");
 		sql.append("c.action_nm, c.action_desc, b.issue_nm, m.field_nm as value_txt, m.widget_meta_data_id, p.publication_id, ");
-		sql.append("publication_nm, p.publication_desc, b.category_cd ");
+		sql.append("publication_nm, p.publication_desc, b.category_cd, direct_access_pth ");
 		sql.append("from ").append(schema).append("mts_document a ");
 		sql.append("inner join ").append(schema).append("mts_issue b on a.issue_id = b.issue_id ");
 		sql.append("inner join ").append(schema).append("mts_publication p on b.publication_id = p.publication_id ");
 		sql.append("inner join sb_action c on a.action_group_id = c.action_group_id and c.pending_sync_flg = 0 ");
+		sql.append("inner join document doc on c.action_id = doc.action_id ");
 		sql.append("inner join ").append(schema).append("mts_user u on a.author_id = u.user_id ");
 		sql.append("left outer join ( ");
 		sql.append("select action_id, field_nm, b.widget_meta_data_id ");

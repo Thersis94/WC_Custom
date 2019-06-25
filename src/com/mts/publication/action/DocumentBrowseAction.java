@@ -74,7 +74,7 @@ public class DocumentBrowseAction extends SimpleActionAdapter {
 	public GridDataVO<MTSDocumentVO> search(BSTableControlVO bst, String pubs, String topics, String cats) {
 		List<Object> vals = new ArrayList<>();
 		StringBuilder sql = new StringBuilder(1408);
-		sql.append("select b.unique_cd, a.action_id, action_nm, action_desc, b.publish_dt, ");
+		sql.append("select b.unique_cd, a.action_id, action_nm, action_desc, b.publish_dt, direct_access_pth, ");
 		sql.append("user_id, first_nm, last_nm, publication_id, newid() as document_asset_id, ");
 		sql.append("case ");
 		sql.append("when doc_img is not null then doc_img ");
@@ -82,6 +82,7 @@ public class DocumentBrowseAction extends SimpleActionAdapter {
 		sql.append("else '/000/000/feature.png' ");
 		sql.append("end as document_path ");
 		sql.append("from sb_action a ");
+		sql.append("inner join document doc on a.action_id = doc.action_id ");
 		sql.append("inner join custom.mts_document b ");
 		sql.append("on a.action_group_id = b.action_group_id and pending_sync_flg = 0 ");
 		sql.append("inner join custom.mts_issue c on b.issue_id = c.issue_id ");

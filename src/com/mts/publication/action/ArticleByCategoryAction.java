@@ -71,10 +71,12 @@ public class ArticleByCategoryAction extends SimpleActionAdapter {
 	 * @return
 	 */
 	public List<MTSDocumentVO> getArticles(String cat, int count) {
-		StringBuilder sql = new StringBuilder(400);
-		sql.append("select action_nm, action_desc, a.action_id, document_id, unique_cd, publication_id ");
+		StringBuilder sql = new StringBuilder(464);
+		sql.append("select action_nm, action_desc, a.action_id, document_id, ");
+		sql.append("unique_cd, publication_id, direct_access_pth ");
 		sql.append("from widget_meta_data_xr  a ");
 		sql.append("inner join sb_action b on a.action_id = b.action_id and b.pending_sync_flg = 0 ");
+		sql.append("inner join document doc on b.action_id = doc.action_id ");
 		sql.append("inner join ").append(getCustomSchema()).append("mts_document c ");
 		sql.append("on b.action_group_id = c.document_id ");
 		sql.append("inner join ").append(getCustomSchema()).append("mts_issue d ");

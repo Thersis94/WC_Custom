@@ -113,6 +113,9 @@ public class UserInfoWidget extends SimpleActionAdapter {
 		sql.append("on a.value_txt = d.unique_cd ");
 		sql.append("inner join sb_action b ");
 		sql.append("on d.document_id = b.action_group_id and pending_sync_flg = 0 ");
+		sql.append("inner join document doc on b.action_id = doc.action_id ");
+		sql.append("inner join ").append(getCustomSchema()).append("mts_issue i ");
+		sql.append("on d.issue_id = i.issue_id ");
 		sql.append("inner join ").append(getCustomSchema()).append("mts_user u ");
 		sql.append("on d.author_id = u.user_id ");
 		sql.append("where a.user_id = ? ");
