@@ -351,7 +351,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		// Build the sql using Full text indexing
 		StringBuilder sql = new StringBuilder(512);
 		sql.append("select key, value from ( ");
-		sql.append("select unique_cd as key, concat(substring(action_nm, 0, 50),'... by: ', first_nm, ' ', last_nm)  as value, ");
+		sql.append("select action_nm, unique_cd as key, concat(action_nm, '|-- ', first_nm, ' ', last_nm)  as value, ");
 		sql.append("to_tsvector(action_nm) || "); 
 		sql.append("to_tsvector(coalesce(action_desc, '')) || ");
 		sql.append("to_tsvector(coalesce(first_nm, '')) || ");
@@ -362,6 +362,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("mts_user c ");
 		sql.append("on a.author_id = c.user_id ) as search ");
 		sql.append("where search.document @@ to_tsquery('").append(term).append("') ");
+		sql.append("order by action_nm limit 20");
 		log.debug(sql.length() + "|" + sql);
 		
 		DBProcessor db = new DBProcessor(getDBConnection());
