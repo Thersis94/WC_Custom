@@ -289,7 +289,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		List<GenericVO> data = new ArrayList<>(16);
 		BSTableControlVO bst = new BSTableControlVO(req, IssueVO.class);
 		bst.setLimit(1000);
-		String publicationId = req.getParameter("publicationId");
+		String publicationId = StringUtil.checkVal(req.getParameter("publicationId")).toUpperCase();
 		
 		IssueAction ia = new IssueAction(getDBConnection(), getAttributes());
 		GridDataVO<IssueVO> issues = ia.getIssues(publicationId, bst);

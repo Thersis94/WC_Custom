@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import com.mts.action.SelectLookupAction;
 // MTS Libs
 import com.mts.publication.data.IssueVO;
 
@@ -70,9 +71,24 @@ public class IssueAction extends SBActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
+		log.info("*****");
 		String pubId = req.getParameter("publicationId");
 		BSTableControlVO bst = new BSTableControlVO(req, IssueVO.class);
 		setModuleData(getIssues(pubId, bst));
+	}
+	
+	/*
+	 * (non-Javadoc)
+	 * @see com.smt.sitebuilder.action.SBActionAdapter#list(com.siliconmtn.action.ActionRequest)
+	 */
+	@Override
+	public void list(ActionRequest req) throws ActionException {
+		super.retrieve(req);
+		
+		SelectLookupAction sla = new SelectLookupAction();
+		sla.setDBConnection(getDBConnection());
+		sla.setAttributes(getAttributes());
+		req.setAttribute("mts_publications", sla.getPublications(req));
 	}
 	
 	/**

@@ -59,11 +59,12 @@ public class DocumentBrowseAction extends SimpleActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		String pubs = req.getParameter("publications");
+		String pubs = StringUtil.checkVal(req.getParameter("publications")).toUpperCase();
 		String topics = req.getParameter("topics");
 		String cats = req.getParameter("categories");
+		String issues = req.getParameter("issues");
 		BSTableControlVO bst = new BSTableControlVO(req);
-		setModuleData(search(bst, pubs, topics, cats));
+		setModuleData(search(bst, pubs, topics, cats, issues));
 	}
 	
 	/**
@@ -71,7 +72,7 @@ public class DocumentBrowseAction extends SimpleActionAdapter {
 	 * @param bst
 	 * @return
 	 */
-	public GridDataVO<MTSDocumentVO> search(BSTableControlVO bst, String pubs, String topics, String cats) {
+	public GridDataVO<MTSDocumentVO> search(BSTableControlVO bst, String pubs, String topics, String cats, String issues) {
 		List<Object> vals = new ArrayList<>();
 		StringBuilder sql = new StringBuilder(1408);
 		sql.append("select b.unique_cd, a.action_id, action_nm, action_desc, b.publish_dt, direct_access_pth, ");
@@ -104,6 +105,7 @@ public class DocumentBrowseAction extends SimpleActionAdapter {
 		if (! StringUtil.isEmpty(cats)) addCatFilter(sql, vals, cats);
 		if (! StringUtil.isEmpty(topics)) addCatFilter(sql, vals, topics);
 		if (! StringUtil.isEmpty(pubs)) addPublicationFilter(sql, vals, pubs);
+		if (! StringUtil.isEmpty(issues)) addIssueFilter(sql, vals, issues);
 		
 		sql.append("order by action_nm ");
 		log.debug(sql.length() + "|" + sql + "|" + vals);
@@ -151,5 +153,18 @@ public class DocumentBrowseAction extends SimpleActionAdapter {
 		sql.append("and c.publication_id in (");
 		sql.append(DBUtil.preparedStatmentQuestion(pubs.size())).append(") ");
 		vals.addAll(pubs);
+	}
+	
+	/**
+	 * Filters by publication issues
+	 * @param sql
+	 * @param vals
+	 * @param issue
+	 */
+	public void addIssueFilter(StringBuilder sql, List<Object> vals, String issue) {
+		List<String> issues = Arrays.asList(issue.split("\\,"));
+		sql.append("and c.issue_id in (");
+		sql.append(DBUtil.preparedStatmentQuestion(issues.size())).append(") ");
+		vals.addAll(issues);
 	}
 }
