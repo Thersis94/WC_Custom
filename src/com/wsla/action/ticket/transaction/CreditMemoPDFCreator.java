@@ -15,6 +15,7 @@ import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.data.report.PDFGenerator;
 import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
+import com.siliconmtn.security.UserDataVO;
 import com.smt.sitebuilder.action.AbstractSBReportVO;
 // WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
@@ -24,8 +25,10 @@ import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.resource.WCResourceBundle;
 import com.wsla.action.ticket.TicketEditAction;
 import com.wsla.action.ticket.TicketLedgerAction;
+import com.wsla.common.LocaleWrapper;
 import com.wsla.data.ticket.CreditMemoVO;
 import com.wsla.data.ticket.TicketVO;
+import com.wsla.data.ticket.UserVO;
 
 import freemarker.template.TemplateException;
 
@@ -73,7 +76,15 @@ public class CreditMemoPDFCreator extends SBActionAdapter {
 		String templateDir = req.getRealPath() + attributes.get(Constants.INCLUDE_DIRECTORY) + "templates/";
 		String path = templateDir + "credit_memo.ftl";
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
-		ResourceBundle rb = WCResourceBundle.getBundle(site, getAdminUser(req));
+		//Set the smt User locale to match the WSLA locale.
+		UserDataVO user = getAdminUser(req);
+		UserVO wslaUser = (UserVO) user.getUserExtendedInfo();
+		LocaleWrapper lw = new LocaleWrapper(wslaUser.getLocale());
+		
+		user.setLanguage(lw.getLocale().getLanguage());
+		user.setCountryCode(lw.getLocale().getCountry());
+		
+		ResourceBundle rb = WCResourceBundle.getBundle(site, user);
 		String creditMemoId = req.getParameter("creditMemoId");
 		try {
 			byte[] pdfFile = getCreditMemoPDF(creditMemoId, path, rb);
@@ -118,6 +129,7 @@ public class CreditMemoPDFCreator extends SBActionAdapter {
 		GenericVO gvo = new GenericVO();
 		gvo.setKey(ticket);
 		gvo.setValue(cMemo);
+		
 
 		// Generate the pdf
 		PDFGenerator pdf = new PDFGenerator(path2Templ, gvo, rb);

@@ -124,7 +124,15 @@ public class DebitMemoJob extends AbstractSMTJob {
 		super.execute(ctx);
 		attributes = ctx.getMergedJobDataMap().getWrappedMap();
 		getResourceBundleData("es", "MX", "WSLA_BUNDLE");
-		processDebitMemos(StringUtil.checkVal(attributes.get(Constants.CUSTOM_DB_SCHEMA)));
+        boolean success = true;
+        
+        String message = "Success " + processDebitMemos(StringUtil.checkVal(attributes.get(Constants.CUSTOM_DB_SCHEMA)));
+		
+		try {
+			this.finalizeJob(success, message);
+		} catch (Exception e) {
+			/** nothing to do here **/ 
+		}
 	}
 
 	/**
@@ -133,9 +141,9 @@ public class DebitMemoJob extends AbstractSMTJob {
 	 * @param schema
 	 * @return
 	 */
-	public List<DebitMemoVO> processDebitMemos(String schema) {
+	public String processDebitMemos(String schema) {
 		List<DebitMemoVO> memos = getGroupData(schema);
-
+		StringBuilder messages = new StringBuilder(100);
 		log.debug(memos);
 		for (DebitMemoVO memo : memos) {
 			try {
@@ -159,10 +167,11 @@ public class DebitMemoJob extends AbstractSMTJob {
 
 			} catch (Exception e) {
 				log.error("Unable to create debit memo", e);
+				messages.append(e.getLocalizedMessage()).append("|");
 			}
+			
 		}
-
-		return new ArrayList<>();
+		return messages.toString();
 	}
 	/**
 	 * When run, it creates a debit memo for all approved credit memos that 
@@ -282,9 +291,31 @@ public class DebitMemoJob extends AbstractSMTJob {
 		sql.append("wsla_ticket c on b.ticket_id = c.ticket_id ");
 		sql.append(DBUtil.INNER_JOIN).append(schema);
 		sql.append("wsla_provider_location d on c.retailer_id = d.location_id ");
+		sql.append(DBUtil.INNER_JOIN).append(schema);
+		sql.append("wsla_product_warranty e on c.product_warranty_id = e.product_warranty_id ");
+		sql.append(DBUtil.INNER_JOIN).append(schema);
+		sql.append("wsla_warranty w on e.warranty_id = w.warranty_id ");
 		sql.append("where debit_memo_id is null and approval_dt is not null ");
-		sql.append("group by oem_id, provider_id ");
-		sql.append("order by oem_id, provider_id ");
+		sql.append("and (w.refund_provider_id is null or w.refund_provider_id = '') ");
+		sql.append("group by oem_id, retail_id ");
+		sql.append("union ");
+		sql.append("select replace(newid(), '-', '') as debit_memo_id, c.oem_id, ");
+		sql.append("d.provider_id as retail_id, count(*) as credit_memo_no ");
+		sql.append(DBUtil.FROM_CLAUSE).append(schema);
+		sql.append("wsla_credit_memo a ");
+		sql.append(DBUtil.INNER_JOIN).append(schema);
+		sql.append("wsla_ticket_ref_rep b on a.ticket_ref_rep_id = b.ticket_ref_rep_id ");
+		sql.append(DBUtil.INNER_JOIN).append(schema);
+		sql.append("wsla_ticket c on b.ticket_id = c.ticket_id ");
+		sql.append(DBUtil.INNER_JOIN).append(schema);
+		sql.append("wsla_product_warranty e on c.product_warranty_id = e.product_warranty_id ");
+		sql.append(DBUtil.INNER_JOIN).append(schema);
+		sql.append("wsla_warranty w on e.warranty_id = w.warranty_id ");
+		sql.append(DBUtil.INNER_JOIN).append(schema);
+		sql.append("wsla_provider d on w.refund_provider_id = d.provider_id ");
+		sql.append("where debit_memo_id is null and approval_dt is not null ");
+		sql.append("group by oem_id, retail_id ");
+		sql.append("order by oem_id, retail_id ");
 		log.debug(sql.length() + "|" + sql);
 
 		DBProcessor db = new DBProcessor(conn);

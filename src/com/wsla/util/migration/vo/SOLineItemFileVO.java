@@ -1,8 +1,10 @@
 package com.wsla.util.migration.vo;
 
+import java.util.Calendar;
 import java.util.Date;
 
 import com.siliconmtn.annotations.Importable;
+import com.siliconmtn.util.StringUtil;
 
 /****************************************************************************
  * <p><b>Title:</b> SOLineItemFileVO.java</p>
@@ -52,7 +54,7 @@ public class SOLineItemFileVO {
 		return defectiveQnty;
 	}
 	public String getProductId() {
-		return productId;
+		return StringUtil.checkVal(productId).trim();
 	}
 	public String getDesc1() {
 		return desc1;
@@ -76,6 +78,16 @@ public class SOLineItemFileVO {
 		return qntyBackordered;
 	}
 
+	public boolean isService() {
+		return "S".equalsIgnoreCase(getCode());
+	}
+	public boolean isInventory() {
+		return "I".equalsIgnoreCase(getCode()) && !getProductId().matches("(?i).*\\ GUIA$"); //shipping labels are not inventory
+	}
+	public boolean isCreditMemo() {
+		return "N".equalsIgnoreCase(getCode());
+	}
+
 
 	@Importable(name="SO Number")
 	public void setSoNumber(String soNumber) {
@@ -93,6 +105,13 @@ public class SOLineItemFileVO {
 	public void setFromLocationId(String fromLocationId) {
 		this.fromLocationId = fromLocationId;
 	}
+	/**
+	 * status "C"ode of line item
+	 *  S=Service (not inventory)
+	 *  I=Inventory
+	 *  N=credit memo/refund (ingest into inventory)
+	 * @param code
+	 */
 	@Importable(name="C")
 	public void setCode(String code) {
 		this.code = code;
@@ -132,5 +151,17 @@ public class SOLineItemFileVO {
 	@Importable(name="QTY BACKORDER")
 	public void setQntyBackordered(int qntyBackordered) {
 		this.qntyBackordered = qntyBackordered;
+	}
+	
+	/**
+	 * combine the line number as a factor of minutes to the recieved date to resemble some sort of chronological ordering of the rows
+	 * @return
+	 */
+	public Date getChronoReceivedDate() {
+		if (getOrderNo() == 0) return getReceivedDate();
+		Calendar cal = Calendar.getInstance();
+		cal.setTime(getReceivedDate());
+		cal.add(Calendar.MINUTE, getOrderNo());
+		return cal.getTime();
 	}
 }

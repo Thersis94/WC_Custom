@@ -12,9 +12,10 @@ import com.siliconmtn.data.parser.BeanDataVO;
 import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
-import com.wsla.data.provider.ProviderVO;
+import com.siliconmtn.util.StringUtil;
 
-import opennlp.tools.util.StringUtil;
+// WC Libs
+import com.wsla.data.provider.ProviderVO;
 
 /****************************************************************************
  * <b>Title</b>: DebitMemoVO.java
@@ -46,23 +47,23 @@ public class DebitMemoVO extends BeanDataVO {
 	private String filePathUrl;
 	private String retailerName;
 	private String oemName;
-	
+
 	// Numeric Members
 	private double transferAmount;
 	private double totalCreditMemoAmount;
 	private long totalCreditMemos;
-		
+
 	// Date Members
 	private Date approvalDate;
 	private Date transferDate;
 	private Date createDate;
 	private Date updateDate;
-	
+
 	// Sub Beans
 	private List<CreditMemoVO> creditMemos = new ArrayList<>();
 	private ProviderVO oem;
 	private ProviderVO retailer;
-	
+
 	/**
 	 * 
 	 */
@@ -93,7 +94,7 @@ public class DebitMemoVO extends BeanDataVO {
 			transferDate = new Date();
 		}
 	}
-	
+
 	/**
 	 * Set the approval date if empty and approved by has been passed
 	 */
@@ -103,7 +104,7 @@ public class DebitMemoVO extends BeanDataVO {
 			setApprovalDate(new Date());
 		}
 	}
-	
+
 	/**
 	 * @return the debitMemoId
 	 */
@@ -181,12 +182,12 @@ public class DebitMemoVO extends BeanDataVO {
 	 */
 	@Column(name="total_credit_memo", isReadOnly=true)
 	public double getTotalCreditMemoAmount() {
-		if (totalCreditMemoAmount == 0 && creditMemos.size() > 0) {
+		if (Double.valueOf(totalCreditMemoAmount) == 0 && !creditMemos.isEmpty()) {
 			for (CreditMemoVO cm : creditMemos) {
 				totalCreditMemoAmount += cm.getRefundAmount();
 			}
 		}
-		
+
 		return totalCreditMemoAmount;
 	}
 

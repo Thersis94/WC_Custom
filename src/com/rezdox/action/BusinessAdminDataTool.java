@@ -17,12 +17,12 @@ import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.io.mail.EmailRecipientVO;
-import com.siliconmtn.sb.email.util.EmailCampaignBuilderUtil;
 import com.siliconmtn.util.Convert;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.common.constants.Constants;
+import com.smt.sitebuilder.util.CampaignMessageSender;
 
 /****************************************************************************
  * <b>Title:</b> BusinessAdminDataTool.java<br/>
@@ -168,7 +168,7 @@ public class BusinessAdminDataTool extends SimpleActionAdapter {
 		if (business.getStatus() == BusinessStatus.INACTIVE)
 			emailSlug = RezDoxUtils.EmailSlug.BUSINESS_DECLINED.name();
 
-		EmailCampaignBuilderUtil util = new EmailCampaignBuilderUtil(getDBConnection(), getAttributes());
+		CampaignMessageSender util = new CampaignMessageSender(getAttributes());
 		util.sendMessage(dataMap, rcpts, emailSlug);
 	}
 

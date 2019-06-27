@@ -50,7 +50,8 @@ public enum LedgerSummary {
 	RESOLVED_DURING_CALL("Problema Resuelto en Llamada"),
 	CREDIT_MEMO_CREATED("Nota de Cargo Creada"),
 	CREDIT_MEMO_APPROVED("Nota de Cargo Aprobada"),
-	ASSETS_BYPASSED("Sin Evidencias Requeridas");
+	ASSETS_BYPASSED("Sin Evidencias Requeridas"),
+	REFUND_VERIFIED("Reembolso Verificado");
 	
 	public final String summary;
 	LedgerSummary(String summary) { this.summary = summary; }

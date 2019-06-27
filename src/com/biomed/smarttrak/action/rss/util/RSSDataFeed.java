@@ -130,6 +130,10 @@ public class RSSDataFeed extends AbstractSmarttrakRSSFeed {
 
 		List<RSSArticleVO> articles = feed.getItemList().stream().map(RSSArticleVO::new).collect(Collectors.toList());
 
+		if(articles == null || articles.isEmpty()) {
+			return articles;
+		}
+
 		//Match Articles Retrieved against db articles to get proper Dates and Article Id for existing records.
 		matchArticles(articles);
 
@@ -147,7 +151,7 @@ public class RSSDataFeed extends AbstractSmarttrakRSSFeed {
 
 
 	/**
-	 * Before we begine processing, lookup articles and attempt to set rss_Article_id
+	 * Before we begin processing, lookup articles and attempt to set rss_Article_id
 	 * and publish_dt before we process.  Ensures that if there is no publish_dt
 	 * parsed from the Feed, we use what we have in the system which would be
 	 * ingestion date.  Prevents non-dated articles that are historically out

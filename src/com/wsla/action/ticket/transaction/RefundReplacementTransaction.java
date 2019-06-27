@@ -66,6 +66,17 @@ public class RefundReplacementTransaction extends BaseTransactionAction {
 	public enum DispositionCodes {
 		RETURN_REPAIR, RETURN_HARVEST, HARVEST_UNIT, DISPOSE;
 	}
+	
+	public enum NotificationState {
+		OEM_APPROVED ("oemApproved"), OEM_NOTIFIED("oemNotified"), OEM_REJECTED("oemRejected");
+		String paramName;
+		NotificationState(String paramName){
+			this.paramName = paramName;
+		}
+		public String getParamName(){
+			return this.paramName;
+		}
+	}
 
 	/**
 	 * 
@@ -106,6 +117,16 @@ public class RefundReplacementTransaction extends BaseTransactionAction {
 			saveRefundRep(rrvo);
 		}
 		
+		if(req.getBooleanParameter("isPreNotification")) {
+			String notificationState = req.getStringParameter("notificationState");
+			try {
+				notificationApprovalProcess(rrvo.getTicketId(), notificationState, user);
+			} catch (DatabaseException e) {
+				log.error("could not save notification change",e);
+			}
+			return;
+		}
+		
 		ApprovalTypes approvalType = EnumUtil.safeValueOf(ApprovalTypes.class, req.getParameter(APPROVAL_TYPE));
 		switch (approvalType) {
 			case REPLACEMENT_REQUEST:
@@ -123,6 +144,23 @@ public class RefundReplacementTransaction extends BaseTransactionAction {
 
 	}
 	
+	/**
+	 * moves the ticket status up based on the notificatino state
+	 * @param ticketId
+	 * @param notificationState
+	 * @param user 
+	 * @return
+	 * @throws DatabaseException 
+	 */
+	private void notificationApprovalProcess(String ticketId, String notificationState, UserVO user) throws DatabaseException {
+		if (NotificationState.OEM_NOTIFIED.getParamName().equals(notificationState)) {
+			changeStatus(ticketId, user.getUserId(), StatusCode.RAR_OEM_NOTIFIED, null, null);
+		}else if (NotificationState.OEM_APPROVED.getParamName().equals(notificationState)) {
+			//we use replace request to start rar process
+			changeStatus(ticketId, user.getUserId(), StatusCode.REPLACEMENT_REQUEST, null, null);
+		}
+	}
+
 	/**
 	 * Manages the tasks associated to a replacement request.
 	 * 
