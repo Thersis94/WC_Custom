@@ -6,6 +6,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -60,7 +61,6 @@ import com.wsla.data.ticket.UserVO;
  * @since Oct 14, 2018
  * @updates:
  ****************************************************************************/
-
 public class TicketEditAction extends SBActionAdapter {
 
 	/**
@@ -147,7 +147,7 @@ public class TicketEditAction extends SBActionAdapter {
 				req.setAttribute("nextStep", new NextStepVO(ticket.getStatusCode()));
 				putModuleData(ticket);
 			}
-		} catch (SQLException | DatabaseException e) {
+		} catch (DatabaseException e) {
 			log.error("Unable to retrieve ticket #: " + ticketNumber, e);
 			this.putModuleData("", 0, false, e.getLocalizedMessage(), true);
 		}
@@ -159,7 +159,7 @@ public class TicketEditAction extends SBActionAdapter {
 	 * @return
 	 * @throws SQLException
 	 */
-	public List<Node> getComments(String ticketId, boolean endUserFilter, boolean activity) throws SQLException {
+	public List<Node> getComments(String ticketId, boolean endUserFilter, boolean activity) {
 		String schema = getCustomSchema();
 		StringBuilder sql = new StringBuilder(416);
 		sql.append(DBUtil.SELECT_CLAUSE).append(" coalesce(end_user_flg, 0) as end_user_flg, * from ");
@@ -184,6 +184,9 @@ public class TicketEditAction extends SBActionAdapter {
 					comments.add(new Node(tc.getTicketCommentId(), tc.getParentId(), tc));
 				}
 			}
+		} catch (SQLException sqle) {
+			log.error("could not load comments", sqle);
+			return Collections.emptyList();
 		}
 
 		// Order the nodes using the tree class
