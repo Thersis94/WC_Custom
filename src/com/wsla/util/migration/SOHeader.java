@@ -31,13 +31,17 @@ import com.wsla.data.product.ProductWarrantyVO;
 import com.wsla.data.product.WarrantyVO;
 import com.wsla.data.provider.ProviderType;
 import com.wsla.data.provider.ProviderVO;
+import com.wsla.data.ticket.DiagnosticRunVO;
+import com.wsla.data.ticket.DiagnosticTicketVO;
+import com.wsla.data.ticket.StatusCode;
 import com.wsla.data.ticket.TicketAssignmentVO;
 import com.wsla.data.ticket.TicketAssignmentVO.TypeCode;
 import com.wsla.data.ticket.TicketDataVO;
+import com.wsla.data.ticket.TicketLedgerVO;
 import com.wsla.data.ticket.TicketVO.UnitLocation;
 import com.wsla.data.ticket.UserVO;
 import com.wsla.util.migration.vo.ExtTicketVO;
-import com.wsla.util.migration.vo.SOHeaderFileVO;
+import com.wsla.util.migration.vo.SOHDRFileVO;
 
 /****************************************************************************
  * <p><b>Title:</b> SOLineItems.java</p>
@@ -52,13 +56,15 @@ import com.wsla.util.migration.vo.SOHeaderFileVO;
  ****************************************************************************/
 public class SOHeader extends AbsImporter {
 
-	private List<SOHeaderFileVO> data = new ArrayList<>(50000);
+	private List<SOHDRFileVO> data = new ArrayList<>(50000);
 
 	private static List<String> fakeSKUs = new ArrayList<>();
 
 	private static Map<String, String> oemMap = new HashMap<>(100);
 
 	private static Map<String, String> countryMap = new HashMap<>(100);
+
+	private Map<String, String> defectMap;
 
 
 	static {
@@ -84,7 +90,9 @@ public class SOHeader extends AbsImporter {
 		File[] files = listFilesMatching(props.getProperty("soHeaderFile"), "(.*)SOHDR(.*)");
 
 		for (File f : files)
-			data.addAll(readFile(f, SOHeaderFileVO.class, SHEET_1));
+			data.addAll(readFile(f, SOHDRFileVO.class, SHEET_1));
+
+		defectMap = loadDefectCodes(db, schema);
 
 		String sql = StringUtil.join("delete from ", schema, "wsla_ticket where historical_flg=1");
 		delete(sql);
@@ -97,13 +105,26 @@ public class SOHeader extends AbsImporter {
 
 
 	/**
+	 * load the defects table from the DB.  This accepts DBProcessor because it's invoked from other importers
+	 * @param dbConn
+	 * @return
+	 */
+	public static Map<String, String> loadDefectCodes(DBProcessor dbp, String schema) {
+		String sql = StringUtil.join("select split_part(defect_cd,'-',2) as key, defect_cd as value from ", schema, "wsla_defect");
+		Map<String, String> defects = new HashMap<>(250);
+		MapUtil.asMap(defects, dbp.executeSelect(sql, null, new GenericVO()));
+		return defects;
+	}
+
+
+	/**
 	 * Reset the warranty_valid_flg and set the historical marker - its only set on 
 	 * records imported by this script (not part of code/VOs)
 	 */
 	private void setHistoricalFlg() {
 		String sql = StringUtil.join("update ", schema, 
 				"wsla_ticket set locked_by_id=null, historical_flg=1 where locked_by_id='MIGRATION'");
-		new DBProcessor(dbConn, schema).executeSQLCommand(sql);
+		db.executeSQLCommand(sql);
 	}
 
 
@@ -116,14 +137,16 @@ public class SOHeader extends AbsImporter {
 	protected void save() throws Exception {
 		//turn the list of data into a unique list of tickets
 		Map<String, ExtTicketVO> tickets= new HashMap<>(data.size());
-		for (SOHeaderFileVO dataVo : data) {
+		for (SOHDRFileVO dataVo : data) {
 			ExtTicketVO vo = transposeTicketData(dataVo, new ExtTicketVO());
 			if (tickets.containsKey(vo.getTicketId())) {
 				log.debug(String.format("duplicate ticket %s", vo.getTicketId()));
-				//TODO this will need a hook for compiling transactional data
+				// this will need a hook for compiling transactional data
 			}
 			tickets.put(vo.getTicketId(), vo);
 		}
+
+		// remark 'delete' if you're not running all of these!
 
 		//transpose OEMs.  Replace value in vo.getOemId()
 		bindOEMs(tickets.values());
@@ -151,6 +174,136 @@ public class SOHeader extends AbsImporter {
 
 		//create ticket attributes
 		saveTicketAttributes(tickets.values());
+
+		//create ticket assignments (caller, retailer, cas)
+		createTicketAssignments(tickets.values());
+
+		//create a binding to diagnostics
+		createDiagnosticRun(tickets.values());
+
+		//create initial open and closed (conditionally) ledger entries
+		createLedgerEntries(tickets.values());
+	}
+
+
+	/**
+	 * Create an Opened and Closed (if closed) ledger entries
+	 * @param values
+	 * @throws Exception 
+	 */
+	private void createLedgerEntries(Collection<ExtTicketVO> tickets) throws Exception {
+		UUIDGenerator uuid = new UUIDGenerator();
+		TicketLedgerVO vo;
+		List<TicketLedgerVO> entries = new ArrayList<>(tickets.size()*2);
+		for (ExtTicketVO tkt : tickets) {
+			// ticket opened
+			vo = new TicketLedgerVO();
+			vo.setLedgerEntryId(uuid.getUUID());
+			vo.setTicketId(tkt.getTicketId());
+			vo.setStatusCode(StatusCode.OPENED);
+			vo.setSummary(StatusCode.OPENED.codeName);
+			vo.setCreateDate(tkt.getCreateDate());
+			vo.setBillableAmtNo(Double.valueOf(0));
+			entries.add(vo);
+
+			//ticket closed?
+			if (tkt.getClosedDate() != null) {
+				vo = new TicketLedgerVO();
+				vo.setLedgerEntryId(uuid.getUUID());
+				vo.setTicketId(tkt.getTicketId());
+				vo.setStatusCode(StatusCode.CLOSED);
+				vo.setSummary(StatusCode.CLOSED.codeName);
+				vo.setCreateDate(tkt.getClosedDate());
+				vo.setBillableAmtNo(Double.valueOf(0));
+				entries.add(vo);
+			}
+		}
+		writeToDB(entries);
+	}
+
+
+	/**
+	 * Create diagnostic_run & _xr records - needed by the UI
+	 * @param values
+	 * @throws Exception 
+	 */
+	private void createDiagnosticRun(Collection<ExtTicketVO> tickets) throws Exception {
+		List<DiagnosticRunVO> runs = new ArrayList<>(tickets.size());
+		List<DiagnosticTicketVO> xrs = new ArrayList<>(tickets.size());
+		for (ExtTicketVO tkt : tickets) {
+			//create the run bound to the ticket
+			DiagnosticRunVO run = new DiagnosticRunVO();
+			run.setDiagnosticRunId("DIAG_" + tkt.getTicketId());
+			run.setTicketId(tkt.getTicketId());
+			runs.add(run);
+
+			//create the run_XR to the diagnostic record
+			DiagnosticTicketVO xr = new DiagnosticTicketVO();
+			xr.setDiagnosticRunId(run.getDiagnosticRunId());
+			xr.setDiagnosticCode("LEGACY_SW");
+			xrs.add(xr);
+		}
+
+		log.info("saving diagnostic_run");
+		writeToDB(runs);
+		log.info("saving diagnostic_run_xr");
+		writeToDB(xrs);
+	}
+
+
+	/**
+	 * Insert ticket_assigment for the caller/owner, retailer, and assigned-to cas location
+	 * @param values
+	 * @throws Exception 
+	 */
+	private void createTicketAssignments(Collection<ExtTicketVO> tickets) throws Exception {
+		String locnId;
+		TicketAssignmentVO vo;
+		Map<String, String> locations = new HashMap<>(1000);
+		String sql = StringUtil.join("select location_id as key, provider_id as value from ", schema, "wsla_provider_location");
+		MapUtil.asMap(locations, db.executeSelect(sql, null, new GenericVO()));
+		log.debug("loaded " + locations.size() + " CAS locations");
+
+		Set<String> missingLocns = new HashSet<>();
+		List<TicketAssignmentVO> assgs = new ArrayList<>(tickets.size()*2); //owner+cas
+		for (ExtTicketVO tkt : tickets) {
+			//bring the owner record over
+			assgs.addAll(tkt.getAssignments());
+
+			//create an entry for the cas
+			if (!StringUtil.isEmpty(tkt.getCasLocationId()) && !tkt.getCasLocationId().matches("0+")) {
+				vo = new TicketAssignmentVO();
+				vo.setTypeCode(TypeCode.CAS);
+				vo.setTicketId(tkt.getTicketId());
+				locnId = locations.get(tkt.getCasLocationId());
+				if (!StringUtil.isEmpty(locnId)) {
+					vo.setLocationId(locnId);
+					assgs.add(vo);
+				} else {
+					missingLocns.add(tkt.getCasLocationId());
+				}
+			}
+		}
+
+		for (String s: missingLocns)
+			log.error("missing cas location: " + s + ".  Tickets referencing this value will not have a CAS assigned.");
+
+		writeToDB(assgs);
+	}
+
+
+	/**
+	 * Similar to Map.contains, but returns the key
+	 * @param map
+	 * @param value
+	 * @return
+	 */
+	private String getKeyFromValue(Map<String, String> map, String value) {
+		for (Map.Entry<String, String> entry : map.entrySet()) {
+			if (value.equals(entry.getValue()))
+				return entry.getKey();
+		}
+		return null;
 	}
 
 
@@ -178,36 +331,31 @@ public class SOHeader extends AbsImporter {
 	private void bindProductCategories(Collection<ExtTicketVO> tickets) {
 		Map<String, String> cats = new HashMap<>();
 		String sql = StringUtil.join("select product_category_id as key, category_cd as value from ", schema, "wsla_product_category");
-		DBProcessor dbp = new DBProcessor(dbConn, schema);
-		MapUtil.asMap(cats, dbp.executeSelect(sql, null, new GenericVO()));
+		MapUtil.asMap(cats, db.executeSelect(sql, null, new GenericVO()));
 
-		ticketLoop:
-			for (ExtTicketVO tkt : tickets) {
-				if (cats.containsKey(tkt.getProductCategoryId())) //the key is already set correctly, leave it.
-					continue;
+		for (ExtTicketVO tkt : tickets) {
+			if (cats.containsKey(tkt.getProductCategoryId())) //the key is already set correctly, leave it.
+				continue;
 
-				//look for it in the value column
-				for (Map.Entry<String, String> entry : cats.entrySet()) {
-					if (entry.getValue().equalsIgnoreCase(tkt.getProductCategoryId())) {
-						tkt.setProductCategoryId(entry.getKey());
-						continue ticketLoop;
-					}
-				}
+			//look for it in the value column
+			String catId = getKeyFromValue(cats, tkt.getProductCategoryId());
+			if (!StringUtil.isEmpty(catId))
+				tkt.setProductCategoryId(catId);
 
-				//still missing, add it to the DB as well as our Map
-				ProductCategoryVO cat = new ProductCategoryVO();
-				cat.setActiveFlag(0);
-				cat.setCategoryCode(tkt.getProductCategoryId());
-				cat.setProductCategoryId(tkt.getProductCategoryId());
-				try {
-					dbp.executeBatch(Arrays.asList(cat), true);
-					cats.put(cat.getProductCategoryId(), cat.getCategoryCode());
-					tkt.setProductCategoryId(cat.getProductCategoryId());
-					log.debug("added category " + cat.getCategoryCode());
-				} catch (Exception e ) {
-					log.error("could not save category", e);
-				}
+			//still missing, add it to the DB as well as our Map
+			ProductCategoryVO cat = new ProductCategoryVO();
+			cat.setActiveFlag(0);
+			cat.setCategoryCode(tkt.getProductCategoryId());
+			cat.setProductCategoryId(tkt.getProductCategoryId());
+			try {
+				db.executeBatch(Arrays.asList(cat), true);
+				cats.put(cat.getProductCategoryId(), cat.getCategoryCode());
+				tkt.setProductCategoryId(cat.getProductCategoryId());
+				log.debug("added category " + cat.getCategoryCode());
+			} catch (Exception e ) {
+				log.error("could not save category", e);
 			}
+		}
 	}
 
 
@@ -218,7 +366,6 @@ public class SOHeader extends AbsImporter {
 	private void bindOEMs(Collection<ExtTicketVO> tickets) {
 		String sql = StringUtil.join("select provider_id as key, provider_nm as value from ", 
 				schema, "wsla_provider where provider_type_id='OEM'");
-		DBProcessor db = new DBProcessor(dbConn, schema);
 		List<GenericVO> oems = db.executeSelect(sql, null, new GenericVO());
 		//add the database lookups to the hard-coded 'special' mappings already in this file
 		for (GenericVO vo : oems) {
@@ -227,7 +374,6 @@ public class SOHeader extends AbsImporter {
 				oemMap.put(vo.getKey().toString(), vo.getValue().toString());
 		}
 
-		boolean isFound;
 		Set<String> missing = new HashSet<>();
 		for (ExtTicketVO vo : tickets) {
 			if (oemMap.containsKey(vo.getOemId())) {
@@ -236,21 +382,16 @@ public class SOHeader extends AbsImporter {
 			}
 
 			//find the key tied to this matching value
-			isFound = false;
-			for (Map.Entry<String, String> entry : oemMap.entrySet()) {
-				if (vo.getOemId().equalsIgnoreCase(entry.getValue())) {
-					vo.setOemId(entry.getKey());
-					isFound = true;
-					break;
-				}
-			}
-			if (!isFound) 
+			String oemId = getKeyFromValue(oemMap, vo.getOemId());
+			if (!StringUtil.isEmpty(oemId)) {
+				vo.setOemId(oemId);
+			} else { 
 				missing.add(vo.getOemId());
+			}
 		}
 
 		//if we're missing OEMs, the import script must fail
 		if (!missing.isEmpty()) {
-			DBProcessorStub dbp = new DBProcessorStub(dbConn, schema);
 			log.fatal("MISSING OEMS:\n");
 			for (String s : missing) {
 				log.fatal(s);
@@ -261,7 +402,7 @@ public class SOHeader extends AbsImporter {
 				vo.setReviewFlag(1);
 				try {
 					//NOTE this will not insert records, only print SQL to be run manually
-					dbp.insert(vo);
+					db.insert(vo);
 				} catch (Exception e) { /*don't need this exception */ }
 			}
 			throw new RuntimeException("missing OEMs, run these SQL statements please, perhaps slightly "+
@@ -279,7 +420,6 @@ public class SOHeader extends AbsImporter {
 		Map<String, String> oemPhones = new HashMap<>(50);
 		String sql = StringUtil.join("select provider_id as key, phone_number_txt as value from ", schema, 
 				"wsla_provider_phone where country_cd='MX' and active_flg=1");
-		DBProcessor db = new DBProcessor(dbConn, schema);
 		MapUtil.asMap(oemPhones, db.executeSelect(sql, null, new GenericVO()));
 
 		//add the database lookups to the hard-coded 'special' mappings already in this file
@@ -344,12 +484,10 @@ public class SOHeader extends AbsImporter {
 		}
 
 		//save the new records.  Since we've given them pkIds we need to force insert here
-		DBProcessor dbp = new DBProcessor(dbConn, schema);
-		dbp.setGenerateExecutedSQL(log.isDebugEnabled());
 		try {
-			dbp.executeBatch(new ArrayList<>(newProducts.values()), true);
+			db.executeBatch(new ArrayList<>(newProducts.values()), true);
 			log.info("added " + newProducts.size() + " new products");
-			dbp.executeBatch(new ArrayList<>(newSerials.values()), true);
+			db.executeBatch(new ArrayList<>(newSerials.values()), true);
 			log.info("added " + newSerials.size() + " new product serial#s");
 		} catch (Exception e) {
 			log.error("could not add new products or SKUs", e);
@@ -372,8 +510,6 @@ public class SOHeader extends AbsImporter {
 				"s.serial_no_txt, p.product_id, p.provider_id, p.cust_product_id from ",
 				schema, "wsla_product_master p  left join ", schema, "wsla_product_serial s ",
 				"on s.product_id=p.product_id where p.set_flg=1");
-		DBProcessor db = new DBProcessor(dbConn, schema);
-		db.setGenerateExecutedSQL(log.isDebugEnabled());
 		List<ProductSerialNumberVO> serials = db.executeSelect(sql, null, new ProductSerialNumberVO());
 
 		//update our tickets and give them the proper serial# pkId.  If they don't exist, add them to a list to add to the DB
@@ -438,9 +574,7 @@ public class SOHeader extends AbsImporter {
 		String sql = StringUtil.join("select provider_id as key, warranty_id as value from ", 
 				schema, "wsla_warranty where warranty_type_cd='MANUFACTURER' ",
 				"order by warranty_service_type_cd, provider_id");
-		DBProcessor dbp = new DBProcessor(dbConn, schema);
-		dbp.setGenerateExecutedSQL(log.isDebugEnabled());
-		MapUtil.asMap(warrMap, dbp.executeSelect(sql, null, new GenericVO()));
+		MapUtil.asMap(warrMap, db.executeSelect(sql, null, new GenericVO()));
 
 		Set<String> newWarrs = new HashSet<>(100);
 		for (ExtTicketVO tkt : tickets) {
@@ -481,7 +615,7 @@ public class SOHeader extends AbsImporter {
 		log.info(String.format("Creating %d new OEM warranties", lst.size()));
 
 		try {
-			new DBProcessor(dbConn, schema).executeBatch(lst);
+			db.executeBatch(lst);
 		} catch (Exception e) {
 			log.error("could not create warranties", e);
 			throw new RuntimeException(e.getMessage());
@@ -497,9 +631,7 @@ public class SOHeader extends AbsImporter {
 		Map<String, String> prodWarrMap = new HashMap<>(1000);
 		String sql = StringUtil.join("select product_serial_id as key, product_warranty_id as value from ", 
 				schema, "wsla_product_warranty");
-		DBProcessor dbp = new DBProcessor(dbConn, schema);
-		dbp.setGenerateExecutedSQL(log.isDebugEnabled());
-		MapUtil.asMap(prodWarrMap, dbp.executeSelect(sql, null, new GenericVO()));
+		MapUtil.asMap(prodWarrMap, db.executeSelect(sql, null, new GenericVO()));
 
 		Map<String, String> newProdWarrs = new HashMap<>(100);
 		for (ExtTicketVO tkt : tickets) {
@@ -540,7 +672,7 @@ public class SOHeader extends AbsImporter {
 		log.info(String.format("Creating %d new product warranties", lst.size()));
 
 		try {
-			new DBProcessor(dbConn, schema).executeBatch(lst);
+			db.executeBatch(lst);
 		} catch (Exception e) {
 			log.error("could not create product warranties", e);
 			throw new RuntimeException(e.getMessage());
@@ -558,8 +690,7 @@ public class SOHeader extends AbsImporter {
 		String sql = StringUtil.join("select email_address_txt as key, user_id as value from ", 
 				schema, "wsla_user order by create_dt desc"); //if dups, the earliest/inital record will be used
 		Map<String, String> existingUsers = new HashMap<>(tickets.size());
-		DBProcessor dbp = new DBProcessor(dbConn, schema);
-		MapUtil.asMap(existingUsers, dbp.executeSelect(sql, null, new GenericVO()));
+		MapUtil.asMap(existingUsers, db.executeSelect(sql, null, new GenericVO()));
 
 		ProfileManager pm = ProfileManagerFactory.getInstance(getAttributes());
 		Map<String, UserVO> users = new HashMap<>(tickets.size());
@@ -661,18 +792,16 @@ public class SOHeader extends AbsImporter {
 	 * @param users
 	 */
 	private Map<String, UserVO> createWSLAUserProfiles(Collection<UserVO> users) {
-		DBProcessor dbp = new DBProcessor(dbConn, schema);
-		dbp.setGenerateExecutedSQL(log.isDebugEnabled());
 		//we need to first check if these users exist in the table, use profile_id for this
 		String sql = StringUtil.join("select profile_id as key, user_id as value from ", schema, "wsla_user order by create_dt desc"); //if dups, the earliest/inital record will be used
 		Map<String, String> userMap = new HashMap<>(users.size());
-		MapUtil.asMap(userMap, dbp.executeSelect(sql, null, new GenericVO()));
+		MapUtil.asMap(userMap, db.executeSelect(sql, null, new GenericVO()));
 
 		Map<String, UserVO> userVoMap = new HashMap<>(users.size());
 		for (UserVO user : users) {
 			try {
 				user.setUserId(userMap.get(user.getProfileId())); //setting here updates exising records, rather than creating dups
-				dbp.save(user);
+				db.save(user);
 				userVoMap.put(user.getRoleName(), user);
 			} catch (Exception e) {
 				log.error("could not save WSLA user profile", e);
@@ -688,12 +817,12 @@ public class SOHeader extends AbsImporter {
 	 * @param ticketVO
 	 * @return
 	 */
-	private ExtTicketVO transposeTicketData(SOHeaderFileVO dataVo, ExtTicketVO vo) {
+	private ExtTicketVO transposeTicketData(SOHDRFileVO dataVo, ExtTicketVO vo) {
 		vo.setTicketId(dataVo.getSoNumber());
 		vo.setTicketIdText(dataVo.getSoNumber());
 		vo.setCreateDate(dataVo.getReceivedDate());
+		vo.setClosedDate(dataVo.getClosedDate());
 		vo.setUpdateDate(dataVo.getAltKeyDate());
-		//vo.setStandingCode(Standing.GOOD);  not needed, this is the default
 		vo.setUnitLocation(UnitLocation.CALLER);
 		vo.setOemId(dataVo.getManufacturer());
 		vo.setCustProductId(dataVo.getEquipmentId());
@@ -703,6 +832,8 @@ public class SOHeader extends AbsImporter {
 		vo.setPhoneNumber(dataVo.getCustPhone());
 		vo.setWarrantyValidFlag("CNG".equalsIgnoreCase(dataVo.getCoverageCode()) ? 1 : 0); //this is the only code that results in warranty coverage
 		vo.setProductCategoryId(dataVo.getProductCategory());
+		vo.setCasLocationId(dataVo.getServiceTech());
+
 
 		//add attribute for Received Method
 		TicketDataVO attr;
@@ -719,7 +850,7 @@ public class SOHeader extends AbsImporter {
 			attr = new TicketDataVO();
 			attr.setTicketId(vo.getTicketId());
 			attr.setAttributeCode("attr_symptomsComments");
-			attr.setValue(dataVo.getProblemCode());
+			attr.setValue(lookupDefectCode(dataVo.getProblemCode()));
 			vo.addTicketData(attr);
 		}
 
@@ -751,14 +882,6 @@ public class SOHeader extends AbsImporter {
 		//			vo.addTicketData(attr);
 		//		}
 
-		//add the assigned-to CAS
-		if (!StringUtil.isEmpty(dataVo.getServiceTech())) {
-			TicketAssignmentVO assg = new TicketAssignmentVO();
-			assg.setTicketId(vo.getTicketId());
-			assg.setLocationId(dataVo.getServiceTech());
-			assg.setTypeCode(TypeCode.CAS);
-			vo.addAssignment(assg);
-		}
 
 		//This is a temporary flag to mark they records we're adding to the DB.
 		//We'll correct it when we set the historical bit at the end of the import.
@@ -769,12 +892,31 @@ public class SOHeader extends AbsImporter {
 
 
 	/**
+	 * transpose partial defect & repair codes to the full pkId values stored in our DB.
+	 * Note: this method is duplicated in SOExtendedData - change both when revising
+	 * @param problemCode
+	 * @return
+	 */
+	private String lookupDefectCode(String partialDefectCode) {
+		if (StringUtil.isEmpty(partialDefectCode)) return null;
+		if (partialDefectCode.matches("0+")) partialDefectCode="0";
+
+		String code = defectMap.get(partialDefectCode);
+		if (StringUtil.isEmpty(code)) {
+			log.warn("missing defect code " + partialDefectCode);
+			return partialDefectCode; //preserve what we have, these can be fixed via query manually
+		}
+		return code;
+	}
+
+
+	/**
 	 * Create the owner  
 	 * We'll need to add them (as a User), then save THAT guid with the ticket as originator_id
 	 * @param dataVo
 	 * @return
 	 */
-	private UserVO createOriginator(SOHeaderFileVO dataVo) {
+	private UserVO createOriginator(SOHDRFileVO dataVo) {
 		UserVO wslaUser = new UserVO();
 		UserDataVO user = new UserDataVO();
 		String fullName = StringUtil.checkVal(dataVo.getCustName());

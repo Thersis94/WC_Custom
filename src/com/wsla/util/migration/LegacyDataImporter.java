@@ -88,6 +88,8 @@ public class LegacyDataImporter extends CommandLineUtil {
 				importer.setAttributes(dbConn, props, args);
 				importer.run();
 				log.info("completed " + className + "\r\r\r");
+			} catch (RuntimeException re) {
+				throw re; //pass these up, something bad happened
 			} catch (Exception e) {
 				log.error("could not run importer " + className, e);
 			}

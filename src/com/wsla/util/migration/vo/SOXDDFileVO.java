@@ -17,7 +17,7 @@ import com.siliconmtn.util.StringUtil;
  * @since Jun 19, 2019
  * <b>Changes:</b>
  ****************************************************************************/
-public class SOExtendedFileVO {
+public class SOXDDFileVO {
 
 	private String soNumber;
 	private Date createDate;
@@ -162,7 +162,15 @@ public class SOExtendedFileVO {
 	public String getProductLocation() {
 		return productLocation;
 	}
-	@Column(name="attr_unitDefect")
+	@Column(name="attr_unitRepairCode", isIdentity=true)
+	public String getRepairCode() {
+		return exitCode;
+	}
+	@Column(name="attr_unitRepairType", isIdentity=true)
+	public String getRepairType() {
+		return exitCode;
+	}
+	@Column(name="attr_unitDefect", isIdentity=true)
 	public String getExitCode() {
 		return exitCode;
 	}
@@ -185,7 +193,7 @@ public class SOExtendedFileVO {
 	public String getProductInsured() {
 		return productInsured;
 	}
-	@Column(name="attr_symptomsComments")
+//	@Column(name="attr_symptomsComments")
 	public String getProductInstructions() {
 		return productInstructions;
 	}
