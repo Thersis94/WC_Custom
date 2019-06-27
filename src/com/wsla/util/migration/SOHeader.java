@@ -203,7 +203,7 @@ public class SOHeader extends AbsImporter {
 			vo.setStatusCode(StatusCode.OPENED);
 			vo.setSummary(StatusCode.OPENED.codeName);
 			vo.setCreateDate(tkt.getCreateDate());
-			vo.setBillableAmtNo(Double.valueOf(0));
+			vo.setBillableAmtNo(0);
 			entries.add(vo);
 
 			//ticket closed?
@@ -214,7 +214,7 @@ public class SOHeader extends AbsImporter {
 				vo.setStatusCode(StatusCode.CLOSED);
 				vo.setSummary(StatusCode.CLOSED.codeName);
 				vo.setCreateDate(tkt.getClosedDate());
-				vo.setBillableAmtNo(Double.valueOf(0));
+				vo.setBillableAmtNo(0);
 				entries.add(vo);
 			}
 		}

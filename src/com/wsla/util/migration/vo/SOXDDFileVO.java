@@ -162,17 +162,17 @@ public class SOXDDFileVO {
 	public String getProductLocation() {
 		return productLocation;
 	}
-	@Column(name="attr_unitRepairCode", isIdentity=true)
-	public String getRepairCode() {
-		return exitCode;
-	}
-	@Column(name="attr_unitRepairType", isIdentity=true)
-	public String getRepairType() {
-		return exitCode;
-	}
 	@Column(name="attr_unitDefect", isIdentity=true)
 	public String getExitCode() {
 		return exitCode;
+	}
+	@Column(name="attr_unitRepairCode", isIdentity=true)
+	public String getRepairCode() {
+		return getExitCode();
+	}
+	@Column(name="attr_unitRepairType", isIdentity=true)
+	public String getRepairType() {
+		return getExitCode();
 	}
 	public String getShipmentTrackingNumber() {
 		return shipmentTrackingNumber;
