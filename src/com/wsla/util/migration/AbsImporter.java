@@ -45,6 +45,7 @@ public abstract class AbsImporter {
 
 	protected boolean purgeTablesFirst = false;
 	protected String schema; //custom.
+	protected DBProcessor db;
 
 	AbsImporter() {
 		super();
@@ -57,12 +58,14 @@ public abstract class AbsImporter {
 	 * @param props
 	 * @param args
 	 */
-	final void setAttributes(Connection conn, Properties props, String[] args) {
+	protected void setAttributes(Connection conn, Properties props, String[] args) {
 		this.dbConn = conn;
 		this.props = props;
 		this.args = args;
 		purgeTablesFirst = Convert.formatBoolean(props.getProperty("purgeTablesFirst", "false"));
 		schema = props.getProperty("customDbSchema", "custom.");
+		db = new DBProcessor(dbConn, schema);
+		db.setGenerateExecutedSQL(log.isDebugEnabled());
 	}
 
 
@@ -156,11 +159,11 @@ public abstract class AbsImporter {
 	 * @param products
 	 * @throws Exception 
 	 */
-	protected void writeToDB(List<?> data) throws Exception {
-		DBProcessor db = new DBProcessor(dbConn, schema);
+	protected int writeToDB(List<?> data) throws Exception {
 		try {
 			int[] cnt = db.executeBatch(data, true);
-			log.info(String.format("saved %d rows to the database", cnt.length));
+			log.debug(String.format("saved %d rows to the database", cnt.length));
+			return cnt.length;
 		} catch (Exception e) {
 			throw e;
 		}

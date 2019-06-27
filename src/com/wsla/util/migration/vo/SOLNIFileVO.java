@@ -17,7 +17,7 @@ import com.siliconmtn.util.StringUtil;
  * @since Feb 1, 2019
  * <b>Changes:</b>
  ****************************************************************************/
-public class SOLineItemFileVO {
+public class SOLNIFileVO {
 
 	private String soNumber;
 	private Date receivedDate;

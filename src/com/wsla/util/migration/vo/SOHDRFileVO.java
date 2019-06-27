@@ -18,7 +18,7 @@ import com.wsla.data.ticket.TicketOriginCode;
  * @since Feb 1, 2019
  * <b>Changes:</b>
  ***********************s*****************************************************/
-public class SOHeaderFileVO {
+public class SOHDRFileVO {
 
 	private String soNumber;
 	private Date receivedDate;

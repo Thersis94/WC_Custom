@@ -15,7 +15,7 @@ import com.siliconmtn.util.StringUtil;
 import com.wsla.data.ticket.CreditMemoVO;
 import com.wsla.data.ticket.PartVO;
 import com.wsla.data.ticket.TicketCommentVO;
-import com.wsla.util.migration.vo.SOLineItemFileVO;
+import com.wsla.util.migration.vo.SOLNIFileVO;
 
 /****************************************************************************
  * <p><b>Title:</b> SOLineItems.java</p>
@@ -30,7 +30,7 @@ import com.wsla.util.migration.vo.SOLineItemFileVO;
  ****************************************************************************/
 public class SOLineItems extends AbsImporter {
 
-	private List<SOLineItemFileVO> data = new ArrayList<>(50000);
+	private List<SOLNIFileVO> data = new ArrayList<>(50000);
 	private Map<String, String> ticketIds = new HashMap<>(5000);
 	private Map<String, String> productIds = new HashMap<>(10000);
 
@@ -42,7 +42,7 @@ public class SOLineItems extends AbsImporter {
 		File[] files = listFilesMatching(props.getProperty("soLineItemsFile"), "(.*)SOLNI(.*)");
 
 		for (File f : files)
-			data.addAll(readFile(f, SOLineItemFileVO.class, SHEET_1));
+			data.addAll(readFile(f, SOLNIFileVO.class, SHEET_1));
 
 		loadTicketIds();
 		loadProductIds();
@@ -65,7 +65,7 @@ public class SOLineItems extends AbsImporter {
 		List<CreditMemoVO> credits = new ArrayList<>(data.size());
 
 		//split the data into the 3 categories
-		for (SOLineItemFileVO vo : data) {
+		for (SOLNIFileVO vo : data) {
 			if (vo.isInventory()) {
 				inventory.add(transposeInventoryData(vo, new PartVO()));
 			} else if (vo.isService()) {
@@ -113,7 +113,7 @@ public class SOLineItems extends AbsImporter {
 	 * @param partVO
 	 * @return
 	 **/
-	private PartVO transposeInventoryData(SOLineItemFileVO dataVo, PartVO vo) {
+	private PartVO transposeInventoryData(SOLNIFileVO dataVo, PartVO vo) {
 		vo.setProductId(productIds.get(dataVo.getProductId())); //transposed
 		vo.setCustomerProductId(dataVo.getProductId()); //capture the original so we can report missing products
 		vo.setTicketId(ticketIds.get(dataVo.getSoNumber())); //transposed
@@ -131,7 +131,7 @@ public class SOLineItems extends AbsImporter {
 	 * @param commentVO
 	 * @return
 	 **/
-	private TicketCommentVO transposeCommentData(SOLineItemFileVO dataVo, TicketCommentVO vo) {
+	private TicketCommentVO transposeCommentData(SOLNIFileVO dataVo, TicketCommentVO vo) {
 		vo.setTicketId(ticketIds.get(dataVo.getSoNumber())); //transposed
 		StringBuilder comment = new StringBuilder(500);
 		if (!StringUtil.isEmpty(dataVo.getDesc1())) comment.append(dataVo.getDesc1());
@@ -162,7 +162,7 @@ public class SOLineItems extends AbsImporter {
 	 * @param creditVO
 	 * @return
 	 **/
-	private CreditMemoVO transposeCreditData(SOLineItemFileVO dataVo, CreditMemoVO vo) {
+	private CreditMemoVO transposeCreditData(SOLNIFileVO dataVo, CreditMemoVO vo) {
 		//TODO - talk to Camire about how these go in
 		vo.setTicketId(ticketIds.get(dataVo.getSoNumber())); //transposed
 		vo.setCreateDate(dataVo.getReceivedDate());
