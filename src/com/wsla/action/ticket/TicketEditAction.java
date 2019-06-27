@@ -240,8 +240,10 @@ public class TicketEditAction extends SBActionAdapter {
 		populateScheduleAssignments(schedules, ticket.getAssignments());
 
 		// get refund replacements 
-
 		ticket.setRar(getRefundReplacement(ticket.getTicketId()));
+
+		//load the comments used for the pdf of the service order
+		ticket.setComments(getComments(ticket.getTicketId(), false, false));
 
 		return ticket;
 	}
