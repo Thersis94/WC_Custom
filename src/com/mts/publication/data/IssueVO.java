@@ -58,6 +58,9 @@ public class IssueVO extends BeanDataVO {
 	private List<AssetVO> assets = new ArrayList<>();
 	private MTSUserVO editor;
 	
+	// Helpers
+	private String publicationName;
+	
 	/**
 	 * 
 	 */
@@ -324,6 +327,21 @@ public class IssueVO extends BeanDataVO {
 	 */
 	public void setCategory(String category) {
 		this.category = category;
+	}
+
+	/**
+	 * @return the publicationName
+	 */
+	@Column(name="publication_nm", isReadOnly=true)
+	public String getPublicationName() {
+		return publicationName;
+	}
+
+	/**
+	 * @param publicationName the publicationName to set
+	 */
+	public void setPublicationName(String publicationName) {
+		this.publicationName = publicationName;
 	}
 
 }

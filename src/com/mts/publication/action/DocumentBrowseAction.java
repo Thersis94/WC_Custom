@@ -4,6 +4,7 @@ package com.mts.publication.action;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 // MTS Libs
 import com.mts.publication.data.MTSDocumentVO;
@@ -16,6 +17,7 @@ import com.siliconmtn.common.html.BSTableControlVO;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.orm.GridDataVO;
+import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.util.StringUtil;
 
 // WC Libs
@@ -53,12 +55,30 @@ public class DocumentBrowseAction extends SimpleActionAdapter {
 		super(arg0);
 	}
 
+	/**
+	 * 
+	 * @param dbConn
+	 * @param attributes
+	 */
+	public DocumentBrowseAction(SMTDBConnection dbConn, Map<String, Object> attributes) {
+		super();
+		setDBConnection(dbConn);
+		setAttributes(attributes);
+	}
+	
 	/*
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.action.ActionRequest)
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
+		// On the initial page load, get the issue data if passed
+		if (! req.hasParameter("json") && ! StringUtil.isEmpty(req.getParameter("issueId"))) {
+			IssueAction ia = new IssueAction(getDBConnection(), getAttributes());
+			setModuleData(ia.getIssue(req.getParameter("issueId")));
+			return;
+		}
+		
 		String pubs = StringUtil.checkVal(req.getParameter("publications")).toUpperCase();
 		String topics = req.getParameter("topics");
 		String cats = req.getParameter("categories");
@@ -76,7 +96,7 @@ public class DocumentBrowseAction extends SimpleActionAdapter {
 		List<Object> vals = new ArrayList<>();
 		StringBuilder sql = new StringBuilder(1408);
 		sql.append("select b.unique_cd, a.action_id, action_nm, action_desc, b.publish_dt, direct_access_pth, ");
-		sql.append("user_id, first_nm, last_nm, publication_id, newid() as document_asset_id, ");
+		sql.append("user_id, first_nm, last_nm, c.publication_id, publication_nm, newid() as document_asset_id, ");
 		sql.append("case ");
 		sql.append("when doc_img is not null then doc_img ");
 		sql.append("when cat_img is not null then cat_img ");
@@ -87,6 +107,7 @@ public class DocumentBrowseAction extends SimpleActionAdapter {
 		sql.append("inner join custom.mts_document b ");
 		sql.append("on a.action_group_id = b.action_group_id and pending_sync_flg = 0 ");
 		sql.append("inner join custom.mts_issue c on b.issue_id = c.issue_id ");
+		sql.append("inner join custom.mts_publication p on c.publication_id = p.publication_id ");
 		sql.append("inner join custom.mts_user d on b.author_id = d.user_id ");
 		sql.append("inner join ( ");
 		sql.append("select document_id, ");
@@ -107,7 +128,8 @@ public class DocumentBrowseAction extends SimpleActionAdapter {
 		if (! StringUtil.isEmpty(pubs)) addPublicationFilter(sql, vals, pubs);
 		if (! StringUtil.isEmpty(issues)) addIssueFilter(sql, vals, issues);
 		
-		sql.append("order by action_nm ");
+		if (!StringUtil.isEmpty(bst.getOrder())) sql.append("order by ").append(bst.getOrder());
+		else sql.append("order by action_nm ");
 		log.debug(sql.length() + "|" + sql + "|" + vals);
 		
 		DBProcessor db = new DBProcessor(getDBConnection());

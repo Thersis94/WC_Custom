@@ -2,10 +2,12 @@ package com.mts.publication.action;
 
 // JDK 1.8.x
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
 import com.mts.action.SelectLookupAction;
+import com.mts.publication.data.AssetVO;
 // MTS Libs
 import com.mts.publication.data.IssueVO;
 
@@ -17,6 +19,8 @@ import com.siliconmtn.common.html.BSTableControlVO;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.*;
 import com.siliconmtn.db.pool.SMTDBConnection;
+import com.siliconmtn.db.util.DatabaseException;
+import com.siliconmtn.exception.InvalidDataException;
 //WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
 
@@ -71,7 +75,6 @@ public class IssueAction extends SBActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		log.info("*****");
 		String pubId = req.getParameter("publicationId");
 		BSTableControlVO bst = new BSTableControlVO(req, IssueVO.class);
 		setModuleData(getIssues(pubId, bst));
@@ -126,7 +129,6 @@ public class IssueAction extends SBActionAdapter {
 	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
-		
 		IssueVO issue = new IssueVO(req);
 		
 		try {
@@ -137,6 +139,52 @@ public class IssueAction extends SBActionAdapter {
 			log.error("Unable to save publication info", e);
 			putModuleData(issue, 1, false, e.getLocalizedMessage(), true);
 		}
+	}
+	
+	/**
+	 * Retrieves the data for the feature asset
+	 * @param issueId
+	 * @return
+	 * @throws InvalidDataException
+	 * @throws DatabaseException
+	 */
+	public IssueVO getIssue(String issueId) {
+		List<Object> vals = new ArrayList<>();
+		vals.add(issueId);
+		vals.add(issueId);
+		
+		StringBuilder sql = new StringBuilder(128);
+		sql.append("select a.*, b.publication_nm, article_no from ");
+		sql.append(getCustomSchema()).append("mts_issue a inner join ");
+		sql.append(getCustomSchema()).append("mts_publication b ");
+		sql.append("on a.publication_id = b.publication_id ");
+		sql.append("inner join (select issue_id, count(*) as article_no ");
+		sql.append("from ").append(getCustomSchema()).append("mts_document ");
+		sql.append("where issue_id = ? group by issue_id ) as n ");
+		sql.append("on a.issue_id = n.issue_id ");
+		sql.append("where a.issue_id = ? ");
+		
+		DBProcessor db = new DBProcessor(getDBConnection());
+		List<IssueVO> issues = db.executeSelect(sql.toString(), vals, new IssueVO());
+		if (issues.isEmpty()) return null;
+		IssueVO issue = issues.get(0);
+		issue.setAssets(getFeatureAssets(issueId));
+		
+		return issue;
+	}
+	
+	/**
+	 * Gets the feature assets for the issue
+	 * @param issueId
+	 * @return
+	 */
+	protected List<AssetVO> getFeatureAssets(String issueId) {
+		StringBuilder sql = new StringBuilder(128);
+		sql.append("select * from ").append(getCustomSchema()).append("mts_document_asset ");
+		sql.append("where object_key_id = ? and asset_type_cd = 'FEATURE_IMG' ");
+		
+		DBProcessor db = new DBProcessor(getDBConnection());
+		return db.executeSelect(sql.toString(), Arrays.asList(issueId), new AssetVO());
 	}
 
 }
