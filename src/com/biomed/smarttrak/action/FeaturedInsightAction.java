@@ -158,7 +158,7 @@ public class FeaturedInsightAction extends InsightAction {
 			checkDocumentForAuthorization(solDoc, userRoles, authorizedFeatures);
 		}
 		//change out results sets
-		transposeResults(solVo, authorizedFeatures.subList(0, Convert.formatInteger((String) mod.getAttribute(ModuleVO.ATTRIBUTE_2),10)));
+		transposeResults(solVo, authorizedFeatures.subList(0, Convert.formatInteger((String) mod.getAttribute(ModuleVO.ATTRIBUTE_2),Math.min(authorizedFeatures.size(), 10))));
 	}
 	
 	

@@ -123,6 +123,7 @@ public class FeaturedInsightsAction extends SBActionAdapter {
 		if (!userRoles.isEmpty()) {
 			fia.simulatedFeaturedRequest(req, userRoles);
 		} else {
+			mod.setAttribute(ModuleVO.ATTRIBUTE_1, mod.getActionUrl());
 			fia.retrieve(req);
 		}
 	}
