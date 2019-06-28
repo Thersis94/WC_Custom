@@ -58,8 +58,8 @@ public class DataMigrationUtil {
 	
 	// Static Constants
 	private static final String CUSTOM_SCHEMA = "custom.";
-	private static final String ISSUE_KEY = "_yoast_wpseo_primary_issue";
-	private static final String PRI_CATEGORY_KEY = "_yoast_wpseo_primary_article_category";
+	private static final String ISSUE_KEY = "issue";
+	private static final String PRI_CATEGORY_KEY = "article_category";
 	private static final String ARTICLE_PDF = "article_pdf";
 	private static final String ISSUE_COVER_IMAGE = "issue_cover_image";
 	private static final String ISSUE_PDF = "issue_pdf";
@@ -212,13 +212,48 @@ public class DataMigrationUtil {
 				// Load the other categories
 				getArticleMetaData(srcConn, doc);
 				
-				// Add to the document collection
-				if (! StringUtil.isEmpty(doc.getIssueId())) docs.add(doc);
-				else log.info(doc.getActionId() + "\t" + doc.getActionName() + "\t" + doc.getDirectAccessPath());
+				// Get the article Categories
+				getArticleCategories(srcConn, doc);
+				
+				// Add the document to the collection
+				docs.add(doc);
 			}
 		}
 		
 		return docs;
+	}
+	
+	/**
+	 * Maps the categories (Channels and markets) as well as issue
+	 * @param srcConn
+	 * @param doc
+	 * @throws SQLException
+	 */
+	public void getArticleCategories(Connection srcConn, MTSDocumentVO doc) throws SQLException {
+		StringBuilder cat = new StringBuilder();
+		cat.append("select taxonmy, term_id from wp_1fvbn80q5v_term_relationships a ");
+		cat.append("inner join wp_1fvbn80q5v_term_taxonomy b on a.term_taxonomy_id = b.term_taxonomy_id ");
+		cat.append("where object_id = ? and taxonomy in ('article_category', 'issue') ");
+		cat.append("order by taxonomy DESC");
+		
+		try(PreparedStatement ps = srcConn.prepareStatement(cat.toString())) {
+			ps.setInt(1, Convert.formatInteger(doc.getActionId()));
+			
+			ResultSet rs = ps.executeQuery();
+			while (rs.next()) {
+				switch (rs.getString(1)) {
+					case ISSUE_KEY :
+						doc.setIssueId(rs.getInt(2) + "");
+						break;
+					case PRI_CATEGORY_KEY :
+						DocumentCategoryVO dcat = new DocumentCategoryVO();
+						dcat.setCategoryCode(catMap.get(rs.getInt(2)+""));
+						dcat.setDocumentId(doc.getActionId());
+						categories.add(dcat);
+						break;
+				}
+			}
+		}
 	}
 	
 	/**
@@ -236,25 +271,11 @@ public class DataMigrationUtil {
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
 				AssetVO avo = new AssetVO();
-				DocumentCategoryVO dcat = new DocumentCategoryVO();
-				
-				switch (rs.getString(1)) {
-					case ISSUE_KEY:
-						doc.setIssueId(rs.getString(2));
-						break;
-					case PRI_CATEGORY_KEY:
-						dcat.setCategoryCode(rs.getString(2));
-						dcat.setDocumentId(doc.getActionId());
-						categories.add(dcat);
-						break;
-					case ARTICLE_PDF:
-						avo.setObjectKeyId(doc.getDocumentId());
-						avo.setDocumentAssetId(rs.getString(2));
-						avo.setAssetType(AssetType.PDF_DOC);
-						assets.add(avo);
-						break;
-					default:
-						break;
+				if (ARTICLE_PDF.equalsIgnoreCase(rs.getString(1))) {
+					avo.setObjectKeyId(doc.getDocumentId());
+					avo.setDocumentAssetId(rs.getString(2));
+					avo.setAssetType(AssetType.PDF_DOC);
+					assets.add(avo);
 				}
 			}
 		}
@@ -430,6 +451,7 @@ public class DataMigrationUtil {
 			while (rs.next()) {
 				CategoryVO cat = new CategoryVO();
 				cat.setCategoryCode(rs.getString("term_id"));
+				//TODO need to lookup if market or channel
 				cat.setGroupCode("MARKETS");
 				cat.setParentCode("MARKETS");
 				cat.setSlug(rs.getString("slug"));
