@@ -351,7 +351,8 @@ public class SelectLookupAction extends SBActionAdapter {
 		// Build the sql using Full text indexing
 		StringBuilder sql = new StringBuilder(512);
 		sql.append("select key, value from ( ");
-		sql.append("select action_nm, unique_cd as key, concat(action_nm, '|-- ', first_nm, ' ', last_nm)  as value, ");
+		sql.append("select action_nm, '/' || lower(publication_id) || '/article/' || direct_access_pth as key, ");
+		sql.append("concat(action_nm, '|-- ', first_nm, ' ', last_nm)  as value, ");
 		sql.append("to_tsvector(action_nm) || "); 
 		sql.append("to_tsvector(coalesce(action_desc, '')) || ");
 		sql.append("to_tsvector(coalesce(first_nm, '')) || ");
@@ -359,6 +360,10 @@ public class SelectLookupAction extends SBActionAdapter {
 		sql.append(DBUtil.FROM_CLAUSE).append(getCustomSchema()).append("mts_document a ");
 		sql.append(DBUtil.INNER_JOIN).append("sb_action b ");
 		sql.append("on a.action_group_id = b.action_group_id ");
+		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("mts_issue i ");
+		sql.append("on a.issue_id = i.issue_id ");
+		sql.append(DBUtil.INNER_JOIN).append("document d ");
+		sql.append("on b.action_id = d.action_id ");
 		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("mts_user c ");
 		sql.append("on a.author_id = c.user_id ) as search ");
 		sql.append("where search.document @@ to_tsquery('").append(term).append("') ");

@@ -88,8 +88,10 @@ public class MTSDocumentAction extends SimpleActionAdapter {
 		try {
 			IssueArticleAction iac = new IssueArticleAction(getDBConnection(), getAttributes());
 			MTSDocumentVO doc = iac.getDocument(null, req.getParameter("reqParam_1"));
-			doc.setRelatedArticles(getRelatedArticles(doc.getActionGroupId()));
 			if (StringUtil.isEmpty(doc.getActionId())) throw new Exception("Unable to locate article");
+			
+			// Get the Related Articles
+			doc.setRelatedArticles(getRelatedArticles(doc.getActionGroupId()));
 			
 			// Get the article assets
 			AssetAction aa = new AssetAction(getDBConnection(), getAttributes());
@@ -117,10 +119,11 @@ public class MTSDocumentAction extends SimpleActionAdapter {
 	public List<MTSDocumentVO> getAuthorArticles(String authorId) {
 		StringBuilder sql = new StringBuilder(640);
 		sql.append("select b.publish_dt, b.author_id, unique_cd, b.document_id, ");
-		sql.append("c.*, d.*, p.publication_nm, e.*, f.field_nm, f.parent_id ");
+		sql.append("c.*, d.*, doc.*, p.publication_nm, e.*, f.field_nm, f.parent_id, i.publication_id ");
 		sql.append("from ").append(getCustomSchema()).append("mts_document b ");
 		sql.append("inner join sb_action c ");
-		sql.append("on b.action_group_id = c.action_group_id and c.pending_sync_flg = 0 "); 
+		sql.append("on b.action_group_id = c.action_group_id and c.pending_sync_flg = 0 ");
+		sql.append("inner join document doc on c.action_id = doc.action_id "); 
 		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema());
 		sql.append("mts_user d on b.author_id = d.user_id ");
 		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema());
@@ -148,7 +151,9 @@ public class MTSDocumentAction extends SimpleActionAdapter {
 		sql.append("from custom.mts_related_article a "); 
 		sql.append("inner join custom.mts_document b on a.related_document_id = b.action_group_id ");
 		sql.append("inner join sb_action c on b.action_group_id = c.action_group_id and c.pending_sync_flg = 0 ");
+		sql.append("inner join document doc on c.action_id = doc.action_id ");
 		sql.append("inner join custom.mts_user d on b.author_id = d.user_id ");
+		sql.append("inner join custom.mts_issue i on b.issue_id = i.issue_id ");
 		sql.append("left outer join widget_meta_data_xr e on c.action_id = e.action_id ");
 		sql.append("left outer join widget_meta_data f on e.widget_meta_data_id = f.widget_meta_data_id ");
 		sql.append("where a.document_id = ? ");
