@@ -292,7 +292,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		String publicationId = StringUtil.checkVal(req.getParameter("publicationId")).toUpperCase();
 		
 		IssueAction ia = new IssueAction(getDBConnection(), getAttributes());
-		GridDataVO<IssueVO> issues = ia.getIssues(publicationId, bst);
+		GridDataVO<IssueVO> issues = ia.getIssues(publicationId, false, bst);
 		for (IssueVO issue : issues.getRowData()) {
 			data.add(new GenericVO(issue.getIssueId(), issue.getName()));
 		}

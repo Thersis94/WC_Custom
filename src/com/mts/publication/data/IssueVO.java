@@ -13,6 +13,7 @@ import com.siliconmtn.data.parser.BeanDataVO;
 import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
+import com.siliconmtn.util.StringUtil;
 
 /****************************************************************************
  * <b>Title</b>: IssueVO.java
@@ -297,7 +298,19 @@ public class IssueVO extends BeanDataVO {
 	 */
 	@BeanSubElement
 	public void addAsset(AssetVO asset) {
-		this.assets.add(asset);
+		if (asset == null || StringUtil.isEmpty(asset.getDocumentPath())) return;
+		
+		// Sometimes a string agg function is used.  Parse the list into separate items
+		if (asset.getDocumentPath().indexOf(',') > -1) {
+			String[] dp = asset.getDocumentPath().split("\\,");
+			for (String doc : dp) {
+				AssetVO a = new AssetVO();
+				a.setDocumentPath(doc);
+				a.setObjectKeyId(asset.getObjectKeyId());
+			}
+		} else {
+			this.assets.add(asset);
+		}
 	}
 
 	/**

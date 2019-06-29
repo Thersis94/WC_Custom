@@ -75,9 +75,10 @@ public class IssueAction extends SBActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
+		if (! req.hasParameter("json")) return;
 		String pubId = req.getParameter("publicationId");
 		BSTableControlVO bst = new BSTableControlVO(req, IssueVO.class);
-		setModuleData(getIssues(pubId, bst));
+		setModuleData(getIssues(pubId, true, bst));
 	}
 	
 	/*
@@ -98,9 +99,9 @@ public class IssueAction extends SBActionAdapter {
 	 * 
 	 * @return
 	 */
-	public GridDataVO<IssueVO> getIssues(String pubId, BSTableControlVO bst) {
+	public GridDataVO<IssueVO> getIssues(String pubId, boolean beenIssued, BSTableControlVO bst) {
 		StringBuilder sql = new StringBuilder(352);
-		sql.append("select coalesce(article_count, 0) as article_no, a.*, b.*  from ");
+		sql.append("select coalesce(article_count, 0) as article_no, a.*, b.*, da.*  from ");
 		sql.append(getCustomSchema()).append("mts_issue a ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(getCustomSchema()).append("mts_user b ");
 		sql.append("on a.editor_id = b.user_id ");
@@ -111,9 +112,15 @@ public class IssueAction extends SBActionAdapter {
 		sql.append("and pending_sync_flg = 0 ");
 		sql.append("group by issue_id ");
 		sql.append(") c on a.issue_id = c.issue_id ");
+		sql.append("left outer join ( ");
+		sql.append("select object_key_id, string_agg(document_path, ',') as document_path ");
+		sql.append("from custom.mts_document_asset where asset_type_cd = 'FEATURE_IMG' ");
+		sql.append("group by object_key_id ");
+		sql.append(") as da on a.issue_id = da.object_key_id ");
 		sql.append("where publication_id = ? ");
+		if (beenIssued) sql.append("and issue_dt > '2000-01-01' ");
 		sql.append("order by issue_dt desc, issue_nm ");
-		log.debug(sql.length() + "|" + sql);
+		log.info(sql.length() + "|" + sql + "|" + pubId + "|" + bst.getOffset());
 		
 		// Add the params
 		List<Object> vals = new ArrayList<>();
