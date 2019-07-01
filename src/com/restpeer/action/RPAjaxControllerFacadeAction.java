@@ -14,6 +14,8 @@ import com.siliconmtn.action.ActionRequest;
 // WC Core
 import com.smt.sitebuilder.action.commerce.AjaxControllerFacadeAction;
 import com.smt.sitebuilder.action.commerce.product.EcommProductAction;
+import com.smt.sitebuilder.action.commerce.product.LocationProductAction;
+import com.smt.sitebuilder.action.dealer.DealerAttributeXrAction;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.security.SBUserRole;
 
@@ -68,7 +70,11 @@ public class RPAjaxControllerFacadeAction extends AjaxControllerFacadeAction {
 	 * Sets which actions are allowed public access
 	 */
 	protected void setPublicAllowed() {
+		publicAllowed.add(DEFAULT_TYPE);
 		publicAllowed.add(EcommProductAction.AJAX_KEY);
+		publicAllowed.add(DealerAttributeXrAction.AJAX_KEY);
+		publicAllowed.add(LocationProductAction.AJAX_KEY);
+		publicAllowed.add(LocationProductScheduleAction.AJAX_KEY);
 	}
 	
 	/*
