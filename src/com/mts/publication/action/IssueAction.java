@@ -120,7 +120,7 @@ public class IssueAction extends SBActionAdapter {
 		sql.append("where publication_id = ? ");
 		if (beenIssued) sql.append("and issue_dt > '2000-01-01' ");
 		sql.append("order by issue_dt desc, issue_nm ");
-		log.info(sql.length() + "|" + sql + "|" + pubId + "|" + bst.getOffset());
+		log.debug(sql.length() + "|" + sql + "|" + pubId + "|" + bst.getOffset());
 		
 		// Add the params
 		List<Object> vals = new ArrayList<>();
