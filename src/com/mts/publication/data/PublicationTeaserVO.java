@@ -117,7 +117,7 @@ public class PublicationTeaserVO extends BeanDataVO {
 		int num = (documents.size() - 1 < NUM_TEASER_ARTICLES) ? documents.size() - 1 : NUM_TEASER_ARTICLES;
 		List<MTSDocumentVO> teasers = new ArrayList<>(num);
 		Set<String> ids = new HashSet<>(num);
-		for (MTSDocumentVO doc : teasers) {
+		for (MTSDocumentVO doc : documents) {
 			// Do not use the featured article in the teasers
 			if (featuredArticleId.equals(doc.getDocumentId())) continue;
 			
@@ -125,6 +125,7 @@ public class PublicationTeaserVO extends BeanDataVO {
 			if (! ids.contains(doc.getDocumentId())) {
 				assignAsset(doc);
 				teasers.add(doc);
+				ids.add(doc.getDocumentId());
 				
 				// When the number of teasers is assigned, end the loop
 				if (ids.size() == num) break;
