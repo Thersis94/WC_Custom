@@ -3,6 +3,7 @@ package com.mts.action;
 // MTS Libs
 import com.mts.publication.action.ArticleByCategoryAction;
 import com.mts.publication.action.DocumentBrowseAction;
+import com.mts.security.IPSecurityAction;
 import com.mts.subscriber.action.UserInfoWidget;
 
 // SMT Base Libs
@@ -67,6 +68,7 @@ public class PublicAjaxControllerFacadeAction extends FacadeActionAdapter {
 		actionMap.put(ArticleByCategoryAction.AJAX_KEY, ArticleByCategoryAction.class);
 		actionMap.put(DocumentBrowseAction.AJAX_KEY, DocumentBrowseAction.class);
 		actionMap.put(UserInfoWidget.AJAX_KEY, UserInfoWidget.class);
+		actionMap.put(IPSecurityAction.AJAX_KEY, IPSecurityAction.class);
 	}
 
 	/*

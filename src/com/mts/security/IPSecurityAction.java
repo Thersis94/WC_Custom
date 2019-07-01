@@ -1,9 +1,13 @@
 package com.mts.security;
 
+// JDK 1.8.x
 import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.util.List;
 import java.util.Map;
 
+// SMT Base Libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
@@ -11,7 +15,13 @@ import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
+import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.StringUtil;
+
+// WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
+import com.smt.sitebuilder.common.constants.Constants;
+import com.smt.sitebuilder.security.SBUserRole;
 
 /****************************************************************************
  * <b>Title</b>: IPSecurityAction.java
@@ -65,7 +75,46 @@ public class IPSecurityAction extends SBActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		setModuleData(getListRanges());
+		SBUserRole role = (SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA);
+	
+		if (req.getBooleanParameter("ipCheck")) {
+			setModuleData(checkIpAddress(req.getParameter("ipAddress")));
+		} else if (role != null && "100".equals(role.getRoleId())) {
+			setModuleData(getListRanges());
+		}
+	}
+	
+	/**
+	 * Checks to see if the user's ip address is assigned in the Ip Security table
+	 * @param ipAddress
+	 * @return
+	 */
+	public boolean checkIpAddress(String ipAddress) {
+		if (StringUtil.isEmpty(ipAddress)) return false;
+		
+		boolean auth = false;
+		int index = ipAddress.lastIndexOf('.');
+		String base = ipAddress.substring(0, index);
+		int range = Convert.formatInteger(ipAddress.substring(index + 1));
+		
+		StringBuilder sql = new StringBuilder(128);
+		sql.append("select ip_security_id from ").append(getCustomSchema());
+		sql.append("mts_ip_security where ip_base_txt = ? ");
+		sql.append("and ? between ip_start_no and ip_end_no ");
+		log.debug(sql.length() + "|" + sql + "|" + base + "|" + range);
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, base);
+			ps.setInt(2, range);
+			
+			try (ResultSet rs = ps.executeQuery()) {
+				if (rs.next()) auth = true;
+			}
+		} catch (Exception e) {
+			log.error("Unable to retrieve ip address check", e);
+		}
+		
+		return auth;
 	}
 	
 	/**
