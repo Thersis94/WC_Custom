@@ -69,6 +69,14 @@ public class WSLAStandingJob extends AbstractSMTJob {
 	public void execute(JobExecutionContext ctx) throws JobExecutionException {
 		super.execute(ctx);
 		attributes = ctx.getMergedJobDataMap().getWrappedMap();
+		String message = "Success";
+		boolean success = true;
+		
+		
+		try {
+			this.finalizeJob(success, message);
+		} catch (Exception e) { /** nothing to do here **/ }
+
 	}
 
 }

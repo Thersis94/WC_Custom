@@ -45,6 +45,7 @@ public abstract class AbsImporter {
 
 	protected boolean purgeTablesFirst = false;
 	protected String schema; //custom.
+	protected DBProcessor db;
 
 	AbsImporter() {
 		super();
@@ -57,12 +58,14 @@ public abstract class AbsImporter {
 	 * @param props
 	 * @param args
 	 */
-	final void setAttributes(Connection conn, Properties props, String[] args) {
+	protected void setAttributes(Connection conn, Properties props, String[] args) {
 		this.dbConn = conn;
 		this.props = props;
 		this.args = args;
 		purgeTablesFirst = Convert.formatBoolean(props.getProperty("purgeTablesFirst", "false"));
 		schema = props.getProperty("customDbSchema", "custom.");
+		db = new DBProcessor(dbConn, schema);
+		db.setGenerateExecutedSQL(log.isDebugEnabled());
 	}
 
 
@@ -104,6 +107,17 @@ public abstract class AbsImporter {
 	abstract void run() throws Exception;
 
 
+	/**
+	 * overloaded to accept String filename
+	 * @param path
+	 * @param beanClass
+	 * @param sheetNo
+	 * @return
+	 * @throws Exception
+	 */
+	protected <T> List<T> readFile(String path, Class<T> beanClass, int sheetNo) throws Exception {
+		return readFile(new File(path), beanClass, sheetNo);
+	}
 
 
 	/**
@@ -116,10 +130,9 @@ public abstract class AbsImporter {
 	 * @throws Exception
 	 */
 	@SuppressWarnings("unchecked")
-	protected <T> List<T> readFile(String path, Class<T> beanClass, int sheetNo) throws Exception {
+	protected <T> List<T> readFile(File f, Class<T> beanClass, int sheetNo) throws Exception {
 		//read the file into a FilePartDataBean
-		File f = new File(path);
-		if (!f.canRead()) throw new Exception("file not found: " + path);
+		if (!f.canRead()) throw new Exception("file not found: " + f.getAbsolutePath());
 		FilePartDataBean fpdb = new FilePartDataBean(f);
 
 		Map<Class<?>, Collection<Object>> beans;
@@ -146,11 +159,11 @@ public abstract class AbsImporter {
 	 * @param products
 	 * @throws Exception 
 	 */
-	protected void writeToDB(List<?> data) throws Exception {
-		DBProcessor db = new DBProcessor(dbConn, schema);
+	protected int writeToDB(List<?> data) throws Exception {
 		try {
 			int[] cnt = db.executeBatch(data, true);
-			log.info(String.format("saved %d rows to the database", cnt.length));
+			log.debug(String.format("saved %d rows to the database", cnt.length));
+			return cnt.length;
 		} catch (Exception e) {
 			throw e;
 		}
@@ -163,9 +176,26 @@ public abstract class AbsImporter {
 	 */
 	protected Map<String, Object> getAttributes() {
 		Map<String, Object> attrs = new HashMap<>(props.size());
-		for (Object key : props.keySet())
-			attrs.put(key.toString(), props.get(key));
-		
+		for (Map.Entry<Object, Object> entry : props.entrySet())
+			attrs.put(entry.getKey().toString(), entry.getValue());
+
 		return attrs;
+	}
+
+
+	/**
+	 * Analyze the provided path.  If it's a file return it in a single array.  If its a folder
+	 * find all files matching the pattern and return them all.
+	 * @param property
+	 * @param string
+	 * @return
+	 */
+	public File[] listFilesMatching(String configPath, String pattern) {
+		File passedFilePtr = new File(configPath);
+		if (passedFilePtr.isDirectory()) {
+			return passedFilePtr.listFiles((d, name) -> name.matches(pattern));
+		} else {
+			return new File[] { passedFilePtr };
+		}
 	}
 }

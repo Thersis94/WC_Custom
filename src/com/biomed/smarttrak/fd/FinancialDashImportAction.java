@@ -68,7 +68,7 @@ public class FinancialDashImportAction extends FinancialDashBaseAction {
 		try {
 			List<FinancialDashRevenueDataRowVO> data = buildFromFile(req);
 			List<FinancialDashRevenueDataRowVO> insertList = new ArrayList<>();
-			List<FinancialDashRevenueDataRowVO> updateList = new ArrayList<>();
+			clearScenario(data);
 			
 			for (FinancialDashRevenueDataRowVO row : data) {
 				if (CountryType.WW.toString().equals(row.getRegionCode()) || 
@@ -76,17 +76,12 @@ public class FinancialDashImportAction extends FinancialDashBaseAction {
 				// Every valid row should have a scenario id.  If not this isn't a scenario save and should be discarded.
 				if (StringUtil.isEmpty(row.getScenarioId())) throw new ActionException("Missing Scenario Id. Canceling data import");
 				
-				if (StringUtil.isEmpty(row.getOverlayId())) {
-					insertList.add(row);
-				} else {
-					updateList.add(row);
-				}
+				insertList.add(row);
 			}
 			
 			DBProcessor db = new DBProcessor(dbConn, (String) attributes.get(Constants.CUSTOM_DB_SCHEMA));
 			
 			if (!insertList.isEmpty()) db.executeBatch(insertList);
-			if (!updateList.isEmpty()) db.executeBatch(updateList);
 
 		} catch (Exception e) {
 			redirectUrl.append(e.getMessage()).append(hash);
@@ -96,6 +91,40 @@ public class FinancialDashImportAction extends FinancialDashBaseAction {
 
 		redirectUrl.append("Changes sucessfully imported.").append(hash);
 		sendRedirect(redirectUrl.toString(), "", req);
+	}
+	
+	
+	/**
+	 * Delete all items in the scenario for the supplied data in order to prevent
+	 * duplication from reuploads of data
+	 * @param data
+	 * @throws ActionException
+	 */
+	private void clearScenario(List<FinancialDashRevenueDataRowVO> data) throws ActionException {
+		String scenarioId = "";
+		for (FinancialDashRevenueDataRowVO row : data) {
+			if (!StringUtil.isEmpty(row.getScenarioId())) {
+				scenarioId = row.getScenarioId();
+				break;
+			}
+		}
+		if (StringUtil.isEmpty(scenarioId)) return;
+			
+		StringBuilder sql = new StringBuilder(125);
+		sql.append("delete from ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
+		sql.append("biomedgps_fd_scenario_overlay where scenario_id = ? and revenue_id = ?");
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			for (FinancialDashRevenueDataRowVO row : data) {
+				ps.setString(1,  scenarioId);
+				ps.setString(2,  row.getRevenueId());
+				
+				ps.addBatch();
+			}
+			ps.executeBatch();
+		} catch (SQLException e) {
+			throw new ActionException(e);
+		}
 	}
 	
 	
@@ -132,7 +161,6 @@ public class FinancialDashImportAction extends FinancialDashBaseAction {
 					dataRow.setRegionCode(getCellValue(cursor.getCell(FinancialDashImportReportVO.REGION_COL), objDefaultFormat, objFormulaEvaluator));
 					dataRow.setScenarioId(getCellValue(cursor.getCell(FinancialDashImportReportVO.SCENARIO_ID_COL), objDefaultFormat, objFormulaEvaluator));
 					dataRow.setRevenueId(getCellValue(cursor.getCell(cur++), objDefaultFormat, objFormulaEvaluator));
-					dataRow.setOverlayId(getCellValue(cursor.getCell(cur++), objDefaultFormat, objFormulaEvaluator));
 					dataRow.setYearNo(Convert.formatInteger(getCellValue(cursor.getCell(cur++), objDefaultFormat, objFormulaEvaluator)));
 					dataRow.setQ1No(Convert.formatInteger(getCellValue(cursor.getCell(cur++), objDefaultFormat, objFormulaEvaluator)));
 					dataRow.setQ2No(Convert.formatInteger(getCellValue(cursor.getCell(cur++), objDefaultFormat, objFormulaEvaluator)));

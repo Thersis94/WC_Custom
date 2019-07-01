@@ -47,6 +47,7 @@ public class ConnectionReportVO extends BeanDataVO implements Serializable {
 	private String subCategoryCode;
 	private int approvedFlag;
 	private int privacyFlag;
+	private String type;
 	
 	
 	
@@ -296,6 +297,13 @@ public class ConnectionReportVO extends BeanDataVO implements Serializable {
 	}
 	public void setSubCategoryCode(String subCategoryCode) {
 		this.subCategoryCode = subCategoryCode;
+	}
+	@Column(name="type", isReadOnly=true)
+	public String getType() {
+		return type;
+	}
+	public void setType(String type) {
+		this.type = type;
 	}
 
 }

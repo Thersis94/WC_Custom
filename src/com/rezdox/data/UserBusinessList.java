@@ -1,32 +1,32 @@
 package com.rezdox.data;
 
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
-import com.rezdox.vo.MemberVO;
+import com.rezdox.action.RezDoxUtils;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.GenericVO;
+import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
-import com.siliconmtn.http.session.SMTSession;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
-import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
  * <b>Title</b>: UserBusinessList.java
  * <b>Project</b>: WC_Custom
- * <b>Description: </b> generates a dynamic list of connected businesses
+ * <b>Description: </b> generates a dynamic list of businesses owned or shared with this user.
+ * Used on Store modal when buying Connections.
  * <b>Copyright:</b> Copyright (c) 2018
  * <b>Company:</b> Silicon Mountain Technologies
  * 
- * @author ryan
+ * @author James McKain
  * @version 3.0
- * @since Mar 5, 2018
+ * @since Jun 17, 2018
  * @updates:
  ****************************************************************************/
 public class UserBusinessList extends SimpleActionAdapter {
-	
+
 	public UserBusinessList() {
 		super();
 	}
@@ -34,33 +34,26 @@ public class UserBusinessList extends SimpleActionAdapter {
 	public UserBusinessList(ActionInitVO arg0) {
 		super(arg0);
 	}
-	
+
 	/*
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.action.ActionRequest)
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		String custom = getCustomSchema();
-		SMTSession session = req.getSession();
-		MemberVO member = (MemberVO) session.getAttribute(Constants.USER_DATA);
+		String schema = getCustomSchema();
+		String memberId = RezDoxUtils.getMemberId(req);
 
-		List<Object> params = new ArrayList<>();
-				
 		StringBuilder sql = new StringBuilder(325);
-		sql.append("select rb.business_nm as value, rb.business_id as key from custom.rezdox_business rb ");
-		sql.append("inner join custom.rezdox_connection rc on rc.sndr_business_id = rb.business_id or rc.rcpt_business_id = rb.business_id ");
-		sql.append("where (rcpt_business_id is not null or sndr_business_id is not null) ");
-		sql.append("and (sndr_member_id = ? or rcpt_member_id = ? )");
-		params.add(member.getMemberId());
-		params.add(member.getMemberId());
-				
-		DBProcessor db = new DBProcessor(getDBConnection(), custom);
-		List<GenericVO> data = db.executeSelect(sql.toString(), params, new GenericVO());
-		log.debug("sql " + sql +"|"+ params+" businesses selected " + data.size());
+		sql.append("select rb.business_id as key, rb.business_nm as value ");
+		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("rezdox_business rb ");
+		sql.append(DBUtil.INNER_JOIN).append(schema).append("rezdox_business_member_xr rc on rc.business_id=rb.business_id ");
+		sql.append("where rc.member_id=? and rc.status_flg > 0");
+
+		DBProcessor db = new DBProcessor(getDBConnection(), schema);
+		List<GenericVO> data = db.executeSelect(sql.toString(), Arrays.asList(memberId), new GenericVO(), "business_id");
+
+		log.debug(sql +"|"+ memberId+" businesses selected " + data.size());
 		putModuleData(data, data.size(), false);
-	
 	}
-
 }
-

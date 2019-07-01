@@ -196,15 +196,13 @@ public class DashboardAction extends SimpleActionAdapter {
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("rezdox_connection");
 		sql.append(DBUtil.WHERE_CLAUSE).append("(sndr_business_id=? or rcpt_business_id=?) and approved_flg=1 ");
 		sql.append(DBUtil.UNION);
-		sql.append("select 'bus_connections_lic', 'bus_connections_lic', sum(a.qty_no)::text "); 
-		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("rezdox_subscription a ");
-		sql.append(DBUtil.INNER_JOIN).append(schema).append("rezdox_membership b on a.membership_id=b.membership_id and b.group_cd='CO' ");
-		sql.append(DBUtil.WHERE_CLAUSE).append("a.member_id=? ");
+		sql.append("select 'bus_connections_lic', 'bus_connections_lic', quota_no::text "); 
+		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("rezdox_connection_quota_view where business_id=? ");
 		sql.append("order by slug_txt ");
 
 		// Add the attributes to the business
 		DBProcessor db = new DBProcessor(getDBConnection(), schema);
-		List<Object> vals = Arrays.asList(bId,bId,bId,bId,bId,bId,bId,bId,bId,bId,memberId);
+		List<Object> vals = Arrays.asList(bId,bId,bId,bId,bId,bId,bId,bId,bId,bId,bId);
 		bus.addAttributes(db.executeSelect(sql.toString(), vals, new BusinessAttributeVO()));
 	}
 

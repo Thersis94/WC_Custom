@@ -157,7 +157,7 @@ public class DefectVO extends BeanDataVO {
 	/**
 	 * @param activeFlag the activeFlag to set
 	 */
-	public void setActiveFlag(int activeFlag) {
+	public void setActiveFlag(Integer activeFlag) {
 		this.activeFlag = activeFlag;
 	}
 
@@ -172,8 +172,7 @@ public class DefectVO extends BeanDataVO {
 	 * @param providerCode the providerCode to set
 	 */
 	public void setProviderId(String providerId) {
-		if (StringUtil.isEmpty(providerId)) providerId = null;
-		else this.providerId = providerId;
+		this.providerId = StringUtil.isEmpty(providerId) ? null : providerId;
 	}
 
 	/**

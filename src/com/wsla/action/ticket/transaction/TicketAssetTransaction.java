@@ -1,6 +1,5 @@
 package com.wsla.action.ticket.transaction;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
@@ -134,8 +133,12 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 	 * @throws InvalidDataException 
 	 */
 	public void saveAsset(ActionRequest req) throws InvalidDataException, DatabaseException {
+		//TODO his method seems to be doing more then one method should, please break this method out into other methods in the future
 		TicketDataVO td = new TicketDataVO(req);
 		td.setApprovalCode(ApprovalCode.PENDING);
+		
+		boolean hasIncompleteCallData = req.getBooleanParameter("hasIncompleteCallData");
+		boolean hasApprovableImageAttribute = (PROOF_PURCHASE.equals(td.getAttributeCode()) ||EQUIPMENT_IMAGE.equals(td.getAttributeCode()) || SERIAL_NO.equals(td.getAttributeCode()) );
 		
 		// Get the DB Processor
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
@@ -151,12 +154,12 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 			user = (UserVO)getAdminUser(req).getUserExtendedInfo();
 		}
 		
-		
 		// Add a ledger entry, but only change status if the uploaded asset
 		// triggers a need for approval.
 		TicketLedgerVO ledger;
 		StatusCode status;
-		if (isReadyForApproval(td)) {
+		
+		if (isReadyForApproval(td) && hasIncompleteCallData) {
 			ledger = changeStatus(td.getTicketId(), user.getUserId(), StatusCode.USER_DATA_APPROVAL_PENDING, LedgerSummary.ASSET_LOADED.summary, null);
 			status = ledger.getStatusCode();
 		} else {
@@ -164,7 +167,6 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 			TicketVO ticket = new TicketEditAction(getDBConnection(), getAttributes()).getBaseTicket(td.getTicketId());
 			status = ticket.getStatusCode();
 		}
-		
 		
 		// Build the next step
 		Map<String, Object> params = new HashMap<>();
@@ -175,50 +177,34 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 		td.setLedgerEntryId(ledger.getLedgerEntryId());
 		td.setMetaValue(req.getParameter("fileName"));
 		
-		db.save(td);
-
+		//if we are past the point where we can approve call data
+		if(!hasIncompleteCallData && hasApprovableImageAttribute) {
+			td.setApprovalCode(ApprovalCode.APPROVED);
+		}
+		//if its not the credit memo save it but if ti si the credit memo and its not asset locked save it
+		if ((!"attr_credit_memo".equalsIgnoreCase(req.getParameter("attributeCode"))) || ("attr_credit_memo".equalsIgnoreCase(req.getParameter("attributeCode")) && !req.getBooleanParameter("isAssetLocked"))) {
+			db.save(td);
+		}
+		
 		if("attr_credit_memo".equalsIgnoreCase(req.getParameter("attributeCode"))) {
-			log.debug(" save the attribute id in credit memo table");
+			CreditMemoTransaction cmt = new CreditMemoTransaction(getDBConnection(), getAttributes());
 			CreditMemoVO cmvo = new CreditMemoVO(req);
 			cmvo.setAssetId(td.getDataEntryId());
+			cmvo.setCustomerMemoCode(req.getStringParameter("customerMemoCode", cmvo.getCustomerMemoCode()));
+			
 			log.debug(cmvo);
-			saveMemoAssetId(cmvo);
-			addLedger(td.getTicketId(), user.getUserId(), null, LedgerSummary.CREDIT_MEMO_APPROVED.summary, null);
-		}
-	}
-	
-	
-	
-	/**
-	 * this method updates the credit memo id when a new credit memo asset is saved.
-	 * @param ticketId
-	 * @param dataEntryId
-	 */
-	private void saveMemoAssetId(CreditMemoVO cmvo) {
-	
-		cmvo.setApprovalDate(new Date());
-		cmvo.setUpdateDate(new Date());
-		
-		List<String> fields = new ArrayList<>();
-		fields.add("asset_id");
-		fields.add("refund_amount_no");
-		fields.add("approved_by_txt");
-		fields.add("bank_nm");
-		fields.add("account_no");
-		fields.add("transfer_cd");
-		fields.add("approval_dt");
-		fields.add("credit_memo_id");
-
-		
-		StringBuilder sql = new StringBuilder(93);
-		sql.append("update ").append(getCustomSchema()).append("wsla_credit_memo set asset_id = ?, refund_amount_no = ?, approved_by_txt = ?, bank_nm = ?, account_no = ?, transfer_cd = ?, approval_dt = ?  where credit_memo_id = ? ");
-		
-		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
-		try {
-			db.executeSqlUpdate(sql.toString(), cmvo, fields);
-		} catch (DatabaseException e) {
-			log.error("could not save asset id to credit memo",e);
-			putModuleData(cmvo, 0, false, e.getLocalizedMessage(), true);
+			
+			if (req.getBooleanParameter("isAssetLocked")) {
+				cmt.saveBankInfo(cmvo);
+			}else {
+				cmt.saveCreditMemoApproval(cmvo);
+			}
+			
+			if (status == StatusCode.CREDIT_MEMO_WSLA && !cmt.hasUnapprovedCreditMemos(td.getTicketId())) {
+				changeStatus(td.getTicketId(), user.getUserId(), StatusCode.CLOSED, LedgerSummary.CREDIT_MEMO_APPROVED.summary, null);
+			} else {
+				addLedger(td.getTicketId(), user.getUserId(), null, LedgerSummary.CREDIT_MEMO_APPROVED.summary, null);
+			}
 		}
 	}
 
@@ -371,6 +357,7 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 	 * @throws DatabaseException
 	 */
 	protected void manageTicketApproval(String ticketId, ActionRequest req) throws DatabaseException {
+		//TODO his method seems to be doing more then one method should, please break this method out into other methods in the future
 		TicketEditAction tea = new TicketEditAction(getDBConnection(), getAttributes());
 		List<TicketDataVO> assets = tea.getExtendedData(ticketId, "ASSET_GROUP");
 		Map<String, ApprovalCode> approvals = new HashMap<>();
@@ -390,16 +377,18 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 			if (prevApproval == null || prevApproval == ApprovalCode.REJECTED) 
 				approvals.put(attributeCode, thisApproval);
 		}
-		
 		// Manage the status based on approval
 		if (approvals.get(PROOF_PURCHASE) != null && approvals.get(SERIAL_NO) != null && approvals.get(EQUIPMENT_IMAGE) != null) {
 			
 			boolean popHasApproval = !approvals.get(PROOF_PURCHASE).isRejected();
 			boolean snHasApproval = !approvals.get(SERIAL_NO).isRejected();
 			boolean eiHasApproval = !approvals.get(EQUIPMENT_IMAGE).isRejected();
-			
-			finalizeApproval(req, popHasApproval && snHasApproval && eiHasApproval , true);
+			if(!req.getBooleanParameter("hasIncompleteCallData")) {
+				//if the call data is still incomplete move status 
+				finalizeApproval(req, popHasApproval && snHasApproval && eiHasApproval , true);
+			}
 		}
+		
 	}
 	
 	/**

@@ -11,6 +11,7 @@ import java.util.Map;
 
 // SMT Base Libs
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.data.Node;
 import com.siliconmtn.data.parser.BeanDataVO;
 import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
@@ -73,6 +74,7 @@ public class TicketVO extends BeanDataVO {
 	private String lockedByName;
 	private StatusCode statusCode;
 	private String phoneNumber;
+	private int historicalFlag;
 	
 	// Numeric Members
 	private int warrantyValidFlag;
@@ -100,6 +102,7 @@ public class TicketVO extends BeanDataVO {
 	private List<TicketAssignmentVO> assignments = new ArrayList<>();
 	private Map<String, TicketScheduleVO> schedule = new HashMap<>();
 	private List<TicketLedgerVO> timeline = new ArrayList<>();
+	private List<Node> comments= new ArrayList<>();
 	private List<DiagnosticRunVO> diagnosticRun = new ArrayList<>();
 	private ProductSerialNumberVO productSerial = new ProductSerialNumberVO();
 	private ProviderLocationVO retailer;
@@ -726,6 +729,35 @@ public class TicketVO extends BeanDataVO {
 	@BeanSubElement
 	public void setOriginator(UserVO originator) {
 		this.originator = originator;
+	}
+
+	/**
+	 * @return the comments
+	 */
+	public List<Node> getComments() {
+		return comments;
+	}
+
+	/**
+	 * @param comments the comments to set
+	 */
+	public void setComments(List<Node> comments) {
+		this.comments = comments;
+	}
+
+	/**
+	 * @return the historicalFlag
+	 */
+	@Column(name="historical_flg")
+	public int getHistoricalFlag() {
+		return historicalFlag;
+	}
+
+	/**
+	 * @param historicalFlag the historicalFlag to set
+	 */
+	public void setHistoricalFlag(int historicalFlag) {
+		this.historicalFlag = historicalFlag;
 	}
 
 	/**

@@ -917,6 +917,7 @@ public class CompanyManagementAction extends ManagementAction {
 			case COMPANYATTRIBUTE:
 			case COMPANYLINK:
 			case COMPANYATTACH:
+			case UNKNOWNATTRIBUTE:
 				CompanyAttributeVO attr = new CompanyAttributeVO(req);
 				saveAttribute(attr, db);
 				break;
