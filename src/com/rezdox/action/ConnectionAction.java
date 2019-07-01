@@ -541,6 +541,8 @@ public class ConnectionAction extends SimpleActionAdapter {
 			cvo.setApprovedFlag(req.getIntegerParameter(APPROVED_FLAG));
 		}
 
+		correctBusinessBinding(cvo, req);
+
 		//if a business is the recipient instant approve
 		if (cvo.getRecipientBusinessId() != null && !req.getBooleanParameter("approvalUpdate")) {
 			cvo.setApprovedFlag(1);
@@ -559,6 +561,24 @@ public class ConnectionAction extends SimpleActionAdapter {
 		//skip is passed from MemberAction
 		if (!req.hasParameter("skipEmails"))
 			processEmails(cvo, req);
+	}
+
+
+	/**
+	 * When the logged-in user is business-only, make the sender their business (or 1st business), not them.
+	 * @param cvo 
+	 * @param req
+	 */
+	private void correctBusinessBinding(ConnectionVO cvo, ActionRequest req) {
+		SBUserRole role = (SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA);
+		if (!StringUtil.isEmpty(cvo.getSenderMemberId()) && RezDoxUtils.isBusinessRole(role, false)) {
+			String businessId = new BusinessAction(getDBConnection(), getAttributes()).getMyDefaultBusinessId(req);
+			// Make sure we have a business to set - leave the member binding if we can't improve upon it
+			if (!StringUtil.isEmpty(businessId)) {
+				cvo.setSenderBusinessId(businessId);
+				cvo.setSenderMemberId(null);
+			}
+		}
 	}
 
 
