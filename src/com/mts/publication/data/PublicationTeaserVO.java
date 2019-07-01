@@ -56,6 +56,9 @@ public class PublicationTeaserVO extends BeanDataVO {
 	private Map<String, List<AssetVO>> assets = new HashMap<>();
 	private String categoryCode;
 	
+	// Helpers
+	private String featuredArticleId;
+	
 	/**
 	 * 
 	 */
@@ -84,10 +87,22 @@ public class PublicationTeaserVO extends BeanDataVO {
 	 */
 	public MTSDocumentVO getFeaturedArticle() {
 		if (documents.isEmpty()) return new MTSDocumentVO();
+		
+		// If the feature has been assigned already, use that
+		if (! StringUtil.isEmpty(featuredArticleId)) {
+			for (MTSDocumentVO d : documents) {
+				if (featuredArticleId.equals(d.getDocumentId())) {
+					assignAsset(d);
+					return d;
+				}
+			}
+		}
+		
+		// Otherwise shuffle the articles and return the item
 		Collections.shuffle(documents);
 		MTSDocumentVO doc = documents.get(0);
 		assignAsset(doc);
-
+		featuredArticleId = doc.getDocumentId();
 		return doc;
 	}
 	
@@ -96,10 +111,25 @@ public class PublicationTeaserVO extends BeanDataVO {
 	 * @return
 	 */
 	public List<MTSDocumentVO> getTeaserArticles() {
+		// Make sure the featured article is assigned
+		if (StringUtil.isEmpty(featuredArticleId)) getFeaturedArticle();
+		
 		int num = (documents.size() - 1 < NUM_TEASER_ARTICLES) ? documents.size() - 1 : NUM_TEASER_ARTICLES;
-		List<MTSDocumentVO> teasers = documents.subList(1, num + 1);
+		List<MTSDocumentVO> teasers = new ArrayList<>(num);
+		Set<String> ids = new HashSet<>(num);
 		for (MTSDocumentVO doc : teasers) {
-			assignAsset(doc);
+			// Do not use the featured article in the teasers
+			if (featuredArticleId.equals(doc.getDocumentId())) continue;
+			
+			// Check the ids in the teasers.  If it is not there, add it
+			if (! ids.contains(doc.getDocumentId())) {
+				assignAsset(doc);
+				teasers.add(doc);
+				
+				// When the number of teasers is assigned, end the loop
+				if (ids.size() == num) break;
+			}
+			
 		}
 		
 		return teasers;

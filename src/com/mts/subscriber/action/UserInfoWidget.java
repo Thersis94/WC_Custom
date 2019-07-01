@@ -133,7 +133,7 @@ public class UserInfoWidget extends SimpleActionAdapter {
 	@Override
 	public void build(ActionRequest req) throws ActionException {
 		SBUserRole role = (SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA);
-		if ("0".equals(role.getRoleId())) {
+		if (role == null || "0".equals(role.getRoleId())) {
 			setModuleData(null, 0, "UNAUTHORIZED");
 			return;
 		}
