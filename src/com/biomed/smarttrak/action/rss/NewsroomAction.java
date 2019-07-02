@@ -284,6 +284,11 @@ public class NewsroomAction extends SBActionAdapter {
 			fq.add("bucketId_s:" + bucketId);
 		}
 
+		//Check for ids we want to ignore. Is managed on front end with a timer.
+		if(req.hasParameter("skipIds")) {
+			fq.add("!documentId:(" + req.getParameter("skipIds").replace(",", " OR ") + ")");
+		}
+
 		req.setParameter("fq", fq.toArray(new String[fq.size()]), true);
 		req.setParameter("allowCustom", "true");
 	}
