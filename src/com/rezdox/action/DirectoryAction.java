@@ -83,14 +83,24 @@ public class DirectoryAction extends SimpleActionAdapter {
 		sql.append(DBUtil.INNER_JOIN).append("profile_address pa on m.profile_id = pa.profile_id ");
 		//only display people who are ACTIVE and are NOT business members (hybrid or residence, OK)
 		sql.append(DBUtil.INNER_JOIN).append("profile_role pr on m.profile_id=pr.profile_id and pr.site_id=? and pr.role_id in (?,?) and pr.status_id=? ");
-		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("rezdox_connection c on ((m.member_id = c.rcpt_member_id and c.sndr_member_id = ?) or (m.member_id = c.sndr_member_id and c.rcpt_member_id = ?)) and c.approved_flg >= 0 ");
-		sql.append(DBUtil.WHERE_CLAUSE).append("m.member_id != ? ");
+
 		params.add(RezDoxUtils.MAIN_SITE_ID);
 		params.add(RezDoxUtils.REZDOX_RESIDENCE_ROLE);
 		params.add(RezDoxUtils.REZDOX_RES_BUS_ROLE);
 		params.add(SecurityController.STATUS_ACTIVE);
-		params.add(memberId); //my prods
-		params.addAll(Arrays.asList(memberId, memberId));
+		
+		//if business role, highlight bindings to the business, not the member
+		if (RezDoxUtils.isBusinessRole(role, false)) {
+			sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("rezdox_connection c on ((m.member_id = c.rcpt_member_id and c.sndr_business_id = ?) or (m.member_id = c.sndr_member_id and c.rcpt_business_id = ?)) and c.approved_flg >= 0 ");
+			String businessId = new BusinessAction(getDBConnection(), getAttributes()).getMyDefaultBusinessId(req);
+			params.addAll(Arrays.asList(businessId, businessId));
+			
+		} else  {
+			sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("rezdox_connection c on ((m.member_id = c.rcpt_member_id and c.sndr_member_id = ?) or (m.member_id = c.sndr_member_id and c.rcpt_member_id = ?)) and c.approved_flg >= 0 ");
+			params.addAll(Arrays.asList(memberId, memberId));
+		}
+		sql.append(DBUtil.WHERE_CLAUSE).append("m.member_id != ? ");
+		params.add(memberId);
 
 		sql.append(DBUtil.UNION_ALL);
 
@@ -112,8 +122,18 @@ public class DirectoryAction extends SimpleActionAdapter {
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("rezdox_business_category bcs on bcx.business_category_cd=bcs.business_category_cd ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("rezdox_business_category bc on bcs.parent_cd=bc.business_category_cd ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("rezdox_my_pro mp on mp.business_category_cd=bc.business_category_cd and mp.business_id=b.business_id and mp.member_id=? ");
-		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("rezdox_connection c on ((b.business_id = c.rcpt_business_id and c.sndr_member_id = ?) or (b.business_id = c.sndr_business_id and c.rcpt_member_id = ?)) and c.approved_flg >= 0 ");
-		params.addAll(Arrays.asList(memberId, memberId, memberId));
+
+		params.add(memberId);
+		
+		//if business role, highlight bindings to the business, not the member
+		if (RezDoxUtils.isBusinessRole(role, false)) {
+			sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("rezdox_connection c on ((b.business_id = c.rcpt_business_id and c.sndr_business_id = ?) or (b.business_id = c.sndr_business_id and c.rcpt_business_id = ?)) and c.approved_flg >= 0 ");
+			String businessId = new BusinessAction(getDBConnection(), getAttributes()).getMyDefaultBusinessId(req);
+			params.addAll(Arrays.asList(businessId, businessId));
+		} else {
+			sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("rezdox_connection c on ((b.business_id = c.rcpt_business_id and c.sndr_member_id = ?) or (b.business_id = c.sndr_business_id and c.rcpt_member_id = ?)) and c.approved_flg >= 0 ");
+			params.addAll(Arrays.asList(memberId, memberId));
+		}
 		sql.append(") as user_directory ");
 
 		// Generate the where clause
