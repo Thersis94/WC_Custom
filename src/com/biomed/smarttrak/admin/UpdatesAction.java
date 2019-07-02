@@ -271,7 +271,7 @@ public class UpdatesAction extends ManagementAction {
 		int page = Convert.formatInteger(req.getParameter("offset"), 0)/rpp;
 		req.setParameter("rpp", StringUtil.checkVal(rpp));
 		req.setParameter("page", StringUtil.checkVal(page));
-		if(req.hasParameter(SEARCH)) 
+		if(req.hasParameter(SEARCH))
 			req.setParameter("searchData", req.getParameter(SEARCH));
 
 		//build a list of filter queries
@@ -485,7 +485,7 @@ public class UpdatesAction extends ManagementAction {
 	 */
 	protected String formatRetrieveAllQuery(String schema, String... updateIds) {
 		StringBuilder sql = new StringBuilder(400);
-		sql.append("select up.update_id, up.title_txt, up.message_txt, up.publish_dt, up.type_cd, us.update_section_xr_id, us.section_id, ");
+		sql.append("select up.update_id, up.title_txt, replace(up.message_txt, '&nbsp;', ' '), up.publish_dt, up.type_cd, us.update_section_xr_id, us.section_id, ");
 		sql.append("up.announcement_type, c.short_nm_txt as company_nm, prod.short_nm as product_nm, up.order_no, up.status_cd, ");
 		sql.append("coalesce(up.product_id,prod.product_id) as product_id, coalesce(up.company_id, c.company_id) as company_id, ");
 		sql.append("m.short_nm as market_nm, coalesce(up.market_id, m.market_id) as market_id, up.publish_dt_sort, ");
