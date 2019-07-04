@@ -71,7 +71,7 @@ public class DataMigrationUtil {
 	private static final boolean PROC_DOCS = true;
 	private static final boolean PROC_DOC_CAT = false;
 	private static final boolean PROC_ASSET = false;
-	private static final boolean PROC_ISSUES = false;
+	private static final boolean PROC_ISSUES = true;
 	private static final boolean PROC_ART = true;
 	
 	/**
@@ -160,11 +160,64 @@ public class DataMigrationUtil {
 		catMap.put("business strategies", "BUS_STRAT");
 		catMap.put("emerging markets", "EMERG_MARKETS");
 		catMap.put("executive interviews", "EXECUTIVE_INTERVIEWS");
+		catMap.put("executive interview", "EXECUTIVE_INTERVIEWS");
 		catMap.put("investors & dealmaking", "INVENT_DEALS");
 		catMap.put("perspective & commentary", "PERSPECTIVE_COMM");
+		catMap.put("perspective", "PERSPECTIVE_COMM");
+		catMap.put("under the lens", "PERSPECTIVE_COMM");
 		catMap.put("providers & payors", "PROVIDER_PAYER");
 		catMap.put("regulatory & reimbursement", "REG_REIMBURS");
 		catMap.put("startups to watch", "STARTUP_WATCH");
+		catMap.put("startups to watc", "STARTUP_WATCH");
+		catMap.put("aesthetics/dermatology", "aestheticsdermatology");
+		catMap.put("dermatology", "aestheticsdermatology");
+		catMap.put("aesthetics", "aestheticsdermatology");
+		catMap.put("biopharma/biomaterials", "biopharmabiomaterials");
+		catMap.put("biomaterials", "biopharmabiomaterials");
+		catMap.put("biopharma", "biopharmabiomaterials");
+		catMap.put("cardiovascular/vascular", "cardiovascularvascular");
+		catMap.put("cardiovascular", "cardiovascularvascular");
+		catMap.put("vascular", "cardiovascularvascular");
+		catMap.put("cardiovascular monitoring", "cardiovascularvascular");
+		catMap.put("heart failure", "cardiovascularvascular");
+		catMap.put("critical care/emergency medicine/icu", "critical-careemergency-medicine");
+		catMap.put("emergency medicine", "critical-careemergency-medicine");
+		catMap.put("icu", "critical-careemergency-medicine");
+		catMap.put("critical care", "critical-careemergency-medicine");
+		catMap.put("diabetes", "diabetes");
+		catMap.put("diabetes devices","diabetes");
+		catMap.put("diagnostics", "diagnostics");
+		catMap.put("digital health", "digital-health");
+		catMap.put("gastroenterology", "gastroenterology");
+		catMap.put("gastroenterology", "gastroenterology");
+		catMap.put("imaging", "imaging");	
+		catMap.put("neurology/neurovascular", "neurologyneurovascular");
+		catMap.put("neurology", "neurologyneurovascular");
+		catMap.put("neurovascular", "neurologyneurovascular");
+		catMap.put("oncology", "oncology");
+		catMap.put("ophthalmology", "ophthalmology");
+		catMap.put("orthopedics/spine", "orthopedicsspine");
+		catMap.put("orthopedics","orthopedicsspine");
+		catMap.put("spine industry","orthopedicsspine");
+		catMap.put("spine","orthopedicsspine");
+		catMap.put("patient monitoring", "patient-monitoring");
+		catMap.put("regenerative medicine/cell therapy", "regenerative-medicine-therapy");
+		catMap.put("regenerative medicine", "regenerative-medicine-therapy");
+		catMap.put("cell therapy", "regenerative-medicine-therapy");
+		catMap.put("respiratory/rnt", "respiratory-ent");
+		catMap.put("rnt", "respiratory-ent");
+		catMap.put("respiratory", "respiratory-ent");
+		catMap.put("surgery/robotics", "surgery-robotics");
+		catMap.put("surgery robotics", "surgery-robotics");
+		catMap.put("surgery", "surgery-robotics");
+		catMap.put("robotics", "surgery-robotics");
+		catMap.put("urology/renal", "urology-renal");
+		catMap.put("renal", "urology-renal");
+		catMap.put("urology", "urology-renal");
+		catMap.put("women's health", "womens-health");
+		catMap.put("wound management", "wound-management");
+		
+		
 	}
 	
 	/**
@@ -231,7 +284,7 @@ public class DataMigrationUtil {
 	 */
 	public void getArticleCategories(Connection srcConn, MTSDocumentVO doc) throws SQLException {
 		StringBuilder cat = new StringBuilder();
-		cat.append("select taxonmy, term_id from wp_1fvbn80q5v_term_relationships a ");
+		cat.append("select  b.taxonomy, term_id from wp_1fvbn80q5v_term_relationships a ");
 		cat.append("inner join wp_1fvbn80q5v_term_taxonomy b on a.term_taxonomy_id = b.term_taxonomy_id ");
 		cat.append("where object_id = ? and taxonomy in ('article_category', 'issue') ");
 		cat.append("order by taxonomy DESC");
@@ -322,39 +375,72 @@ public class DataMigrationUtil {
 	 */
 	public void parseArticleTitle(MTSDocumentVO doc) {
 		
+		
 		String title = doc.getActionName();
-		int idx = title.indexOf('–');
-		if (idx < 0) idx = title.indexOf('—');
-		if (idx < 0) idx = title.indexOf('-');
-
+		
+		if (StringUtil.isEmpty(title)) {
+			log.error("cant save this doc:  " + doc.getDocumentId());
+			return;
+		}
+		
+		int idx = getIDX(title);
+				
 		// Get the first section for the cat
 		if (idx > -1) {
 			String cat = StringUtil.removeNonAlphaNumeric(title.substring(0, idx), false).toLowerCase().trim();
-			String catCode = catMap.get(cat);
-			if (catCode != null) {
-				DocumentCategoryVO dcat = new DocumentCategoryVO();
-				dcat.setCategoryCode(catCode);
-				dcat.setDocumentId(doc.getActionId());
-				categories.add(dcat);
-			} else {
-				if (! StringUtil.isEmpty(cat)) missingCats.add(cat);
-			}
+				String catCode = catMap.get(cat);
+				
+				if (catCode != null) {
+					DocumentCategoryVO dcat = new DocumentCategoryVO();
+					dcat.setCategoryCode(catCode);
+					dcat.setDocumentId(doc.getActionId());
+					categories.add(dcat);
+				} else {
+					DocumentCategoryVO dcat = new DocumentCategoryVO();
+					dcat.setCategoryCode("PERSPECTIVE_COMM");
+					dcat.setDocumentId(doc.getActionId());
+					categories.add(dcat);
+					
+					if (! StringUtil.isEmpty(cat)) missingCats.add(cat);
+				}
+			
 		}
 		
 		// Get the title
 		String pTitle = "";
+		
 		if (title.indexOf(" by ") > -1) {
-			pTitle = title.substring(idx + 2);
+			//clip the cats off the front
+			if(idx > -1) {
+				pTitle = title.substring(idx + 2);
+			}else {
+				pTitle = title;
+			}
+			
 			int eIdx = pTitle.lastIndexOf("by");
 			if (eIdx > -1) {
+				//clip the by off the back
 				pTitle = pTitle.substring(0, eIdx).trim();
 				
 			}
 		} else {
-			pTitle = title;
+			if(idx > -1) {
+				//clip the cats off the front
+				pTitle = title.substring(idx + 1);
+			}else {
+				//do nothing as the there were no cats or by line
+				pTitle = title;
+			}
 		}
-		
-		doc.setActionName(StringUtil.removeNonAlphaNumeric(pTitle, false));
+
+		//remove all double quotes and trim.
+		pTitle = pTitle.replaceAll("[\"\u201c\u201d]", "").trim();
+		//if the last char is a , remove it
+		if (",".equals(pTitle.substring(pTitle.length() - 1))){
+			pTitle = pTitle.substring(0, pTitle.length() - 1);
+		}
+
+		doc.setActionName(pTitle);
 
 		// Get the author
 		int aidx = title.lastIndexOf(" by ");
@@ -362,8 +448,61 @@ public class DataMigrationUtil {
 			String author = StringUtil.checkVal(title.substring(aidx + 4));
 			doc.setAuthorId(userMap.get(author.trim().toLowerCase()));
 		}
+
 	}
 	
+	/**
+	 * calculates the index where the title starts
+	 * @param title 
+	 * @return
+	 */
+	private int getIDX(String title) {
+		int idx = title.indexOf('–');
+		if (idx < 0) idx = title.indexOf('—');
+		if (idx < 0) idx = title.indexOf('-');
+		if (idx < 0) idx = title.indexOf(':');
+		
+		
+		if (title.indexOf("Arrhythmia Monitoring -") > -1 ) {
+			idx = 23;
+		}
+		if (title.indexOf("“Digital Innovation: ") > -1 ) {
+			idx = 20;
+		}
+		if (title.indexOf("Start-Ups to Watch:") > -1 || title.indexOf("Start-Ups to Watch –") > -1 || title.indexOf("Start-Ups to Watch -") > -1 || title.indexOf("Start-Ups To Watch:") > -1 || title.indexOf("Start-Ups To Watch -") > -1    ) {
+			idx = 18;
+		} 
+		if (title.indexOf("Industry Spotlight:") > -1 || title.indexOf("Technology Trends:") > -1 || title.indexOf("Conference Preview:") > -1  ) {
+			idx = 19;
+		}
+		if (title.indexOf("Industry Outlook: ") > -1 ) {
+			idx = 17;
+		}
+		if (title.indexOf("Under the Lens:") > -1 || title.indexOf("Market Outlook:") > -1 ) {
+			idx = 15;
+		}
+		if (title.indexOf("Market Update:") > -1 ) {
+			idx = 14;
+		}
+		if (title.indexOf("Inside Story:") > -1 ) {
+			idx = 13;
+		}
+		if (title.indexOf("Perspective:") > -1 ) {
+			idx = 12;
+		}
+		if (title.indexOf("\"In Brief:") > -1 ) {
+			idx = 10;
+		}
+		if (title.indexOf("In Brief:") > -1 ) {
+			idx = 9;
+		}
+		if (title.indexOf("Special Start-Up Offer -") > -1 || title.indexOf("In Memoriam:") > -1 || title.indexOf("EMT Preview:") > -1 ) {
+			idx = -1;
+		}
+		
+		return idx;
+	}
+
 	/**
 	 * Migrate the issues for a given article
 	 * @param srcConn
@@ -503,7 +642,7 @@ public class DataMigrationUtil {
 	public Connection getDestConnection() throws DatabaseException {
 		DatabaseConnection dc = new DatabaseConnection();
 		dc.setDriverClass("org.postgresql.Driver");
-		dc.setUrl("jdbc:postgresql://sonic:5432/webcrescendo_wsla5_sb?defaultRowFetchSize=25&amp;prepareThreshold=3");
+		dc.setUrl("jdbc:postgresql://sonic:5432/webcrescendo_mts2_sb?defaultRowFetchSize=25&amp;prepareThreshold=3");
 		dc.setUserName("ryan_user_sb");
 		dc.setPassword("sqll0gin");
 		Connection conn = null;
