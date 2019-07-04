@@ -95,7 +95,7 @@ public class ContentFeedJob extends AbstractSMTJob {
 		String user = (String)attributes.get("SFTP_USER");
 		String pwd = (String)attributes.get("SFTP_PASSWORD");
 		String baseUrl = (String)attributes.get("BASE_URL");
-		
+
 		// Append the dates to this
 		Date d = new Date();
 		String pattern = "yyyyMMdd";

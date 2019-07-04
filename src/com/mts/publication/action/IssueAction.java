@@ -188,7 +188,7 @@ public class IssueAction extends SBActionAdapter {
 	protected List<AssetVO> getFeatureAssets(String issueId) {
 		StringBuilder sql = new StringBuilder(128);
 		sql.append("select * from ").append(getCustomSchema()).append("mts_document_asset ");
-		sql.append("where object_key_id = ? and asset_type_cd = 'FEATURE_IMG' ");
+		sql.append("where object_key_id = ? and asset_type_cd = 'COVER_IMG' ");
 		
 		DBProcessor db = new DBProcessor(getDBConnection());
 		return db.executeSelect(sql.toString(), Arrays.asList(issueId), new AssetVO());
