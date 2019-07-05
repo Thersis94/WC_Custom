@@ -6,6 +6,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -19,7 +20,6 @@ import com.mts.publication.data.AssetVO;
 import com.mts.publication.data.AssetVO.AssetType;
 // MTS Libs
 import com.mts.publication.data.CategoryVO;
-import com.mts.publication.data.DocumentCategoryVO;
 import com.mts.publication.data.IssueVO;
 import com.mts.publication.data.MTSDocumentVO;
 
@@ -33,6 +33,7 @@ import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.RandomAlphaNumeric;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.content.DocumentVO;
+import com.smt.sitebuilder.action.metadata.WidgetMetadataVO;
 
 /****************************************************************************
  * <b>Title</b>: DataMigrationUtil.java
@@ -53,7 +54,9 @@ public class DataMigrationUtil {
 	private Map<String, String> userMap = new HashMap<>();
 	private Map<String, String> catMap = new HashMap<>();
 	private Set<String> missingCats = new HashSet<>();
-	private List<DocumentCategoryVO> categories = new ArrayList<>();
+	//the xr relationships between the articles and the categories
+	private Set<WidgetMetadataVO> categories = new HashSet<>();
+	
 	private List<AssetVO> assets = new ArrayList<>();
 	
 	// Static Constants
@@ -65,14 +68,16 @@ public class DataMigrationUtil {
 	private static final String ISSUE_PDF = "issue_pdf";
 	private static final String MTS_ORG = "MTS";
 	private static final String MTS_DOC_FOLDER = "MED_TECH_STRATEGIST";
+	private static final String CREATE_BY_ID = "MTS_USER_1";
 	
 	// Turn on/off items to process
 	private static final boolean PROC_CAT = false;
 	private static final boolean PROC_DOCS = true;
-	private static final boolean PROC_DOC_CAT = false;
+	private static final boolean PROC_DOC_CAT = true;
 	private static final boolean PROC_ASSET = false;
 	private static final boolean PROC_ISSUES = true;
 	private static final boolean PROC_ART = true;
+	
 	
 	/**
 	 * 
@@ -107,7 +112,14 @@ public class DataMigrationUtil {
 		dbCore.setGenerateExecutedSQL(true);
 		DBProcessor dbCustom = new DBProcessor(destConn, CUSTOM_SCHEMA);
 		dbCustom.setGenerateExecutedSQL(true);
+		int errorCount = 0;
 		for(MTSDocumentVO doc : docs) {
+			if(StringUtil.isEmpty(doc.getActionName()) && StringUtil.isEmpty(doc.getDocument())) {
+				log.info("skip save on empty document with id of: " + doc.getActionId());
+				errorCount++;
+				continue;
+			}
+			
 			try {
 				// Assign the SB Action entry
 				SBActionVO avo = new SBActionVO(doc);
@@ -126,9 +138,10 @@ public class DataMigrationUtil {
 			}
 		}
 		log.info("Documents Processed: " + docs.size());
+		log.info("errors while processing docs " + errorCount);
 		
 		// Add the categories and assets
-		if (PROC_DOC_CAT) dbCustom.executeBatch(dmu.categories, true);
+		if (PROC_DOC_CAT) dbCore.executeBatch(new ArrayList<>(dmu.categories), true);
 		log.info("Document Categories Processed");
 		
 		if (PROC_ASSET) dbCustom.executeBatch(dmu.assets, true);
@@ -189,7 +202,6 @@ public class DataMigrationUtil {
 		catMap.put("diagnostics", "diagnostics");
 		catMap.put("digital health", "digital-health");
 		catMap.put("gastroenterology", "gastroenterology");
-		catMap.put("gastroenterology", "gastroenterology");
 		catMap.put("imaging", "imaging");	
 		catMap.put("neurology/neurovascular", "neurologyneurovascular");
 		catMap.put("neurology", "neurologyneurovascular");
@@ -216,6 +228,34 @@ public class DataMigrationUtil {
 		catMap.put("urology", "urology-renal");
 		catMap.put("women's health", "womens-health");
 		catMap.put("wound management", "wound-management");
+		catMap.put("aestheticsdermatology", "aestheticsdermatology");
+		catMap.put("biopharmabiomaterials", "biopharmabiomaterials");
+		catMap.put("business-strategies", "BUS_STRAT");
+		catMap.put("cardiovascularvascular", "cardiovascularvascular");
+		catMap.put("critical-careemergency-medicine", "critical-careemergency-medicine");
+		catMap.put("diabetes", "diabetes");
+		catMap.put("diagnostics", "diagnostics");
+		catMap.put("digital-health", "digital-health");
+		catMap.put("emerging-markets", "EMERG_MARKETS");
+		catMap.put("executive-interviews", "EXECUTIVE_INTERVIEWS");
+		catMap.put("gastroenterology", "gastroenterology");
+		catMap.put("imaging", "imaging");
+		catMap.put("investorsdealmaking", "INVENT_DEALS");
+		catMap.put("neurologyneurovascular", "neurologyneurovascular");
+		catMap.put("oncology", "oncology");
+		catMap.put("ophthalmology", "ophthalmology");
+		catMap.put("orthopedicsspine", "orthopedicsspine");
+		catMap.put("patient-monitoring", "patient-monitoring");
+		catMap.put("perspective-commentary", "PERSPECTIVE_COMM");
+		catMap.put("providerspayors", "PROVIDER_PAYER");
+		catMap.put("regenerative-medicinecell-therapy", "regenerative-medicine-therapy");
+		catMap.put("regulatory-reimbursement", "REG_REIMBURS");
+		catMap.put("respiratory-ent", "respiratory-ent");
+		catMap.put("start-ups-to-watch", "STARTUP_WATCH");
+		catMap.put("surgery-robotics", "surgery-robotics");
+		catMap.put("urology-renal", "urology-renal");
+		catMap.put("womens-health", "womens-health");
+		catMap.put("wound-management", "wound-management");
 		
 		
 	}
@@ -283,9 +323,11 @@ public class DataMigrationUtil {
 	 * @throws SQLException
 	 */
 	public void getArticleCategories(Connection srcConn, MTSDocumentVO doc) throws SQLException {
+				
 		StringBuilder cat = new StringBuilder();
-		cat.append("select  b.taxonomy, term_id from wp_1fvbn80q5v_term_relationships a ");
+		cat.append("select b.taxonomy, c.slug, b.term_id as issue_id from wp_1fvbn80q5v_term_relationships a ");
 		cat.append("inner join wp_1fvbn80q5v_term_taxonomy b on a.term_taxonomy_id = b.term_taxonomy_id ");
+		cat.append("inner join wp_1fvbn80q5v_terms c on b.term_id = c.term_id ");
 		cat.append("where object_id = ? and taxonomy in ('article_category', 'issue') ");
 		cat.append("order by taxonomy DESC");
 		
@@ -294,14 +336,16 @@ public class DataMigrationUtil {
 			
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
-				switch (rs.getString(1)) {
+				switch (rs.getString("taxonomy")) {
 					case ISSUE_KEY :
-						doc.setIssueId(rs.getInt(2) + "");
+						doc.setIssueId(rs.getString("issue_id"));
 						break;
 					case PRI_CATEGORY_KEY :
-						DocumentCategoryVO dcat = new DocumentCategoryVO();
-						dcat.setCategoryCode(catMap.get(rs.getInt(2)+""));
-						dcat.setDocumentId(doc.getActionId());
+						WidgetMetadataVO dcat = new WidgetMetadataVO();
+						dcat.setSbActionId(doc.getActionId());
+						dcat.setWidgetMetadataId(catMap.get(StringUtil.checkVal(rs.getString("slug"))));
+						dcat.setCreateDate(new Date());
+						dcat.setCreateById(CREATE_BY_ID);
 						categories.add(dcat);
 						break;
 				}
@@ -310,13 +354,13 @@ public class DataMigrationUtil {
 	}
 	
 	/**
-	 * Gets the article meta data (PDF, Category, etc ..)
+	 * Gets the article pdfs and 
 	 * @param srcConn
 	 * @param doc
 	 * @throws SQLException
 	 */
 	public void getArticleMetaData(Connection srcConn, MTSDocumentVO doc) throws SQLException {
-		String s = "select meta_key, meta_value from wp_1fvbn80q5v_postmeta where post_id = ?";
+		String s = "select  * from wp_1fvbn80q5v_posts where post_parent = ? ";
 		
 		try(PreparedStatement ps = srcConn.prepareStatement(s)) {
 			ps.setString(1, doc.getActionId());
@@ -324,10 +368,17 @@ public class DataMigrationUtil {
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
 				AssetVO avo = new AssetVO();
-				if (ARTICLE_PDF.equalsIgnoreCase(rs.getString(1))) {
+				if ("application/pdf".equalsIgnoreCase(rs.getString("post_mime_type"))) {
 					avo.setObjectKeyId(doc.getDocumentId());
-					avo.setDocumentAssetId(rs.getString(2));
+					avo.setDocumentAssetId(rs.getInt("ID")+"");
 					avo.setAssetType(AssetType.PDF_DOC);
+					avo.setDocumentPath(StringUtil.checkVal(rs.getString("guid")));
+					assets.add(avo);
+				}else if("image/jpeg".equalsIgnoreCase(rs.getString("post_mime_type"))){
+					avo.setObjectKeyId(doc.getDocumentId());
+					avo.setDocumentAssetId(rs.getInt("ID")+"");
+					avo.setAssetType(AssetType.GEN_IMAGE);
+					avo.setDocumentPath(StringUtil.checkVal(rs.getString("guid")));
 					assets.add(avo);
 				}
 			}
@@ -391,14 +442,18 @@ public class DataMigrationUtil {
 				String catCode = catMap.get(cat);
 				
 				if (catCode != null) {
-					DocumentCategoryVO dcat = new DocumentCategoryVO();
-					dcat.setCategoryCode(catCode);
-					dcat.setDocumentId(doc.getActionId());
+					WidgetMetadataVO dcat = new WidgetMetadataVO();
+					dcat.setSbActionId(doc.getActionId());
+					dcat.setWidgetMetadataId(catCode);
+					dcat.setCreateById(CREATE_BY_ID);
+					dcat.setCreateDate(new Date());
 					categories.add(dcat);
 				} else {
-					DocumentCategoryVO dcat = new DocumentCategoryVO();
-					dcat.setCategoryCode("PERSPECTIVE_COMM");
-					dcat.setDocumentId(doc.getActionId());
+					WidgetMetadataVO dcat = new WidgetMetadataVO();
+					dcat.setSbActionId(doc.getActionId());
+					dcat.setWidgetMetadataId("PERSPECTIVE_COMM");
+					dcat.setCreateById(CREATE_BY_ID);
+					dcat.setCreateDate(new Date());
 					categories.add(dcat);
 					
 					if (! StringUtil.isEmpty(cat)) missingCats.add(cat);
@@ -572,6 +627,7 @@ public class DataMigrationUtil {
 	
 	/**
 	 * Pulls the categories from the WP DB and copies to WC
+	 * 
 	 * @param srcConn
 	 * @param destConn
 	 * @throws SQLException
@@ -584,7 +640,7 @@ public class DataMigrationUtil {
 		sql.append("inner join wp_1fvbn80q5v_terms b on a.term_id = b.term_id ");
 		sql.append("where taxonomy = 'article_category' ");
 		sql.append("order by name");
-		
+		//TODO  this will need updated if we use it too add the top level and sencond level categories
 		List<CategoryVO> cats = new ArrayList<>();
 		try (PreparedStatement ps = srcConn.prepareStatement(sql.toString()); ResultSet rs = ps.executeQuery()) {
 			while (rs.next()) {
