@@ -43,6 +43,7 @@ public class FeaturedInsightsAction extends SBActionAdapter {
 
 	private static final String INSIGHT_ID = "insightId";
 	private static final String SECTION_TXT = "sectionTxt";
+	private static final String BIOMED_FEATURED_WIDGET_ID = "c77490469d64f478c0a80237b68e7be3";
 
 	public FeaturedInsightsAction() {
 		super();
@@ -137,7 +138,7 @@ public class FeaturedInsightsAction extends SBActionAdapter {
 	private void setFeaturedData(ModuleVO mod) throws ActionException {
 		String sql = "select attrib1_txt, attrib2_txt from sb_action where action_id = ?";
 		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
-			ps.setString(1, mod.getActionUrl());
+			ps.setString(1, BIOMED_FEATURED_WIDGET_ID);
 			
 			ResultSet rs = ps.executeQuery();
 			
