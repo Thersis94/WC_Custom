@@ -92,8 +92,9 @@ public class GridExcelManager {
 
 			Row r = sheet.createRow(ctr++);
 			Cell c = r.createCell(0);
-			c.setCellValue("SmartTRAK Business Intelligence");
-			c.setCellStyle(getHeadingLabelStyle(workbook));
+			c.setCellValue("Source: SmartTRAK Business Intelligence");
+			HSSFCellStyle f = getHeadingLabelStyle(workbook, false);
+			c.setCellStyle(f);
 			sheet.addMergedRegion(new CellRangeAddress(r.getRowNum(),r.getRowNum(),0,numberCols));
 			// Add the workbook to the stream and store to the byte[]
 			try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
@@ -210,7 +211,7 @@ public class GridExcelManager {
 		sheet.addMergedRegion(range);
 		cell.setCellValue("SmartTRAK® - " + name);
 		row.setHeightInPoints(2 * sheet.getDefaultRowHeightInPoints());
-		cell.setCellStyle(getHeadingLabelStyle(workbook));
+		cell.setCellStyle(getHeadingLabelStyle(workbook, true));
 	}
 
 	/**
@@ -218,10 +219,11 @@ public class GridExcelManager {
 	 * @param workbook
 	 * @return
 	 */
-	public HSSFCellStyle getHeadingLabelStyle(HSSFWorkbook workbook) {
+	public HSSFCellStyle getHeadingLabelStyle(HSSFWorkbook workbook, boolean isHeader) {
 		HSSFFont font = getBaseFont(workbook, false);
 		font.setColor(HSSFColor.BLACK.index);
-		font.setBold(true);
+		if(isHeader)
+			font.setBold(true);
 		font.setFontHeightInPoints((short)14);
 
 		HSSFCellStyle style = getBaseStyle(workbook);
