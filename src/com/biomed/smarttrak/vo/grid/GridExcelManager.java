@@ -85,11 +85,17 @@ public class GridExcelManager {
 			}
 
 			// Add the rows of data
-			addDataRows(details, workbook, sheet, ctr, numberCols, grid.getSeriesTxtFlg());
+			ctr = addDataRows(details, workbook, sheet, ctr, numberCols, grid.getSeriesTxtFlg());
 
 			// resize all of the columns
 			for (int i=0; i < numberCols; i++) sheet.autoSizeColumn(i);
 
+			Row r = sheet.createRow(ctr++);
+			Cell c = r.createCell(0);
+			c.setCellValue("Source: SmartTRAK Business Intelligence");
+			HSSFCellStyle f = getHeadingLabelStyle(workbook, false);
+			c.setCellStyle(f);
+			sheet.addMergedRegion(new CellRangeAddress(r.getRowNum(),r.getRowNum(),0,numberCols));
 			// Add the workbook to the stream and store to the byte[]
 			try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
 				workbook.write(baos);
@@ -113,7 +119,7 @@ public class GridExcelManager {
 	 * @param numberCols
 	 * @param seriesTxtFlg 
 	 */
-	private void addDataRows(List<GridDetailVO> details, HSSFWorkbook workbook, HSSFSheet sheet, int ctr, int numberCols, int[] seriesTxtFlg) {
+	private int addDataRows(List<GridDetailVO> details, HSSFWorkbook workbook, HSSFSheet sheet, int ctr, int numberCols, int[] seriesTxtFlg) {
 		Row row;
 		Cell cell;
 		for (GridDetailVO detail : details ) {
@@ -131,6 +137,7 @@ public class GridExcelManager {
 				addCellValue(workbook, cell, detail, detail.getValues()[i], Convert.formatBoolean(seriesTxtFlg[i]));	
 			}
 		}
+		return ctr;
 	}
 	
 	/**
@@ -204,7 +211,7 @@ public class GridExcelManager {
 		sheet.addMergedRegion(range);
 		cell.setCellValue("SmartTRAK® - " + name);
 		row.setHeightInPoints(2 * sheet.getDefaultRowHeightInPoints());
-		cell.setCellStyle(getHeadingLabelStyle(workbook));
+		cell.setCellStyle(getHeadingLabelStyle(workbook, true));
 	}
 
 	/**
@@ -212,10 +219,11 @@ public class GridExcelManager {
 	 * @param workbook
 	 * @return
 	 */
-	public HSSFCellStyle getHeadingLabelStyle(HSSFWorkbook workbook) {
+	public HSSFCellStyle getHeadingLabelStyle(HSSFWorkbook workbook, boolean isHeader) {
 		HSSFFont font = getBaseFont(workbook, false);
 		font.setColor(HSSFColor.BLACK.index);
-		font.setBold(true);
+		if(isHeader)
+			font.setBold(true);
 		font.setFontHeightInPoints((short)14);
 
 		HSSFCellStyle style = getBaseStyle(workbook);
