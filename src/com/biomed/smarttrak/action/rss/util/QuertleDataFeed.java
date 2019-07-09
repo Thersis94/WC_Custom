@@ -195,6 +195,7 @@ public class QuertleDataFeed extends AbstractSmarttrakRSSFeed {
 		article.setArticleGuid(articleGuid);
 		article.setRssEntityId(props.getProperty(QUERTLE_ENTITY_ID));
 		article.setArticleSourceType(ArticleSourceType.QUERTLE);
+		article.setAffiliation(resultAttrs.getAffiliation());
 
 		//Set special attributes based on Application or Grant Type.
 		if (searchType.equals(props.get(PATENT_APPLICATION_TYPE))) {
