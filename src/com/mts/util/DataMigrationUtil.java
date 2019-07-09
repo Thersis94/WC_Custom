@@ -28,6 +28,7 @@ import com.siliconmtn.db.DatabaseConnection;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
+import com.siliconmtn.html.tool.HTMLFeedParser;
 import com.siliconmtn.util.ClassUtils;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.RandomAlphaNumeric;
@@ -63,18 +64,21 @@ public class DataMigrationUtil {
 	private static final String CUSTOM_SCHEMA = "custom.";
 	private static final String ISSUE_KEY = "issue";
 	private static final String PRI_CATEGORY_KEY = "article_category";
-	private static final String ARTICLE_PDF = "article_pdf";
 	private static final String ISSUE_COVER_IMAGE = "issue_cover_image";
 	private static final String ISSUE_PDF = "issue_pdf";
 	private static final String MTS_ORG = "MTS";
 	private static final String MTS_DOC_FOLDER = "MED_TECH_STRATEGIST";
 	private static final String CREATE_BY_ID = "MTS_USER_1";
+	private static final String HTTPS_MTS_URL = "https://www.innovationinmedtech.com/wp-content/uploads/";
+	private static final String HTTP_MTS_URL = "http://www.innovationinmedtech.com/wp-content/uploads/";
+	private static final String BINARY_MTS_URL = "/binary/org/MTS/uploads/";
+	
 	
 	// Turn on/off items to process
 	private static final boolean PROC_CAT = false;
 	private static final boolean PROC_DOCS = true;
 	private static final boolean PROC_DOC_CAT = true;
-	private static final boolean PROC_ASSET = false;
+	private static final boolean PROC_ASSET = true;
 	private static final boolean PROC_ISSUES = true;
 	private static final boolean PROC_ART = true;
 	
@@ -114,6 +118,7 @@ public class DataMigrationUtil {
 		dbCustom.setGenerateExecutedSQL(true);
 		int errorCount = 0;
 		for(MTSDocumentVO doc : docs) {
+			
 			if(StringUtil.isEmpty(doc.getActionName()) && StringUtil.isEmpty(doc.getDocument())) {
 				log.info("skip save on empty document with id of: " + doc.getActionId());
 				errorCount++;
@@ -270,6 +275,7 @@ public class DataMigrationUtil {
 	public List<MTSDocumentVO> migrateArticles(Connection srcConn) 
 	throws SQLException {
 		StringBuilder sql = new StringBuilder(128);
+		HTMLFeedParser fp = new HTMLFeedParser();
 		
 		// Get the articles
 		sql.append("select  * ");
@@ -284,7 +290,14 @@ public class DataMigrationUtil {
 				doc.setActionGroupId(rs.getString("ID"));
 				doc.setDocumentId(rs.getString("ID"));
 				doc.setDocumentSourceCode("CUSTOMER_IMPORT");
-				doc.setDocument(rs.getString("post_content"));
+				
+				if(! StringUtil.isEmpty(rs.getString("post_content"))) {
+					doc.setDocument(fp.replaceDocumentPaths(HTTPS_MTS_URL, BINARY_MTS_URL, fp.replaceDocumentPaths(HTTP_MTS_URL, BINARY_MTS_URL, StringUtil.checkVal(rs.getString("post_content")))));
+				}else {
+					doc.setDocument(rs.getString("post_content"));
+				}
+				
+				
 				doc.setDocumentFolderId(MTS_DOC_FOLDER);
 				doc.setFileType("html");
 				doc.setUniqueCode(RandomAlphaNumeric.generateRandom(6).toUpperCase());
@@ -304,6 +317,7 @@ public class DataMigrationUtil {
 				
 				// Load the other categories
 				getArticleMetaData(srcConn, doc);
+				/*log.info("###");*/
 				
 				// Get the article Categories
 				getArticleCategories(srcConn, doc);
@@ -361,24 +375,30 @@ public class DataMigrationUtil {
 	 */
 	public void getArticleMetaData(Connection srcConn, MTSDocumentVO doc) throws SQLException {
 		String s = "select  * from wp_1fvbn80q5v_posts where post_parent = ? ";
-		
 		try(PreparedStatement ps = srcConn.prepareStatement(s)) {
 			ps.setString(1, doc.getActionId());
 			
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
 				AssetVO avo = new AssetVO();
+				String targetUrl = StringUtil.checkVal(rs.getString("guid"));
+				String completeUrl = targetUrl.replaceAll(HTTP_MTS_URL, BINARY_MTS_URL);
+
 				if ("application/pdf".equalsIgnoreCase(rs.getString("post_mime_type"))) {
+					String docName = StringUtil.isEmpty(rs.getString("post_name")) ? rs.getString("post_name") : "unnamed-pdf";
+					avo.setDocumentName(docName);
 					avo.setObjectKeyId(doc.getDocumentId());
 					avo.setDocumentAssetId(rs.getInt("ID")+"");
 					avo.setAssetType(AssetType.PDF_DOC);
-					avo.setDocumentPath(StringUtil.checkVal(rs.getString("guid")));
+					avo.setDocumentPath(completeUrl);
 					assets.add(avo);
 				}else if("image/jpeg".equalsIgnoreCase(rs.getString("post_mime_type"))){
+					String docName = StringUtil.isEmpty(rs.getString("post_name")) ? rs.getString("post_name") : "unnamed-image";
+					avo.setDocumentName(docName);
 					avo.setObjectKeyId(doc.getDocumentId());
 					avo.setDocumentAssetId(rs.getInt("ID")+"");
 					avo.setAssetType(AssetType.GEN_IMAGE);
-					avo.setDocumentPath(StringUtil.checkVal(rs.getString("guid")));
+					avo.setDocumentPath(completeUrl);	
 					assets.add(avo);
 				}
 			}
@@ -392,24 +412,36 @@ public class DataMigrationUtil {
 	 * @throws SQLException
 	 */
 	public void getIssueMetaData(Connection srcConn, IssueVO issue) throws SQLException {
-		String s = "select meta_key, meta_value from wp_1fvbn80q5v_termmeta where term_id = ?";
+		StringBuilder s = new StringBuilder(200);
+		s.append("select  *, post_mime_type from wp_1fvbn80q5v_termmeta a ");
+		s.append("inner join wp_1fvbn80q5v_posts b on a.meta_value = b.id ");
+		s.append("where term_id = ? and meta_key in ('issue_pdf', 'issue_cover_image');");
 		
-		try(PreparedStatement ps = srcConn.prepareStatement(s)) {
+		try(PreparedStatement ps = srcConn.prepareStatement(s.toString())) {
 			ps.setString(1, issue.getIssueId());
 			
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
 				AssetVO avo = new AssetVO();
+				String targetUrl = StringUtil.checkVal(rs.getString("guid"));
+				String completeUrl = targetUrl.replaceAll(HTTP_MTS_URL, BINARY_MTS_URL);
+				
 				switch (rs.getString(1)) {
 					case ISSUE_COVER_IMAGE:
+						String coverName = StringUtil.isEmpty(rs.getString("post_name")) ? rs.getString("post_name") : "unnamed-cover-img";
+						avo.setDocumentName(coverName);
 						avo.setObjectKeyId(issue.getIssueId());
-						avo.setDocumentAssetId(rs.getString(2));
+						avo.setDocumentAssetId(rs.getInt("ID")+"");
 						avo.setAssetType(AssetType.COVER_IMG);
+						avo.setDocumentPath(completeUrl);
 						assets.add(avo);
+						
 						break;
 					case ISSUE_PDF:
+						String pdfName = StringUtil.isEmpty(rs.getString("post_name")) ? rs.getString("post_name") : "unnamed-issue-pdf";
+						avo.setDocumentName(pdfName);
 						avo.setObjectKeyId(issue.getIssueId());
-						avo.setDocumentAssetId(rs.getString(2));
+						avo.setDocumentAssetId(rs.getInt("ID")+"");
 						avo.setAssetType(AssetType.PDF_DOC);
 						assets.add(avo);
 						break;
@@ -698,7 +730,7 @@ public class DataMigrationUtil {
 	public Connection getDestConnection() throws DatabaseException {
 		DatabaseConnection dc = new DatabaseConnection();
 		dc.setDriverClass("org.postgresql.Driver");
-		dc.setUrl("jdbc:postgresql://sonic:5432/webcrescendo_mts2_sb?defaultRowFetchSize=25&amp;prepareThreshold=3");
+		dc.setUrl("jdbc:postgresql://sonic:5432/webcrescendo_mts3_sb?defaultRowFetchSize=25&amp;prepareThreshold=3");
 		dc.setUserName("ryan_user_sb");
 		dc.setPassword("sqll0gin");
 		Connection conn = null;
