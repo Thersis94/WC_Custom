@@ -184,6 +184,7 @@ public class PhotoAction extends SimpleActionAdapter {
 		for (FilePartDataBean fpdb : req.getFiles()) {
 			try {
 				String fileUrl = fl.writeFiles(fpdb.getFileData(), uploadPath, fpdb.getFileName(), true, true);
+				fl.reorientFiles();
 				String fPath = StringUtil.join(urlRoot, fileUrl);
 				log.debug("file written: " + fPath);
 				req.setParameter("photoName", fpdb.getFileName());

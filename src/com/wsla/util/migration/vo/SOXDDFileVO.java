@@ -162,17 +162,15 @@ public class SOXDDFileVO {
 	public String getProductLocation() {
 		return productLocation;
 	}
-	@Column(name="attr_unitDefect", isIdentity=true)
+	@Column(name="attr_unitRepairCode", isIdentity=true)
 	public String getExitCode() {
 		return exitCode;
 	}
-	@Column(name="attr_unitRepairCode", isIdentity=true)
-	public String getRepairCode() {
-		return getExitCode();
-	}
 	@Column(name="attr_unitRepairType", isIdentity=true)
 	public String getRepairType() {
-		return getExitCode();
+		if (StringUtil.isEmpty(getExitCode())) return null;
+		//if the exit code matches a billable code, return it.  Otherwise null
+		return getExitCode().matches("(?i)RP01|M0[1-7]") ? getExitCode() : null;
 	}
 	public String getShipmentTrackingNumber() {
 		return shipmentTrackingNumber;
