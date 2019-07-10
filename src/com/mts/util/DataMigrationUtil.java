@@ -382,7 +382,7 @@ public class DataMigrationUtil {
 			while (rs.next()) {
 				AssetVO avo = new AssetVO();
 				String targetUrl = StringUtil.checkVal(rs.getString("guid"));
-				String completeUrl = targetUrl.replaceAll(HTTP_MTS_URL, BINARY_MTS_URL);
+				String completeUrl = targetUrl.replaceAll(HTTP_MTS_URL, BINARY_MTS_URL).replaceAll(HTTPS_MTS_URL, BINARY_MTS_URL);
 
 				if ("application/pdf".equalsIgnoreCase(rs.getString("post_mime_type"))) {
 					String docName = StringUtil.isEmpty(rs.getString("post_name")) ? rs.getString("post_name") : "unnamed-pdf";
@@ -424,7 +424,7 @@ public class DataMigrationUtil {
 			while (rs.next()) {
 				AssetVO avo = new AssetVO();
 				String targetUrl = StringUtil.checkVal(rs.getString("guid"));
-				String completeUrl = targetUrl.replaceAll(HTTP_MTS_URL, BINARY_MTS_URL);
+				String completeUrl = targetUrl.replaceAll(HTTP_MTS_URL, BINARY_MTS_URL).replaceAll(HTTPS_MTS_URL, BINARY_MTS_URL);
 				
 				switch (rs.getString(1)) {
 					case ISSUE_COVER_IMAGE:
@@ -730,7 +730,7 @@ public class DataMigrationUtil {
 	public Connection getDestConnection() throws DatabaseException {
 		DatabaseConnection dc = new DatabaseConnection();
 		dc.setDriverClass("org.postgresql.Driver");
-		dc.setUrl("jdbc:postgresql://sonic:5432/webcrescendo_mts3_sb?defaultRowFetchSize=25&amp;prepareThreshold=3");
+		dc.setUrl("jdbc:postgresql://sonic:5432/webcrescendo_mts5_sb?defaultRowFetchSize=25&amp;prepareThreshold=3");
 		dc.setUserName("ryan_user_sb");
 		dc.setPassword("sqll0gin");
 		Connection conn = null;

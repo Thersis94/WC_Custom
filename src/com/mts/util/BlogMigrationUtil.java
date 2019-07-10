@@ -63,7 +63,7 @@ public class BlogMigrationUtil {
 	/**
 	 * Location of the wordpress XML export file
 	 */
-	public static final String XML_FILE_LOC = "/Users/james/Downloads/Squarespace-Wordpress-Export-07-05-2019.xml";
+	public static final String XML_FILE_LOC = "/home/ryan/Downloads/Squarespace-Wordpress-Export-07-05-2019.xml";
 		
 	/**
 	 * Link Prefix on the RSS feed for an Item
@@ -108,8 +108,9 @@ public class BlogMigrationUtil {
 		log.info("Num Blogs: " + docs.size());
 		
 		// Save the docs
-		//bmu.saveDocuments(conn, docs);
+		bmu.saveDocuments(conn, docs);
 		bmu.getImageLinks(docs);
+		log.info("blogs migration completed ");
 	}
 	
 	/**
@@ -238,7 +239,7 @@ public class BlogMigrationUtil {
 	public Connection getConnection() throws DatabaseException {
 		DatabaseConnection dc = new DatabaseConnection();
 		dc.setDriverClass("org.postgresql.Driver");
-		dc.setUrl("jdbc:postgresql://sonic:5432/webcrescendo_wsla5_sb?defaultRowFetchSize=25&amp;prepareThreshold=3");
+		dc.setUrl("jdbc:postgresql://sonic:5432/webcrescendo_mts4_sb?defaultRowFetchSize=25&amp;prepareThreshold=3");
 		dc.setUserName("ryan_user_sb");
 		dc.setPassword("sqll0gin");
 		Connection conn = null;
