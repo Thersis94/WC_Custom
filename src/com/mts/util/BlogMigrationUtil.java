@@ -9,7 +9,6 @@ import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.Map;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -37,6 +36,7 @@ import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.util.ClassUtils;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.RandomAlphaNumeric;
+import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.content.DocumentVO;
 import com.smt.sitebuilder.action.metadata.WidgetMetadataVO;
 
@@ -146,18 +146,25 @@ public class BlogMigrationUtil {
 	 * @throws UnsupportedEncodingException 
 	 */
 	public void getImageLinks(List<MTSDocumentVO> docs) throws UnsupportedEncodingException {
-		Map<String, String> mapping = new java.util.HashMap<>();
 		
 		for (MTSDocumentVO document : docs) {
 			org.jsoup.nodes.Document doc = Jsoup.parse(document.getDocument(), "");
 			Elements images = doc.getElementsByTag("img");
 			for (org.jsoup.nodes.Element image : images) {
+				// Get the image path and relabel to the new path
 				String src = image.attr("src");
 				int index = src.lastIndexOf('/');
 				String name = URLDecoder.decode(src.substring(index + 1), "UTF-8");
-				name = name.replace('+',  ' ');
 				name = name.replace("?format=original", "");
-				mapping.put(name, src);
+				name = URLDecoder.decode(name, "UTF-8");
+				name = URLDecoder.decode(name, "UTF-8");
+				String ext = name.substring(name.lastIndexOf('.'));
+				String base = name.substring(0, name.lastIndexOf('.'));
+				name = StringUtil.formatFileName(base, true);
+				String newPath = "/binary/org/MTS/Blog/article/" + name + ext;
+
+				// Update the image URL Path
+				image.attr("src", newPath);
 			}
 		}
 	}
