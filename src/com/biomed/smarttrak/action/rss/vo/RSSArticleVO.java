@@ -42,6 +42,7 @@ public class RSSArticleVO extends BeanDataVO implements Serializable {
 	private String articleUrl;
 	private String publicationName;
 	private String attribute1Txt;
+	private String affiliation;
 	private ArticleSourceType articleSourceType;
 	private Date publishDt;
 	private Date createDt;
@@ -271,5 +272,14 @@ public class RSSArticleVO extends BeanDataVO implements Serializable {
 	 */
 	public void flushFilteredText() {
 		this.filteredText.clear();
+	}
+
+	@Column(name="affiliation_txt")
+	public String getAffiliation() {
+		return this.affiliation;
+	}
+
+	public void setAffiliation(String affiliation) {
+		this.affiliation = affiliation;
 	}
 }
