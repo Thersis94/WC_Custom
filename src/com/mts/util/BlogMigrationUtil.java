@@ -138,6 +138,13 @@ public class BlogMigrationUtil {
 			
 			// Assign the MTS Document info
 			dbCustom.insert(doc);
+			
+			/**
+			 * Add the meta data
+			 */
+			for (WidgetMetadataVO cat : doc.getCategories()) {
+				dbCustom.insert(cat);
+			}
 		}
 	}
 	

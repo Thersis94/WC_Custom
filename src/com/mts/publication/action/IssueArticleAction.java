@@ -180,7 +180,7 @@ public class IssueArticleAction extends SBActionAdapter {
 	 * @param pubId
 	 * @return
 	 */
-	public PublicationTeaserVO getArticleTeasers(String pubId, String catId) {
+	public PublicationTeaserVO getArticleTeasers(String pubId, String catId, boolean useLatest) {
 		StringBuilder sql = new StringBuilder(1088);
 		String schema = getCustomSchema();
 		
@@ -199,8 +199,8 @@ public class IssueArticleAction extends SBActionAdapter {
 		sql.append("inner join widget_meta_data b on a.widget_meta_data_id = b.widget_meta_data_id ");
 		sql.append("where organization_id = 'MTS' and parent_id = 'CHANNELS' ");
 		sql.append(") m on c.action_id = m.action_id ");
-		
-		if (! StringUtil.isEmpty(catId)) {
+		//TODO Fix this sub query
+		if (! useLatest && ! StringUtil.isEmpty(catId)) {
 			sql.append("where c.action_id in (select action_id from widget_meta_data_xr ");
 			sql.append("where p.publication_id = ? and widget_meta_data_id = ?) ");
 		} else {
@@ -210,12 +210,12 @@ public class IssueArticleAction extends SBActionAdapter {
 			sql.append("where publication_id = ?) and publish_dt is not null ");
 		}
 		sql.append("order by a.publish_dt desc, document_id ");
-		log.debug(sql.length() + "|" + sql + "|" + pubId);
+		log.debug(sql.length() + "|" + sql + "|" + pubId + "|" + catId);
 		
 		PublicationTeaserVO ptvo = null;
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, pubId);
-			if (! StringUtil.isEmpty(catId)) ps.setString(2, catId);
+			if (! useLatest && ! StringUtil.isEmpty(catId)) ps.setString(2, catId);
 			
 			try (ResultSet rs = ps.executeQuery()) {
 				while (rs.next()) {

@@ -7,7 +7,7 @@ import com.mts.action.SelectLookupAction;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
-
+import com.siliconmtn.util.Convert;
 // WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.ModuleVO;
@@ -47,14 +47,15 @@ public class PublicationDisplayAction extends SBActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
+		
 		req.setParameter(SB_ACTION_ID, getActionInit().getActionId());
 		super.retrieve(req);
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		String publicationId = (String) mod.getAttribute(ModuleVO.ATTRIBUTE_1);
 		String categoryId = (String) mod.getAttribute(ModuleVO.ATTRIBUTE_2);
-		
+		boolean useLatest = Convert.formatBoolean(mod.getIntroText());
 		IssueArticleAction iac = new IssueArticleAction(getDBConnection(), getAttributes());
-		setModuleData(iac.getArticleTeasers(publicationId, categoryId));
+		setModuleData(iac.getArticleTeasers(publicationId, categoryId, useLatest));
 	}
 	
 	/*
