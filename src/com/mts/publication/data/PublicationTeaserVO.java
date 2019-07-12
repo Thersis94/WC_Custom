@@ -150,8 +150,20 @@ public class PublicationTeaserVO extends BeanDataVO {
 		}
 		
 		if (! docAssets.isEmpty()) doc.setAssets(docAssets);
-		doc.addAsset(assets.get(DEFAULT_FEATURE_IMG).get(0));
-		doc.addAsset(assets.get(DEFAULT_TEASER_IMG).get(0));
+		//TODO this is why it was failing null pointers here
+		if(assets != null)
+		log.debug("##### asset count " + assets.size() );
+		for (String as : assets.keySet()) {
+			log.debug("#" + as);
+			log.debug("## " + assets.get(as) );
+			log.debug("###");
+		}
+		log.debug("##### asset count " + assets.size() );
+		
+		
+		if(assets.get(DEFAULT_FEATURE_IMG) != null)doc.addAsset(assets.get(DEFAULT_FEATURE_IMG).get(0));
+		
+		if(assets.get(DEFAULT_TEASER_IMG) != null)doc.addAsset(assets.get(DEFAULT_TEASER_IMG).get(0));
 	}
 	
 	/**

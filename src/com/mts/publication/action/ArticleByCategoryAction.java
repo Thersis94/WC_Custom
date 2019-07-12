@@ -11,7 +11,7 @@ import java.util.Map;
 // MTS Libs
 import com.mts.publication.data.AssetVO;
 import com.mts.publication.data.MTSDocumentVO;
-
+import com.mts.publication.data.PublicationTeaserVO;
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -112,14 +112,17 @@ public class ArticleByCategoryAction extends SimpleActionAdapter {
 		StringBuilder sql = new StringBuilder(256);
 		sql.append("select object_key_id, document_path, document_asset_id ");
 		sql.append("from ").append(getCustomSchema()).append("mts_document_asset ");
-		sql.append("where object_key_id in (").append(DBUtil.preparedStatmentQuestion(docs.size() + 1)).append(") ");
+		sql.append("where object_key_id in (").append(DBUtil.preparedStatmentQuestion(docs.size() + 3)).append(") ");
 		sql.append("order by random() ");
-		log.debug(sql.length() + "|" + sql);
+		log.debug("^^^^^^^^^^^^^^^^ " + sql.length() + "|" + sql);
 		
 		// Get the assets for the document ids and category
 		int ctr = 1;
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+	
 			for (MTSDocumentVO doc : docs) ps.setString(ctr++, doc.getDocumentId());
+			ps.setString(ctr++, PublicationTeaserVO.DEFAULT_FEATURE_IMG);
+			ps.setString(ctr++, PublicationTeaserVO.DEFAULT_TEASER_IMG);
 			ps.setString(ctr++, cat);
 			
 			try (ResultSet rs = ps.executeQuery()) {
@@ -128,6 +131,8 @@ public class ArticleByCategoryAction extends SimpleActionAdapter {
 			}
 		}
 		
+		log.debug("^^^^^^^ assets size " + assets.size());
+	
 		// Add an asset to the document
 		for (MTSDocumentVO doc : docs) {
 			if (assets.containsKey(doc.getDocumentId())) {

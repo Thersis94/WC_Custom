@@ -9,6 +9,7 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.parser.BeanDataVO;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
+import com.siliconmtn.util.StringUtil;
 
 /****************************************************************************
  * <b>Title</b>: DocumentAssetVO.java
@@ -109,7 +110,14 @@ public class AssetVO extends BeanDataVO {
 	 */
 	@Column(name="document_path")
 	public String getDocumentPath() {
-		return documentPath;
+		//Assets that come over from the migration will not be in file transfer.
+		if(StringUtil.checkVal(documentPath).indexOf("/binary") > -1) {
+			return documentPath;
+		}else {
+			return "/binary/file_transfer" + documentPath;
+		}
+		
+		
 	}
 
 	/**
