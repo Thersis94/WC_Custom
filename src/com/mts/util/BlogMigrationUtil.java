@@ -108,8 +108,10 @@ public class BlogMigrationUtil {
 		log.info("Num Blogs: " + docs.size());
 		
 		// Save the docs
+		docs = bmu.getImageLinks(docs);
+		
 		bmu.saveDocuments(conn, docs);
-		bmu.getImageLinks(docs);
+		
 		log.info("blogs migration completed ");
 	}
 	
@@ -143,10 +145,10 @@ public class BlogMigrationUtil {
 	/**
 	 * Gets a list of the images used in the blogs
 	 * @param docs
+	 * @return 
 	 * @throws UnsupportedEncodingException 
 	 */
-	public void getImageLinks(List<MTSDocumentVO> docs) throws UnsupportedEncodingException {
-		
+	public List<MTSDocumentVO> getImageLinks(List<MTSDocumentVO> docs) throws UnsupportedEncodingException {
 		for (MTSDocumentVO document : docs) {
 			org.jsoup.nodes.Document doc = Jsoup.parse(document.getDocument(), "");
 			Elements images = doc.getElementsByTag("img");
@@ -155,9 +157,8 @@ public class BlogMigrationUtil {
 				String src = image.attr("src");
 				int index = src.lastIndexOf('/');
 				String name = URLDecoder.decode(src.substring(index + 1), "UTF-8");
+				name = URLDecoder.decode(name, "UTF-8");
 				name = name.replace("?format=original", "");
-				name = URLDecoder.decode(name, "UTF-8");
-				name = URLDecoder.decode(name, "UTF-8");
 				String ext = name.substring(name.lastIndexOf('.'));
 				String base = name.substring(0, name.lastIndexOf('.'));
 				name = StringUtil.formatFileName(base, true);
@@ -165,8 +166,12 @@ public class BlogMigrationUtil {
 
 				// Update the image URL Path
 				image.attr("src", newPath);
+				image.attr("alt", "altered");
 			}
+			document.setDocument(doc.body().html());
+
 		}
+		return docs;
 	}
 	
 	/**
@@ -246,7 +251,7 @@ public class BlogMigrationUtil {
 	public Connection getConnection() throws DatabaseException {
 		DatabaseConnection dc = new DatabaseConnection();
 		dc.setDriverClass("org.postgresql.Driver");
-		dc.setUrl("jdbc:postgresql://sonic:5432/webcrescendo_mts4_sb?defaultRowFetchSize=25&amp;prepareThreshold=3");
+		dc.setUrl("jdbc:postgresql://sonic:5432/webcrescendo_mts5_sb?defaultRowFetchSize=25&amp;prepareThreshold=3");
 		dc.setUserName("ryan_user_sb");
 		dc.setPassword("sqll0gin");
 		Connection conn = null;

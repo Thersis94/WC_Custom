@@ -72,6 +72,7 @@ public class DataMigrationUtil {
 	private static final String HTTPS_MTS_URL = "https://www.innovationinmedtech.com/wp-content/uploads/";
 	private static final String HTTP_MTS_URL = "http://www.innovationinmedtech.com/wp-content/uploads/";
 	private static final String BINARY_MTS_URL = "/binary/org/MTS/uploads/";
+	private static final String DASH_ISSUE = "-issue";
 	
 	
 	// Turn on/off items to process
@@ -352,7 +353,7 @@ public class DataMigrationUtil {
 			while (rs.next()) {
 				switch (rs.getString("taxonomy")) {
 					case ISSUE_KEY :
-						doc.setIssueId(rs.getString("issue_id"));
+						doc.setIssueId(rs.getString("issue_id")+ DASH_ISSUE);
 						break;
 					case PRI_CATEGORY_KEY :
 						WidgetMetadataVO dcat = new WidgetMetadataVO();
@@ -383,9 +384,9 @@ public class DataMigrationUtil {
 				AssetVO avo = new AssetVO();
 				String targetUrl = StringUtil.checkVal(rs.getString("guid"));
 				String completeUrl = targetUrl.replaceAll(HTTP_MTS_URL, BINARY_MTS_URL).replaceAll(HTTPS_MTS_URL, BINARY_MTS_URL);
-
+				
 				if ("application/pdf".equalsIgnoreCase(rs.getString("post_mime_type"))) {
-					String docName = StringUtil.isEmpty(rs.getString("post_name")) ? rs.getString("post_name") : "unnamed-pdf";
+					String docName = StringUtil.isEmpty(rs.getString("post_title")) ?  "unnamed-pdf" : rs.getString("post_title") ;
 					avo.setDocumentName(docName);
 					avo.setObjectKeyId(doc.getDocumentId());
 					avo.setDocumentAssetId(rs.getInt("ID")+"");
@@ -393,7 +394,7 @@ public class DataMigrationUtil {
 					avo.setDocumentPath(completeUrl);
 					assets.add(avo);
 				}else if("image/jpeg".equalsIgnoreCase(rs.getString("post_mime_type"))){
-					String docName = StringUtil.isEmpty(rs.getString("post_name")) ? rs.getString("post_name") : "unnamed-image";
+					String docName = StringUtil.isEmpty(rs.getString("post_title")) ?  "unnamed-image" : rs.getString("post_title");
 					avo.setDocumentName(docName);
 					avo.setObjectKeyId(doc.getDocumentId());
 					avo.setDocumentAssetId(rs.getInt("ID")+"");
@@ -418,7 +419,8 @@ public class DataMigrationUtil {
 		s.append("where term_id = ? and meta_key in ('issue_pdf', 'issue_cover_image');");
 		
 		try(PreparedStatement ps = srcConn.prepareStatement(s.toString())) {
-			ps.setString(1, issue.getIssueId());
+			String termId = issue.getIssueId().replace(DASH_ISSUE, "");
+			ps.setString(1, termId);
 			
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
@@ -426,23 +428,23 @@ public class DataMigrationUtil {
 				String targetUrl = StringUtil.checkVal(rs.getString("guid"));
 				String completeUrl = targetUrl.replaceAll(HTTP_MTS_URL, BINARY_MTS_URL).replaceAll(HTTPS_MTS_URL, BINARY_MTS_URL);
 				
-				switch (rs.getString(1)) {
+				switch (rs.getString("meta_key")) {
 					case ISSUE_COVER_IMAGE:
-						String coverName = StringUtil.isEmpty(rs.getString("post_name")) ? rs.getString("post_name") : "unnamed-cover-img";
+						String coverName = StringUtil.isEmpty(rs.getString("post_title")) ?  "unnamed-cover-img" : rs.getString("post_title");
 						avo.setDocumentName(coverName);
 						avo.setObjectKeyId(issue.getIssueId());
-						avo.setDocumentAssetId(rs.getInt("ID")+"");
+						avo.setDocumentAssetId(rs.getInt("ID")+DASH_ISSUE);
 						avo.setAssetType(AssetType.COVER_IMG);
 						avo.setDocumentPath(completeUrl);
 						assets.add(avo);
-						
 						break;
 					case ISSUE_PDF:
-						String pdfName = StringUtil.isEmpty(rs.getString("post_name")) ? rs.getString("post_name") : "unnamed-issue-pdf";
+						String pdfName = StringUtil.isEmpty(rs.getString("post_title")) ?  "unnamed-issue-pdf" : rs.getString("post_title");
 						avo.setDocumentName(pdfName);
 						avo.setObjectKeyId(issue.getIssueId());
-						avo.setDocumentAssetId(rs.getInt("ID")+"");
+						avo.setDocumentAssetId(rs.getInt("ID")+DASH_ISSUE);
 						avo.setAssetType(AssetType.PDF_DOC);
+						avo.setDocumentPath(completeUrl);
 						assets.add(avo);
 						break;
 					default:
@@ -632,7 +634,7 @@ public class DataMigrationUtil {
 					}
 				}
 				
-				issue.setIssueId(rs.getString("term_id"));
+				issue.setIssueId(rs.getString("term_id")+ DASH_ISSUE);
 				issue.setPublicationId(MTS_DOC_FOLDER);
 				issue.setName(name);
 				issue.setEditorId("MTS_USER_3");
@@ -648,6 +650,7 @@ public class DataMigrationUtil {
 		
 		
 		log.info("Number of issues: " + issues.size());
+		log.info("number of assets: " + assets.size() );
 		DBProcessor db = new DBProcessor(destConn, CUSTOM_SCHEMA);
 		
 		try {
