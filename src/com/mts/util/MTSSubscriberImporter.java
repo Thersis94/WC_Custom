@@ -20,6 +20,7 @@ import java.util.Set;
 // Log4J
 import org.apache.log4j.Logger;
 import org.apache.poi.ss.usermodel.DataFormatter;
+import org.apache.poi.xssf.usermodel.XSSFCell;
 import org.apache.poi.xssf.usermodel.XSSFRow;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
@@ -67,8 +68,8 @@ import com.smt.sitebuilder.security.UserLogin;
 public class MTSSubscriberImporter {
 	
 	private static final Logger log = Logger.getLogger(MTSSubscriberImporter.class);
-	public static final String FILE_LOC = "/Users/james/Downloads/MTS_subscriber.xlsx";
-	public static final String DB_URL = "jdbc:postgresql://sonic:5432/webcrescendo_wsla5_sb?defaultRowFetchSize=25&amp;prepareThreshold=3";
+	public static final String FILE_LOC = "/home/ryan/Downloads/FINAL_MTS_Subscribers.xlsx";
+	public static final String DB_URL = "jdbc:postgresql://sonic:5432/webcrescendo_mts5_sb?defaultRowFetchSize=25&amp;prepareThreshold=3";
 	public static final String DB_USER = "ryan_user_sb";
 	public static final String DBP_INFO = "sqll0gin";
 	
@@ -116,7 +117,7 @@ public class MTSSubscriberImporter {
 		attributes.put(Constants.CFG_PASSWORD_SALT, "So the combination is... one, two, three, four, five? That's the stupidest combination I've ever heard in my life! That's the kind of thing an idiot would have on his luggage!");
 		attributes.put(Constants.GEOCODE_URL,"http://localhost:8080/websvc/geocoder");
 		attributes.put(Constants.GEOCODE_CLASS, "com.siliconmtn.gis.SMTGeocoder");
-		attributes.put(Constants.BINARY_PATH, "/Users/james/Code/git/java/WebCrescendo/binary");
+		attributes.put(Constants.BINARY_PATH, "/home/ryan/git/WebCrescendo/binary");
 		attributes.put(Constants.PROFILE_IMAGE_PATH, "profile/image/");
 	}
 	
@@ -273,29 +274,51 @@ public class MTSSubscriberImporter {
 	 * @throws IOException
 	 */
 	public List<MTSUserVO> parseExcelFile() throws IOException {
-		List<MTSUserVO> users = new ArrayList<>(384);
+		List<MTSUserVO> users = new ArrayList<>(375);
 		try (InputStream is = new FileInputStream(new File(FILE_LOC))) {
 			try (XSSFWorkbook wb = new XSSFWorkbook(is)) {
 			    XSSFSheet sheet = wb.getSheetAt(0);
-			    
-			    for (int i=1; i < sheet.getPhysicalNumberOfRows(); i++) {
+			    log.info("numbers of entry " + sheet.getPhysicalNumberOfRows());
+			    for (int i=1; i < 376; i++) {
 			    	XSSFRow row = sheet.getRow(i);
 			    	MTSUserVO user = new MTSUserVO();
 			    	
 			    	SubscriptionUserVO subscription = new SubscriptionUserVO();
 					subscription.setPublicationId("MED_TECH_STRATEGIST");
-					subscription.setUserId(new UUIDGenerator().getUUID());
+					subscription.setUserId(Convert.formatInteger(row.getCell(0).getNumericCellValue() + "") + "");
 					user.addSubscription(subscription);
 					user.setUserId(subscription.getUserId());
 					user.setSecondaryUserId(Convert.formatInteger(row.getCell(0).getNumericCellValue() + "") + "");
 					user.setFirstName(row.getCell(2).getStringCellValue());
 					user.setLastName(row.getCell(3).getStringCellValue());
 					user.setCompanyName(row.getCell(4).getStringCellValue());
-					user.setSubscriptionType(SubscriptionType.valueOf(typeMap.get(row.getCell(6).getStringCellValue().toLowerCase())));
-					user.setCreateDate(Convert.formatDate("dd-MMM-yyyy", row.getCell(7) + ""));
-					user.setExpirationDate(Convert.formatDate("dd-MMM-yyyy", row.getCell(8) + ""));
-					user.setPrintCopyFlag(Convert.formatBoolean(row.getCell(10).getStringCellValue()) ? 1 : 0);
-					user.setEmailAddress((row.getCell(11) != null) ? row.getCell(11).getStringCellValue() : null);
+					
+					String key = row.getCell(14).getStringCellValue().toLowerCase();
+					
+					if("Site License".equalsIgnoreCase(key) ) {
+						key  = "Corporate";
+					}
+					if("multi-user".equalsIgnoreCase(key) ) {
+						key  = "multi";
+					}
+					
+					
+					log.info("key " + key);
+					log.info("enum value " + typeMap.get(key.toLowerCase()));
+					user.setSubscriptionType(SubscriptionType.valueOf(typeMap.get(key.toLowerCase())));
+					
+					user.setCreateDate(Convert.formatDate("dd-MMM-yyyy", row.getCell(6) + ""));
+					
+					user.setExpirationDate(Convert.formatDate("dd-MMM-yyyy", row.getCell(7) + ""));
+					log.info("id " + user.getSecondaryUserId());
+					XSSFCell cellValue = row.getCell(15);
+					String targetValue = "";
+					if ( cellValue != null) {
+						targetValue = cellValue.getStringCellValue().toLowerCase();
+					}
+					
+					user.setPrintCopyFlag(Convert.formatBoolean( targetValue ) ? 1 : 0);
+					user.setEmailAddress((row.getCell(5) != null) ? row.getCell(5).getStringCellValue() : null);
 					user.setRoleId(MTSRole.SUBSCRIBER.getRoleId());
 					user.setActiveFlag(1);
 					user.setLocale("en_US");
@@ -305,16 +328,19 @@ public class MTSSubscriberImporter {
 					profile.setFirstName(user.getFirstName());
 					profile.setLastName(user.getLastName());
 					profile.setEmailAddress(user.getEmailAddress());
-					profile.setAddress((row.getCell(12) != null) ? row.getCell(12).getStringCellValue(): null);
-					profile.setAddress2((row.getCell(13) != null) ? row.getCell(13).getStringCellValue() : null);
-					profile.setCity((row.getCell(14) != null) ? row.getCell(14).getStringCellValue() : null);
-					profile.setState((row.getCell(15) != null) ? row.getCell(15).getStringCellValue() : null);
-					profile.setZipCode((row.getCell(16) != null) ? fmt.formatCellValue(row.getCell(16)) : null);
-					profile.setCountryCode((row.getCell(17) != null) ? getCountry(row.getCell(17).getStringCellValue()) : null);
+					
+					profile.setAddress((row.getCell(8) != null) ? row.getCell(8).getStringCellValue(): null);
+					profile.setAddress2((row.getCell(9) != null) ? row.getCell(9).getStringCellValue() : null);
+					profile.setCity((row.getCell(10) != null) ? row.getCell(10).getStringCellValue() : null);
+					profile.setState((row.getCell(11) != null) ? row.getCell(11).getStringCellValue() : null);
+					profile.setZipCode((row.getCell(12) != null) ? fmt.formatCellValue(row.getCell(12)) : null);
+					profile.setCountryCode((row.getCell(13) != null) ? getCountry(row.getCell(13).getStringCellValue()) : null);
+					
 					profile.setAllowCommunication(1);
 					user.setProfile(profile);
 
 					users.add(user);
+					log.info("user added");
 			    }
 			}
 	    } catch (Exception e) {
