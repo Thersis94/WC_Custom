@@ -222,9 +222,12 @@ public class GridExcelManager {
 	public HSSFCellStyle getHeadingLabelStyle(HSSFWorkbook workbook, boolean isHeader) {
 		HSSFFont font = getBaseFont(workbook, false);
 		font.setColor(HSSFColor.BLACK.index);
-		if(isHeader)
+		if(isHeader) {
 			font.setBold(true);
-		font.setFontHeightInPoints((short)14);
+			font.setFontHeightInPoints((short)14);
+		} else {
+			font.setFontHeightInPoints((short)10);
+		}
 
 		HSSFCellStyle style = getBaseStyle(workbook);
 		style.setFont(font);
