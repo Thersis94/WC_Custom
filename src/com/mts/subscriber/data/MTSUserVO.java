@@ -6,13 +6,18 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+// MTS Libs
+import com.mts.publication.data.MTSDocumentVO;
+import com.mts.publication.data.PublicationVO;
 import com.mts.subscriber.action.SubscriptionAction.SubscriptionType;
+
 // SMT Base Libs
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
 import com.siliconmtn.util.StringUtil;
+import com.smt.sitebuilder.action.metadata.WidgetMetadataVO;
 import com.smt.sitebuilder.action.user.UserVO;
 
 /****************************************************************************
@@ -45,7 +50,7 @@ public class MTSUserVO extends UserVO {
 	private String linkedinName;
 	private String notes;
 	
-	// Numeric Memebrs
+	// Numeric Members
 	private int activeFlag;
 	private int printCopyFlag;
 	private int yearsExperience;
@@ -53,10 +58,12 @@ public class MTSUserVO extends UserVO {
 	// Other Members
 	private SubscriptionType subscriptionType;
 	private Date expirationDate;
-	
-	
+		
 	// Sub Beans
 	private List<SubscriptionUserVO> subscriptions = new ArrayList<>();
+	private List<MTSDocumentVO> articles = new ArrayList<>();
+	private List<WidgetMetadataVO> categories = new ArrayList<>();
+	private List<PublicationVO> publications = new ArrayList<>();
 	
 	// Helpers
 	private Date lastLogin;
@@ -80,6 +87,23 @@ public class MTSUserVO extends UserVO {
 	 */
 	public MTSUserVO(ResultSet rs) {
 		super(rs);
+	}
+	
+	/**
+	 * Determines if the subscriber is subscribed to the provided publication
+	 * @param publicationId
+	 * @return
+	 */
+	public boolean isPublicationAssigned(String publicationId) {
+		
+		if("100".equals(getRoleId()) || "AUTHOR".equals(getRoleId())) return true;
+		if (StringUtil.isEmpty(publicationId)) return false;
+		
+		for(SubscriptionUserVO sub : subscriptions) {
+			if(publicationId.equalsIgnoreCase(sub.getPublicationId())) return true;
+		}
+		
+		return false;
 	}
 	
 	/**
@@ -332,6 +356,48 @@ public class MTSUserVO extends UserVO {
 	 */
 	public void setExpirationDate(Date expirationDate) {
 		this.expirationDate = expirationDate;
+	}
+
+	/**
+	 * @return the articles
+	 */
+	public List<MTSDocumentVO> getArticles() {
+		return articles;
+	}
+
+	/**
+	 * @param articles the articles to set
+	 */
+	public void setArticles(List<MTSDocumentVO> articles) {
+		this.articles = articles;
+	}
+
+	/**
+	 * @return the categories
+	 */
+	public List<WidgetMetadataVO> getCategories() {
+		return categories;
+	}
+
+	/**
+	 * @param categories the categories to set
+	 */
+	public void setCategories(List<WidgetMetadataVO> categories) {
+		this.categories = categories;
+	}
+
+	/**
+	 * @return the publications
+	 */
+	public List<PublicationVO> getPublications() {
+		return publications;
+	}
+
+	/**
+	 * @param publications the publications to set
+	 */
+	public void setPublications(List<PublicationVO> publications) {
+		this.publications = publications;
 	}
 }
 

@@ -1,17 +1,10 @@
 package com.mts.action;
 
-import com.mts.admin.action.MTSApprovalAction;
-import com.mts.admin.action.UserAction;
-import com.mts.publication.action.AssetAction;
-import com.mts.publication.action.CategoryAction;
-import com.mts.publication.action.IssueAction;
-import com.mts.publication.action.IssueArticleAction;
-import com.mts.publication.action.MTSDocumentAction;
-import com.mts.publication.action.PublicationAction;
+// MTS Libs
+import com.mts.publication.action.ArticleByCategoryAction;
+import com.mts.publication.action.DocumentBrowseAction;
 import com.mts.security.IPSecurityAction;
-
-// RP Libs
-
+import com.mts.subscriber.action.UserInfoWidget;
 
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
@@ -39,7 +32,7 @@ import com.smt.sitebuilder.common.constants.AdminConstants;
  * @since Apr 08, 2019
  * @updates:
  ****************************************************************************/
-public class AjaxControllerFacadeAction extends FacadeActionAdapter {
+public class PublicAjaxControllerFacadeAction extends FacadeActionAdapter {
 
 	/**
 	 * Default type if not passed
@@ -54,7 +47,7 @@ public class AjaxControllerFacadeAction extends FacadeActionAdapter {
 	/**
 	 * 
 	 */
-	public AjaxControllerFacadeAction() {
+	public PublicAjaxControllerFacadeAction() {
 		super();
 		loadTypes();
 	}
@@ -62,7 +55,7 @@ public class AjaxControllerFacadeAction extends FacadeActionAdapter {
 	/**
 	 * @param actionInit
 	 */
-	public AjaxControllerFacadeAction(ActionInitVO actionInit) {
+	public PublicAjaxControllerFacadeAction(ActionInitVO actionInit) {
 		super(actionInit);
 		loadTypes();
 	}
@@ -72,16 +65,10 @@ public class AjaxControllerFacadeAction extends FacadeActionAdapter {
 	 */
 	private void loadTypes() {
 		actionMap.put(DEFAULT_TYPE, SelectLookupAction.class);
-		actionMap.put(PublicationAction.AJAX_KEY, PublicationAction.class);
-		actionMap.put(IssueAction.AJAX_KEY, IssueAction.class);
-		actionMap.put(AssetAction.AJAX_KEY, AssetAction.class);
-		actionMap.put(IssueArticleAction.AJAX_KEY, IssueArticleAction.class);
-		actionMap.put(CategoryAction.AJAX_KEY, CategoryAction.class);
-		actionMap.put(UserAction.AJAX_KEY, UserAction.class);
-		actionMap.put(MTSDocumentAction.AJAX_KEY, MTSDocumentAction.class);
-		actionMap.put(MTSApprovalAction.AJAX_KEY, MTSApprovalAction.class);
+		actionMap.put(ArticleByCategoryAction.AJAX_KEY, ArticleByCategoryAction.class);
+		actionMap.put(DocumentBrowseAction.AJAX_KEY, DocumentBrowseAction.class);
+		actionMap.put(UserInfoWidget.AJAX_KEY, UserInfoWidget.class);
 		actionMap.put(IPSecurityAction.AJAX_KEY, IPSecurityAction.class);
-		
 	}
 
 	/*

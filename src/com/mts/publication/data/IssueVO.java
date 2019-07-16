@@ -13,6 +13,7 @@ import com.siliconmtn.data.parser.BeanDataVO;
 import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
+import com.siliconmtn.util.StringUtil;
 
 /****************************************************************************
  * <b>Title</b>: IssueVO.java
@@ -43,6 +44,7 @@ public class IssueVO extends BeanDataVO {
 	private String volume;
 	private String seoPath;
 	private String editorId;
+	private String category;
 	
 	// Numeric Members
 	private int approvalFlag;
@@ -56,6 +58,9 @@ public class IssueVO extends BeanDataVO {
 	// Sub-Beans
 	private List<AssetVO> assets = new ArrayList<>();
 	private MTSUserVO editor;
+	
+	// Helpers
+	private String publicationName;
 	
 	/**
 	 * 
@@ -197,6 +202,14 @@ public class IssueVO extends BeanDataVO {
 	}
 
 	/**
+	 * @return the category
+	 */
+	@Column(name="category_cd")
+	public String getCategory() {
+		return category;
+	}
+
+	/**
 	 * @param issueId the issueId to set
 	 */
 	public void setIssueId(String issueId) {
@@ -285,7 +298,19 @@ public class IssueVO extends BeanDataVO {
 	 */
 	@BeanSubElement
 	public void addAsset(AssetVO asset) {
-		this.assets.add(asset);
+		if (asset == null || StringUtil.isEmpty(asset.getDocumentPath())) return;
+		
+		// Sometimes a string agg function is used.  Parse the list into separate items
+		if (asset.getDocumentPath().indexOf(',') > -1) {
+			String[] dp = asset.getDocumentPath().split("\\,");
+			for (String doc : dp) {
+				AssetVO a = new AssetVO();
+				a.setDocumentPath(doc);
+				a.setObjectKeyId(asset.getObjectKeyId());
+			}
+		} else {
+			this.assets.add(asset);
+		}
 	}
 
 	/**
@@ -308,6 +333,28 @@ public class IssueVO extends BeanDataVO {
 	@BeanSubElement
 	public void setEditor(MTSUserVO editor) {
 		this.editor = editor;
+	}
+
+	/**
+	 * @param category the category to set
+	 */
+	public void setCategory(String category) {
+		this.category = category;
+	}
+
+	/**
+	 * @return the publicationName
+	 */
+	@Column(name="publication_nm", isReadOnly=true)
+	public String getPublicationName() {
+		return publicationName;
+	}
+
+	/**
+	 * @param publicationName the publicationName to set
+	 */
+	public void setPublicationName(String publicationName) {
+		this.publicationName = publicationName;
 	}
 
 }

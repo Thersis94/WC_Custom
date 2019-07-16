@@ -2,11 +2,18 @@ package com.mts.publication.data;
 
 // JDK 1.8.x
 import java.sql.ResultSet;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 // MTS Libs
+import com.mts.publication.data.AssetVO.AssetType;
 import com.mts.subscriber.data.MTSUserVO;
 
 // SMT Base Libs
@@ -14,6 +21,9 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
+import com.siliconmtn.util.StringUtil;
+
+// WC Libs
 import com.smt.sitebuilder.action.content.DocumentVO;
 import com.smt.sitebuilder.action.metadata.WidgetMetadataVO;
 
@@ -44,17 +54,19 @@ public class MTSDocumentVO extends DocumentVO {
 	private String uniqueCode;
 	private String authorId;
 	private String sbActionId;
+	private String infoBar;
 	
 	// Sub-Beans
 	private List<AssetVO> assets = new ArrayList<>();
 	private List<WidgetMetadataVO> categories = new ArrayList<>();
+	private List<MTSDocumentVO> relatedArticles = new ArrayList<>();
 	private MTSUserVO author;
 	
 	// Helpers
 	private String issueName;
 	private String publicationId;
 	private String publicationName;
-	
+	private String userInfoId;
 	
 	/**
 	 * 
@@ -75,6 +87,119 @@ public class MTSDocumentVO extends DocumentVO {
 	 */
 	public MTSDocumentVO(ResultSet rs) {
 		super(rs);
+	}
+	
+	/**
+	 * Builds a URL to the article display page
+	 * @return
+	 */
+	public String getDocumentUrl() {
+		StringBuilder url = new StringBuilder(128);
+		url.append("/").append(StringUtil.checkVal(publicationId).toLowerCase()).append("/");
+		url.append("article/").append(this.getDirectAccessPath());
+		
+		return url.toString();
+	}
+	
+	/**
+	 * Returns the single channel that an article belongs
+	 * @return
+	 */
+	public WidgetMetadataVO getCategory() {
+		for (WidgetMetadataVO cat : categories) {
+			if ("CHANNELS".equals(cat.getParentId())) return cat;
+		}
+		
+		return null;
+	}
+	
+	/**
+	 * Returns the single channel that an article belongs
+	 * @return
+	 */
+	public List<WidgetMetadataVO> getTopics() {
+		List<WidgetMetadataVO> topics = new ArrayList<>();
+		for (WidgetMetadataVO cat : categories) {
+			if ("MARKETS".equals(cat.getParentId())) topics.add(cat);
+		}
+		
+		return topics;
+	}
+	
+	/**
+	 * Returns a set of ids for the categories. This is used to query the assets 
+	 * and get a collection of images for the document
+	 * @return
+	 */
+	public Set<String> getCategoryIds() {
+		Set<String> ids = new HashSet<>();
+		for (WidgetMetadataVO cat : categories) ids.add(cat.getWidgetMetadataId());
+		return ids;
+	}
+	
+	/**
+	 * Returns the age of the article in days since it was published
+	 * @return
+	 */
+	public long getNumDaysPublished() {
+		Date now = new Date();
+		if (publishDate == null || publishDate .after(now)) return 0;
+		return ChronoUnit.DAYS.between(publishDate.toInstant(), now.toInstant());
+	}
+	
+	/**
+	 * 
+	 * @return
+	 */
+	public AssetVO getPrimaryAsset() {
+		List<AssetVO> dAsset = new ArrayList<>();
+		for (AssetVO asset : assets) {
+			if (asset.getObjectKeyId().equals(documentId)) dAsset.add(asset);
+		}
+		
+		if (dAsset.isEmpty()) dAsset.add(getFeatureAsset());
+		Collections.shuffle(dAsset);
+		
+		return dAsset.get(0);
+	}
+	
+	/**
+	 * Returns the singular image for the teaser on this document
+	 * @return
+	 */
+	public AssetVO getTeaserAsset() {
+		Map<String, AssetVO> fAssets = new HashMap<>();
+		Collections.shuffle(assets);
+		for (AssetVO vo : assets) {
+			if (AssetType.TEASER_IMG.equals(vo.getAssetType())) {
+				if (vo.getObjectKeyId().equals(documentId)) return vo;
+				else if (PublicationTeaserVO.DEFAULT_TEASER_IMG.equals(vo.getObjectKeyId()))
+					fAssets.put(PublicationTeaserVO.DEFAULT_TEASER_IMG, vo);
+				else fAssets.put(PublicationTeaserVO.CATEGORY_IMG, vo);
+			}
+		}
+		
+		return (fAssets.size() == 1) ? fAssets.get(PublicationTeaserVO.DEFAULT_TEASER_IMG) : fAssets.get(PublicationTeaserVO.CATEGORY_IMG);
+	}
+	
+	/**
+	 * Returns the singular image for the feature on this document
+	 * @return
+	 */
+	public AssetVO getFeatureAsset() {
+		Map<String, AssetVO> fAssets = new HashMap<>();
+		Collections.shuffle(assets);
+		for (AssetVO vo : assets) {
+			if (AssetType.FEATURE_IMG.equals(vo.getAssetType())) {
+				if (vo.getObjectKeyId().equals(documentId)) return vo;
+				else if (PublicationTeaserVO.DEFAULT_FEATURE_IMG.equals(vo.getObjectKeyId()))
+					fAssets.put(PublicationTeaserVO.DEFAULT_FEATURE_IMG, vo);
+				else fAssets.put(PublicationTeaserVO.CATEGORY_IMG, vo);
+			}
+		}
+		
+		return (fAssets.size() == 1) ? fAssets.get(PublicationTeaserVO.DEFAULT_FEATURE_IMG) : fAssets.get(PublicationTeaserVO.CATEGORY_IMG);
+
 	}
 
 	/*
@@ -132,11 +257,20 @@ public class MTSDocumentVO extends DocumentVO {
 	 * @return
 	 */
 	public String getCatList() {
+		return getCatList(null);
+	}
+	
+	/**
+	 * Creates a comma separated list form the collection of categories
+	 * @return
+	 */
+	public String getCatList(String parentId) {
 		if (categories == null || categories.isEmpty()) return "";
 		
 		StringBuilder val = new StringBuilder(64);
 		int i=0;
 		for (WidgetMetadataVO cat : categories) {
+			if (!StringUtil.isEmpty(parentId) && !parentId.contentEquals(cat.getParentId())) continue;
 			if (i++ > 0) val.append(",");
 			val.append(cat.getWidgetMetadataId());
 		}
@@ -193,6 +327,29 @@ public class MTSDocumentVO extends DocumentVO {
 	}
 
 	/**
+	 * @return the sbActionId
+	 */
+	public String getSbActionId() {
+		return sbActionId;
+	}
+
+	/**
+	 * @return the infoBar
+	 */
+	@Column(name="info_bar_txt")
+	public String getInfoBar() {
+		return infoBar;
+	}
+
+	/**
+	 * @return the userInfoId
+	 */
+	@Column(name="user_info_id", isReadOnly=true)
+	public String getUserInfoId() {
+		return userInfoId;
+	}
+
+	/**
 	 * @param sbActionId the sbActionId to set
 	 */
 	public void setSbActionId(String sbActionId) {
@@ -232,6 +389,7 @@ public class MTSDocumentVO extends DocumentVO {
 	 */
 	@BeanSubElement
 	public void addAsset(AssetVO asset) {
+		if (asset == null || StringUtil.isEmpty(asset.getDocumentAssetId())) return;
 		this.assets.add(asset);
 	}
 
@@ -301,10 +459,31 @@ public class MTSDocumentVO extends DocumentVO {
 	}
 
 	/**
-	 * @return the sbActionId
+	 * @param infoBar the infoBar to set
 	 */
-	public String getSbActionId() {
-		return sbActionId;
+	public void setInfoBar(String infoBar) {
+		this.infoBar = infoBar;
+	}
+
+	/**
+	 * @param userInfoId the userInfoId to set
+	 */
+	public void setUserInfoId(String userInfoId) {
+		this.userInfoId = userInfoId;
+	}
+
+	/**
+	 * @return the relatedArticles
+	 */
+	public List<MTSDocumentVO> getRelatedArticles() {
+		return relatedArticles;
+	}
+
+	/**
+	 * @param relatedArticles the relatedArticles to set
+	 */
+	public void setRelatedArticles(List<MTSDocumentVO> relatedArticles) {
+		this.relatedArticles = relatedArticles;
 	}
 }
 

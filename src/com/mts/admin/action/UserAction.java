@@ -216,7 +216,7 @@ public class UserAction extends UserBaseWidget {
 				setModuleData(getUserProfile(req.getParameter("userId")));
 			} else {
 				BSTableControlVO bst = new BSTableControlVO(req, MTSUserVO.class);
-				setModuleData(getAllUsers(bst, req.getParameter("roleId")));
+				setModuleData(getAllUsers(bst, req.getParameter("roleId"), null));
 			}
 		} catch (Exception e) {
 			setModuleData(null, 0, e.getLocalizedMessage());
@@ -245,7 +245,7 @@ public class UserAction extends UserBaseWidget {
 	 * 
 	 * @return
 	 */
-	public GridDataVO<MTSUserVO> getAllUsers(BSTableControlVO bst, String roleId) {
+	public GridDataVO<MTSUserVO> getAllUsers(BSTableControlVO bst, String roleId, String subType) {
 		// Add the params
 		List<Object> vals = new ArrayList<>();
 		
@@ -270,6 +270,13 @@ public class UserAction extends UserBaseWidget {
 		if (! StringUtil.isEmpty(roleId)) {
 			sql.append("and a.role_id = ? ");
 			vals.add(roleId);
+		}
+		
+		
+		// Filter by subscription Type
+		if (!StringUtil.isEmpty(subType)) {
+			sql.append("and subscription_type_cd = ? ");
+			vals.add(subType);
 		}
 		
 		// Filter by the search box
