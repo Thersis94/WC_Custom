@@ -919,7 +919,7 @@ public class CompanyManagementAction extends ManagementAction {
 			case COMPANYATTACH:
 			case UNKNOWNATTRIBUTE:
 				CompanyAttributeVO attr = new CompanyAttributeVO(req);
-				saveAttribute(attr, db);
+				saveAttribute(attr, db, action);
 				break;
 			case ATTRIBUTE:
 				CompanyAttributeTypeVO t = new CompanyAttributeTypeVO(req);
@@ -1105,10 +1105,14 @@ public class CompanyManagementAction extends ManagementAction {
 	 * Check whether the supplied attribute needs to be inserted or updated and do so.
 	 * @param attr
 	 * @param db
+	 * @param action 
 	 * @throws ActionException
 	 */
-	protected void saveAttribute(CompanyAttributeVO attr, DBProcessor db) throws ActionException {
-		attr.calulateOrderNo();
+	protected void saveAttribute(CompanyAttributeVO attr, DBProcessor db, ActionType action) throws ActionException {
+		//Only calculate the order on content type attribtues.
+		if (action == ActionType.COMPANYATTRIBUTE)
+			attr.calulateOrderNo();
+		
 		try {
 			if (StringUtil.isEmpty(attr.getCompanyAttributeId())) {
 				attr.setCompanyAttributeId(new UUIDGenerator().getUUID());
