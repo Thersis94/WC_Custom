@@ -136,9 +136,11 @@ public class WarrantyAction extends SBActionAdapter {
 	public GridDataVO<WarrantyVO> getData(String providerId, String typeId, BSTableControlVO bst) {
 		String schema = getCustomSchema();
 		List<Object> params = new ArrayList<>();
-		StringBuilder sql = new StringBuilder(200);
-		sql.append("select w.*, p.provider_nm from ").append(schema).append("wsla_warranty w ");
+		StringBuilder sql = new StringBuilder(304);
+		sql.append("select w.*, p.provider_nm, rp.provider_nm as refund_provider_nm from ");
+		sql.append(schema).append("wsla_warranty w ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("wsla_provider p on w.provider_id=p.provider_id ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("wsla_provider rp on w.refund_provider_id=rp.provider_id ");
 		sql.append("where 1=1 ");
 
 		// Filter by search criteria
@@ -162,7 +164,7 @@ public class WarrantyAction extends SBActionAdapter {
 		}
 
 		sql.append(bst.getSQLOrderBy("p.provider_nm",  "asc"));
-		log.debug(sql);
+		log.debug(sql.length() + "|" + sql);
 
 		DBProcessor db = new DBProcessor(getDBConnection(), schema);
 		return db.executeSQLWithCount(sql.toString(), params, new WarrantyVO(), bst.getLimit(), bst.getOffset());

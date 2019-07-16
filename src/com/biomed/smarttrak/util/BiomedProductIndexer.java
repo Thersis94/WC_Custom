@@ -58,6 +58,7 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 	private static final String US_REGION_ID = "1";
 	private static final String PRODUCT_ID = "PRODUCT_ID";
 	private static final int MAX_PRODUCT_INDEX = 500;
+	private static final String DOCUMENT_PREFIX = StringUtil.join(Section.PRODUCT.name(), "_");
 
 
 	public BiomedProductIndexer(Properties config) {
@@ -109,7 +110,7 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 				temp.clear();
 			}
 			SecureSolrDocumentVO doc = iter.next();
-			temp.put(doc.getDocumentId(), doc);
+			temp.put(doc.getDocumentId().replace(DOCUMENT_PREFIX, ""), doc);
 			iter.remove();
 			i++;
 		}
@@ -235,7 +236,7 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 	 */
 	protected void addProduct(SecureSolrDocumentVO product, Map<String, SecureSolrDocumentVO> products) {
 		if (product != null)
-			products.put(product.getDocumentId().replace(Section.PRODUCT + "_", ""), product);
+			products.put(product.getDocumentId().replace(DOCUMENT_PREFIX, ""), product);
 	}
 
 

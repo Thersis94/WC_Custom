@@ -238,11 +238,6 @@ public class TicketOverviewAction extends BasePortalAction {
 		String slug = RandomAlphaNumeric.generateRandom(WSLAConstants.TICKET_RANDOM_CHARS);
 		ticket.setTicketIdText(slug.toUpperCase());
 		
-		// If the OEM is unsupported, close the ticket
-		if (OEM_NOT_SUPPORTED.equals(ticket.getOemId())) {
-			ticket.setStatusCode(StatusCode.CLOSED);
-		}
-		
 		log.debug("save incoming 800 number " + req.getStringParameter("attr_phoneNumberText")) ;
 		ticket.setPhoneNumber(StringUtil.checkVal(req.getStringParameter("attr_phoneNumberText")));
 		
@@ -271,6 +266,15 @@ public class TicketOverviewAction extends BasePortalAction {
 		
 		// Add Data Attributes
 		assignDataAttributes(ticket, ledger);
+		
+		
+		// If the OEM is unsupported, close the ticket
+		if (OEM_NOT_SUPPORTED.equals(ticket.getOemId())) {
+			log.debug("setting the status to unsupported product and then closing the ticket.  as the manufacture is not supported");
+			bta.changeStatus(ticket.getTicketId(), adminUser.getUserId(), StatusCode.UNSUPPORTED_PRODUCT, null, null);
+			bta.changeStatus(ticket.getTicketId(), adminUser.getUserId(), StatusCode.CLOSED, null, null);
+			ticket.setStatusCode(StatusCode.CLOSED);
+		}
 		
 		return ticket;
 	}

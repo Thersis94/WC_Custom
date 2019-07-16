@@ -325,4 +325,26 @@ public class ProviderLocationAction extends BatchImport {
 		}
 		entries.removeAll(ivalidObjects);
 	}
+	
+	/**
+	 * Gets a provider location.
+	 * 
+	 * @param locationId
+	 * @return
+	 * @throws com.siliconmtn.db.util.DatabaseException
+	 */
+	protected ProviderLocationVO getProviderLocation(String locationId) throws com.siliconmtn.db.util.DatabaseException {
+		DBProcessor dbp = new DBProcessor(getDBConnection(), getCustomSchema());
+		
+		// Try getting the location
+		ProviderLocationVO location = new ProviderLocationVO();
+		location.setLocationId(locationId);
+		try {
+			dbp.getByPrimaryKey(location);
+		} catch (InvalidDataException e) {
+			throw new com.siliconmtn.db.util.DatabaseException(e);
+		}
+		
+		return location;
+	}
 }

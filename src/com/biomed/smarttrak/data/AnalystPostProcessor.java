@@ -16,7 +16,6 @@ import com.siliconmtn.io.mail.EmailRecipientVO;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
-import com.smt.sitebuilder.action.contact.SubmittalAction;
 import com.smt.sitebuilder.action.support.SupportTicketAction.ChangeType;
 import com.smt.sitebuilder.action.support.TicketActivityVO;
 import com.smt.sitebuilder.action.support.TicketVO;
@@ -75,7 +74,7 @@ public class AnalystPostProcessor extends SBActionAdapter {
 		UserDataVO user = (UserDataVO)req.getSession().getAttribute(Constants.USER_DATA);
 
 		StringBuilder subject = new StringBuilder(75);
-		subject.append("Smarttrak Bug Request - ").append(req.getParameter(SubmittalAction.CONTACT_SUBMITTAL_ID));
+		subject.append("Smarttrak Bug Request");
 
 		String msg = StringUtil.checkVal(req.getParameter((String)getAttribute(CFG_ASK_AN_ANALYST_MESSAGE_ID)));
 		StringBuilder body = new StringBuilder(150 + msg.length());
@@ -88,6 +87,11 @@ public class AnalystPostProcessor extends SBActionAdapter {
 			email.setFrom((String)getAttribute(CFG_SMARTTRAK_EMAIL));
 			email.setHtmlBody(body.toString());
 			email.setSubject(subject.toString());
+			
+			String [] emails = StringUtil.checkVal(attributes.get("supportAdminEmails")).split(",");
+			for(String e : emails) {
+				email.addCC(e);
+			}
 
 			new MessageSender(attributes, dbConn).sendMessage(email);
 		} catch (InvalidDataException e) {

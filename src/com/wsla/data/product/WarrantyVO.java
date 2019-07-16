@@ -35,6 +35,8 @@ public class WarrantyVO extends BeanDataVO {
 	private WarrantyType warrantyType;
 	private ServiceTypeCode serviceTypeCode;
 	private String providerId;
+	private String refundProviderId;
+	private String refundProviderName;
 	private String providerName;
 	private String description;
 	private int requireApprovalFlag;
@@ -125,6 +127,22 @@ public class WarrantyVO extends BeanDataVO {
 	}
 
 	/**
+	 * @return the refundProviderId
+	 */
+	@Column(name="refund_provider_id")
+	public String getRefundProviderId() {
+		return refundProviderId;
+	}
+
+	/**
+	 * @return the refundProviderName
+	 */
+	@Column(name="refund_provider_nm", isReadOnly=true)
+	public String getRefundProviderName() {
+		return refundProviderName;
+	}
+
+	/**
 	 * @return the serviceTypeCode
 	 */
 	@Column(name="warranty_service_type_cd")
@@ -210,5 +228,19 @@ public class WarrantyVO extends BeanDataVO {
 
 	public void setProviderName(String providerName) {
 		this.providerName = providerName;
+	}
+
+	/**
+	 * @param refundProviderId the refundProviderId to set
+	 */
+	public void setRefundProviderId(String refundProviderId) {
+		this.refundProviderId = refundProviderId;
+	}
+
+	/**
+	 * @param refundProviderName the refundProviderName to set
+	 */
+	public void setRefundProviderName(String refundProviderName) {
+		this.refundProviderName = refundProviderName;
 	}
 }

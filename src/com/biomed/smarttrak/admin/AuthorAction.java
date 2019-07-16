@@ -12,6 +12,7 @@ import com.biomed.smarttrak.vo.UserVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.common.ModuleVO;
@@ -68,7 +69,7 @@ public class AuthorAction extends SimpleActionAdapter {
 		aa.setActionInit(actionInit);
 		aa.setAttributes(attributes);
 		aa.setDBConnection(dbConn);
-		aa.loadManagerList(req, (String)getAttributes().get(Constants.CUSTOM_DB_SCHEMA), loadTitles);
+		aa.loadManagerList(req, (String)getAttributes().get(Constants.CUSTOM_DB_SCHEMA), loadTitles, null, Convert.formatBoolean(req.getParameter("includeInactive")));
 	}
 
 	/**

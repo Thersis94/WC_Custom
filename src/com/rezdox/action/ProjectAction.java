@@ -147,7 +147,9 @@ public class ProjectAction extends SimpleActionAdapter {
 
 		//load a list of businesses.  If there's only one, then choose the 1st as the default if one wasn't provided.
 		List<BusinessVO> bizList = new BusinessAction(getDBConnection(), getAttributes()).loadBusinessList(req);
-		if (StringUtil.isEmpty(bizId) && !bizList.isEmpty()) {
+		if (bizList == null || bizList.isEmpty()) return;
+		
+		if (StringUtil.isEmpty(bizId)) {
 			bizId = bizList.get(0).getBusinessId();
 		}
 

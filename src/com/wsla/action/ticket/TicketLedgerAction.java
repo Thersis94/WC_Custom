@@ -32,7 +32,7 @@ import com.wsla.data.ticket.TicketLedgerVO;
 public class TicketLedgerAction extends SBActionAdapter {
 
 	public static final String AJAX_KEY = "ledger";
-	
+
 	/**
 	 * 
 	 */
@@ -57,37 +57,35 @@ public class TicketLedgerAction extends SBActionAdapter {
 		this.dbConn = dbConn;
 		this.attributes = attributes;
 	}
-	
+
 	/*
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.action.ActionRequest)
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		
 		putModuleData(getLedgerForTicket(req.getParameter("ticketIdText")));
 	}
-	
+
 	/**
 	 * Loads the ledger entries for the desirec ticket id 
 	 * @param ticketId
 	 * @return
 	 */
 	public List<TicketLedgerVO> getLedgerForTicket(String ticketNumber) {
-		
+		String schema = getCustomSchema();
 		StringBuilder sql = new StringBuilder(336);
-		sql.append(DBUtil.SELECT_FROM_STAR).append(getCustomSchema()).append("wsla_ticket t ");
-		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema());
+		sql.append(DBUtil.SELECT_FROM_STAR).append(schema).append("wsla_ticket t ");
+		sql.append(DBUtil.INNER_JOIN).append(schema);
 		sql.append("wsla_ticket_ledger a on t.ticket_id = a.ticket_id ");
-		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema());
+		sql.append(DBUtil.INNER_JOIN).append(schema);
 		sql.append("wsla_user c on a.disposition_by_id = c.user_id ");
-		sql.append(DBUtil.LEFT_OUTER_JOIN).append(getCustomSchema());
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema);
 		sql.append("wsla_ticket_status b on a.status_cd = b.status_cd ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append("role r on b.role_id = r.role_id ");
 		sql.append("where t.ticket_no = ? order by a.create_dt desc");
-		
-		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+
+		DBProcessor db = new DBProcessor(getDBConnection(), schema);
 		return db.executeSelect(sql.toString(), Arrays.asList(ticketNumber), new TicketLedgerVO());
 	}
 }
-

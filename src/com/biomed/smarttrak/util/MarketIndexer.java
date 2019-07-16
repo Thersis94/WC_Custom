@@ -285,12 +285,15 @@ public class MarketIndexer  extends SMTAbstractIndex {
 	protected String buildRetrieveSql(String ...ids) {
 		StringBuilder sql = new StringBuilder(275);
 		String customDb = config.getProperty(Constants.CUSTOM_DB_SCHEMA);
-		sql.append("SELECT m.*, coalesce(m.update_dt, m.create_dt) as mod_dt, ms.SECTION_ID, s.SOLR_TOKEN_TXT ");
+		sql.append("SELECT m.market_id, m.market_nm, m.short_nm, m.indent_no, m.public_flg, m.status_no, m.region_cd, ms.SECTION_ID, s.SOLR_TOKEN_TXT, ");
+		sql.append("greatest(coalesce(m.update_dt, m.create_dt), max(coalesce(xr.update_dt, xr.create_dt))) as mod_dt ");
 		sql.append("FROM ").append(customDb).append("BIOMEDGPS_MARKET m ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(customDb).append("BIOMEDGPS_MARKET_ATTRIBUTE_XR xr ON m.MARKET_ID = xr.MARKET_ID ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(customDb).append("BIOMEDGPS_MARKET_SECTION ms ON ms.MARKET_ID = m.MARKET_ID ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(customDb).append("BIOMEDGPS_SECTION s ON ms.SECTION_ID = s.SECTION_ID ");
 		sql.append("WHERE 1=1 ");
 		addStatementMarks(sql, "m.MARKET_ID", ids);
+		sql.append("group by  m.market_id, m.market_nm, m.short_nm, m.public_flg, m.indent_no, m.status_no, m.region_cd, m.create_dt, m.update_dt, ms.SECTION_ID, s.SOLR_TOKEN_TXT ");
 		return sql.toString();
 	}
 

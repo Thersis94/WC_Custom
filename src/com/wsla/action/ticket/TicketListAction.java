@@ -111,7 +111,7 @@ public class TicketListAction extends SimpleActionAdapter {
 		
 		// Build the sql for the main query
 		StringBuilder sql = new StringBuilder(768);
-		sql.append(DBUtil.SELECT_CLAUSE).append("a.ticket_id, ticket_no, provider_nm, ");
+		sql.append(DBUtil.SELECT_CLAUSE).append("a.ticket_id, a.historical_flg, ticket_no, provider_nm, ");
 		sql.append("product_nm, status_nm, a.status_cd, e.first_nm, e.last_nm, location_nm, ");
 		sql.append("a.create_dt, e.email_address_txt, locked_by_id, a.product_serial_id, ");
 		sql.append("serial_no_txt, oem_id, locked_dt, ");
@@ -147,9 +147,12 @@ public class TicketListAction extends SimpleActionAdapter {
 		cSql.append(oemSearch);
 
 		// Add the Status Code
-		String statusCode = getStatusFilter(req.getParameter("statusCode"), req.getParameter("status"), params);
-		sql.append(statusCode);
-		cSql.append(statusCode);
+		List<String> statusCodes = new ArrayList<>();
+		if (! StringUtil.isEmpty(req.getParameter("statusCode"))) 
+			statusCodes = Arrays.asList(req.getParameter("statusCode").split("\\,"));
+		String sfFilter = getStatusFilter(statusCodes, req.getParameter("status"), params);
+		sql.append(sfFilter);
+		cSql.append(sfFilter);
 
 		// Add the Status Code
 		String roleFilter = getRoleFilter(req.getParameter("roleId"), user.getUserId(),params);
@@ -221,10 +224,15 @@ public class TicketListAction extends SimpleActionAdapter {
 	 * @param params
 	 * @return
 	 */
-	public String getStatusFilter(String statusCode, String status, List<String> params) {
-		if(!StringUtil.isEmpty(statusCode) || "CLOSED".equals(status)) {
-			params.add("CLOSED".equals(status) ? status : statusCode);
-			return "and a.status_cd = ? ";
+	public String getStatusFilter(List<String> statusCodes, String status, List<String> params) {
+		if(!statusCodes.isEmpty() || "CLOSED".equals(status)) {
+			params.addAll("CLOSED".equals(status) ? Arrays.asList(status) : statusCodes);
+			int questions = statusCodes.size();
+			
+			if (questions == 0 && "CLOSED".equals(status)) {
+				questions = 1;
+			}
+			return "and a.status_cd in ( " + DBUtil.preparedStatmentQuestion(questions) + ") ";
 		} else if (!StringUtil.isEmpty(status) && !"ALL".equals(status)) {
 			return "and a.status_cd != 'CLOSED' ";
 		} 

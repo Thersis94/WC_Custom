@@ -15,6 +15,7 @@ import com.biomed.smarttrak.vo.AccountVO;
 import com.biomed.smarttrak.vo.AccountVO.Status;
 import com.biomed.smarttrak.vo.UserVO;
 import com.biomed.smarttrak.vo.UserVO.AssigneeSection;
+import com.biomed.smarttrak.vo.UserVO.LicenseType;
 // SMTBaseLibs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -50,6 +51,7 @@ public class AccountAction extends SBActionAdapter {
 	private static final String CHANGE_ACCOUNT = "changeAccount";
 	public static final String MANAGERS = "managers";
 	public static final String SESS_ACCOUNT = "sesAccount";
+	public static final String BIOMEDGPS_ACCOUNT_ID = "1";
 
 	public AccountAction() {
 		super();
@@ -176,7 +178,7 @@ public class AccountAction extends SBActionAdapter {
 	 * @param loadTitles
 	 */
 	public void loadManagerList(ActionRequest req, String schema, boolean loadTitles) {
-		loadManagerList(req, schema, loadTitles, null);
+		loadManagerList(req, schema, loadTitles, null, false);
 	}
 	
 	/**
@@ -187,7 +189,17 @@ public class AccountAction extends SBActionAdapter {
 	 * @param section
 	 */
 	public void loadManagerList(ActionRequest req, String schema, AssigneeSection section) {
-		loadManagerList(req, schema, false, section);
+		loadManagerList(req, schema, false, section, false);
+	}
+	
+	/**
+	 * Fully customizable loadManagerList function allowing for all options to be set
+	 * @param req
+	 * @param schema
+	 * @param section
+	 */
+	public void loadManagerList(ActionRequest req, boolean loadTitles, String schema, AssigneeSection section, boolean includeInactive) {
+		loadManagerList(req, schema, loadTitles, section, includeInactive);
 	}
 
 	/**
@@ -197,9 +209,9 @@ public class AccountAction extends SBActionAdapter {
 	 * @param loadTitles - Set to true to ensure managers have a title
 	 * @param section - AssigneeSection enum constant to filter list down to members with that assignee flag
 	 */
-	public void loadManagerList(ActionRequest req, String schema, boolean loadTitles, AssigneeSection section) {
+	public void loadManagerList(ActionRequest req, String schema, boolean loadTitles, AssigneeSection section, boolean includeInactive) {
 		//build the query
-		String sql = buildManagerSQL(schema, loadTitles, section);
+		String sql = buildManagerSQL(schema, loadTitles, section, includeInactive);
 
 		List<Object> params = new ArrayList<>();
 		params.add(SecurityController.STATUS_ACTIVE);
@@ -210,6 +222,10 @@ public class AccountAction extends SBActionAdapter {
 		}
 		params.add(AdminControllerAction.PUBLIC_SITE_ID);
 		params.add(AdminControllerAction.STAFF_ROLE_LEVEL);
+		if (includeInactive) {
+			params.add(BIOMEDGPS_ACCOUNT_ID);
+			params.add(LicenseType.STAFF.getCode());
+		}
 		
 		DBProcessor db = new DBProcessor(dbConn, schema);
 		List<AccountVO>  accounts = db.executeSelect(sql, params, new AccountVO());
@@ -228,14 +244,16 @@ public class AccountAction extends SBActionAdapter {
 	 * @param section
 	 * @return
 	 */
-	protected String buildManagerSQL(String schema, boolean loadTitles, AssigneeSection section){
+	protected String buildManagerSQL(String schema, boolean loadTitles, AssigneeSection section, boolean includeInactive){
 		StringBuilder sql = new StringBuilder(200);
 		sql.append("select newid() as account_id, a.profile_id as owner_profile_id, a.first_nm, a.last_nm ");
 		if (loadTitles) sql.append(", rd.value_txt as title ");
 		sql.append("from profile a ");
 		sql.append("inner join profile_role b on a.profile_id=b.profile_id and b.status_id=? ");
 		sql.append("inner join role r on r.role_id=b.role_id ");
-		sql.append("inner join ").append(schema).append("biomedgps_user u on a.profile_id=u.profile_id and u.active_flg=1 "); //only active users
+		sql.append("inner join ").append(schema).append("biomedgps_user u on a.profile_id=u.profile_id "); //only active users
+		if (!includeInactive)
+			sql.append("and u.active_flg=1 ");
 		if (loadTitles || section != null)  {
 			sql.append("inner join register_submittal rsub on rsub.profile_id=a.profile_id ");			
 			sql.append("inner join register_data rd on rd.register_submittal_id=rsub.register_submittal_id and rd.register_field_id=? ");
@@ -247,6 +265,8 @@ public class AccountAction extends SBActionAdapter {
 			}
 		}
 		sql.append("and b.site_id=? and r.role_order_no >= ? ");
+		if (includeInactive)
+			sql.append("and account_id = ? and status_cd = ? ");
 		log.debug(sql);
 		
 		return sql.toString();
