@@ -3,7 +3,9 @@ package com.biomed.smarttrak.action;
 // Java 8
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -156,13 +158,46 @@ public class MarketAction extends SimpleActionAdapter {
 			if (!allowAll && !Status.P.toString().equals(market.getStatusNo())) return new MarketVO();
 			addAttributes(market, role.getRoleLevel());
 			addSections(market);
-			if (loadGraphs) addGraphs(market, req);
+			if (loadGraphs) {
+				addGraphs(market, req);
+			} else {
+				checkGraphDates(market);
+			}
 		} catch (Exception e) {
 			throw new ActionException(e);
 		}
 		return market;
 	}
 
+
+	/**
+	 * Get the latest date that one of the market's graphs were changed and see
+	 * if that is more recent than the current latest update time
+	 * @param market
+	 * @throws SQLException
+	 */
+	private void checkGraphDates(MarketVO market) throws SQLException {
+		StringBuilder sql = new StringBuilder(250);
+		String customDb = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
+		sql.append("select max(COALESCE(xr.create_dt, xr.update_dt)) ");
+		sql.append("from ").append(customDb).append("biomedgps_market_attribute_xr xr ");
+		sql.append("left join ").append(customDb).append("biomedgps_market_attribute a ");
+		sql.append("on a.attribute_id = xr.attribute_id ");
+		sql.append("where market_id = ? and type_cd = 'GRID' ");
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, market.getMarketId());
+			
+			ResultSet rs = ps.executeQuery();
+			if (rs.next()) {
+				Date gridDate = rs.getDate(1);
+				Date marketDate = market.getUpdateDt() == null? market.getCreateDt() : market.getUpdateDt();
+				if (gridDate.after(marketDate))
+					market.setUpdateDt(gridDate);
+			}
+				
+		}
+	}
 
 	/**
 	 * Add associated graphs to the supplied market.
