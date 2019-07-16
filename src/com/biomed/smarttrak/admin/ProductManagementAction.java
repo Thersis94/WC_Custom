@@ -1006,6 +1006,7 @@ public class ProductManagementAction extends ManagementAction {
 				saveFullProduct(req, db);
 				break;
 			case PRODUCTATTRIBUTE:
+			case UNKNOWNATTRIBUTE:
 				ProductAttributeVO attr = new ProductAttributeVO(req);
 				saveAttribute(attr, db);
 				break;

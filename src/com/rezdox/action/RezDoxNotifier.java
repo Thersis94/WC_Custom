@@ -46,14 +46,14 @@ public class RezDoxNotifier {
 	 * All of the RezDox Notification Messages, in one nicely packaged bundle
 	 */
 	public enum Message {
-		BLOG_NEW("New Home Improvement Information, Insights & Trends Blog posted"),
-		CONNECTION_REQ("${senderName} wants to connect with you"),
+		BLOG_NEW("New Home Improvement Information, Insights & Trends <a target='_blank' href=\"${blogUrl}\">Blog</a> posted"),
+		CONNECTION_REQ("${senderName} wants to <a href=\"${url}\">connect</a> with you"),
 		CONNECTION_APPRVD("${recipientName} accepted your connection request"),
 		RESIDENCE_TRANS_PENDING("A Residence transfer is waiting in your email"),
 		RESIDENCE_TRANS_COMPLETE("A Residence transfer you initiated is complete"),
 		REWARD_NEW("A new gift card has been added to RezRewards"),
 		REWARD_APPRVD("Your RezRewards gift card has been authorized"),
-		REVIEW_RCVD("Your business received a review from a RezDox user"),
+		REVIEW_RCVD("Your business received a <a href=\"${url}\">review</a> from a RezDox user"),
 		REFFERAL("Your business has been referred by a RezDox user"),
 		PROJ_SHARE("${companyName} wants to share a recently completed project with you"),
 		PROJ_SHARE_TO_BIZ("${firstName} ${lastName} wants to share a project completed at ${residenceName}"),

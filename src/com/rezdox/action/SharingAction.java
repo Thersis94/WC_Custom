@@ -23,7 +23,6 @@ import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.io.mail.EmailRecipientVO;
-import com.siliconmtn.sb.email.util.EmailCampaignBuilderUtil;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
@@ -34,6 +33,7 @@ import com.smt.sitebuilder.action.user.ProfileRoleManager;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.security.SBUserRole;
+import com.smt.sitebuilder.util.CampaignMessageSender;
 
 /***************************************************************************
  * <p><b>Title:</b> SharingAction.java</p>
@@ -99,7 +99,7 @@ public class SharingAction extends SimpleActionAdapter {
 				lookup = "m_" + RezDoxUtils.getMemberId(req);
 			}
 			ConnectionAction ca = new ConnectionAction(getDBConnection(), getAttributes());
-			putModuleData(ca.searchMembers(req.getParameter("search"), lookup, true, false));
+			putModuleData(ca.searchMembers(req.getParameter("search"), lookup, true));
 		}
 	}
 
@@ -324,7 +324,7 @@ public class SharingAction extends SimpleActionAdapter {
 		List<EmailRecipientVO> rcpts = new ArrayList<>();
 		rcpts.add(new EmailRecipientVO(req.getParameter(MemberAction.REQ_PROFILE_ID), req.getParameter("emailAddress"), EmailRecipientVO.TO));
 
-		EmailCampaignBuilderUtil emailer = new EmailCampaignBuilderUtil(getDBConnection(), getAttributes());
+		CampaignMessageSender emailer = new CampaignMessageSender(getAttributes());
 		EmailSlug slug = isBusiness ? EmailSlug.BUSINESS_SHARED : EmailSlug.RESIDENCE_SHARED;
 		emailer.sendMessage(dataMap, rcpts, slug.name());
 	}

@@ -43,8 +43,10 @@ public class DirectoryReportVO extends BeanDataVO implements Serializable {
 	private String categoryLvl2Code;
 	private int privacyFlag;
 	private String uniqueId;
+	private String type;
 
 	private String myProId;
+	private String combinedSearch = "";
 
 
 
@@ -197,12 +199,14 @@ public class DirectoryReportVO extends BeanDataVO implements Serializable {
 	 */
 	public void setStateCode(String stateCode) {
 		this.stateCode = stateCode;
+		addCombinedSearch(stateCode);
 	}
 	/**
 	 * @param cityName the cityName to set
 	 */
 	public void setCityName(String cityName) {
 		this.cityName = cityName;
+		addCombinedSearch(cityName);
 	}
 	/**
 	 * @param profilePicPath the profilePicPath to set
@@ -230,6 +234,7 @@ public class DirectoryReportVO extends BeanDataVO implements Serializable {
 	public void setLastName(String lastName) {
 		this.lastName = lastName;
 		setInitials();
+		addCombinedSearch(lastName);
 	}
 	/**
 	 * @param firstName the firstName to set
@@ -237,6 +242,7 @@ public class DirectoryReportVO extends BeanDataVO implements Serializable {
 	public void setFirstName(String firstName) {
 		this.firstName = firstName;
 		setInitials();
+		addCombinedSearch(firstName);
 	}
 	/**
 	 * @param userId the userId to set
@@ -266,5 +272,17 @@ public class DirectoryReportVO extends BeanDataVO implements Serializable {
 	public void setMyProId(String myProId) {
 		this.myProId = myProId;
 	}
-
+	public String getCombinedSearch() {
+		return combinedSearch;
+	}
+	private void addCombinedSearch(String combinedSearch) {
+		this.combinedSearch += " " + combinedSearch;
+	}
+	@Column(name="type", isReadOnly=true)
+	public String getType() {
+		return type;
+	}
+	public void setType(String type) {
+		this.type = type;
+	}
 }

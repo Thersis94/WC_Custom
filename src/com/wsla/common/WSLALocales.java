@@ -11,11 +11,7 @@ package com.wsla.common;
  * @version 3.0
  * @since Nov 1, 2018
  * @updates:
- * @deprecated 5/8/19 - JM - the resource bundle classes now perform auto-discovery of implementations,
- * which is how the admintool builds it's list.  As a result, this manual enum is undesireable and should be removed.
- * Recommendation is to change the enum to a static class, which mimizes downstream changes/impact
  ****************************************************************************/
-@Deprecated
 public enum WSLALocales {
 	en_US("US English", true), es_MX("MX Español", true), es_HN("HN Español", true),es_CR("CR Español", true),
 	es_GT("GT Español", true),es_DO("DO Espanol", true), en_("Base English",false), es_("Base Español", false);

@@ -28,6 +28,7 @@ public class SubscriptionVO implements Serializable {
 	private static final long serialVersionUID = -4531854612880049798L;
 
 	private String subscriptionId;
+	private String businessId; //set when a subscription belongs to a business, like Connections
 	private TransactionVO transaction;
 	private MemberVO member;
 	private MembershipVO membership;
@@ -53,7 +54,7 @@ public class SubscriptionVO implements Serializable {
 		this();
 		setData(req);
 	}
-	
+
 	/**
 	 * Sets data from the request
 	 * 
@@ -68,7 +69,7 @@ public class SubscriptionVO implements Serializable {
 		setCostNo(Convert.formatDouble(req.getParameter("costNo")));
 		setDiscountNo(Convert.formatDouble(req.getParameter("discountNo")));
 	}
-	
+
 	/**
 	 * @return the subscriptionId
 	 */
@@ -236,6 +237,15 @@ public class SubscriptionVO implements Serializable {
 	 */
 	public void setUpdateDate(Date updateDate) {
 		this.updateDate = updateDate;
+	}
+
+	@Column(name="business_id")
+	public String getBusinessId() {
+		return businessId;
+	}
+
+	public void setBusinessId(String businessId) {
+		this.businessId = businessId;
 	}
 
 }

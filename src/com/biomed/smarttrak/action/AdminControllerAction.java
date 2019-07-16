@@ -46,13 +46,16 @@ import com.biomed.smarttrak.admin.report.EmailReportAction;
 import com.biomed.smarttrak.fd.FinancialDashAdminAction;
 import com.biomed.smarttrak.fd.FinancialDashFootnoteAdminAction;
 import com.biomed.smarttrak.fd.FinancialDashScenarioAction;
+import com.biomed.smarttrak.util.QuickLinkAction;
 import com.siliconmtn.action.ActionControllerFactoryImpl;
 //SMT base libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.http.filter.fileupload.ProfileDocumentFileManagerStructureImpl;
 import com.siliconmtn.http.parser.StringEncoder;
+import com.siliconmtn.security.EncryptionException;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 // WC core
@@ -61,6 +64,7 @@ import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.action.emailcampaign.CampaignInstanceAction;
 import com.smt.sitebuilder.action.emailcampaign.InstanceReport;
 import com.smt.sitebuilder.action.solr.management.SolrSynonymAction;
+import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.smt.sitebuilder.common.constants.Constants;
@@ -204,7 +208,7 @@ public class AdminControllerAction extends SimpleActionAdapter {
 	 * populates the action map when the static constructor is called.  This will make our map live once in the JVM
 	 */
 	static {
-		ACTIONS = new HashMap<>(40);
+		ACTIONS = new HashMap<>(43);
 		ACTIONS.put("tickets", ZohoIntegrationAction.class);
 		ACTIONS.put("hierarchy", SectionHierarchyAction.class);
 		ACTIONS.put("agap", GapAnalysisAdminAction.class);
@@ -247,6 +251,7 @@ public class AdminControllerAction extends SimpleActionAdapter {
 		ACTIONS.put("siteSearch", AdminSiteSearchAction.class);
 		ACTIONS.put("feature", FeaturedInsightsAction.class);
 		ACTIONS.put("dupCheck", DuplicateItemCheckerAction.class);
+		ACTIONS.put("quickLink", QuickLinkAction.class);
 		ACTIONS.put(DEFAULT_ACTION, com.biomed.smarttrak.action.UpdatesAction.class);
 	}
 
@@ -306,6 +311,24 @@ public class AdminControllerAction extends SimpleActionAdapter {
 		} else {
 			loadAction(DEFAULT_ACTION).retrieve(req);
 		}
+		prepareDocToken();
+	}
+	
+
+
+	/**
+	 * sets a file upload token for use in the ckeditor's file attachment plugin
+	 */
+	public void prepareDocToken() {
+		ModuleVO modVo = (ModuleVO) getAttribute(Constants.MODULE_DATA);
+		String fileToken = null;
+		try {
+			fileToken = ProfileDocumentFileManagerStructureImpl.makeDocToken((String)getAttribute(Constants.ENCRYPT_KEY));
+		} catch (EncryptionException e) {
+			log.error("could not generate fileToken", e);
+		}
+		modVo.setAttribute(ProfileDocumentFileManagerStructureImpl.DOC_TOKEN, fileToken );
+		log.debug("set doc token: " + fileToken);
 	}
 
 
