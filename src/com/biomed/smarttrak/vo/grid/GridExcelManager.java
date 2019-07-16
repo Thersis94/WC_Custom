@@ -90,12 +90,8 @@ public class GridExcelManager {
 			// resize all of the columns
 			for (int i=0; i < numberCols; i++) sheet.autoSizeColumn(i);
 
-			Row r = sheet.createRow(ctr++);
-			Cell c = r.createCell(0);
-			c.setCellValue("Source: SmartTRAK Business Intelligence");
-			HSSFCellStyle f = getHeadingLabelStyle(workbook, false);
-			c.setCellStyle(f);
-			sheet.addMergedRegion(new CellRangeAddress(r.getRowNum(),r.getRowNum(),0,numberCols));
+			addFooterRow(sheet, ctr, workbook, numberCols);
+
 			// Add the workbook to the stream and store to the byte[]
 			try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
 				workbook.write(baos);
@@ -110,6 +106,27 @@ public class GridExcelManager {
 		return data;
 	}
 	
+	/**
+	 * Add Footer to bottom of Excel Table.
+	 * @param sheet
+	 * @param ctr
+	 * @param numberCols
+	 * @param workbook
+	 */
+	private void addFooterRow(HSSFSheet sheet, int ctr, HSSFWorkbook workbook, int numberCols) {
+		//Add Empty Row.
+		Row r1 = sheet.createRow(ctr++);
+		r1.createCell(0);
+		sheet.addMergedRegion(new CellRangeAddress(r1.getRowNum(),r1.getRowNum(),0,numberCols));
+		//Add Footer Row.
+		Row r = sheet.createRow(ctr++);
+		Cell c = r.createCell(0);
+		c.setCellValue("Source: SmartTRAK Business Intelligence");
+		HSSFCellStyle f = getHeadingLabelStyle(workbook, false);
+		c.setCellStyle(f);
+		sheet.addMergedRegion(new CellRangeAddress(r.getRowNum(),r.getRowNum(),0,numberCols));
+	}
+
 	/**
 	 * Handles adding the data values to the rows
 	 * @param details
