@@ -75,6 +75,7 @@ public class AssetAction extends SBActionAdapter {
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		String keyId = req.getParameter("objectKeyId");
+		log.info("Key ID: " + keyId);
 		setModuleData(getAssets(keyId));
 	}
 	
