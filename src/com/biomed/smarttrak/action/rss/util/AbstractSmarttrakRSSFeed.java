@@ -59,6 +59,7 @@ public abstract class AbstractSmarttrakRSSFeed {
 	protected static final String PUBMED_ENTITY_ID = "pubmedEntityId";
 	protected static final String IS_DEBUG = "isDebug";
 	protected static final String OLD_ARTICLE_CUTOOFF = "oldArticleCutoff";
+	protected static enum MsgKey {Standard, Error};
 	protected Logger log;
 	protected Properties props;
 	protected Connection dbConn;
@@ -71,7 +72,7 @@ public abstract class AbstractSmarttrakRSSFeed {
 	protected String feedName;
 	protected Date cutOffDate;
 
-	private List<String> messages;
+	private Map<MsgKey, List<String>> messages;
 	private String storeArticleQuery;
 	private String storeHistoryQuery;
 	private Map<String, Long> accessTimes;
@@ -94,7 +95,9 @@ public abstract class AbstractSmarttrakRSSFeed {
 		Calendar c = Calendar.getInstance();
 		c.add(Calendar.DAY_OF_YEAR, Integer.parseInt(props.getProperty(OLD_ARTICLE_CUTOOFF)));
 		cutOffDate = c.getTime();
-		messages = new ArrayList<>();
+		messages = new HashMap<>();
+		messages.put(MsgKey.Standard, new ArrayList<>());
+		messages.put(MsgKey.Error, new ArrayList<>());
 		prepQueries();
 	}
 
@@ -733,7 +736,7 @@ public abstract class AbstractSmarttrakRSSFeed {
 	 * Retrieve Messages added by System.
 	 * @return
 	 */
-	protected List<String> getMessages() {
+	protected Map<MsgKey, List<String>> getMessages() {
 		return messages;
 	}
 
@@ -742,6 +745,14 @@ public abstract class AbstractSmarttrakRSSFeed {
 	 * @param msg
 	 */
 	protected void addMessage(String msg) {
-		messages.add(msg);
+		messages.get(MsgKey.Standard).add(msg);
+	}
+
+	/**
+	 * Add Error Messages to System.
+	 * @param format
+	 */
+	protected void addErrorMessage(String msg) {
+		messages.get(MsgKey.Error).add(msg);
 	}
 }
