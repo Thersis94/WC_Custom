@@ -405,9 +405,12 @@ public class MarketManagementAction extends ManagementAction {
 	protected void retrieveMarkets(ActionRequest req) {
 		List<Object> params = new ArrayList<>();
 		StringBuilder sql = new StringBuilder(300);
-		sql.append("select m.market_nm, m.market_id, m.order_no, m.status_no, m.indent_no, m.update_dt, s.section_nm, s.section_id, s.parent_id as section_parent_id ");
+		sql.append("select m.market_nm, m.market_id, m.order_no, m.status_no, m.indent_no, s.section_nm, s.section_id, s.parent_id as section_parent_id, ");
+		sql.append("greatest(coalesce(m.update_dt, m.create_dt), max(coalesce(xr.update_dt, xr.create_dt))) as update_dt ");
 		sql.append("FROM ").append(customDbSchema).append("BIOMEDGPS_MARKET m ");
 		sql.append("LEFT JOIN COUNTRY c on c.COUNTRY_CD = m.REGION_CD ");
+		sql.append(LEFT_OUTER_JOIN).append(customDbSchema).append("BIOMEDGPS_MARKET_ATTRIBUTE_XR xr ");
+		sql.append("ON m.MARKET_ID = xr.MARKET_ID ");
 		sql.append(LEFT_OUTER_JOIN).append(customDbSchema).append("BIOMEDGPS_MARKET_SECTION ms ");
 		sql.append("ON m.MARKET_ID = ms.MARKET_ID ");
 		sql.append(LEFT_OUTER_JOIN).append(customDbSchema).append("BIOMEDGPS_SECTION s ");
@@ -424,7 +427,9 @@ public class MarketManagementAction extends ManagementAction {
 			sql.append("and m.creator_profile_id = ? ");
 			params.add(req.getParameter("authorId"));
 		}
-
+		
+		sql.append("group by  m.market_nm, m.market_id, m.order_no, m.status_no, m.indent_no, m.update_dt, ");
+		sql.append("m.create_dt, s.section_nm, s.section_id, s.parent_id ");
 		sql.append("ORDER BY order_no, market_nm ");
 		log.debug(sql);
 

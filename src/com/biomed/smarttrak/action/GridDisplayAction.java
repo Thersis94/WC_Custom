@@ -697,8 +697,9 @@ public class GridDisplayAction extends SimpleActionAdapter {
 		BigDecimal total = new BigDecimal(0);
 		for (Map<String, SMTChartDetailVO> series : chart.getSeries().values()) {
 			for (SMTChartDetailVO detail : series.values()) {
-				if (detail.getValue() == null) continue;
-				total = total.add(new BigDecimal(StringUtil.removeNonNumericExceptDecimal(detail.getValue())));
+				String numeric = StringUtil.removeNonNumericExceptDecimal(detail.getValue());
+				if (StringUtil.isEmpty(numeric)) continue;
+				total = total.add(new BigDecimal(numeric));
 			}
 		}
 

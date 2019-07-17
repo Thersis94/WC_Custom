@@ -782,4 +782,24 @@ public class BusinessAction extends SBActionAdapter {
 			log.error("Couldn't save business settings", e);
 		}
 	}
+
+	
+	/**
+	 * loads the member's 1st/priority business.  Caches in session for repeat calls.
+	 * Used by directory and connections - where we work against the user's 
+	 * business rather than the member (if the role fits)
+	 * @param req
+	 * @return
+	 */
+	public String getMyDefaultBusinessId(ActionRequest req) {
+		String businessId = (String) req.getSession().getAttribute("RD_DEF_BUSINESS");
+		if (!StringUtil.isEmpty(businessId)) return businessId; //return cached if previously looked-up
+
+		List<BusinessVO> bizList = loadBusinessList(req);
+		if (bizList != null && !bizList.isEmpty()) {
+			businessId = bizList.get(0).getBusinessId();
+			req.getSession().setAttribute("RD_DEF_BUSINESS", businessId);
+		}
+		return businessId;
+	}
 }
