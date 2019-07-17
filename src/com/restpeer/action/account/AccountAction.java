@@ -9,7 +9,7 @@ import com.siliconmtn.action.ActionRequest;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 
 /****************************************************************************
- * <b>Title</b>: AccountWidget.java
+ * <b>Title</b>: AccountAction.java
  * <b>Project</b>: WC_Custom
  * <b>Description: </b> Manages the display
  * <b>Copyright:</b> Copyright (c) 2019
@@ -20,19 +20,19 @@ import com.smt.sitebuilder.action.SimpleActionAdapter;
  * @since Feb 13, 2019
  * @updates:
  ****************************************************************************/
-public class AccountWidget extends SimpleActionAdapter {
+public class AccountAction extends SimpleActionAdapter {
 
 	/**
 	 * 
 	 */
-	public AccountWidget() {
+	public AccountAction() {
 		super();
 	}
 
 	/**
 	 * @param arg0
 	 */
-	public AccountWidget(ActionInitVO arg0) {
+	public AccountAction(ActionInitVO arg0) {
 		super(arg0);
 	}
 	

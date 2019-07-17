@@ -2,6 +2,7 @@ package com.restpeer.data;
 
 // JDK 1.8.x
 import java.sql.ResultSet;
+import java.util.Map;
 
 // SMT Base Libs
 import com.siliconmtn.action.ActionRequest;
@@ -38,6 +39,7 @@ public class RPUserVO extends UserVO {
 	// helpers
 	private long memberAssociations;
 	private String formattedPhoneNumber;
+	private Map<String, Integer> mobileRestStatus;
 	
 	/**
 	 * 
@@ -151,6 +153,28 @@ public class RPUserVO extends UserVO {
 	 */
 	public void setFormattedPhoneNumber(String formattedPhoneNumber) {
 		this.formattedPhoneNumber = formattedPhoneNumber;
+	}
+
+	/**
+	 * @return the mobileRestStatus
+	 */
+	public Map<String, Integer> getMobileRestStatus() {
+		return mobileRestStatus;
+	}
+
+	/**
+	 * @param dealerId
+	 * @return the mobileRestStatus for a particular dealer
+	 */
+	public int getMobileRestStatus(String dealerId) {
+		return mobileRestStatus == null || mobileRestStatus.get(dealerId) == null ? 0 : mobileRestStatus.get(dealerId);
+	}
+
+	/**
+	 * @param mobileRestStatus the mobileRestStatus to set
+	 */
+	public void setMobileRestStatus(Map<String, Integer> mobileRestStatus) {
+		this.mobileRestStatus = mobileRestStatus;
 	}
 
 }
