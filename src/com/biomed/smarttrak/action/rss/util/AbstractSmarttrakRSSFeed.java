@@ -52,7 +52,7 @@ import com.smt.sitebuilder.common.constants.Constants;
  ****************************************************************************/
 public abstract class AbstractSmarttrakRSSFeed {
 
-	protected enum MSG_KEY {Standard, Error}
+	protected enum MsgKey {STANDARD, ERROR}
 
 	protected static final String SPAN_CLASS_HIT = "<span class='hit'>";
 	protected static final String UPDATE_RSS_SQL = "update RSS_ENTITY set is_active = ? where rss_entity_id = ?";
@@ -73,7 +73,7 @@ public abstract class AbstractSmarttrakRSSFeed {
 	protected String feedName;
 	protected Date cutOffDate;
 
-	private Map<MSG_KEY, List<String>> messages;
+	private Map<MsgKey, List<String>> messages;
 	private String storeArticleQuery;
 	private String storeHistoryQuery;
 	private Map<String, Long> accessTimes;
@@ -96,9 +96,9 @@ public abstract class AbstractSmarttrakRSSFeed {
 		Calendar c = Calendar.getInstance();
 		c.add(Calendar.DAY_OF_YEAR, Integer.parseInt(props.getProperty(OLD_ARTICLE_CUTOOFF)));
 		cutOffDate = c.getTime();
-		messages = new EnumMap<>(MSG_KEY.class);
-		messages.put(MSG_KEY.Standard, new ArrayList<>());
-		messages.put(MSG_KEY.Error, new ArrayList<>());
+		messages = new EnumMap<>(MsgKey.class);
+		messages.put(MsgKey.STANDARD, new ArrayList<>());
+		messages.put(MsgKey.ERROR, new ArrayList<>());
 		prepQueries();
 	}
 
@@ -737,7 +737,7 @@ public abstract class AbstractSmarttrakRSSFeed {
 	 * Retrieve Messages added by System.
 	 * @return
 	 */
-	protected Map<MSG_KEY, List<String>> getMessages() {
+	protected Map<MsgKey, List<String>> getMessages() {
 		return messages;
 	}
 
@@ -746,7 +746,7 @@ public abstract class AbstractSmarttrakRSSFeed {
 	 * @param msg
 	 */
 	protected void addMessage(String msg) {
-		messages.get(MSG_KEY.Standard).add(msg);
+		messages.get(MsgKey.STANDARD).add(msg);
 	}
 
 	/**
@@ -754,6 +754,6 @@ public abstract class AbstractSmarttrakRSSFeed {
 	 * @param format
 	 */
 	protected void addErrorMessage(String msg) {
-		messages.get(MSG_KEY.Error).add(msg);
+		messages.get(MsgKey.ERROR).add(msg);
 	}
 }
