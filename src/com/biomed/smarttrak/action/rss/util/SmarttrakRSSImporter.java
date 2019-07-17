@@ -11,7 +11,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import com.biomed.smarttrak.action.rss.util.AbstractSmarttrakRSSFeed.MsgKey;
+import com.biomed.smarttrak.action.rss.util.AbstractSmarttrakRSSFeed.MSG_KEY;
 import com.biomed.smarttrak.action.rss.vo.RSSArticleVO.ArticleSourceType;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.util.CommandLineUtil;
@@ -35,7 +35,8 @@ public class SmarttrakRSSImporter extends CommandLineUtil {
 
 	private static final String SCRIPT_PROPERTIES_PATH = "scripts/bmg_smarttrak/rss_config.properties";
 	private static final int MAX_KEEP_DAYS = 60;
-	private Map<String, Map<MsgKey, List<String>>> messages;
+	private static final String SUBJECT = "subject";
+	private Map<String, Map<MSG_KEY, List<String>>> messages;
 	private long startTime;
 
 	/**
@@ -84,9 +85,9 @@ public class SmarttrakRSSImporter extends CommandLineUtil {
 		sendEmail();
 
 		//Only send Error Email if we have errors.
-		for(Entry<String, Map<MsgKey, List<String>>> e : messages.entrySet()) {
+		for(Entry<String, Map<MSG_KEY, List<String>>> e : messages.entrySet()) {
 			//Check Errors List
-			if(!e.getValue().get(MsgKey.Error).isEmpty()) {
+			if(!e.getValue().get(MSG_KEY.Error).isEmpty()) {
 
 				//Send Error Email.
 				sendErrorEmail();
@@ -132,15 +133,15 @@ public class SmarttrakRSSImporter extends CommandLineUtil {
 		msg.append("<h3>SmartTRAK RSS Feeds Importer Errors &mdash; ");
 		msg.append(Convert.formatDate(new Date(startTime), Convert.DATETIME_SLASH_PATTERN));
 		msg.append("</h3>");
-		for (Entry<String, Map<MsgKey, List<String>>> feedData : messages.entrySet()) {
+		for (Entry<String, Map<MSG_KEY, List<String>>> feedData : messages.entrySet()) {
 
 			//If this is a single Run, update the Subject Line to reflect the run.
 			if(messages.size() == 1) {
-				String subject = props.getProperty("subject");
-				props.replace("subject", StringUtil.join(subject, " - ", feedData.getKey()));
+				String subject = props.getProperty(SUBJECT);
+				props.replace(SUBJECT, StringUtil.join(subject, " - ", feedData.getKey()));
 			}
 			msg.append(feedData.getKey()).append(br);
-			for(String m : feedData.getValue().get(MsgKey.Error)) {
+			for(String m : feedData.getValue().get(MSG_KEY.Error)) {
 				msg.append(m).append(br);
 			}
 		}
@@ -162,15 +163,15 @@ public class SmarttrakRSSImporter extends CommandLineUtil {
 		msg.append(Convert.formatDate(new Date(startTime), Convert.DATETIME_SLASH_PATTERN));
 		msg.append("</h3>");
 		msg.append("<h4>Feeds processed: ").append("</h4>");
-		for (Entry<String, Map<MsgKey, List<String>>> feedData : messages.entrySet()) {
+		for (Entry<String, Map<MSG_KEY, List<String>>> feedData : messages.entrySet()) {
 
 			//If this is a single Run, update the Subject Line to reflect the run.
 			if(messages.size() == 1) {
-				String subject = props.getProperty("subject");
-				props.replace("subject", StringUtil.join(subject, " - ", feedData.getKey()));
+				String subject = props.getProperty(SUBJECT);
+				props.replace(SUBJECT, StringUtil.join(subject, " - ", feedData.getKey()));
 			}
 			msg.append(feedData.getKey()).append(br);
-			for(String m : feedData.getValue().get(MsgKey.Standard)) {
+			for(String m : feedData.getValue().get(MSG_KEY.Standard)) {
 				msg.append(m).append(br);
 			}
 		}
