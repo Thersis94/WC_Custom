@@ -52,6 +52,8 @@ import com.smt.sitebuilder.common.constants.Constants;
  ****************************************************************************/
 public abstract class AbstractSmarttrakRSSFeed {
 
+	protected enum MsgKey {STANDARD, ERROR}
+
 	protected static final String SPAN_CLASS_HIT = "<span class='hit'>";
 	protected static final String UPDATE_RSS_SQL = "update RSS_ENTITY set is_active = ? where rss_entity_id = ?";
 	protected static final String REPLACE_SPAN = "replaceSpan";
@@ -71,7 +73,7 @@ public abstract class AbstractSmarttrakRSSFeed {
 	protected String feedName;
 	protected Date cutOffDate;
 
-	private List<String> messages;
+	private Map<MsgKey, List<String>> messages;
 	private String storeArticleQuery;
 	private String storeHistoryQuery;
 	private Map<String, Long> accessTimes;
@@ -94,7 +96,9 @@ public abstract class AbstractSmarttrakRSSFeed {
 		Calendar c = Calendar.getInstance();
 		c.add(Calendar.DAY_OF_YEAR, Integer.parseInt(props.getProperty(OLD_ARTICLE_CUTOOFF)));
 		cutOffDate = c.getTime();
-		messages = new ArrayList<>();
+		messages = new EnumMap<>(MsgKey.class);
+		messages.put(MsgKey.STANDARD, new ArrayList<>());
+		messages.put(MsgKey.ERROR, new ArrayList<>());
 		prepQueries();
 	}
 
@@ -733,7 +737,7 @@ public abstract class AbstractSmarttrakRSSFeed {
 	 * Retrieve Messages added by System.
 	 * @return
 	 */
-	protected List<String> getMessages() {
+	protected Map<MsgKey, List<String>> getMessages() {
 		return messages;
 	}
 
@@ -742,6 +746,14 @@ public abstract class AbstractSmarttrakRSSFeed {
 	 * @param msg
 	 */
 	protected void addMessage(String msg) {
-		messages.add(msg);
+		messages.get(MsgKey.STANDARD).add(msg);
+	}
+
+	/**
+	 * Add Error Messages to System.
+	 * @param format
+	 */
+	protected void addErrorMessage(String msg) {
+		messages.get(MsgKey.ERROR).add(msg);
 	}
 }
