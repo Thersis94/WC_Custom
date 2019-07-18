@@ -6,14 +6,17 @@
 		"url" : "https://github.com/smtadmin/WC_Custom.git"
 	},
 	"release": {
-	  "generateNotes": [{
-	 	"path": "@semantic-release/exec",
-		"cmd": "echo \"version_WC_Custom=${nextRelease.version}\" >> ../wc_branches.properties"	
-	  }],
 	  "plugins": [
 		"@semantic-release/commit-analyzer",
 		"@semantic-release/release-notes-generator",
-		"@semantic-release/exec",
+		["@semantic-release/exec", {
+	      "analyzeCommitsCmd":"echo \"version_WC_Custom=${lastRelease.version}\" >> ../wc_branches.properties",
+		  "generateNotesCmd": "sed -i 's/version_WC_Custom=.*/version_WC_Custom=${nextRelease.version}/' ../wc_branches.properties"
+	    }],
+		["@semantic-release/changelog", {
+	          "changelogFile": "CHANGELOG.md",
+		  "changelogTitle": "WC_Custom Changelog (auto-generated)"
+		}],
 		"@semantic-release/github"
 	  ]
 	}
