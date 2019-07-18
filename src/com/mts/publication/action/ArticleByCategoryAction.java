@@ -117,11 +117,11 @@ public class ArticleByCategoryAction extends SimpleActionAdapter {
 		Map<String, AssetVO> assets = new HashMap<>();
 		
 		StringBuilder sql = new StringBuilder(256);
-		sql.append("select object_key_id, document_path, document_asset_id ");
+		sql.append("select object_key_id, document_path, document_asset_id, asset_type_cd ");
 		sql.append("from ").append(getCustomSchema()).append("mts_document_asset ");
-		sql.append("where object_key_id in (").append(DBUtil.preparedStatmentQuestion(docs.size() + 3)).append(") ");
+		sql.append("where object_key_id in (").append(DBUtil.preparedStatmentQuestion(docs.size() + 3)).append(") and asset_type_cd != 'PDF_DOC' ");
 		sql.append("order by random() ");
-		log.debug("^^^^^^^^^^^^^^^^ " + sql.length() + "|" + sql);
+		log.debug(sql.length() + "|" + sql);
 		
 		// Get the assets for the document ids and category
 		int ctr = 1;
@@ -138,7 +138,7 @@ public class ArticleByCategoryAction extends SimpleActionAdapter {
 			}
 		}
 		
-		log.debug("^^^^^^^ assets size " + assets.size());
+		log.debug("assets size " + assets.size());
 	
 		// Add an asset to the document
 		for (MTSDocumentVO doc : docs) {
