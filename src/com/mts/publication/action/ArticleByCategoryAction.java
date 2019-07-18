@@ -18,7 +18,7 @@ import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
-
+import com.siliconmtn.util.StringUtil;
 // WC Libs
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 
@@ -60,8 +60,9 @@ public class ArticleByCategoryAction extends SimpleActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		
-		setModuleData(getArticles(req.getParameter("catId"), req.getIntegerParameter("number", 4)));
+		String catId = req.getParameter("catId");
+		String pubId = req.getParameter("publicationId");
+		setModuleData(getArticles(catId, pubId, req.getIntegerParameter("number", 4)));
 	}
 	
 	/**
@@ -70,7 +71,11 @@ public class ArticleByCategoryAction extends SimpleActionAdapter {
 	 * @param count
 	 * @return
 	 */
-	public List<MTSDocumentVO> getArticles(String cat, int count) {
+	public List<MTSDocumentVO> getArticles(String cat, String pubId, int count) {
+		// Create the structure
+		List<Object> vals = new ArrayList<>();
+		vals.add(cat);
+		
 		StringBuilder sql = new StringBuilder(464);
 		sql.append("select action_nm, action_desc, a.action_id, document_id, ");
 		sql.append("unique_cd, publication_id, direct_access_pth ");
@@ -81,13 +86,15 @@ public class ArticleByCategoryAction extends SimpleActionAdapter {
 		sql.append("on b.action_group_id = c.document_id ");
 		sql.append("inner join ").append(getCustomSchema()).append("mts_issue d ");
 		sql.append("on c.issue_id = d.issue_id ");
-		sql.append("where widget_meta_data_id = ? order by random() limit ? ");
-		log.debug(sql.length() + "|" + sql);
+		sql.append("where widget_meta_data_id = ? "); 
+		if (! StringUtil.isEmpty(pubId)) {
+			sql.append("and publication_id = ? ");
+			vals.add(pubId);
+		}
 		
-		// Create the structure
-		List<Object> vals = new ArrayList<>();
-		vals.add(cat);
+		sql.append("order by random() limit ? ");
 		vals.add(count);
+		log.debug(sql.length() + "|" + sql + "|" + vals);
 		
 		DBProcessor db = new DBProcessor(getDBConnection());
 		List<MTSDocumentVO> docs =  db.executeSelect(sql.toString(), vals, new MTSDocumentVO());
