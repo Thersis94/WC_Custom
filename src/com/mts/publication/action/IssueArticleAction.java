@@ -34,6 +34,7 @@ import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.content.DocumentAction;
 import com.smt.sitebuilder.action.metadata.WidgetMetadataVO;
+import com.smt.sitebuilder.approval.ApprovalController;
 
 /****************************************************************************
  * <b>Title</b>: IssueArticleAction.java
@@ -86,6 +87,8 @@ public class IssueArticleAction extends SBActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
+		req.setAttribute("mtsPagePreview", ApprovalController.generatePreviewApiKey(attributes));
+		
 		try {
 			if (req.hasParameter("related")) {
 				setModuleData(getRelatedArticles(req.getParameter("actionGroupId")));
