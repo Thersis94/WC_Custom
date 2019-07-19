@@ -9,6 +9,11 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
+
 //WC custom
 import com.biomed.smarttrak.vo.EmailLogVO;
 // SMTBaseLibs
@@ -18,6 +23,7 @@ import com.siliconmtn.io.mail.BaseMessageVO;
 import com.siliconmtn.io.mail.EmailMessageVO;
 import com.siliconmtn.io.mail.MessageVO;
 import com.siliconmtn.io.mail.stor.MessageSerializer;
+import com.siliconmtn.sb.email.AbstractMessageHandler;
 import com.siliconmtn.sb.email.util.SentMessageUtil;
 import com.siliconmtn.security.StringEncrypter;
 import com.siliconmtn.util.Convert;
@@ -76,13 +82,36 @@ public class EmailReportAction extends SBActionAdapter {
 		if (data == null || data.isEmpty()) return null;
 		EmailLogVO vo = data.get(0);
 		//load the email message body, and the config params tied to this send.
-		if(!vo.isFileWritten()) {
-			populateEmail(vo);
-		} else {
+		if(vo.isFileWritten()) {
 			loadEmailArchive(vo);
+		} else {
+			populateEmail(vo);
 		}
 
+		removeTracking(vo);
 		return vo;
+	}
+
+
+	/**
+	 * Remove tracking Images used to prevent affecting view counts.
+	 * @param vo
+	 */
+	private void removeTracking(EmailLogVO vo) {
+		Document document = Jsoup.parse(vo.getMessageBody());
+
+		//Load all images
+		Elements images = document.select("img");
+
+		//Look for images that contain a tracking url.
+		for(Element i : images) {
+			if(i.attr("src").contains(AbstractMessageHandler.REDIRECT_URL_P1)) {
+				i.remove();
+			}
+		}
+
+		//replace the MessageBody with updated html.
+		vo.setMessageBody(document.toString());
 	}
 
 
@@ -92,7 +121,8 @@ public class EmailReportAction extends SBActionAdapter {
 	 */
 	private void loadEmailArchive(EmailLogVO vo) {
 		EmailMessageVO eml = (EmailMessageVO) MessageSerializer.getInstance(attributes, BaseMessageVO.Type.EMAIL).retrieveMessage(vo.getFilePathText());
-		vo.setMessageBody(eml.getHtmlBody());
+		if(eml != null)
+			vo.setMessageBody(eml.getHtmlBody());
 	}
 
 
@@ -196,7 +226,7 @@ public class EmailReportAction extends SBActionAdapter {
 		sql.append("left join email_response resp on l.campaign_log_id=resp.campaign_log_id and resp.response_type_id='EMAIL_OPEN' ");
 		sql.append("where camp.organization_id=? ");
 		if (campaignLogId != null) sql.append("and l.campaign_log_id=? ");
-		sql.append("and l.create_dt > ? ");
+		sql.append("and l.create_dt > ? and attempt_dt is not null ");
 		sql.append("group by inst.campaign_instance_id, l.attempt_dt, p.profile_id, p.email_address_txt, ");
 		sql.append("p.first_nm, p.last_nm, success_flg, l.campaign_log_id, l.subject_txt, file_path_txt ");
 		sql.append("order by ").append(getOrderBy(sort, dir)).append(" limit ? offset ? ");
@@ -251,7 +281,7 @@ public class EmailReportAction extends SBActionAdapter {
 		}
 		sql.append("inner join email_campaign_instance b on a.campaign_instance_id=b.campaign_instance_id ");
 		sql.append("inner join email_campaign c on b.email_campaign_id=c.email_campaign_id and c.organization_id=? ");
-		sql.append("where a.attempt_dt > ?");
+		sql.append("where a.attempt_dt > ? and a.attempt_dt is not null ");
 		log.debug(sql);
 
 		int x=0;
