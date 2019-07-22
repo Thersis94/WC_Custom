@@ -14,6 +14,7 @@ import com.edlio.emailreplyparser.EmailReplyParser;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.io.mail.EmailMessageVO;
 import com.siliconmtn.io.mail.pop3.EmailHandlerInterface;
+import com.siliconmtn.util.StringUtil;
 
 // WebCrescendo 3.0
 import com.smt.sitebuilder.common.constants.Constants;
@@ -56,6 +57,10 @@ public class CommentEmailHandler implements EmailHandlerInterface {
 		for (EmailMessageVO email : emails) {
 			TicketCommentVO comment = new TicketCommentVO();
 			parseReferenceData(comment, email.getHeaders().get("References"));
+			
+			// No reference headers were found that contained a ticketId
+			if (StringUtil.isEmpty(comment.getTicketId())) continue;
+
 			comment.setComment(EmailReplyParser.parseReply(email.getTextBody()));
 			comment.setPriorityTicketFlag(0);
 			comment.setEndUserFlag(1);
@@ -73,9 +78,11 @@ public class CommentEmailHandler implements EmailHandlerInterface {
 	 * @param referenceHeader
 	 */
 	protected void parseReferenceData(TicketCommentVO comment, String referenceHeader) {
-		List<String> references = Arrays.asList(referenceHeader.split("\\s+"));
+		// No valid reference headers to look through
+		if (StringUtil.isEmpty(referenceHeader)) return;
 		
 		// Loop through all "Reference" headers in the email to find the one we initially sent
+		List<String> references = Arrays.asList(referenceHeader.split("\\s+"));
 		for (String reference : references) {
 			if (reference.contains(WSLAConstants.TICKET_EMAIL_REFERENCE_SUFFIX)) {
 				comment.setTicketId(getValueFromReference(reference, '<', '|'));
