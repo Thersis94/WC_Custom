@@ -34,6 +34,7 @@ import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.content.DocumentAction;
 import com.smt.sitebuilder.action.metadata.WidgetMetadataVO;
+import com.smt.sitebuilder.approval.ApprovalController;
 
 /****************************************************************************
  * <b>Title</b>: IssueArticleAction.java
@@ -86,6 +87,8 @@ public class IssueArticleAction extends SBActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
+		req.setAttribute("mtsPagePreview", ApprovalController.generatePreviewApiKey(attributes));
+		
 		try {
 			if (req.hasParameter("related")) {
 				setModuleData(getRelatedArticles(req.getParameter("actionGroupId")));
@@ -252,7 +255,7 @@ public class IssueArticleAction extends SBActionAdapter {
 		sql.append("and object_key_id in ( ");
 		sql.append(DBUtil.preparedStatmentQuestion(ids.size())).append(") ");
 		sql.append("order by object_key_id");
-		log.debug("%%%%%%%%%%%%%%5"+sql.length() + "|" + sql + "|" + ids);
+		log.debug(sql.length() + "|" + sql + "|" + ids);
 		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			DBUtil.preparedStatementValues(ps, 1, new ArrayList<Object>(ids));
@@ -260,7 +263,6 @@ public class IssueArticleAction extends SBActionAdapter {
 			try (ResultSet rs = ps.executeQuery()) {
 				while(rs.next()) {
 					ptvo.addAsset(new AssetVO(rs));
-					log.debug("loop  " + new AssetVO(rs));
 				}
 			}
 		}
