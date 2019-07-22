@@ -78,7 +78,7 @@ public class IssueAction extends SBActionAdapter {
 		if (! req.hasParameter("json")) return;
 		String pubId = req.getParameter("publicationId");
 		BSTableControlVO bst = new BSTableControlVO(req, IssueVO.class);
-		setModuleData(getIssues(pubId, true, bst));
+		setModuleData(getIssues(pubId, false, bst));
 	}
 	
 	/*

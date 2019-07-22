@@ -180,6 +180,9 @@ public class MTSDocumentAction extends SimpleActionAdapter {
 		
 		// If its a new document, add the group id.
 		MTSDocumentVO doc = new MTSDocumentVO(req);
+		if (! StringUtil.isEmpty((String)req.getAttribute("DIRECT_ACCCESS_PATH")))
+			doc.setDirectAccessPath((String)req.getAttribute("DIRECT_ACCCESS_PATH"));
+			
 		if (StringUtil.isEmpty(doc.getActionGroupId())) {
 			doc.setActionGroupId((String)req.getAttribute(SB_ACTION_GROUP_ID));
 		}
