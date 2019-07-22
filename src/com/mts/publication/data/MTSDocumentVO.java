@@ -171,7 +171,7 @@ public class MTSDocumentVO extends DocumentVO {
 		Map<String, AssetVO> fAssets = new HashMap<>();
 		Collections.shuffle(assets);
 		for (AssetVO vo : assets) {
-			if (AssetType.TEASER_IMG.equals(vo.getAssetType())) {
+			if (AssetType.FEATURE_IMG.equals(vo.getAssetType())) {
 				if (vo.getObjectKeyId().equals(documentId)) return vo;
 				else if (PublicationTeaserVO.DEFAULT_TEASER_IMG.equals(vo.getObjectKeyId()))
 					fAssets.put(PublicationTeaserVO.DEFAULT_TEASER_IMG, vo);

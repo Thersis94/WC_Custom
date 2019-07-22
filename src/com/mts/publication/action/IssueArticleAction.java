@@ -209,14 +209,22 @@ public class IssueArticleAction extends SBActionAdapter {
 			sql.append("where issue_dt in ( ");
 			sql.append("select max(issue_dt) as latest ");
 			sql.append("from ").append(schema).append("mts_issue ");
-			sql.append("where publication_id = ?) and publish_dt is not null ");
+			sql.append("where publication_id = ? and approval_flg = 1 ) and publish_dt is not null ");
+			sql.append("and p.publication_id = ? ");
 		}
 		sql.append("order by a.publish_dt desc, document_id limit 10");
+		log.debug(sql + "|" + pubId + "|" + catId);
 		
 		PublicationTeaserVO ptvo = null;
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			ps.setString(1, pubId);
-			if (! useLatest && ! StringUtil.isEmpty(catId)) ps.setString(2, catId);
+			
+			if (! useLatest && ! StringUtil.isEmpty(catId)) {
+				ps.setString(1, pubId);
+				ps.setString(2, catId);
+			} else {
+				ps.setString(1, pubId);
+				ps.setString(2, pubId);
+			}
 			
 			try (ResultSet rs = ps.executeQuery()) {
 				while (rs.next()) {
@@ -251,7 +259,7 @@ public class IssueArticleAction extends SBActionAdapter {
 		Set<String> ids = ptvo.getAssetObjectKeys();
 		StringBuilder sql = new StringBuilder(128);
 		sql.append("select * from ").append(getCustomSchema()).append("mts_document_asset ");
-		sql.append("where asset_type_cd in ('TEASER_IMG','FEATURE_IMG') ");
+		sql.append("where asset_type_cd in ('FEATURE_IMG') ");
 		sql.append("and object_key_id in ( ");
 		sql.append(DBUtil.preparedStatmentQuestion(ids.size())).append(") ");
 		sql.append("order by object_key_id");
