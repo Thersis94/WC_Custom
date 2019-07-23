@@ -110,7 +110,7 @@ public class HomeHistoryAction extends ProjectAction {
 		StringBuilder sql = new StringBuilder(1000);
 		sql.append("select a.*, b.attribute_id, b.slug_txt, b.value_txt, c.category_nm, d.type_nm, ");
 		sql.append("r.residence_nm, rr.room_nm, m.member_id, m.profile_id as homeowner_profile_id, ");
-		sql.append("biz.main_phone_txt, pc.material_cost as material_cost, ");
+		sql.append("biz.main_phone_txt, pc.material_cost, pc.project_valuation, ");
 		sql.append("cast(sum(case when ph.photo_id is not null then 1 else 0 end) as integer) as photo_cnt ");
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("REZDOX_PROJECT a ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("REZDOX_PROJECT_ATTRIBUTE b on a.project_id=b.project_id ");
@@ -134,7 +134,7 @@ public class HomeHistoryAction extends ProjectAction {
 		}
 		sql.append("group by a.project_id, a.residence_id, a.room_id, a.business_id, a.project_category_cd, a.project_type_cd, a.project_nm, ");
 		sql.append("a.labor_no, a.total_no, a.residence_view_flg, a.business_view_flg, a.create_dt, a.update_dt, a.end_dt, a.desc_txt, ");
-		sql.append("a.proj_discount_no, a.proj_tax_no, a.mat_discount_no, a.mat_tax_no, pc.material_cost, ");
+		sql.append("a.proj_discount_no, a.proj_tax_no, a.mat_discount_no, a.mat_tax_no, pc.material_cost, pc.project_valuation, ");
 		sql.append("b.attribute_id, b.slug_txt, b.value_txt, c.category_nm, d.type_nm, ");
 		sql.append("r.residence_nm, rr.room_nm, m.member_id, m.profile_id, biz.main_phone_txt ");
 		sql.append("order by a.end_dt desc, a.project_nm");
