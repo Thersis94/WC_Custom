@@ -59,6 +59,7 @@ public class ProjectVO {
 
 	private double productSubtotalNo;
 	private String mainPhone;
+	private double projectValuation;
 
 
 	public ProjectVO() {
@@ -443,5 +444,14 @@ public class ProjectVO {
 
 	public void setPhotoCnt(int photoCnt) {
 		this.photoCnt = photoCnt;
+	}
+
+	@Column(name="project_valuation", isReadOnly=true)
+	public double getProjectValuation() {
+		return projectValuation;
+	}
+
+	public void setProjectValuation(double projectValuation) {
+		this.projectValuation = projectValuation;
 	}
 }
