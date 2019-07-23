@@ -93,7 +93,7 @@ public class IssueArticleAction extends SBActionAdapter {
 			if (req.hasParameter("related")) {
 				setModuleData(getRelatedArticles(req.getParameter("actionGroupId")));
 			} else if (req.hasParameter("documentId")) {
-				setModuleData(getDocument(req.getParameter("documentId"), null));
+				setModuleData(getDocument(req.getParameter("documentId"), null, false));
 			} else {
 				setModuleData(getArticles(new BSTableControlVO(req, MTSDocumentVO.class), req));
 			}
@@ -132,7 +132,8 @@ public class IssueArticleAction extends SBActionAdapter {
 	 * @return
 	 * @throws SQLException
 	 */
-	public MTSDocumentVO getDocument(String documentId, String directPath) throws SQLException {
+	public MTSDocumentVO getDocument(String documentId, String directPath, boolean pagePreview) 
+	throws SQLException {
 		if (StringUtil.isEmpty(documentId) && StringUtil.isEmpty(directPath)) 
 			throw new SQLException("No identifier passed for the document");
 		
@@ -145,10 +146,14 @@ public class IssueArticleAction extends SBActionAdapter {
 		sql.append("mts_issue d on a.issue_id = d.issue_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(getCustomSchema());
 		sql.append("mts_publication e on d.publication_id = e.publication_id ");
-		if (!StringUtil.isEmpty(documentId)) sql.append("where b.action_id = ? ");
-		else sql.append("where c.direct_access_pth = ? ");
+		if (!StringUtil.isEmpty(documentId)) {
+			sql.append("where a.document_id = ? order by pending_sync_flg desc ");
+		} else {
+			sql.append("where c.direct_access_pth = ? order by pending_sync_flg ");
+			sql.append(pagePreview ? "desc" : "asc");
+		}
 		
-		log.debug(sql.length() + "|" + sql + "|" + documentId);
+		log.debug(sql.length() + "|" + sql + "|" + documentId + "|" + directPath + "|" + pagePreview);
 		
 		MTSDocumentVO doc = new MTSDocumentVO();
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {

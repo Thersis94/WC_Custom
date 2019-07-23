@@ -33,6 +33,7 @@ import com.smt.sitebuilder.action.content.DocumentAction;
 import com.smt.sitebuilder.action.metadata.WidgetMetadataVO;
 import com.smt.sitebuilder.approval.ApprovalDecoratorAction;
 import com.smt.sitebuilder.common.ModuleVO;
+import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
@@ -85,9 +86,14 @@ public class MTSDocumentAction extends SimpleActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
+		
 		try {
+			PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
+	        boolean isPreview = page.isPreviewMode();
+			boolean pagePreview = req.hasParameter("pagePreview") || isPreview;
+			
 			IssueArticleAction iac = new IssueArticleAction(getDBConnection(), getAttributes());
-			MTSDocumentVO doc = iac.getDocument(null, req.getParameter("reqParam_1"));
+			MTSDocumentVO doc = iac.getDocument(null, req.getParameter("reqParam_1"), pagePreview);
 			if (StringUtil.isEmpty(doc.getActionId())) throw new Exception("Unable to locate article");
 			
 			// Get the Related Articles
