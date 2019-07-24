@@ -114,8 +114,8 @@ public class IssueArticleAction extends SBActionAdapter {
 		sql.append("a.document_id, related_article_id, user_id,f.widget_meta_data_id, f.field_nm, f.parent_id ");
 		sql.append("from ").append(schema).append("mts_related_article a ");
 		sql.append("inner join ").append(schema).append("mts_document b on a.related_document_id = b.document_id ");
-		sql.append("inner join ").append(schema).append("mts_user c on b.author_id = c.user_id ");
 		sql.append("inner join sb_action d on a.related_document_id = d.action_group_id and pending_sync_flg = 0 ");
+		sql.append("left outer join ").append(schema).append("mts_user c on b.author_id = c.user_id ");
 		sql.append("left outer join widget_meta_data_xr e on d.action_id = e.action_id ");
 		sql.append("left outer join widget_meta_data f on e.widget_meta_data_id = f.widget_meta_data_id ");
 		sql.append("where a.document_id = ? ");
