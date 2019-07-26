@@ -56,6 +56,11 @@ public class PublicationDisplayAction extends SBActionAdapter {
 		boolean useLatest = Convert.formatBoolean(mod.getIntroText());
 		IssueArticleAction iac = new IssueArticleAction(getDBConnection(), getAttributes());
 		setModuleData(iac.getArticleTeasers(publicationId, categoryId, useLatest));
+		
+		// Get the categories from the list
+		SelectLookupAction sla = new SelectLookupAction(getDBConnection(), getAttributes());
+		req.setParameter("parentId", "CHANNELS");
+		req.setAttribute("mtsCats", sla.getCategories(req));
 	}
 	
 	/*

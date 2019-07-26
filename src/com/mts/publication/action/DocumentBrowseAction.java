@@ -8,6 +8,7 @@ import java.util.Map;
 
 // MTS Libs
 import com.mts.publication.data.MTSDocumentVO;
+import com.mts.util.AppUtil;
 
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
@@ -79,12 +80,13 @@ public class DocumentBrowseAction extends SimpleActionAdapter {
 			return;
 		}
 		
+		String userId = AppUtil.getMTSUserId(req);
 		String pubs = StringUtil.checkVal(req.getParameter("publications")).toUpperCase();
 		String topics = req.getParameter("topics");
 		String cats = req.getParameter("categories");
 		String issues = req.getParameter("issues");
 		BSTableControlVO bst = new BSTableControlVO(req);
-		setModuleData(search(bst, pubs, topics, cats, issues));
+		setModuleData(search(bst, pubs, topics, cats, issues, userId));
 	}
 	
 	/**
@@ -92,16 +94,18 @@ public class DocumentBrowseAction extends SimpleActionAdapter {
 	 * @param bst
 	 * @return
 	 */
-	public GridDataVO<MTSDocumentVO> search(BSTableControlVO bst, String pubs, String topics, String cats, String issues) {
+	public GridDataVO<MTSDocumentVO> search(BSTableControlVO bst, String pubs, String topics, String cats, String issues, String userId) {
 		List<Object> vals = new ArrayList<>();
-		StringBuilder sql = new StringBuilder(1408);
-		sql.append("select b.unique_cd, a.action_id, action_nm, action_desc, b.publish_dt, direct_access_pth, ");
-		sql.append("user_id, first_nm, last_nm, c.publication_id, publication_nm, newid() as document_asset_id, ");
+		vals.add(userId);
+		
+		StringBuilder sql = new StringBuilder(1672);
+		sql.append("select b.document_id, b.unique_cd, a.action_id, action_nm, action_desc, b.publish_dt, direct_access_pth, ");
+		sql.append("d.user_id, first_nm, last_nm, c.publication_id, publication_nm, newid() as document_asset_id, ");
 		sql.append("case ");
 		sql.append("when doc_img is not null then doc_img ");
 		sql.append("when cat_img is not null then cat_img ");
 		sql.append("else '/000/000/feature.png' ");
-		sql.append("end as document_path ");
+		sql.append("end as document_path, coalesce(len(e.user_info_id), 0) as bookmark_flg ");
 		sql.append("from sb_action a ");
 		sql.append("inner join document doc on a.action_id = doc.action_id ");
 		sql.append("inner join custom.mts_document b ");
@@ -119,6 +123,8 @@ public class DocumentBrowseAction extends SimpleActionAdapter {
 		sql.append("left outer join custom.mts_document_asset da1 on a.document_id = da1.object_key_id and da1.asset_type_cd != 'PDF_DOC' ");
 		sql.append("group by document_id ");
 		sql.append(") as i on b.document_id = i.document_id ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(getCustomSchema()).append("mts_user_info e ");
+		sql.append("on b.unique_cd = e.value_txt and e.user_id = ? and e.user_info_type_cd = 'BOOKMARK' ");
 		sql.append("where 1=1 ");
 		
 		// Add the text search
@@ -133,7 +139,7 @@ public class DocumentBrowseAction extends SimpleActionAdapter {
 		log.debug(sql.length() + "|" + sql + "|" + vals);
 		
 		DBProcessor db = new DBProcessor(getDBConnection());
-		return  db.executeSQLWithCount(sql.toString(), vals, new MTSDocumentVO(), bst);
+		return db.executeSQLWithCount(sql.toString(), vals, new MTSDocumentVO(), bst);
 	}
 	
 	/**

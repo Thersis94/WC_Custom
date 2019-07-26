@@ -60,6 +60,11 @@ public class MTSConstants {
 	public static final String ROOT_FOLDER_PATH = "/content/pubs/";
 	
 	/**
+	 * Default oocation of the feature image
+	 */
+	public static final String DEF_FEATURE_IMG_PATH = "/binary/file_transfer/000/000/feature.png";
+	
+	/**
 	 * 
 	 */
 	private MTSConstants() {

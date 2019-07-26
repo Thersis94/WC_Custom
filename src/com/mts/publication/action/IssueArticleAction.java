@@ -17,7 +17,7 @@ import com.mts.publication.data.PublicationTeaserVO;
 import com.mts.publication.data.PublicationVO;
 import com.mts.publication.data.RelatedArticleVO;
 import com.mts.subscriber.data.MTSUserVO;
-
+import com.mts.util.AppUtil;
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -93,7 +93,9 @@ public class IssueArticleAction extends SBActionAdapter {
 			if (req.hasParameter("related")) {
 				setModuleData(getRelatedArticles(req.getParameter("actionGroupId")));
 			} else if (req.hasParameter("documentId")) {
-				setModuleData(getDocument(req.getParameter("documentId"), null, false));
+				
+				String userId = AppUtil.getMTSUserId(req);
+				setModuleData(getDocument(req.getParameter("documentId"), null, false, userId));
 			} else {
 				setModuleData(getArticles(new BSTableControlVO(req, MTSDocumentVO.class), req));
 			}
@@ -114,8 +116,8 @@ public class IssueArticleAction extends SBActionAdapter {
 		sql.append("a.document_id, related_article_id, user_id,f.widget_meta_data_id, f.field_nm, f.parent_id ");
 		sql.append("from ").append(schema).append("mts_related_article a ");
 		sql.append("inner join ").append(schema).append("mts_document b on a.related_document_id = b.document_id ");
-		sql.append("inner join ").append(schema).append("mts_user c on b.author_id = c.user_id ");
 		sql.append("inner join sb_action d on a.related_document_id = d.action_group_id and pending_sync_flg = 0 ");
+		sql.append("left outer join ").append(schema).append("mts_user c on b.author_id = c.user_id ");
 		sql.append("left outer join widget_meta_data_xr e on d.action_id = e.action_id ");
 		sql.append("left outer join widget_meta_data f on e.widget_meta_data_id = f.widget_meta_data_id ");
 		sql.append("where a.document_id = ? ");
@@ -132,13 +134,14 @@ public class IssueArticleAction extends SBActionAdapter {
 	 * @return
 	 * @throws SQLException
 	 */
-	public MTSDocumentVO getDocument(String documentId, String directPath, boolean pagePreview) 
+	public MTSDocumentVO getDocument(String documentId, String directPath, boolean pagePreview, String userId) 
 	throws SQLException {
 		if (StringUtil.isEmpty(documentId) && StringUtil.isEmpty(directPath)) 
 			throw new SQLException("No identifier passed for the document");
 		
 		StringBuilder sql = new StringBuilder(640);
-		sql.append("select publication_nm, e.publication_id, d.issue_nm, a.*, b.*, c.* ");
+		sql.append("select publication_nm, e.publication_id, d.issue_nm, ");
+		sql.append("coalesce(len(f.user_info_id), 0) as bookmark_flg, a.*, b.*, c.* ");
 		sql.append(DBUtil.FROM_CLAUSE).append(getCustomSchema()).append("mts_document a ");
 		sql.append(DBUtil.INNER_JOIN).append("sb_action b on a.action_group_id = b.action_group_id ");
 		sql.append(DBUtil.INNER_JOIN).append("document c on b.action_id = c.action_id ");
@@ -146,6 +149,9 @@ public class IssueArticleAction extends SBActionAdapter {
 		sql.append("mts_issue d on a.issue_id = d.issue_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(getCustomSchema());
 		sql.append("mts_publication e on d.publication_id = e.publication_id ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(getCustomSchema()).append("mts_user_info f ");
+		sql.append("on a.unique_cd = f.value_txt and f.user_id = ? and f.user_info_type_cd = 'BOOKMARK' ");
+		
 		if (!StringUtil.isEmpty(documentId)) {
 			sql.append("where a.document_id = ? order by pending_sync_flg desc ");
 		} else {
@@ -157,7 +163,8 @@ public class IssueArticleAction extends SBActionAdapter {
 		
 		MTSDocumentVO doc = new MTSDocumentVO();
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			ps.setString(1, StringUtil.isEmpty(documentId) ? directPath : documentId);
+			ps.setString(1, userId);
+			ps.setString(2, StringUtil.isEmpty(documentId) ? directPath : documentId);
 			
 			try (ResultSet rs = ps.executeQuery()) {
 				if (rs.next()) doc = new MTSDocumentVO(rs);
@@ -176,11 +183,12 @@ public class IssueArticleAction extends SBActionAdapter {
 	public List<WidgetMetadataVO> getCategories(String actionId) {
 		// Get the categories
 		StringBuilder s = new StringBuilder(184);
-		s.append("select * from widget_meta_data_xr a inner join widget_meta_data b ");
-		s.append("on a.widget_meta_data_id = b.widget_meta_data_id where action_id = ?");
+		s.append("select a.widget_meta_data_id, parent_id, field_nm, b.widget_meta_data_xr_id from widget_meta_data a left outer join widget_meta_data_xr b ");
+		s.append("on a.widget_meta_data_id = b.widget_meta_data_id and action_id = ? ");
+		s.append("where organization_id = 'MTS' order by parent_id desc, field_nm");
 		DBProcessor db = new DBProcessor(getDBConnection());
 		
-		return db.executeSelect(s.toString(), Arrays.asList(actionId), new WidgetMetadataVO());
+		return db.executeSelect(s.toString(), Arrays.asList(actionId), new WidgetMetadataVO(), "widget_meta_data_id");
 	}
 	
 	/**
