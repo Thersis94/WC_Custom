@@ -226,7 +226,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		bst.setLimit(1000);
 		
 		UserAction ua = new UserAction(getDBConnection(), getAttributes());
-		GridDataVO<MTSUserVO> users = ua.getAllUsers(bst, roleId, subType);
+		GridDataVO<MTSUserVO> users = ua.getAllUsers(bst, roleId, subType, null);
 		
 		for (MTSUserVO user : users.getRowData()) {
 			data.add(new GenericVO(user.getUserId(), user.getFullName()));

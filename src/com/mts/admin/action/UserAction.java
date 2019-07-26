@@ -216,7 +216,7 @@ public class UserAction extends UserBaseWidget {
 				setModuleData(getUserProfile(req.getParameter("userId")));
 			} else {
 				BSTableControlVO bst = new BSTableControlVO(req, MTSUserVO.class);
-				setModuleData(getAllUsers(bst, req.getParameter("roleId"), null));
+				setModuleData(getAllUsers(bst, req.getParameter("roleId"), null, req.getParameter("publicationId")));
 			}
 		} catch (Exception e) {
 			setModuleData(null, 0, e.getLocalizedMessage());
@@ -245,12 +245,14 @@ public class UserAction extends UserBaseWidget {
 	 * 
 	 * @return
 	 */
-	public GridDataVO<MTSUserVO> getAllUsers(BSTableControlVO bst, String roleId, String subType) {
+	public GridDataVO<MTSUserVO> getAllUsers(BSTableControlVO bst, String roleId, String subType, String pubId) {
 		// Add the params
 		List<Object> vals = new ArrayList<>();
 		
 		StringBuilder sql = new StringBuilder(768);
-		sql.append("select last_login_dt, a.*, c.role_nm, b.profile_role_id, d.authentication_id, a.create_dt ");
+		sql.append("select a.email_address_txt, last_login_dt, a.user_id, a.first_nm, a.last_nm, ");
+		sql.append("a.company_nm, a.expiration_dt, a.active_flg, c.role_nm, b.profile_role_id, ");
+		sql.append("d.authentication_id, a.create_dt, string_agg(f.publication_nm, ',') as note_txt ");
 		sql.append(DBUtil.FROM_CLAUSE).append(getCustomSchema()).append("mts_user a ");
 		sql.append(DBUtil.INNER_JOIN).append("profile_role b ");
 		sql.append("on a.profile_id = b.profile_id and site_id = 'MTS_2' ");
@@ -258,6 +260,12 @@ public class UserAction extends UserBaseWidget {
 		sql.append("on b.role_id = c.role_id ");
 		sql.append(DBUtil.INNER_JOIN).append("profile d ");
 		sql.append("on a.profile_id = d.profile_id ");
+		sql.append("left outer join ( ");
+		sql.append("select p.publication_id, xr.user_id, publication_nm ");
+		sql.append("from custom.mts_subscription_publication_xr xr ");
+		sql.append("inner join custom.mts_publication p ");
+		sql.append("on xr.publication_id = p.publication_id ");
+		sql.append(") as f on a.user_id = f.user_id ");
 		sql.append("left outer join ( ");
 		sql.append("select authentication_id, max(login_dt) as last_login_dt ");
 		sql.append("from authentication_log ");
@@ -271,7 +279,12 @@ public class UserAction extends UserBaseWidget {
 			sql.append("and a.role_id = ? ");
 			vals.add(roleId);
 		}
-		
+		log.info("Pub ID: " + pubId);
+		// Filter by publication
+		if (! StringUtil.isEmpty(pubId)) {
+			sql.append("and f.publication_id = ? ");
+			vals.add(pubId);
+		}
 		
 		// Filter by subscription Type
 		if (!StringUtil.isEmpty(subType)) {
@@ -288,8 +301,10 @@ public class UserAction extends UserBaseWidget {
 			vals.add(bst.getLikeSearch().toLowerCase());
 		}
 		
+		sql.append("group by last_login_dt, a.user_id, a.first_nm, a.last_nm, a.company_nm, a.expiration_dt, ");
+		sql.append("c.role_nm, b.profile_role_id, d.authentication_id, a.create_dt, a.active_flg, a.email_address_txt ");
 		sql.append(bst.getSQLOrderBy("a.last_nm", "asc"));
-		log.debug(sql.length() + "|" + sql + "|" + bst.getLikeSearch());
+		log.info(sql.length() + "|" + sql + "|" + bst.getLikeSearch());
 		
 		// Query
 		DBProcessor db = new DBProcessor(getDBConnection());
