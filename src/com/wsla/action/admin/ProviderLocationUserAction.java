@@ -105,10 +105,10 @@ public class ProviderLocationUserAction extends BasePortalAction {
 		}
 
 		sql.append(bst.getSQLOrderBy("last_nm",  "asc"));
-		log.debug(sql);
 
 		// Get the Provider Location users
 		DBProcessor db = new DBProcessor(getDBConnection());
+		db.setGenerateExecutedSQL(log.isDebugEnabled());
 		List<ProviderUserVO> users = db.executeSelect(sql.toString(), params, new ProviderUserVO());
 		assignProfileData(users);
 
@@ -155,6 +155,11 @@ public class ProviderLocationUserAction extends BasePortalAction {
 		try {
 			//call superclass, save the users profile data
 			saveUser(site, user, true, true);
+			
+			if(req.getBooleanParameter("providerLocationBypass")) {
+				log.debug("@@@@@editing user bypassing provider");
+				return;
+			}
 			
 			if (StringUtil.isEmpty(providerUser.getUserId()))
 				providerUser.setUserId(user.getUserId()); //user would be populated at this point, by saveUser
