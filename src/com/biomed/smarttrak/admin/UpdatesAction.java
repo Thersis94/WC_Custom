@@ -310,6 +310,13 @@ public class UpdatesAction extends ManagementAction {
 			fq.add(StringUtil.join("status_cd_s:", updateStatus));
 		}
 
+		//Check for ids we want to ignore. Is managed on front end with a timer.
+		if(req.hasParameter("skipIds")) {
+			for(String skipId : req.getParameterValues("skipIds")) {
+				fq.add("!documentId:" + skipId);
+			}
+		}
+
 		req.setParameter("fq", fq.toArray(new String[fq.size()]), true);
 		req.setParameter("allowCustom", "true");
 		req.setParameter("fieldOverride", SearchDocumentHandler.PUBLISH_DATE);
