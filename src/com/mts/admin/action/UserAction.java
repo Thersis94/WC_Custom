@@ -283,9 +283,9 @@ public class UserAction extends UserBaseWidget {
 		if (bst.hasSearch()) {
 			sql.append("and (lower(a.last_nm) like ? or lower(a.first_nm) like ? ");
 			sql.append("or lower(a.email_address_txt) like ?) ");
-			vals.add(bst.getLikeSearch());
-			vals.add(bst.getLikeSearch());
-			vals.add(bst.getLikeSearch());
+			vals.add(bst.getLikeSearch().toLowerCase());
+			vals.add(bst.getLikeSearch().toLowerCase());
+			vals.add(bst.getLikeSearch().toLowerCase());
 		}
 		
 		sql.append(bst.getSQLOrderBy("a.last_nm", "asc"));

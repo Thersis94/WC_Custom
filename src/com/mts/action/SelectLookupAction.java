@@ -26,6 +26,7 @@ import com.siliconmtn.common.html.BSTableControlVO;
 import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.*;
+import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 
@@ -95,6 +96,15 @@ public class SelectLookupAction extends SBActionAdapter {
 	 */
 	public SelectLookupAction(ActionInitVO actionInit) {
 		super(actionInit);
+	}
+	
+	/**
+	 * @param actionInit
+	 */
+	public SelectLookupAction(SMTDBConnection dbConn, Map<String, Object> attributes) {
+		super();
+		setDBConnection(dbConn);
+		setAttributes(attributes);
 	}
 
 	/*
@@ -367,7 +377,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("mts_user c ");
 		sql.append("on a.author_id = c.user_id ) as search ");
 		sql.append("where search.document @@ to_tsquery('").append(term).append("') ");
-		sql.append("order by action_nm limit 20");
+		sql.append("order by action_nm limit 10");
 		log.debug(sql.length() + "|" + sql);
 		
 		DBProcessor db = new DBProcessor(getDBConnection());
