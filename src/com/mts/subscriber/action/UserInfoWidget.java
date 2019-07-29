@@ -91,7 +91,7 @@ public class UserInfoWidget extends SimpleActionAdapter {
 		}
 		
 		sql.append("order by user_info_type_cd ");
-		log.info(sql.length() + "|" + sql + "|" + vals);
+		log.debug(sql.length() + "|" + sql + "|" + vals);
 		
 		DBProcessor db = new DBProcessor(getDBConnection());
 		return db.executeSelect(sql.toString(), vals, new UserExtendedVO());
@@ -112,7 +112,7 @@ public class UserInfoWidget extends SimpleActionAdapter {
 		sql.append("inner join ").append(getCustomSchema()).append("mts_document d ");
 		sql.append("on a.value_txt = d.unique_cd ");
 		sql.append("inner join sb_action b ");
-		sql.append("on d.document_id = b.action_group_id and pending_sync_flg = 0 ");
+		sql.append("on d.action_group_id = b.action_group_id and pending_sync_flg = 0 ");
 		sql.append("inner join document doc on b.action_id = doc.action_id ");
 		sql.append("inner join ").append(getCustomSchema()).append("mts_issue i ");
 		sql.append("on d.issue_id = i.issue_id ");
@@ -146,6 +146,7 @@ public class UserInfoWidget extends SimpleActionAdapter {
 				UserDataVO user = this.getAdminUser(req);
 				vo.setUserId(((MTSUserVO) user.getUserExtendedInfo()).getUserId());
 				this.saveUserInfo(vo);
+				setModuleData(user);
 			}
 		} catch (Exception e) {
 			log.error("Unable to build extebded data: " + vo, e);

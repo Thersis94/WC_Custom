@@ -59,7 +59,7 @@ public class RandomArticleAction extends SBActionAdapter {
 		// Query the publication for random articles
 		BSTableControlVO bst = new BSTableControlVO(req, MTSDocumentVO.class);
 		DocumentBrowseAction dba = new DocumentBrowseAction(dbConn, attributes);
-		GridDataVO<MTSDocumentVO> results = dba.search(bst, pubId, null, null, null);
+		GridDataVO<MTSDocumentVO> results = dba.search(bst, pubId, null, null, null, null);
 		putModuleData(results.getRowData());
 	}
 	
