@@ -6,7 +6,6 @@ import java.util.List;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
-import com.siliconmtn.common.html.BSTableControlVO;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.exception.DatabaseException;
@@ -15,7 +14,6 @@ import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.wsla.action.BasePortalAction;
 import com.wsla.data.provider.ProviderUserVO;
-import com.wsla.data.ticket.UserVO;
 
 /****************************************************************************
  * <b>Title</b>: UserAction.java
