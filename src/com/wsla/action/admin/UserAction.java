@@ -57,7 +57,7 @@ public class UserAction extends BasePortalAction {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		log.info("user action retreve called");
+		log.debug("user action retreve called");
 		boolean hasActiveFlag = req.hasParameter("activeFlag");
 		int activeFlag = Convert.formatInteger(req.getParameter("activeFlag"));
 		String providerId = req.getParameter("providerId");
@@ -100,8 +100,6 @@ public class UserAction extends BasePortalAction {
 			vals.add(providerId);
 		}
 
-		
-		log.debug(sql.toString());
 		DBProcessor db = new DBProcessor(getDBConnection());
 		db.setGenerateExecutedSQL(log.isDebugEnabled());
 		List<ProviderUserVO> users = db.executeSelect(sql.toString(), vals, new ProviderUserVO());

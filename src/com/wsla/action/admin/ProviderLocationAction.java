@@ -298,7 +298,7 @@ public class ProviderLocationAction extends BatchImport {
 		}
 
 		sql.append(bst.getSQLOrderBy(orderBy,  "asc"));
-		log.info(sql);
+		log.debug(sql);
 
 		DBProcessor db = new DBProcessor(getDBConnection(), schema);
 		return db.executeSQLWithCount(sql.toString(), params, new ProviderLocationVO(), bst.getLimit(), bst.getOffset());
