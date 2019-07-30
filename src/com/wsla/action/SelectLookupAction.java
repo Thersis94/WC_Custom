@@ -117,6 +117,8 @@ public class SelectLookupAction extends SBActionAdapter {
 		keyMap.put("attributes", new GenericVO("getAttributes", Boolean.TRUE));
 		keyMap.put(PROVIDER_TYPE, new GenericVO("getProviderTypes", Boolean.FALSE));
 		keyMap.put("provider", new GenericVO("getProviders", Boolean.TRUE));
+		keyMap.put("providerWLoc", new GenericVO("getProvidersWithLocations", Boolean.TRUE));
+		keyMap.put("userProvider", new GenericVO("getUserProviders", Boolean.TRUE));
 		keyMap.put("oemParts", new GenericVO("getProviderParts", Boolean.TRUE));
 		keyMap.put("providerLocations", new GenericVO("getProviderLocations", Boolean.TRUE));
 		keyMap.put("activeFlag", new GenericVO("getYesNoLookup", Boolean.TRUE));
@@ -325,6 +327,29 @@ public class SelectLookupAction extends SBActionAdapter {
 	}
 
 	/**
+	 * Load a list of Providers that have users assigned to locations.  
+	 * @return
+	 */
+	public List<GenericVO> getUserProviders(ActionRequest req) {
+
+		List<Object> vals = new ArrayList<>();
+		
+		StringBuilder sql = new StringBuilder(150);
+		sql.append("select pl.provider_id as key, p.provider_nm as value from ").append(getCustomSchema()).append("wsla_provider_location pl ");
+		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("wsla_provider p on pl.provider_id = p.provider_id ");
+		sql.append("where location_id in ( ");
+		sql.append("select location_id from ").append(getCustomSchema()).append("wsla_provider_user_xr group by location_id ");
+		sql.append(") group by pl.provider_id, p.provider_nm ");
+		
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		db.setGenerateExecutedSQL(log.isDebugEnabled());
+		List<GenericVO> data = db.executeSelect(sql.toString(), vals, new GenericVO());
+		log.debug("user providers size " + data.size());
+		return data;
+		
+	}
+	
+	/**
 	 * Load a list of Providers from the ProviderAction.  Must pass in the 
 	 * ProviderType to determine which type to retrieve.  If providerType is not passed, 
 	 * default to OEM
@@ -342,6 +367,28 @@ public class SelectLookupAction extends SBActionAdapter {
 		return new ProviderAction(getAttributes(), getDBConnection()).getProviderOptions(pt, search, incUnknown, limit);
 	}
 
+	
+	/**
+	 * Load a list of Providers from the ProviderAction.  Must pass in the 
+	 * ProviderType to determine which type to retrieve.  If providerType is not passed, 
+	 * default to OEM
+	 * @return
+	 */
+	public List<GenericVO> getProvidersWithLocations(ActionRequest req) {
+		List<Object> vals = new ArrayList<>();
+		
+		StringBuilder sql = new StringBuilder(150);
+		sql.append(DBUtil.SELECT_CLAUSE).append(" provider_id as key, provider_nm as value ").append(DBUtil.FROM_CLAUSE).append(getCustomSchema()).append("wsla_provider pro");
+		sql.append(DBUtil.WHERE_CLAUSE).append("provider_id in ( select provider_id from ").append(getCustomSchema()).append("wsla_provider_location group by provider_id) ");
+		
+		log.debug(" sql " + sql +"|" + vals);
+
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		List<GenericVO> data = db.executeSelect(sql.toString(), vals, new GenericVO());
+		log.debug("acCas size " + data.size());
+		return data;
+	}
+	
 	/**
 	 * return a list of OEMs - a specific type of providers.  Distinguished from 'getProvider' to avoid coupling in View logic.
 	 * @param req
@@ -380,7 +427,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		BSTableControlVO bst = new BSTableControlVO(req, ProviderLocationVO.class);
 		bst.setLimit(100000); //get them all
 		ProviderLocationAction pla = new ProviderLocationAction(getAttributes(), getDBConnection());
-		GridDataVO<ProviderLocationVO> locations = pla.getLocations(req.getParameter(REQ_PROVIDER_ID), bst);
+		GridDataVO<ProviderLocationVO> locations = pla.getLocations(req.getParameter(REQ_PROVIDER_ID), bst, req.getBooleanParameter("getProvider"));
 
 		//turn the locations into relevant <locationId,locationName> pairs (GenericVO)
 		String name;

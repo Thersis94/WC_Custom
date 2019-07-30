@@ -121,8 +121,7 @@ public class BasePortalAction extends SBActionAdapter {
 	 * @param hasLoc if true, address info will be stored for the user
 	 * @throws Exception
 	 */
-	public void saveUser(SiteVO site, UserVO user, boolean hasAuth, boolean hasLoc) 
-			throws Exception {
+	public void saveUser(SiteVO site, UserVO user, boolean hasAuth, boolean hasLoc) throws Exception {
 		if (user.getProfile() == null) 
 			throw new InvalidDataException("Profile must be present");
 
@@ -143,7 +142,7 @@ public class BasePortalAction extends SBActionAdapter {
 
 		// Update / add the profile.
 		pm.updateProfile(profile, getDBConnection());
-
+		log.info("profile phone " + profile.getWorkPhone() +"|" +profile.getMobilePhone());
 		// opt-in the user if this is a new record
 		if (isInsert) {
 			pm.assignCommunicationFlg(site.getOrganizationId(), profile.getProfileId(), 

@@ -157,7 +157,7 @@ public class ProviderLocationUserAction extends BasePortalAction {
 			saveUser(site, user, true, true);
 			
 			if(req.getBooleanParameter("providerLocationBypass")) {
-				log.debug("@@@@@editing user bypassing provider");
+				log.debug("editing user bypassing provider");
 				return;
 			}
 			

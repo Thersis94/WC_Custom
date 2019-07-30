@@ -10,6 +10,8 @@ import com.siliconmtn.common.html.BSTableControlVO;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.exception.DatabaseException;
+import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.common.constants.AdminConstants;
 import com.wsla.action.BasePortalAction;
 import com.wsla.data.provider.ProviderUserVO;
@@ -55,27 +57,51 @@ public class UserAction extends BasePortalAction {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		setModuleData(getUsers(new BSTableControlVO(req, UserVO.class)));
+		log.info("user action retreve called");
+		boolean hasActiveFlag = req.hasParameter("activeFlag");
+		int activeFlag = Convert.formatInteger(req.getParameter("activeFlag"));
+		String providerId = req.getParameter("providerId");
+		setModuleData(getUsers(new BSTableControlVO(req, UserVO.class), hasActiveFlag, activeFlag, providerId));
 	}
 
 	/**
 	 * @param bsTableControlVO
+	 * @param hasActiveFlag 
+	 * @param activeFlagValue 
+	 * @param hasActiveFlag 
+	 * @param providerId 
 	 * @return
 	 */
-	private List<ProviderUserVO> getUsers(BSTableControlVO bsTableControlVO) {
+	private List<ProviderUserVO> getUsers(BSTableControlVO bsTableControlVO, boolean hasActiveFlag, Integer activeFlagValue, String providerId) {
 		log.debug("Users action get users called");
 		
 		List<Object> vals = new ArrayList<>();
 		vals.add(PUBLIC_SITE_ID);
 		
 		StringBuilder sql = new StringBuilder(150);
-		sql.append(DBUtil.SELECT_CLAUSE).append("u.*, r.role_nm, r.role_id from ").append(getCustomSchema()).append("wsla_user u ");
+		sql.append(DBUtil.SELECT_CLAUSE).append("pro.provider_nm, pro.provider_id, pl.*, u.*, r.role_nm, r.role_id from ").append(getCustomSchema()).append("wsla_user u ");
 		sql.append(DBUtil.INNER_JOIN).append("profile p on u.profile_id = p.profile_id ");
 		sql.append(DBUtil.INNER_JOIN).append("profile_role pr on u.profile_id = pr.profile_id ");
 		sql.append(DBUtil.INNER_JOIN).append("role r on pr.role_id = r.role_id ");
 		
+		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("wsla_provider_user_xr uxr on u.user_id = uxr.user_id ");
+		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("wsla_provider_location pl on uxr.location_id = pl.location_id ");
+		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("wsla_provider pro on pl.provider_id = pro.provider_id ");
+		
 		sql.append(DBUtil.WHERE_CLAUSE).append("pr.site_id = ? ");
 		
+		if(hasActiveFlag) {
+			sql.append("and u.active_flg = ? ");
+			vals.add(activeFlagValue);
+		}
+		
+		if (!StringUtil.isEmpty(providerId)) {
+			sql.append("and pro.provider_id = ? ");
+			vals.add(providerId);
+		}
+
+		
+		log.debug(sql.toString());
 		DBProcessor db = new DBProcessor(getDBConnection());
 		db.setGenerateExecutedSQL(log.isDebugEnabled());
 		List<ProviderUserVO> users = db.executeSelect(sql.toString(), vals, new ProviderUserVO());
