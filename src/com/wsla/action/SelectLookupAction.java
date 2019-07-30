@@ -369,23 +369,20 @@ public class SelectLookupAction extends SBActionAdapter {
 
 	
 	/**
-	 * Load a list of Providers from the ProviderAction.  Must pass in the 
-	 * ProviderType to determine which type to retrieve.  If providerType is not passed, 
-	 * default to OEM
+	 *Loads a list of provides that have provider locations
 	 * @return
 	 */
 	public List<GenericVO> getProvidersWithLocations(ActionRequest req) {
 		List<Object> vals = new ArrayList<>();
 		
-		StringBuilder sql = new StringBuilder(150);
-		sql.append(DBUtil.SELECT_CLAUSE).append(" provider_id as key, provider_nm as value ").append(DBUtil.FROM_CLAUSE).append(getCustomSchema()).append("wsla_provider pro");
-		sql.append(DBUtil.WHERE_CLAUSE).append("provider_id in ( select provider_id from ").append(getCustomSchema()).append("wsla_provider_location group by provider_id) ");
-		
-		log.debug(" sql " + sql +"|" + vals);
+		StringBuilder sql = new StringBuilder(100);
+		sql.append(DBUtil.SELECT_CLAUSE).append("distinct pro.provider_id as key, pro.provider_nm as value from ").append(getCustomSchema()).append("wsla_provider pro ");
+		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("wsla_provider_location pl on pro.provider_id = pl.provider_id ");
 
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		db.setGenerateExecutedSQL(log.isDebugEnabled());
 		List<GenericVO> data = db.executeSelect(sql.toString(), vals, new GenericVO());
-		log.debug("acCas size " + data.size());
+		log.debug("data size " + data.size());
 		return data;
 	}
 	
