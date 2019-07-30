@@ -127,18 +127,18 @@ public class SOExtendedData extends AbsImporter {
 		loadTicketIds();
 		setTicketIds();
 
-		//		save();
+		save();
 		log.info(String.format("replaced %d ticket_data records", delCnt));
 		log.info(String.format("added %d ticket_data records", saveCnt-delCnt));
 
 		//update purchase dates on the tickets
-		//		updatePurchaseDates();
+		updatePurchaseDates();
 
 		//update all ledger entries to be dispositioned by the SW User ID
-		updateLedgerDispositions();
+//		updateLedgerDispositions();
 
 		//affiliate the Retailers to the tickets
-		//		addRetailerAssignments();
+				addRetailerAssignments();
 	}
 
 	/**

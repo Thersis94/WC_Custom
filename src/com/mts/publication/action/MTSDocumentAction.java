@@ -14,7 +14,7 @@ import com.mts.admin.action.UserAction;
 import com.mts.publication.data.MTSDocumentVO;
 import com.mts.publication.data.PublicationTeaserVO;
 import com.mts.subscriber.data.MTSUserVO;
-
+import com.mts.util.AppUtil;
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -86,14 +86,13 @@ public class MTSDocumentAction extends SimpleActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		
 		try {
 			PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
 	        boolean isPreview = page.isPreviewMode();
 			boolean pagePreview = req.hasParameter("pagePreview") || isPreview;
-			
+			String userId = AppUtil.getMTSUserId(req);
 			IssueArticleAction iac = new IssueArticleAction(getDBConnection(), getAttributes());
-			MTSDocumentVO doc = iac.getDocument(null, req.getParameter("reqParam_1"), pagePreview);
+			MTSDocumentVO doc = iac.getDocument(null, req.getParameter("reqParam_1"), pagePreview, userId);
 			if (StringUtil.isEmpty(doc.getActionId())) throw new Exception("Unable to locate article");
 			
 			// Get the Related Articles

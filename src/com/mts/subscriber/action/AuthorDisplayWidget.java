@@ -86,12 +86,13 @@ public class AuthorDisplayWidget extends SimpleActionAdapter {
 		sql.append("inner join sb_action b on a.action_group_id = b.action_group_id and b.pending_sync_flg = 0 ");
 		sql.append("inner join widget_meta_data_xr c on b.action_id = c.action_id ");
 		sql.append("inner join widget_meta_data d on c.widget_meta_data_id = d.widget_meta_data_id ");
-		sql.append("where author_id = ? ");
+		sql.append("where author_id = ? and d.parent_id = 'CHANNELS' ");
 		sql.append("group by field_nm, c.widget_meta_data_id ");
 		sql.append("order by field_nm ");
+		log.debug(sql + "|" + author.getUserId());
 		
 		DBProcessor db = new DBProcessor(getDBConnection());
-		author.setCategories(db.executeSelect(sql.toString(), Arrays.asList(author.getUserId()), new WidgetMetadataVO()));
+		author.setCategories(db.executeSelect(sql.toString(), Arrays.asList(author.getUserId()), new WidgetMetadataVO(), "widget_meta_data_id"));
 	}
 	
 	/**
@@ -108,6 +109,7 @@ public class AuthorDisplayWidget extends SimpleActionAdapter {
 		sql.append("where author_id = ? ");
 		sql.append("group by publication_nm, p.publication_id ");
 		sql.append("order by publication_nm ");
+		log.debug(sql + "|" + author.getUserId());
 		
 		DBProcessor db = new DBProcessor(getDBConnection());
 		author.setPublications(db.executeSelect(sql.toString(), Arrays.asList(author.getUserId()), new PublicationVO()));

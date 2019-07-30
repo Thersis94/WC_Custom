@@ -98,9 +98,6 @@ public class SOHeader extends AbsImporter {
 		delete(sql);
 
 		save();
-
-		//update all of the tickets we just created to have traceability to Southware
-		setHistoricalFlg();
 	}
 
 
@@ -114,17 +111,6 @@ public class SOHeader extends AbsImporter {
 		Map<String, String> defects = new HashMap<>(250);
 		MapUtil.asMap(defects, dbp.executeSelect(sql, null, new GenericVO()));
 		return defects;
-	}
-
-
-	/**
-	 * Reset the warranty_valid_flg and set the historical marker - its only set on 
-	 * records imported by this script (not part of code/VOs)
-	 */
-	private void setHistoricalFlg() {
-		String sql = StringUtil.join("update ", schema, 
-				"wsla_ticket set locked_by_id=null, historical_flg=1 where locked_by_id='MIGRATION'");
-		db.executeSQLCommand(sql);
 	}
 
 
@@ -833,6 +819,7 @@ public class SOHeader extends AbsImporter {
 		vo.setWarrantyValidFlag("CNG".equalsIgnoreCase(dataVo.getCoverageCode()) ? 1 : 0); //this is the only code that results in warranty coverage
 		vo.setProductCategoryId(dataVo.getProductCategory());
 		vo.setCasLocationId(dataVo.getServiceTech());
+		vo.setHistoricalFlag(1);
 
 
 		//add attribute for Received Method
@@ -849,7 +836,7 @@ public class SOHeader extends AbsImporter {
 		if (!StringUtil.isEmpty(dataVo.getProblemCode())) {
 			attr = new TicketDataVO();
 			attr.setTicketId(vo.getTicketId());
-			attr.setAttributeCode("attr_symptomsComments");
+			attr.setAttributeCode("attr_unitDefect");
 			attr.setValue(lookupDefectCode(dataVo.getProblemCode()));
 			vo.addTicketData(attr);
 		}
@@ -881,11 +868,6 @@ public class SOHeader extends AbsImporter {
 		//			attr.setValue("defect-" + dataVo.getActionCode());
 		//			vo.addTicketData(attr);
 		//		}
-
-
-		//This is a temporary flag to mark they records we're adding to the DB.
-		//We'll correct it when we set the historical bit at the end of the import.
-		vo.setLockedBy("MIGRATION");
 
 		return vo;
 	}
