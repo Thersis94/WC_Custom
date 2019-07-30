@@ -61,7 +61,7 @@ public class UserAction extends BasePortalAction {
 		boolean hasActiveFlag = req.hasParameter("activeFlag");
 		int activeFlag = Convert.formatInteger(req.getParameter("activeFlag"));
 		String providerId = req.getParameter("providerId");
-		setModuleData(getUsers(new BSTableControlVO(req, UserVO.class), hasActiveFlag, activeFlag, providerId));
+		setModuleData(getUsers( hasActiveFlag, activeFlag, providerId));
 	}
 
 	/**
@@ -72,7 +72,7 @@ public class UserAction extends BasePortalAction {
 	 * @param providerId 
 	 * @return
 	 */
-	private List<ProviderUserVO> getUsers(BSTableControlVO bsTableControlVO, boolean hasActiveFlag, Integer activeFlagValue, String providerId) {
+	private List<ProviderUserVO> getUsers(boolean hasActiveFlag, Integer activeFlagValue, String providerId) {
 		log.debug("Users action get users called");
 		
 		List<Object> vals = new ArrayList<>();
