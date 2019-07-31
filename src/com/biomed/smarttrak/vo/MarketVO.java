@@ -31,6 +31,7 @@ import com.smt.sitebuilder.search.SearchDocumentHandler;
 @Table(name="BIOMEDGPS_MARKET")
 public class MarketVO extends AuthorVO {
 	private String marketId;
+	private String marketGroupId;
 	private String parentId;
 	private String marketName;
 	private int orderNo;
@@ -48,6 +49,7 @@ public class MarketVO extends AuthorVO {
 	private String regionName;
 	private int publicFlag;
 	private int indentNo;
+	private int yearNo;
 	
 	//used to specify the associated region for ordering within Solr
 	public enum RegionOrder{
@@ -84,6 +86,7 @@ public class MarketVO extends AuthorVO {
 	protected void setData(ActionRequest req) {
 		super.setData(req); //set the creator_profile_id
 		marketId = req.getParameter("marketId");
+		marketGroupId = req.getParameter("marketGroupId");
 		parentId = StringUtil.checkVal(req.getParameter("parentId"), null);
 		marketName = req.getParameter("marketName");
 		shortName = req.getParameter("shortName");
@@ -94,6 +97,7 @@ public class MarketVO extends AuthorVO {
 		marketSection = new SectionVO(req);
 		setPublicFlag(Convert.formatInteger(req.getParameter("publicFlag")));
 		setIndentNo(Convert.formatInteger(req.getParameter("indentNo")));
+		yearNo = Convert.formatInteger(req.getParameter("yearNo"));
 	}
 
 
@@ -110,6 +114,23 @@ public class MarketVO extends AuthorVO {
 			super.setDocumentId(marketId);
 		}
 	}
+	/**
+	 * @return the marketGroupId
+	 */
+	@Column(name="market_group_id")
+	public String getMarketGroupId() {
+		return marketGroupId;
+	}
+
+
+	/**
+	 * @param marketGroupId the marketGroupId to set
+	 */
+	public void setMarketGroupId(String marketGroupId) {
+		this.marketGroupId = marketGroupId;
+	}
+
+
 	@SolrField(name="parentId_s")
 	@Column(name="parent_id")
 	public String getParentId() {
@@ -377,5 +398,22 @@ public class MarketVO extends AuthorVO {
 	 */
 	public void setIndentNo(int indentNo) {
 		this.indentNo = indentNo;
+	}
+
+
+	/**
+	 * @return the yearNo
+	 */
+	@Column(name="year_no")
+	public int getYearNo() {
+		return yearNo;
+	}
+
+
+	/**
+	 * @param yearNo the yearNo to set
+	 */
+	public void setYearNo(int yearNo) {
+		this.yearNo = yearNo;
 	}
 }
