@@ -30,6 +30,7 @@ public class RedYellowGreenVO {
 			String c = u.getLoginLegendColorText();
 
 			switch(c) {
+				default:
 				case "None":
 					noActivityCnt++;
 					break;
