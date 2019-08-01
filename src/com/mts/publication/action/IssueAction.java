@@ -100,6 +100,10 @@ public class IssueAction extends SBActionAdapter {
 	 * @return
 	 */
 	public GridDataVO<IssueVO> getIssues(String pubId, boolean beenIssued, BSTableControlVO bst) {
+		// Add the params
+		List<Object> vals = new ArrayList<>();
+		vals.add(pubId);
+		
 		StringBuilder sql = new StringBuilder(352);
 		sql.append("select coalesce(article_count, 0) as article_no, a.*, b.*, da.*  from ");
 		sql.append(getCustomSchema()).append("mts_issue a ");
@@ -119,12 +123,15 @@ public class IssueAction extends SBActionAdapter {
 		sql.append(") as da on a.issue_id = da.object_key_id ");
 		sql.append("where publication_id = ? ");
 		if (beenIssued) sql.append("and issue_dt > '2000-01-01' ");
-		sql.append("order by issue_dt desc, issue_nm ");
-		log.debug(sql.length() + "|" + sql + "|" + pubId + "|" + bst.getOffset());
 		
-		// Add the params
-		List<Object> vals = new ArrayList<>();
-		vals.add(pubId);
+		// Add the search vals
+		if(bst.hasSearch()) {
+			sql.append("and lower(issue_nm) like ? ");
+			vals.add(bst.getLikeSearch().toLowerCase());
+		}
+		
+		sql.append(bst.getSQLOrderBy("issue_dt", "desc"));
+		log.debug(sql.length() + "|" + sql + "|" + pubId + "|" + bst.getOffset());
 		
 		DBProcessor db = new DBProcessor(getDBConnection());
 		return db.executeSQLWithCount(sql.toString(), vals, new IssueVO(), bst);

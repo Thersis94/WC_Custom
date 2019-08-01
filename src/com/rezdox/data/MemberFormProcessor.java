@@ -136,6 +136,7 @@ public class MemberFormProcessor extends FormDataProcessor {
 			fl.setFileName(fpdb.getFileName());
 			fl.setPath(orgRoot + rootMemberPath);
 			fl.writeFiles();
+			fl.reorientFiles();
 			log.debug("saved file to " + orgRoot + rootMemberPath);
 			return rootMemberPath + fpdb.getFileName();
 
