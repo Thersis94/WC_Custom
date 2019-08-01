@@ -73,6 +73,7 @@ public class RSSDataFeed extends AbstractSmarttrakRSSFeed {
 
 			try {
 				List<RSSArticleVO> articles = retrieveArticles(f.getRssUrl(), f.getRssEntityId());
+				log.info(String.format("Processing %d articles from %s", articles.size(), f.getRssUrl()));
 				filterArticles(f, articles);
 			} catch (Exception e) {
 				log.error("Problem Processing Feed", e);
@@ -88,7 +89,7 @@ public class RSSDataFeed extends AbstractSmarttrakRSSFeed {
 	 * @return
 	 */
 	private List<RSSArticleVO> retrieveArticles(String url, String rssEntityId) {
-		log.info("Retrieving Url: " + url);
+		log.info(String.format("Retrieving Url: %s", url));
 		byte[] results = getDataViaHttp(url, null);
 
 		//Process XML
@@ -112,7 +113,7 @@ public class RSSDataFeed extends AbstractSmarttrakRSSFeed {
 			Feed feed = feedParser.parse(new ByteArrayInputStream(results));
 			articles = convertFeed(feed, rssEntityId);
 		} catch(Exception se) {
-			log.error("Response was malformed: " + se.getMessage());
+			log.error(String.format("Response was malformed: %s", se.getMessage()));
 		}
 		log.info("Loaded " + articles.size() + " articles.");
 		return articles;
@@ -137,15 +138,15 @@ public class RSSDataFeed extends AbstractSmarttrakRSSFeed {
 		//Match Articles Retrieved against db articles to get proper Dates and Article Id for existing records.
 		matchArticles(articles);
 
-		log.debug("Retrieved " + articles.size() + " Articles.");
+		log.debug(String.format("Retrieved %d Articles.", articles.size()));
 		int initialSize = articles.size();
 			articles = articles.stream().filter(a -> a.getPublishDt() != null ? a.getPublishDt().after(cutOffDate) : true).collect(Collectors.toList());
 		int diff = initialSize - articles.size();
 		if(diff != 0) {
-			log.debug("Removed " + diff + "articles");
+			log.debug(String.format("Removed %d articles", diff));
 			this.addMessage(String.format("Feed: %s - PubDate Filter Removed %d articles.", rssEntityId, diff));
 		}
-		log.debug(articles.size() + " articles remaining after 30 day filter.");
+		log.debug(String.format("%d articles remaining after 30 day filter.", articles.size()));
 		return articles;
 	}
 

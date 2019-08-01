@@ -18,6 +18,7 @@ import com.biomed.smarttrak.admin.UpdatesManageReportAction;
 //WC Custom
 import com.biomed.smarttrak.vo.UpdateVO;
 import com.biomed.smarttrak.vo.UpdateXRVO;
+import com.biomed.smarttrak.vo.UserVO;
 //SMT base libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -339,13 +340,13 @@ public class UpdatesEditionDataLoader extends SimpleActionAdapter {
 	 */
 	protected  List<UpdateVO> loadUpdates(ActionRequest req, String profileId, Date startDt, Date endDt) {
 		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
+		boolean isEmail = false;
 
 		//build the query
 		String sql;
 		if (req.getAttribute(IS_MANAGE_TOOL) != null) { //set by the subclass
 			sql = buildManageUpdatesSQL(schema);
 		} else {
-			boolean isEmail = false;
 			// If this is being called for an email the data needs to be
 			// restricted to the user's set viewable content.
 			SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
@@ -357,6 +358,10 @@ public class UpdatesEditionDataLoader extends SimpleActionAdapter {
 		int x=0;
 		UpdateVO vo = null;
 		Map<String, UpdateVO>  updates = new LinkedHashMap<>();
+		String allowedTypes = "";
+		if (isEmail) {
+			allowedTypes = getAllowedTypes(profileId);
+		}
 		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
 			ps.setString(++x, AdminControllerAction.PUBLIC_SITE_ID);
 			if (!StringUtil.isEmpty(profileId)) ps.setString(++x, profileId);
@@ -366,6 +371,9 @@ public class UpdatesEditionDataLoader extends SimpleActionAdapter {
 			boolean redirectLinks = Convert.formatBoolean(req.getParameter("redirectLinks"));
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
+				// Skip updates that are not in the user's allowed types list
+				if (isEmail && !allowedTypes.isEmpty() && !allowedTypes.contains(StringUtil.checkVal(rs.getString("type_cd"), "0"))) continue;
+				
 				vo = updates.get(rs.getString("update_id"));
 
 				if (vo == null) {
@@ -410,6 +418,33 @@ public class UpdatesEditionDataLoader extends SimpleActionAdapter {
 		return new ArrayList<>(updates.values());
 	}
 
+
+	/**
+	 * Get the types of updates the user has set as allowed to be recieved
+	 * @param profileId
+	 * @return
+	 */
+	private String getAllowedTypes(String profileId) {
+		StringBuilder sql = new StringBuilder(120);
+		sql.append("select string_agg(value_txt, ',') from ").append("register_submittal rs ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append("register_data rd on rd.register_submittal_id = rs.register_submittal_id and rd.register_field_id = ? ");
+		sql.append("where action_id = ? and profile_id = ? ");
+		
+		try(PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, UserVO.RegistrationMap.TYPE.getFieldId());
+			ps.setString(2, AdminControllerAction.REGISTRATION_GRP_ID);
+			ps.setString(3, profileId);
+			
+			ResultSet rs = ps.executeQuery();
+			
+			if (rs.next())
+				return StringUtil.checkVal(rs.getString(1));
+			
+		} catch (SQLException e) {
+			log.error("Failed to generate allowed types for " + profileId);
+		}
+		return "";
+	}
 
 	/**
 	 * Builds the webpage query

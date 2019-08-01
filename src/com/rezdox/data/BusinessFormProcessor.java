@@ -164,6 +164,7 @@ public class BusinessFormProcessor extends FormDataProcessor {
 				fl.setFileName(fpdb.getFileName());
 				fl.setPath(uploadPath);
 				fl.writeFiles();
+				fl.reorientFiles();
 				req.setParameter((String) field.getKey(), rootBusinessPath + fpdb.getFileName());
 				dbFields.add((String) field.getValue());
 				log.debug("processed " + fpdb.getKey() + " into " + field);

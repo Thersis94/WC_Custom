@@ -1,5 +1,7 @@
 package com.wsla.util.migration.vo;
 
+import java.util.Date;
+
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.util.StringUtil;
 import com.wsla.data.ticket.TicketVO;
@@ -24,6 +26,8 @@ public class ExtTicketVO extends TicketVO {
 	private String customerProductId; //the name correlating to the productId - typically ID is blank when we're looking at these, meaning we're inserting records
 	private String serialNoText;
 	private String uniqueUserId;
+	private String casLocationId;
+	private Date closedDate;
 
 	@Override
 	@Column(name="originator_user_id")
@@ -62,5 +66,21 @@ public class ExtTicketVO extends TicketVO {
 
 	public void setUniqueUserId(String uniqueUserId) {
 		this.uniqueUserId = uniqueUserId;
+	}
+
+	public String getCasLocationId() {
+		return casLocationId;
+	}
+
+	public void setCasLocationId(String casLocationId) {
+		this.casLocationId = casLocationId == null || casLocationId.matches("0+") ? null : casLocationId;
+	}
+
+	public Date getClosedDate() {
+		return closedDate;
+	}
+
+	public void setClosedDate(Date closedDate) {
+		this.closedDate = closedDate;
 	}
 }
