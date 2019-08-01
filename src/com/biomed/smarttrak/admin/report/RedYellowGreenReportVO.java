@@ -1,6 +1,7 @@
 package com.biomed.smarttrak.admin.report;
 
 import java.io.ByteArrayOutputStream;
+import java.util.Date;
 import java.util.List;
 
 import org.apache.poi.hssf.usermodel.HSSFFont;
@@ -13,6 +14,7 @@ import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.util.CellRangeAddress;
 
+import com.siliconmtn.util.Convert;
 import com.smt.sitebuilder.action.AbstractSBReportVO;
 
 /****************************************************************************
@@ -35,7 +37,7 @@ public class RedYellowGreenReportVO extends AbstractSBReportVO {
 
 	public RedYellowGreenReportVO() {
 		super();
-		super.setFileName("RedGreenReport.xls");
+		super.setFileName("User Login Activity Report.xls");
 	}
 	/* (non-Javadoc)
 	 * @see com.siliconmtn.data.report.AbstractReport#generateReport()
@@ -177,9 +179,6 @@ public class RedYellowGreenReportVO extends AbstractSBReportVO {
 		c = r.createCell(8);
 		c.setCellFormula(String.format("B%d / F%d", rowCnt, rowCnt));
 		c.setCellStyle(setBorder(getCellFormat(workbook, FormatColor.D, true, false, true), true));
-		c = r.createCell(9);
-		c.setCellFormula(String.format("SUM(J8:J%d)", rowCnt - 1));
-		c.setCellStyle(setBorder(getCellFormat(workbook, FormatColor.D, false, false, true), true));
 	}
 
 
@@ -211,7 +210,7 @@ public class RedYellowGreenReportVO extends AbstractSBReportVO {
 		c.setCellFormula(String.format("SUM(B%d:E%d)", rowIndex, rowIndex));
 		c.setCellStyle(getCellFormat(workbook, FormatColor.D, false, false, false));
 		c = r.createCell(6);
-		c.setCellFormula(String.format("J%d / F%d", rowIndex, rowIndex));
+		c.setCellFormula(String.format("(C%d + D%d) / F%d", rowIndex, rowIndex, rowIndex));
 		c.setCellStyle(getCellFormat(workbook, FormatColor.D, true, false, true));
 		c = r.createCell(7);
 		c.setCellFormula(String.format("E%d / F%d", rowIndex, rowIndex));
@@ -219,9 +218,6 @@ public class RedYellowGreenReportVO extends AbstractSBReportVO {
 		c = r.createCell(8);
 		c.setCellFormula(String.format("B%d / F%d", rowIndex, rowIndex));
 		c.setCellStyle(getCellFormat(workbook, FormatColor.D, true, false, true));
-		c = r.createCell(9);
-		c.setCellFormula(String.format("C%d + D%d", rowIndex, rowIndex));
-		c.setCellStyle(getCellFormat(workbook, FormatColor.D, false, false, true));
 	}
 
 
@@ -249,13 +245,8 @@ public class RedYellowGreenReportVO extends AbstractSBReportVO {
 
 		r = sheet.createRow(rowCnt++);
 		c = r.createCell(0);
-		c.setCellValue("From Date");
-		c = r.createCell(1);
-		c.setCellValue("mm/dd/yyyy");
-		c = r.createCell(2);
-		c.setCellValue("To Date");
-		c = r.createCell(3);
-		c.setCellValue("mm/dd/yyyy");
+		c.setCellValue("Report Date : " + Convert.formatDate(new Date(), Convert.DATE_SLASH_PATTERN));
+		sheet.addMergedRegion(new CellRangeAddress(r.getRowNum(),r.getRowNum(),0,2));
 
 		r = sheet.createRow(rowCnt++);
 		c = r.createCell(0);
@@ -305,25 +296,22 @@ public class RedYellowGreenReportVO extends AbstractSBReportVO {
 		c = r.createCell(8);
 		c.setCellValue("");
 		c.setCellStyle(setBorder(getCellFormat(workbook, FormatColor.W, false, false, false), false));
-		c = r.createCell(9);
-		c.setCellValue("");
-		c.setCellStyle(setBorder(getCellFormat(workbook, FormatColor.W, false, false, false), false));
 
 		r = sheet.createRow(rowCnt++);
 		c = r.createCell(0);
 		c.setCellValue("Account Name");
 		c.setCellStyle(getCellFormat(workbook, FormatColor.W, false, true, false));
 		c = r.createCell(1);
-		c.setCellValue("Green");
+		c.setCellValue("Green (< 30 Days)");
 		c.setCellStyle(getCellFormat(workbook, FormatColor.G, false, true, true));
 		c = r.createCell(2);
 		c.setCellValue("No Activity");
 		c.setCellStyle(getCellFormat(workbook, FormatColor.R, false, true, true));
 		c = r.createCell(3);
-		c.setCellValue("Red");
+		c.setCellValue("Red (> 90 Days)");
 		c.setCellStyle(getCellFormat(workbook, FormatColor.R, false, true, true));
 		c = r.createCell(4);
-		c.setCellValue("Yellow");
+		c.setCellValue("Yellow (< 90 Days)");
 		c.setCellStyle(getCellFormat(workbook, FormatColor.Y, false, true, true));
 		c = r.createCell(5);
 		c.setCellValue("");
@@ -334,8 +322,7 @@ public class RedYellowGreenReportVO extends AbstractSBReportVO {
 		c.setCellValue("% Yellow");
 		c = r.createCell(8);
 		c.setCellValue("% Green");
-		c = r.createCell(9);
-		c.setCellValue("# Red/No Utiliz");
+
 		return rowCnt;
 	}
 
