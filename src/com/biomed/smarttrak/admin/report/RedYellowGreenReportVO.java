@@ -29,17 +29,14 @@ import com.smt.sitebuilder.action.AbstractSBReportVO;
  ****************************************************************************/
 public class RedYellowGreenReportVO extends AbstractSBReportVO {
 
-	private enum FormatColor {G,Y,R,B,D,W};
+	private static final long serialVersionUID = 1L;
+	private enum FormatColor {G,Y,R,B,D,W}
+	private List<RedYellowGreenVO> data;
+
 	public RedYellowGreenReportVO() {
 		super();
 		super.setFileName("RedGreenReport.xls");
 	}
-	/**
-	 *
-	 */
-	private static final long serialVersionUID = 1L;
-
-	private List<RedYellowGreenVO> data;
 	/* (non-Javadoc)
 	 * @see com.siliconmtn.data.report.AbstractReport#generateReport()
 	 */
@@ -126,6 +123,7 @@ public class RedYellowGreenReportVO extends AbstractSBReportVO {
 				f.setColor(palette.getColor(HSSFColor.GREEN.index).getIndex());
 				break;
 			case D:
+			default:
 				f.setColor(HSSFColor.BLACK.index);
 				break;
 		}
@@ -154,33 +152,34 @@ public class RedYellowGreenReportVO extends AbstractSBReportVO {
 		Row r = sheet.createRow(rowCnt);
 		Cell c = r.createCell(0);
 		c.setCellValue("Total Result");
+		c.setCellStyle(setBorder(getCellFormat(workbook, FormatColor.D, false, false, false), true));
 		c = r.createCell(1);
 		c.setCellFormula(String.format("SUM(B8:B%d)", rowCnt - 1));
-		c.setCellStyle(getCellFormat(workbook, FormatColor.G, false, false, true));
+		c.setCellStyle(setBorder(getCellFormat(workbook, FormatColor.G, false, false, true), true));
 		c = r.createCell(2);
 		c.setCellFormula(String.format("SUM(C8:C%d)", rowCnt - 1));
-		c.setCellStyle(getCellFormat(workbook, FormatColor.R, false, false, true));
+		c.setCellStyle(setBorder(getCellFormat(workbook, FormatColor.R, false, false, true), true));
 		c = r.createCell(3);
 		c.setCellFormula(String.format("SUM(D8:D%d)", rowCnt - 1));
-		c.setCellStyle(getCellFormat(workbook, FormatColor.R, false, false, true));
+		c.setCellStyle(setBorder(getCellFormat(workbook, FormatColor.R, false, false, true), true));
 		c = r.createCell(4);
 		c.setCellFormula(String.format("SUM(E8:E%d)", rowCnt - 1));
-		c.setCellStyle(getCellFormat(workbook, FormatColor.Y, false, false, true));
+		c.setCellStyle(setBorder(getCellFormat(workbook, FormatColor.Y, false, false, true), true));
 		c = r.createCell(5);
 		c.setCellFormula(String.format("SUM(F8:F%d)", rowCnt - 1));
-		c.setCellStyle(getCellFormat(workbook, FormatColor.D, false, false, false));
+		c.setCellStyle(setBorder(getCellFormat(workbook, FormatColor.D, false, false, false), true));
 		c = r.createCell(6);
 		c.setCellFormula(String.format("(D%d + C%d) / F%d", rowCnt, rowCnt, rowCnt));
-		c.setCellStyle(getCellFormat(workbook, FormatColor.D, true, false, true));
+		c.setCellStyle(setBorder(getCellFormat(workbook, FormatColor.D, true, false, true), true));
 		c = r.createCell(7);
 		c.setCellFormula(String.format("E%d / F%d", rowCnt, rowCnt));
-		c.setCellStyle(getCellFormat(workbook, FormatColor.D, true, false, true));
+		c.setCellStyle(setBorder(getCellFormat(workbook, FormatColor.D, true, false, true), true));
 		c = r.createCell(8);
 		c.setCellFormula(String.format("B%d / F%d", rowCnt, rowCnt));
-		c.setCellStyle(getCellFormat(workbook, FormatColor.D, true, false, true));
+		c.setCellStyle(setBorder(getCellFormat(workbook, FormatColor.D, true, false, true), true));
 		c = r.createCell(9);
 		c.setCellFormula(String.format("SUM(J8:J%d)", rowCnt - 1));
-		c.setCellStyle(getCellFormat(workbook, FormatColor.D, false, false, true));
+		c.setCellStyle(setBorder(getCellFormat(workbook, FormatColor.D, false, false, true), true));
 	}
 
 
@@ -281,34 +280,34 @@ public class RedYellowGreenReportVO extends AbstractSBReportVO {
 		r = sheet.createRow(rowCnt++);
 		c = r.createCell(0);
 		c.setCellValue("");		
-		c.setCellStyle(setBorder(getCellFormat(workbook, FormatColor.W, false, true, false)));
+		c.setCellStyle(setBorder(getCellFormat(workbook, FormatColor.W, false, true, false), false));
 		c = r.createCell(1);
 		c.setCellValue("Active");
-		c.setCellStyle(setBorder(getCellFormat(workbook, FormatColor.G, false, true, true)));
+		c.setCellStyle(setBorder(getCellFormat(workbook, FormatColor.G, false, true, true), false));
 		c = r.createCell(2);
 		c.setCellValue("");
-		c.setCellStyle(setBorder(getCellFormat(workbook, FormatColor.R, false, true, false)));
+		c.setCellStyle(setBorder(getCellFormat(workbook, FormatColor.R, false, true, false), false));
 		c = r.createCell(3);
 		c.setCellValue("");
-		c.setCellStyle(setBorder(getCellFormat(workbook, FormatColor.D, false, true, false)));
+		c.setCellStyle(setBorder(getCellFormat(workbook, FormatColor.D, false, true, false), false));
 		c = r.createCell(4);
 		c.setCellValue("");
-		c.setCellStyle(setBorder(getCellFormat(workbook, FormatColor.D, false, true, false)));
+		c.setCellStyle(setBorder(getCellFormat(workbook, FormatColor.D, false, true, false), false));
 		c = r.createCell(5);
 		c.setCellValue("Active total");
-		c.setCellStyle(setBorder(getCellFormat(workbook, FormatColor.W, false, true, false)));
+		c.setCellStyle(setBorder(getCellFormat(workbook, FormatColor.W, false, true, false), false));
 		c = r.createCell(6);
 		c.setCellValue("");
-		c.setCellStyle(setBorder(getCellFormat(workbook, FormatColor.W, false, false, false)));
+		c.setCellStyle(setBorder(getCellFormat(workbook, FormatColor.W, false, false, false), false));
 		c = r.createCell(7);
 		c.setCellValue("");
-		c.setCellStyle(setBorder(getCellFormat(workbook, FormatColor.W, false, false, false)));
+		c.setCellStyle(setBorder(getCellFormat(workbook, FormatColor.W, false, false, false), false));
 		c = r.createCell(8);
 		c.setCellValue("");
-		c.setCellStyle(setBorder(getCellFormat(workbook, FormatColor.W, false, false, false)));
+		c.setCellStyle(setBorder(getCellFormat(workbook, FormatColor.W, false, false, false), false));
 		c = r.createCell(9);
 		c.setCellValue("");
-		c.setCellStyle(setBorder(getCellFormat(workbook, FormatColor.W, false, false, false)));
+		c.setCellStyle(setBorder(getCellFormat(workbook, FormatColor.W, false, false, false), false));
 
 		r = sheet.createRow(rowCnt++);
 		c = r.createCell(0);
@@ -343,11 +342,18 @@ public class RedYellowGreenReportVO extends AbstractSBReportVO {
 	/**
 	 * Add Border Style to given style.
 	 * @param style
+	 * @param borderTop
 	 * @return
 	 */
-	private CellStyle setBorder(CellStyle style) {
-		style.setBorderBottom(CellStyle.BORDER_MEDIUM);
-		style.setBottomBorderColor(HSSFColor.GREY_50_PERCENT.index);
+	private CellStyle setBorder(CellStyle style, boolean borderTop) {
+		if(borderTop) {
+			style.setBorderTop(CellStyle.BORDER_MEDIUM);
+			style.setTopBorderColor(HSSFColor.GREY_50_PERCENT.index);
+		} else {
+			style.setBorderBottom(CellStyle.BORDER_MEDIUM);
+			style.setBottomBorderColor(HSSFColor.GREY_50_PERCENT.index);
+		}
+
 		return style;
 	}
 

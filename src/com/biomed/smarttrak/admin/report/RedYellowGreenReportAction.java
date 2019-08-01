@@ -39,13 +39,14 @@ public class RedYellowGreenReportAction extends UserListReportAction {
 	 * @throws ActionException
 	 */
 	public List<RedYellowGreenVO> retrieveMergedUsers(ActionRequest req) throws ActionException {
-		return super.retrieveUserList(req).stream().map(u -> new RedYellowGreenVO(u)).collect(Collectors.toList());
+		return super.retrieveUserList(req).stream().map(RedYellowGreenVO::new).collect(Collectors.toList());
 	}
 
 	/**
 	 * Builds the base accounts/users query.
 	 * @return
 	 */
+	@Override
 	protected StringBuilder buildAccountsUsersQuery(String schema) {
 		StringBuilder sql = new StringBuilder(650);
 		sql.append("select ac.account_id, ac.account_nm, ac.expiration_dt as acct_expiration_dt, ac.status_no, ");
@@ -74,6 +75,7 @@ public class RedYellowGreenReportAction extends UserListReportAction {
 	 * Build Params list for the RetrieveAccountUsers Query.
 	 * @return
 	 */
+	@Override
 	protected String[] getRetrieveAccountUsersParams() {
 		return new String[] {AccountVO.Status.ACTIVE.getStatusNo(), AccountVO.Type.FULL.getId(), AccountVO.Type.TRIAL.getId(), UserVO.LicenseType.ACTIVE.getCode(), UserVO.LicenseType.EXTRA.getCode()};
 	}
