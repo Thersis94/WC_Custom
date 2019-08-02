@@ -118,7 +118,7 @@ public class IssueAction extends SBActionAdapter {
 		sql.append(") c on a.issue_id = c.issue_id ");
 		sql.append("left outer join ( ");
 		sql.append("select object_key_id, string_agg(document_path, ',') as document_path ");
-		sql.append("from custom.mts_document_asset where asset_type_cd = 'FEATURE_IMG' ");
+		sql.append("from custom.mts_document_asset where asset_type_cd = 'COVER_IMG' ");
 		sql.append("group by object_key_id ");
 		sql.append(") as da on a.issue_id = da.object_key_id ");
 		sql.append("where publication_id = ? ");
