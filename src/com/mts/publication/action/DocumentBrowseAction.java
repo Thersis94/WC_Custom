@@ -119,8 +119,8 @@ public class DocumentBrowseAction extends SimpleActionAdapter {
 		sql.append("from custom.mts_document a ");
 		sql.append("inner join sb_action b on a.action_group_id = b.action_group_id and pending_sync_flg = 0 ");
 		sql.append("left outer join widget_meta_data_xr c on b.action_id = c.action_id ");
-		sql.append("left outer join custom.mts_document_asset da on c.widget_meta_data_id = da.object_key_id and da.asset_type_cd != 'PDF_DOC' ");
-		sql.append("left outer join custom.mts_document_asset da1 on a.document_id = da1.object_key_id and da1.asset_type_cd != 'PDF_DOC' ");
+		sql.append("left outer join custom.mts_document_asset da on c.widget_meta_data_id = da.object_key_id and da.asset_type_cd = 'FEATURE_IMG' ");
+		sql.append("left outer join custom.mts_document_asset da1 on a.document_id = da1.object_key_id and da1.asset_type_cd = 'FEATURE_IMG' ");
 		sql.append("group by document_id ");
 		sql.append(") as i on b.document_id = i.document_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(getCustomSchema()).append("mts_user_info e ");
@@ -136,7 +136,7 @@ public class DocumentBrowseAction extends SimpleActionAdapter {
 		
 		if (!StringUtil.isEmpty(bst.getOrder())) sql.append("order by ").append(bst.getOrder());
 		else sql.append("order by action_nm ");
-		log.debug(sql.length() + "|" + sql + "|" + vals);
+		log.info(sql.length() + "|" + sql + "|" + vals);
 		
 		DBProcessor db = new DBProcessor(getDBConnection());
 		return db.executeSQLWithCount(sql.toString(), vals, new MTSDocumentVO(), bst);
