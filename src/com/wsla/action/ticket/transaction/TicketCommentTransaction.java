@@ -106,7 +106,7 @@ public class TicketCommentTransaction extends SBActionAdapter {
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 
 		// Add a ledger entry if it isnt a comment		
-		if (ledger != null && (!ActivityType.contains(comment.getActivityType()) || ! ActivityType.COMMENT.equals(ActivityType.valueOf(comment.getActivityType())))) {
+		if (ledger != null && (!ActivityType.isActivityType(comment.getActivityType()) || ! ActivityType.COMMENT.equals(ActivityType.valueOf(comment.getActivityType())))) {
 			ledger.setSummary(LedgerSummary.ACTIVITY_ADDED.summary + ": " + comment.getComment());
 			log.debug(ledger);
 			db.save(ledger);

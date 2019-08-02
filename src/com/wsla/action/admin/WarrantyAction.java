@@ -89,11 +89,9 @@ public class WarrantyAction extends SBActionAdapter {
 		
 		String providerId = req.getParameter("providerId");
 		String typeId = req.getParameter("typeId");
-		int activeFlag = req.getIntegerParameter("activeFlag", 0);
-		boolean hasActiveFlag = req.hasParameter("activeFlag");
-		int flatRateFlag = req.getIntegerParameter("flatRateFlag", 0);
-		boolean hasFlatRateFlag = req.hasParameter("flatRateFlag");
-		setModuleData(getData(providerId, typeId, new BSTableControlVO(req, WarrantyVO.class),activeFlag, hasActiveFlag, flatRateFlag,hasFlatRateFlag));
+		Integer activeFlag = req.getIntegerParameter("activeFlag");
+		Integer flatRateFlag = req.getIntegerParameter("flatRateFlag");
+		setModuleData(getData(providerId, typeId, new BSTableControlVO(req, WarrantyVO.class),activeFlag, flatRateFlag));
 	}
 
 
@@ -141,7 +139,7 @@ public class WarrantyAction extends SBActionAdapter {
 	 * @param activeFlag 
 	 * @return
 	 */
-	public GridDataVO<WarrantyVO> getData(String providerId, String typeId, BSTableControlVO bst, int activeFlag, boolean hasActiveFlag, int flatRateFlag, boolean hasFlatRateFlag) {
+	public GridDataVO<WarrantyVO> getData(String providerId, String typeId, BSTableControlVO bst, Integer activeFlag, Integer flatRateFlag) {
 		String schema = getCustomSchema();
 		List<Object> params = new ArrayList<>();
 		StringBuilder sql = new StringBuilder(304);
@@ -171,12 +169,12 @@ public class WarrantyAction extends SBActionAdapter {
 			params.add(typeId);
 		}
 		
-		if(hasActiveFlag) {
+		if(activeFlag != null) {
 			sql.append("and w.active_flg =? ");
 			params.add(activeFlag);
 		}
 		
-		if(hasFlatRateFlag) {
+		if(flatRateFlag != null) {
 			sql.append("and w.flat_rate_flg =? ");
 			params.add(flatRateFlag);
 		}
@@ -199,7 +197,7 @@ public class WarrantyAction extends SBActionAdapter {
 		StringBuilder sql = new StringBuilder(150);
 		sql.append("select warranty_id as key, desc_txt as value ");
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("wsla_warranty ");
-		sql.append(DBUtil.WHERE_1_CLAUSE).append("and active_flg  = '1' ");
+		sql.append(DBUtil.WHERE_1_CLAUSE).append("and active_flg  = 1 ");
 		
 		if (!StringUtil.isEmpty(providerId)) {
 			sql.append(" and provider_id=? ");

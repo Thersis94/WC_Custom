@@ -35,7 +35,7 @@ public class TicketCommentVO extends BeanDataVO {
 		public String getTypeName() { return typeName; }
 		
 		//Used to check if a billible type exists or is a comment
-		public static boolean contains(String test) {
+		public static boolean isActivityType(String test) {
 
 		    for (ActivityType c : ActivityType.values()) {
 		        if (c.name().equalsIgnoreCase(test)) {
