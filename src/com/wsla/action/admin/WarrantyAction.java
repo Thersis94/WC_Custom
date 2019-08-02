@@ -89,7 +89,11 @@ public class WarrantyAction extends SBActionAdapter {
 		
 		String providerId = req.getParameter("providerId");
 		String typeId = req.getParameter("typeId");
-		setModuleData(getData(providerId, typeId, new BSTableControlVO(req, WarrantyVO.class)));
+		int activeFlag = req.getIntegerParameter("activeFlag", 0);
+		boolean hasActiveFlag = req.hasParameter("activeFlag");
+		int flatRateFlag = req.getIntegerParameter("flatRateFlag", 0);
+		boolean hasFlatRateFlag = req.hasParameter("flatRateFlag");
+		setModuleData(getData(providerId, typeId, new BSTableControlVO(req, WarrantyVO.class),activeFlag, hasActiveFlag, flatRateFlag,hasFlatRateFlag));
 	}
 
 
@@ -131,9 +135,13 @@ public class WarrantyAction extends SBActionAdapter {
 	 * Return a list of Warranties included in the requested set.
 	 * @param setId
 	 * @param bst
+	 * @param hasFlatRateFlag 
+	 * @param flatRateFlag 
+	 * @param hasActiveFlag 
+	 * @param activeFlag 
 	 * @return
 	 */
-	public GridDataVO<WarrantyVO> getData(String providerId, String typeId, BSTableControlVO bst) {
+	public GridDataVO<WarrantyVO> getData(String providerId, String typeId, BSTableControlVO bst, int activeFlag, boolean hasActiveFlag, int flatRateFlag, boolean hasFlatRateFlag) {
 		String schema = getCustomSchema();
 		List<Object> params = new ArrayList<>();
 		StringBuilder sql = new StringBuilder(304);
@@ -162,6 +170,16 @@ public class WarrantyAction extends SBActionAdapter {
 			sql.append("and w.warranty_type_cd=? ");
 			params.add(typeId);
 		}
+		
+		if(hasActiveFlag) {
+			sql.append("and w.active_flg =? ");
+			params.add(activeFlag);
+		}
+		
+		if(hasFlatRateFlag) {
+			sql.append("and w.flat_rate_flg =? ");
+			params.add(flatRateFlag);
+		}
 
 		sql.append(bst.getSQLOrderBy("p.provider_nm",  "asc"));
 		log.debug(sql.length() + "|" + sql);
@@ -181,12 +199,15 @@ public class WarrantyAction extends SBActionAdapter {
 		StringBuilder sql = new StringBuilder(150);
 		sql.append("select warranty_id as key, desc_txt as value ");
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("wsla_warranty ");
+		sql.append(DBUtil.WHERE_1_CLAUSE).append("and active_flg  = '1' ");
+		
 		if (!StringUtil.isEmpty(providerId)) {
-			sql.append("where provider_id=? ");
+			sql.append(" and provider_id=? ");
 			params = Arrays.asList(providerId);
 		}
+		
 		sql.append("order by desc_txt");
-		log.debug(sql);
+		log.debug(sql + "|" + params);
 
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema()); 
 		return db.executeSelect(sql.toString(), params, new GenericVO());

@@ -100,12 +100,13 @@ public class TicketCommentTransaction extends SBActionAdapter {
 	 * @throws DatabaseException 
 	 * @throws InvalidDataException 
 	 */
-	public void addTicketComment(TicketCommentVO comment, TicketLedgerVO ledger) 
-	throws InvalidDataException, DatabaseException {
+	public void addTicketComment(TicketCommentVO comment, TicketLedgerVO ledger) throws InvalidDataException, DatabaseException {
+		
 		// Get the DB Processor
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
-		// Add a ledger entry
-		if (ledger != null && ! ActivityType.COMMENT.equals(ActivityType.valueOf(comment.getActivityType()))) {
+
+		// Add a ledger entry if it isnt a comment		
+		if (ledger != null && (!ActivityType.contains(comment.getActivityType()) || ! ActivityType.COMMENT.equals(ActivityType.valueOf(comment.getActivityType())))) {
 			ledger.setSummary(LedgerSummary.ACTIVITY_ADDED.summary + ": " + comment.getComment());
 			log.debug(ledger);
 			db.save(ledger);

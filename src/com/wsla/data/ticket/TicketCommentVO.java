@@ -33,6 +33,18 @@ public class TicketCommentVO extends BeanDataVO {
 		private String typeName;
 		private ActivityType(String typeName) { this.typeName = typeName; }
 		public String getTypeName() { return typeName; }
+		
+		//Used to check if a billible type exists or is a comment
+		public static boolean contains(String test) {
+
+		    for (ActivityType c : ActivityType.values()) {
+		        if (c.name().equalsIgnoreCase(test)) {
+		            return true;
+		        }
+		    }
+
+		    return false;
+		}
 	}
 
 	/**
