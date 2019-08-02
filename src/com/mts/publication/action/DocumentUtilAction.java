@@ -8,6 +8,7 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.smt.sitebuilder.action.SBActionAdapter;
+import com.smt.sitebuilder.approval.ApprovalController;
 
 /****************************************************************************
  * <b>Title</b>: DocumentUtilAction.java
@@ -79,7 +80,10 @@ public class DocumentUtilAction extends SBActionAdapter {
 			ps.setString(1, documentId);
 			
 			try(ResultSet rs = ps.executeQuery()) {
-				if (rs.next()) url = rs.getString(1);
+				if (rs.next()) {
+					url = rs.getString(1) + "?pagePreview=";
+					url += ApprovalController.generatePreviewApiKey(attributes);
+				}
 			}
 		}
 		
