@@ -92,10 +92,11 @@ public class IssueArticleAction extends SBActionAdapter {
 		try {
 			if (req.hasParameter("related")) {
 				setModuleData(getRelatedArticles(req.getParameter("actionGroupId")));
-			} else if (req.hasParameter("documentId")) {
 				
+			} else if (req.hasParameter("documentId")) {
 				String userId = AppUtil.getMTSUserId(req);
 				setModuleData(getDocument(req.getParameter("documentId"), null, false, userId));
+
 			} else {
 				setModuleData(getArticles(new BSTableControlVO(req, MTSDocumentVO.class), req));
 			}
