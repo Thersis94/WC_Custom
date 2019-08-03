@@ -199,7 +199,6 @@ public class MTSDocumentVO extends DocumentVO {
 	public AssetVO getPrimaryAsset() {
 		List<AssetVO> dAsset = new ArrayList<>();
 		for (AssetVO asset : assets) {
-			log.info(asset.getObjectKeyId());
 			if (StringUtil.checkVal(asset.getObjectKeyId()).equals(this.documentId)) {
 				dAsset.add(asset);
 			}
