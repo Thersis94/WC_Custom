@@ -88,7 +88,8 @@ public class EmailReportAction extends SBActionAdapter {
 			populateEmail(vo);
 		}
 
-		removeTracking(vo);
+		if(!StringUtil.isEmpty(vo.getMessageBody()))
+			removeTracking(vo);
 		return vo;
 	}
 
