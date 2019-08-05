@@ -5,14 +5,18 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.depuysynthes.action.MediaBinAssetVO;
 import com.depuysynthes.scripts.DSMediaBinImporterV2;
 import com.depuysynthes.scripts.MediaBinDeltaVO;
 import com.depuysynthes.scripts.MediaBinDeltaVO.State;
-import com.smt.sitebuilder.common.constants.Constants;
+import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.StringUtil;
 
 /****************************************************************************
  * <b>Title</b>: ShowpadMediaBinDecorator.java<p/>
@@ -27,7 +31,7 @@ import com.smt.sitebuilder.common.constants.Constants;
 public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 
 	public static final String BR = "<br/>";
-	
+
 	protected ShowpadApiUtil showpadApi;
 	protected List<ShowpadDivisionUtil> divisions = new ArrayList<>();
 
@@ -86,7 +90,7 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 	protected Map<String,MediaBinDeltaVO> loadManifest() {
 		StringBuilder sql = new StringBuilder(250);
 		sql.append("select division_id, asset_id, dpy_syn_mediabin_id ");
-		sql.append("from ").append(props.get(Constants.CUSTOM_DB_SCHEMA)).append("DPY_SYN_SHOWPAD ");
+		sql.append("from ").append(schema).append("DPY_SYN_SHOWPAD ");
 		log.debug(sql);
 
 		Map<String, Map<String, String>> divisionAssets = new HashMap<>();
@@ -188,7 +192,7 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 
 		// Build the SQL Statement
 		StringBuilder sql = new StringBuilder(350);
-		sql.append("delete from ").append(props.getProperty(Constants.CUSTOM_DB_SCHEMA)).append("dpy_syn_showpad ");
+		sql.append("delete from ").append(schema).append("dpy_syn_showpad ");
 		sql.append("where dpy_syn_mediabin_id=?");
 		log.debug(sql);
 		try (PreparedStatement ps  = dbConn.prepareStatement(sql.toString())) {
@@ -237,7 +241,7 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 
 		StringBuilder sql = new StringBuilder(150);
 		sql.append("select count(*), division_id, case when asset_id='FAILED_PROCESSING' then 1 else 0 end as status from ");
-		sql.append(props.get(Constants.CUSTOM_DB_SCHEMA)).append("dpy_syn_showpad ");
+		sql.append(schema).append("dpy_syn_showpad ");
 		sql.append("group by division_id, case when asset_id='FAILED_PROCESSING' then 1 else 0 end");
 		log.debug(sql);
 
@@ -295,5 +299,59 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 
 			html.append("<hr/>\r\n");
 		}
+
+		addExpiringSoonAssets(html);
+	}
+
+
+	/**
+	 * Add a table to the report of assets expiring soon (or expired).
+	 * Color orange for expiring <3mos.  Color red for expired.
+	 * @param html
+	 */
+	protected void addExpiringSoonAssets(StringBuilder msg) {
+		String sql = StringUtil.join("select tracking_no_txt, title_txt, expiration_dt from ", 
+				schema, "dpy_syn_mediabin where expiration_dt <= current_date+90 ",
+				"and expiration_dt is not null and import_file_cd=? ", 
+				"order by expiration_dt, tracking_no_txt, title_txt");
+		log.debug(sql);
+		List<MediaBinAssetVO> assets = new ArrayList<>();
+		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
+			ps.setInt(1, type);
+			ResultSet rs = ps.executeQuery();
+			while (rs.next()) {
+				MediaBinAssetVO vo = new MediaBinAssetVO();
+				vo.setTrackingNoTxt(rs.getString(1));
+				vo.setTitleTxt(rs.getString(2));
+				vo.setExpirationDt(rs.getDate(3));
+				assets.add(vo);
+			}
+
+		} catch (SQLException sqle) {
+			log.error("could not load expiring assets", sqle);
+		}
+
+		if (assets.isEmpty()) return;
+
+		//add a html table to the email body
+		final String expiresSoon = "<font color=\"orange\">%s</font>";
+		final String expired = "<font color=\"red\">%s</font>";
+		final Date today = Calendar.getInstance().getTime();
+
+		msg.append("<h4>Asset Expiration</h4>");
+		msg.append("<table border='1' width='95%' align='center'><thead><tr>");
+		msg.append("<th>Expiration</th>");
+		msg.append("<th>Tracking Number</th>");
+		msg.append("<th>Title</th>");
+		msg.append("</tr></thead>\r<tbody>");
+
+		for (MediaBinAssetVO vo : assets) {
+			String mask = vo.getExpirationDt().after(today) ? expiresSoon : expired;
+			msg.append("<tr><td>").append(String.format(mask, Convert.formatDate(vo.getExpirationDt(), "dd/MM/yyyy"))).append("</td>");
+			msg.append("<td nowrap>").append(String.format(mask, vo.getTrackingNoTxt())).append("</td>");
+			msg.append("<td>").append(String.format(mask, vo.getTitleTxt())).append("</td></tr>\r");
+		}
+		msg.append("</tbody></table>\r");
+		msg.append("Color Code:").append(String.format(expiresSoon, "Expiring <3mos. ")).append(String.format(expired, " Expired.  Deleted from Showpad."));
 	}
 }
