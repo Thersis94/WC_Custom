@@ -1,5 +1,12 @@
 WC_Custom Changelog (auto-generated)
 
+## [3.22.1](https://github.com/smtadmin/WC_Custom/compare/3.22.0...3.22.1) (2019-08-02)
+
+
+### Bug Fixes
+
+* **Preview:** Forgot to add the page preview token to the preview URL ([1b5524d](https://github.com/smtadmin/WC_Custom/commit/1b5524d))
+
 # [3.22.0](https://github.com/smtadmin/WC_Custom/compare/3.21.2...3.22.0) (2019-07-29)
 
 
