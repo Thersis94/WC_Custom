@@ -339,7 +339,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("wsla_provider p on pl.provider_id = p.provider_id ");
 		sql.append("where location_id in ( ");
 		sql.append("select location_id from ").append(getCustomSchema()).append("wsla_provider_user_xr group by location_id ");
-		sql.append(") group by pl.provider_id, p.provider_nm ");
+		sql.append(") group by pl.provider_id, p.provider_nm order by value ");
 		
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		db.setGenerateExecutedSQL(log.isDebugEnabled());
@@ -377,7 +377,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		
 		StringBuilder sql = new StringBuilder(100);
 		sql.append(DBUtil.SELECT_CLAUSE).append("distinct pro.provider_id as key, pro.provider_nm as value from ").append(getCustomSchema()).append("wsla_provider pro ");
-		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("wsla_provider_location pl on pro.provider_id = pl.provider_id ");
+		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("wsla_provider_location pl on pro.provider_id = pl.provider_id order by value ");
 
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		db.setGenerateExecutedSQL(log.isDebugEnabled());
