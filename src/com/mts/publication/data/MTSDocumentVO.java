@@ -70,6 +70,7 @@ public class MTSDocumentVO extends DocumentVO {
 	private String publicationName;
 	private String userInfoId;
 	private int bookmarkFlag;
+	private Map<String, List<WidgetMetadataVO>> cats = new LinkedHashMap<>();
 	
 	/**
 	 * 
@@ -135,7 +136,7 @@ public class MTSDocumentVO extends DocumentVO {
 	 * @return
 	 */
 	public Map<String, List<WidgetMetadataVO>> getCategoryMap() {
-		Map<String, List<WidgetMetadataVO>> cats = new LinkedHashMap<>();
+		if (! cats.isEmpty()) return cats;
 		Map<String, String> keyMap = new HashMap<>(); 
 		
 		for (WidgetMetadataVO md : categories) {
@@ -149,6 +150,25 @@ public class MTSDocumentVO extends DocumentVO {
 		}
 		
 		return cats;
+	}
+	
+	/**
+	 * Determines if the category key has categories that are selected by the 
+	 * author for this article.
+	 * @param key
+	 * @return true if article has entries for that category,  false if none selected
+	 */
+	public boolean hasCategory(String key) {
+		if (cats.isEmpty()) getCategoryMap();
+		
+		List<WidgetMetadataVO> items = cats.get(key);
+		if (items == null || items.isEmpty()) return false;
+		
+		for (WidgetMetadataVO vo : items) {
+			if (! StringUtil.isEmpty(vo.getWidgetMetadataXrId())) return true;
+		}
+		
+		return false;
 	}
 	
 	/**
@@ -179,7 +199,6 @@ public class MTSDocumentVO extends DocumentVO {
 	public AssetVO getPrimaryAsset() {
 		List<AssetVO> dAsset = new ArrayList<>();
 		for (AssetVO asset : assets) {
-			log.info(asset.getObjectKeyId());
 			if (StringUtil.checkVal(asset.getObjectKeyId()).equals(this.documentId)) {
 				dAsset.add(asset);
 			}

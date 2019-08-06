@@ -136,7 +136,7 @@ public class DocumentBrowseAction extends SimpleActionAdapter {
 		
 		if (!StringUtil.isEmpty(bst.getOrder())) sql.append("order by ").append(bst.getOrder());
 		else sql.append("order by action_nm ");
-		log.info(sql.length() + "|" + sql + "|" + vals);
+		log.debug(sql.length() + "|" + sql + "|" + vals);
 		
 		DBProcessor db = new DBProcessor(getDBConnection());
 		return db.executeSQLWithCount(sql.toString(), vals, new MTSDocumentVO(), bst);
