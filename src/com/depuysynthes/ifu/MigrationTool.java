@@ -26,9 +26,12 @@ import com.siliconmtn.util.StringUtil;
  ****************************************************************************/
 public class MigrationTool extends CommandLineUtil {
 
+	private static final String RS_DEPUY_IFU_ID = "depuy_ifu_id";
+
 	protected Connection destDbConn;
 	private final String schema;
 	private final String[] ifuTables;
+	private Map<String, Object> replaceVals = new HashMap<>();
 
 	public MigrationTool(String[] args) {
 		super(args);
@@ -56,6 +59,8 @@ public class MigrationTool extends CommandLineUtil {
 		createDestTables();
 		createDestIndexes();
 		copyTableData();
+		copySyncRecords();
+		updateGroupIds();
 		printReport();
 		closeDBConnection();
 	}
@@ -142,7 +147,6 @@ public class MigrationTool extends CommandLineUtil {
 	 */
 	private void copyTableData() {
 		RecordDuplicator rd;
-		Map<String, Object> replaceVals = new HashMap<>();
 		for (String table : ifuTables) {
 			String pkIdCol = props.getProperty(table + "_pkId").toLowerCase();
 			log.debug(table + " primary key=" + pkIdCol);
@@ -155,6 +159,47 @@ public class MigrationTool extends CommandLineUtil {
 			} catch (Exception e) {
 				log.error("could not copy table data for " + table, e);
 			}
+		}
+	}
+
+
+	@SuppressWarnings("unchecked")
+	protected void updateGroupIds() {
+		String sql = StringUtil.join("update ", schema, "depuy_ifu set depuy_ifu_group_id=? where depuy_ifu_group_id=?");
+		log.debug(sql);
+		try (PreparedStatement ps = destDbConn.prepareStatement(sql)) {
+			Map<String, String> keys = (Map<String, String>)replaceVals.get(RS_DEPUY_IFU_ID);
+			for (Map.Entry<String, String> entry : keys.entrySet()) {
+				ps.setString(1, entry.getValue());
+				ps.setString(2, entry.getKey());
+				ps.addBatch();
+			}
+			int[] cnt = ps.executeBatch();
+			log.info("updated " + cnt.length + " depuy_ifu rows to re-point ifu_group_ids");
+		} catch (Exception sqle) {
+			log.error("could not update ifu_group_ids", sqle);
+		}
+	}
+
+
+	/**
+	 * Copy the IFU sync records
+	 */
+	private void copySyncRecords() {
+		//copy the IFU IDs into the two columns of wc_sync that could reference them
+		replaceVals.put("wc_key_id", replaceVals.get(RS_DEPUY_IFU_ID));
+		replaceVals.put("wc_orig_key_id", replaceVals.get(RS_DEPUY_IFU_ID));
+		replaceVals.put("admin_profile_id", "c0a8023743efd4301176c200e31a1cfe"); //reset all submitters to Mike
+		replaceVals.put("disposition_by_id", "c0a8023743efd4301176c200e31a1cfe"); //reset all dispositioned_by to Mike
+		replaceVals.put("organization_id",  "DPY_SYN_EMEA");
+		try {
+			RecordDuplicator rd = new RecordDuplicator(dbConn, destDbConn, "wc_sync", "wc_sync_id", false);
+			rd.setWhereSQL("module_type_id='DePuyIFU'");
+			rd.setReplaceVals(replaceVals);
+			rd.returnGeneratedKeys(false);
+			rd.copyRecords();
+		} catch (Exception e) {
+			log.error("could not copy table data for wc_sync", e);
 		}
 	}
 
