@@ -2,7 +2,7 @@ package com.biomed.smarttrak.admin.report;
 
 import java.io.ByteArrayOutputStream;
 import java.util.Date;
-import java.util.HashMap;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 
@@ -68,15 +68,15 @@ public class RedYellowGreenReportVO extends AbstractSBReportVO {
 			buildStyles(workbook);
 
 			//Build Header
-			int rowCnt = buildHeader(sheet, workbook);
+			int rowCnt = buildHeader(sheet);
 
 			//Build Data Rows
 			for (int i=0; i < data.size(); i++) {
-				buildRow(sheet, workbook, data.get(i), rowCnt++);
+				buildRow(sheet, data.get(i), rowCnt++);
 			}
 
 			//Add Total Row
-			buildTotalRow(sheet, workbook, rowCnt);
+			buildTotalRow(sheet, rowCnt);
 
 			//Auto size columns
 			sheet.autoSizeColumn(0);
@@ -110,7 +110,7 @@ public class RedYellowGreenReportVO extends AbstractSBReportVO {
 	 * @return
 	 */
 	private void buildStyles(HSSFWorkbook workbook) {
-		styles = new HashMap<>();
+		styles = new EnumMap<>(StyleType.class);
 		styles.put(StyleType.DEFAULT, getCellFormat(workbook, FormatColor.D, false, false, true));
 		styles.put(StyleType.GREEN_VAL, getCellFormat(workbook, FormatColor.G, false, false, true));
 		styles.put(StyleType.RED_VAL, getCellFormat(workbook, FormatColor.R, false, false, true));
@@ -184,7 +184,7 @@ public class RedYellowGreenReportVO extends AbstractSBReportVO {
 	 * @param workbook 
 	 * @param rowCnt
 	 */
-	private void buildTotalRow(HSSFSheet sheet, HSSFWorkbook workbook, int rowCnt) {
+	private void buildTotalRow(HSSFSheet sheet, int rowCnt) {
 		Row r = sheet.createRow(rowCnt);
 		Cell c = r.createCell(0);
 		c.setCellValue("Total Result");
@@ -223,7 +223,7 @@ public class RedYellowGreenReportVO extends AbstractSBReportVO {
 	 * @param vo
 	 * @param rowCnt
 	 */
-	private void buildRow(HSSFSheet sheet, HSSFWorkbook workbook, RedYellowGreenVO vo, int rowCnt) {
+	private void buildRow(HSSFSheet sheet, RedYellowGreenVO vo, int rowCnt) {
 		double total = vo.getGreenActivityCnt() + vo.getNoActivityCnt() + vo.getYellowActivityCnt() + vo.getRedActivityCnt();
 		Row r = sheet.createRow(rowCnt);
 
@@ -270,7 +270,7 @@ public class RedYellowGreenReportVO extends AbstractSBReportVO {
 	 * @param workbook
 	 * @return
 	 */
-	private int buildHeader(HSSFSheet sheet, HSSFWorkbook workbook) {
+	private int buildHeader(HSSFSheet sheet) {
 		int rowCnt = 0;
 		Row r = sheet.createRow(rowCnt++);
 		Cell c = r.createCell(0);
