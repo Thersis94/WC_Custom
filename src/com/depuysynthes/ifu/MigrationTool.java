@@ -3,8 +3,10 @@ package com.depuysynthes.ifu;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Properties;
 
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.DatabaseConnection;
@@ -37,7 +39,6 @@ public class MigrationTool extends CommandLineUtil {
 		super(args);
 		loadProperties("scripts/ifu-migration.properties");
 		loadDBConnection(props);
-		openDestDbConn();
 		schema = props.getProperty("customDbSchema");
 		ifuTables = props.getProperty("ifuTables").split(",");
 	}
@@ -159,6 +160,18 @@ public class MigrationTool extends CommandLineUtil {
 			} catch (Exception e) {
 				log.error("could not copy table data for " + table, e);
 			}
+
+			// Some of these copies are slow, which cause timeout issues.
+			// Make sure the connections are open, or close & re-open them
+			try {
+				if (!dbConn.isValid(10) && !destDbConn.isValid(10)) {
+					log.info("re-establishing database connections");
+					closeDBConnection();
+					loadDBConnection(props);
+				}
+			} catch (SQLException e) {
+				log.error("could not reopen dbConns", e);
+			}
 		}
 	}
 
@@ -222,6 +235,16 @@ public class MigrationTool extends CommandLineUtil {
 		} catch (Exception e) {
 			log.error("could not connect dbConns", e);
 		}
+	}
+
+
+	/**
+	 * open both DB connections
+	 */
+	@Override
+	protected void loadDBConnection(Properties props) {
+		super.loadDBConnection(props);
+		openDestDbConn();
 	}
 
 
