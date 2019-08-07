@@ -149,7 +149,9 @@ public class DocumentBrowseAction extends SimpleActionAdapter {
 	 * @param bst
 	 */
 	public void addSearchFilter(StringBuilder sql, List<Object> vals, BSTableControlVO bst) {
-		sql.append("and (lower(action_nm) like ? or lower(action_desc) like ?)");
+		sql.append("and (lower(action_nm) like ? or lower(action_desc) like ? ");
+		sql.append("or lower(first_nm || ' ' || last_nm) like ?) ");
+		vals.add(bst.getLikeSearch().toLowerCase());
 		vals.add(bst.getLikeSearch().toLowerCase());
 		vals.add(bst.getLikeSearch().toLowerCase());
 	}
