@@ -136,7 +136,7 @@ public class DocumentBrowseAction extends SimpleActionAdapter {
 		
 		if (!StringUtil.isEmpty(bst.getOrder())) sql.append("order by ").append(bst.getOrder());
 		else sql.append("order by action_nm ");
-		log.info(sql.length() + "|" + sql + "|" + vals);
+		log.debug(sql.length() + "|" + sql + "|" + vals);
 		
 		DBProcessor db = new DBProcessor(getDBConnection());
 		return db.executeSQLWithCount(sql.toString(), vals, new MTSDocumentVO(), bst);
@@ -149,7 +149,9 @@ public class DocumentBrowseAction extends SimpleActionAdapter {
 	 * @param bst
 	 */
 	public void addSearchFilter(StringBuilder sql, List<Object> vals, BSTableControlVO bst) {
-		sql.append("and (lower(action_nm) like ? or lower(action_desc) like ?)");
+		sql.append("and (lower(action_nm) like ? or lower(action_desc) like ? ");
+		sql.append("or lower(first_nm || ' ' || last_nm) like ?) ");
+		vals.add(bst.getLikeSearch().toLowerCase());
 		vals.add(bst.getLikeSearch().toLowerCase());
 		vals.add(bst.getLikeSearch().toLowerCase());
 	}

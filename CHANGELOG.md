@@ -1,5 +1,19 @@
 WC_Custom Changelog (auto-generated)
 
+## [3.22.3](https://github.com/smtadmin/WC_Custom/compare/3.22.2...3.22.3) (2019-08-07)
+
+
+### Bug Fixes
+
+* **Search:** Fixed search to include author now that the author is not in the title ([00bafee](https://github.com/smtadmin/WC_Custom/commit/00bafee))
+
+## [3.22.2](https://github.com/smtadmin/WC_Custom/compare/3.22.1...3.22.2) (2019-08-06)
+
+
+### Bug Fixes
+
+* **Display:** Fixed the display of categories to onbly show the heading if the category has items as ([a0e9819](https://github.com/smtadmin/WC_Custom/commit/a0e9819))
+
 ## [3.22.1](https://github.com/smtadmin/WC_Custom/compare/3.22.0...3.22.1) (2019-08-02)
 
 
