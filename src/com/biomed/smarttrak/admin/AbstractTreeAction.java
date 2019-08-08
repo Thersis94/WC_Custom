@@ -13,6 +13,7 @@ import java.util.Map;
 import com.biomed.smarttrak.util.SmarttrakTree;
 import com.biomed.smarttrak.vo.SectionVO;
 import com.siliconmtn.action.ActionInitVO;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.Node;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
@@ -108,6 +109,20 @@ public abstract class AbstractTreeAction extends SBActionAdapter {
 		Collections.sort(sections, new SectionComparator());
 		log.debug("sections: " + sections.size());
 		return sections;
+	}
+	
+	
+	/**
+	 * Ensure the default tree is loaded into cache.
+	 * This tree should never be edited, only read.
+	 * @param req
+	 */
+	public void checkCachedTree(ActionRequest req) {
+		if (req.getSession().getAttribute("hierarchyTree") == null) {
+			SmarttrakTree t = loadDefaultTree();
+			t.buildNodePaths();
+			req.getSession().setAttribute("hierarchyTree", t.preorderList());
+		}
 	}
 
 	/**
