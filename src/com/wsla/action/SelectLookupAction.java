@@ -430,7 +430,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		String name;
 		List<GenericVO> data = new ArrayList<>(locations.getRowData().size());
 		for (ProviderLocationVO vo : locations.getRowData()) {
-			name = StringUtil.join(vo.getProviderName(), ": ", vo.getLocationName(), " ", vo.getStoreNumber());
+			name = StringUtil.join(StringUtil.checkVal(vo.getProviderName()), ": ", StringUtil.checkVal(vo.getLocationName()), " ", StringUtil.checkVal(vo.getStoreNumber()));
 			data.add(new GenericVO(vo.getLocationId(), name));
 		}
 
