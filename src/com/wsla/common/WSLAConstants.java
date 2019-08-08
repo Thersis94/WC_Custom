@@ -114,6 +114,11 @@ public class WSLAConstants {
 	 * Key used to identify the service order number
 	 */
 	public static final String TICKET_NO = "ticketIdText";
+	
+	/**
+	 * key used to identify a flagtoggle request
+	 */
+	public static final String FLAG_TOGGLE = "flagToggle";
 
 	/**
 	 * 

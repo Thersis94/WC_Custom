@@ -22,7 +22,7 @@ import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.BatchImport;
-
+import com.wsla.common.WSLAConstants;
 // WC Libs
 import com.wsla.data.provider.ProviderLocationVO;
 import com.wsla.data.provider.ProviderType;
@@ -101,6 +101,10 @@ public class ProviderAction extends BatchImport {
 		try {
 			if (req.hasParameter("ticketAddRetailer")) {
 				addTicketRetailer(provider);
+			} else if (req.hasParameter(WSLAConstants.FLAG_TOGGLE)) {
+				Integer reviewFlag = req.getIntegerParameter("reviewFlag");
+				Integer activeFlag = req.getIntegerParameter("activeFlag");
+				toggleFlags(reviewFlag,activeFlag, provider);
 			} else {
 				// If provider needed to be reviewed and it is approved, change the review flag to 0
 				if (provider.getReviewFlag() == 1 && req.getBooleanParameter("reviewApproved")) {
@@ -114,12 +118,39 @@ public class ProviderAction extends BatchImport {
 			putModuleData(provider);
 			
 		} catch(Exception e) {
+			log.error("an error occured while processing build " + e);
 			putModuleData(provider, 0, false, e.getLocalizedMessage(), true);
 		}
 
 	}
 	
 	
+	/**
+	 * this method will toggle which ever flag isnt null
+	 * @param reviewFlag
+	 * @param activeFlag
+	 * @param provider
+	 * @throws DatabaseException 
+	 * @throws InvalidDataException 
+	 */
+	private void toggleFlags(Integer reviewFlag, Integer activeFlag, ProviderVO provider) throws InvalidDataException, DatabaseException {
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		List<String> updateCols = new ArrayList<>();
+		updateCols.add("provider_id");
+		
+		if(reviewFlag != null) {
+			provider.setReviewFlag((provider.getReviewFlag() == 1 )? 0:1);
+			updateCols.add("review_flg");
+		}
+		
+		if(activeFlag != null) {
+			provider.setActiveFlag((provider.getActiveFlag() == 1 )? 0:1);
+			updateCols.add("active_flg");
+		}
+		
+		db.update(provider, updateCols);
+	}
+
 	/**
 	 * Adds a new retailer (if not present) and a location for that retailer.
 	 * This is used by the ticket creation process when the location the user 
@@ -172,7 +203,10 @@ public class ProviderAction extends BatchImport {
 	public GridDataVO<ProviderVO> getProviders(String providerId, String providerType, String reviewFlag, BSTableControlVO bst) {
 		String schema = getCustomSchema();
 		StringBuilder sql = new StringBuilder(72);
-		sql.append(DBUtil.SELECT_FROM_STAR).append(schema).append("wsla_provider where 1=1 ");
+		sql.append(DBUtil.SELECT_CLAUSE).append("CAST(COALESCE (a.count, 0) as integer) as review_location_no, p.* ").append(DBUtil.FROM_CLAUSE).append(schema).append("wsla_provider p ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append("( select count(*) as count, provider_id from ").append(getCustomSchema());
+		sql.append("wsla_provider_location ").append(DBUtil.WHERE_CLAUSE).append("review_flg = 0 group by provider_id ) as a on p.provider_id = a.provider_id ");
+		sql.append(DBUtil.WHERE_1_CLAUSE);
 		List<Object> params = new ArrayList<>();
 
 		// Filter by provider id
