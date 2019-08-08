@@ -54,7 +54,6 @@ public class ManagementAction extends SBActionAdapter {
 	
 	
 	private void initHierarchy() {
-		log.debug("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^");
 		hierarchyAction = new SectionHierarchyAction();
 		hierarchyAction.setDBConnection(getDBConnection());
 		hierarchyAction.setAttributes(getAttributes());
