@@ -295,7 +295,6 @@ public class CompanyManagementAction extends ManagementAction {
 			retrieveCompanies(req);
 		}else{
 			loadAuthors(req); //load list of BiomedGPS Staff for the "Author" drop-down
-			checkCachedTree(req);
 		}	
 	}
 
@@ -698,7 +697,6 @@ public class CompanyManagementAction extends ManagementAction {
 		params.add(companyId);
 		DBProcessor db = new DBProcessor(dbConn);
 		company = db.executeSelect(sql.toString(), params, new CompanyVO()).get(0);
-		checkCachedTree(req);
 		req.getSession().setAttribute("companyName", company.getCompanyName());
 		req.getSession().setAttribute("shortCompanyName", company.getShortName());
 		req.getSession().setAttribute("companyNameParam", StringEncoder.urlEncode(company.getCompanyName()));

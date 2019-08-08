@@ -54,6 +54,7 @@ public class ManagementAction extends SBActionAdapter {
 	
 	
 	private void initHierarchy() {
+		log.debug("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^");
 		hierarchyAction = new SectionHierarchyAction();
 		hierarchyAction.setDBConnection(getDBConnection());
 		hierarchyAction.setAttributes(getAttributes());
@@ -78,13 +79,13 @@ public class ManagementAction extends SBActionAdapter {
 	
 	
 	/**
-	 * Ensure that the default tree is loaded into cache.
+	 * Load the full tree into the request
 	 * @return
 	 */
-	public void checkCachedTree(ActionRequest req) {
+	public void loadFullTree(ActionRequest req) {
 		//defer loading the action until we need it
 		if (hierarchyAction == null) initHierarchy();
-		hierarchyAction.checkCachedTree(req);
+		hierarchyAction.loadFullTree(req);
 	}
 
 

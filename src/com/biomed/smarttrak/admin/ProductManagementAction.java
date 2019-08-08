@@ -488,7 +488,7 @@ public class ProductManagementAction extends ManagementAction {
 			retrieveProducts(req);
 		} else {
 			loadAuthors(req); //load list of BiomedGPS Staff for the "Author" drop-down
-			checkCachedTree(req);
+			loadFullTree(req);
 		}
 	}
 
@@ -773,7 +773,7 @@ public class ProductManagementAction extends ManagementAction {
 		DBProcessor db = new DBProcessor(dbConn);
 		product = (ProductVO) db.executeSelect(sql.toString(), params, new ProductVO()).get(0);
 
-		checkCachedTree(req);
+		loadFullTree(req);
 		req.getSession().setAttribute("productName", product.getProductName());
 		req.getSession().setAttribute("shortProductName", product.getShortName());
 		req.getSession().setAttribute("productNameParam", StringEncoder.urlEncode(product.getProductName()));
