@@ -21,6 +21,7 @@ import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.MapUtil;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
 import com.wsla.data.ticket.StatusCode;
@@ -286,11 +287,7 @@ public class SOExtendedData extends AbsImporter {
 	 */
 	private void loadTicketIds() {
 		String sql = StringUtil.join("select ticket_no as key, ticket_id as value from ", schema, "wsla_ticket");
-		List<GenericVO> tkts = db.executeSelect(sql, null, new GenericVO());
-
-		for (GenericVO vo : tkts)
-			ticketMap.put(vo.getKey().toString(), vo.getValue().toString());
-
+		MapUtil.asMap(ticketMap, db.executeSelect(sql, null, new GenericVO()));
 		log.info("loaded " + ticketMap.size() + " ticketIds from database");
 	}
 

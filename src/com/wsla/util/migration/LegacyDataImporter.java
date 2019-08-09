@@ -42,7 +42,8 @@ public class LegacyDataImporter extends CommandLineUtil {
 
 //		importers.add(SOHeader.class.getName());
 //		importers.add(SOLineItems.class.getName());
-		importers.add(SOExtendedData.class.getName());
+//		importers.add(SOExtendedData.class.getName());
+//		importers.add(SOComments.class.getName());
 
 	}
 
