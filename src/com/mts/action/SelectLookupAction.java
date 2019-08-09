@@ -353,9 +353,10 @@ public class SelectLookupAction extends SBActionAdapter {
 		// Build the serach terms
 		StringBuilder term = new StringBuilder(32);
 		String[] terms = StringUtil.checkVal(req.getParameter(REQ_SEARCH)).split(" ");
+
 		for (int i=0; i < terms.length; i++) {
 			if (i > 0) term.append(" & ");
-			term.append(terms[i]).append(":*");
+			term.append(terms[i].replace("'","")).append(":*");
 		}
 		
 		// Build the sql using Full text indexing
