@@ -81,7 +81,7 @@ public class CASSelectionAction extends SBActionAdapter {
 		sql.append("on a.provider_id = b.provider_id ");
 		sql.append("where provider_type_id = 'CAS' and latitude_no is not null ");
 		sql.append("order by distance, city_nm ");
-		sql.append("limit 10 ");
+		sql.append("limit 20 ");
 		
 		log.debug(sql.toString()+"|"+vals);
 		

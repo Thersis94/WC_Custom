@@ -75,7 +75,7 @@ public class BillableActivityAction extends SBActionAdapter {
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		BSTableControlVO bst = new BSTableControlVO(req, BillableActivityVO.class);
-		setModuleData(getCodes(null, req.getBooleanParameter("isMiscActivites"), bst));
+		setModuleData(getCodes(req.getParameter("billableTypeCode"), req.getBooleanParameter("isMiscActivites"), bst));
 	}
 	
 	/**

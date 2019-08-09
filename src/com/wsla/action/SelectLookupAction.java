@@ -149,6 +149,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		keyMap.put("refRepApprovalType", new GenericVO("getRefRepApprovalType", Boolean.TRUE));
 		keyMap.put("refRepDispostionType", new GenericVO("getRefRepDispostionType", Boolean.TRUE));
 		keyMap.put("standing", new GenericVO("getStanding", Boolean.TRUE));
+		keyMap.put("acShipLocation", new GenericVO("getAcShippingLocation", Boolean.TRUE));
 	}
 
 	/**
@@ -332,10 +333,14 @@ public class SelectLookupAction extends SBActionAdapter {
 	public List<GenericVO> getProviders(ActionRequest req) {
 		String search = req.getParameter(REQ_SEARCH);
 		boolean incUnknown = req.getBooleanParameter("incUnknown");
-		ProviderType pt = EnumUtil.safeValueOf(ProviderType.class, req.getParameter(PROVIDER_TYPE), ProviderType.OEM);
-		return new ProviderAction(getAttributes(), getDBConnection()).getProviderOptions(pt, search, incUnknown);
+		String providerType = StringUtil.checkVal(req.getParameter(PROVIDER_TYPE));
+		ProviderType pt = null;
+		if (! providerType.isEmpty() && ! "ALL".equalsIgnoreCase(providerType)) 
+			pt = EnumUtil.safeValueOf(ProviderType.class, providerType);
+		
+		int limit = req.getIntegerParameter("limit", 0);
+		return new ProviderAction(getAttributes(), getDBConnection()).getProviderOptions(pt, search, incUnknown, limit);
 	}
-
 
 	/**
 	 * return a list of OEMs - a specific type of providers.  Distinguished from 'getProvider' to avoid coupling in View logic.
@@ -395,30 +400,33 @@ public class SelectLookupAction extends SBActionAdapter {
 	 * @return
 	 */
 	public List<GenericVO> getRetailerACList(ActionRequest req) {
-		StringBuilder term = new StringBuilder(16);
-		term.append("%").append(StringUtil.checkVal(req.getParameter(REQ_SEARCH)).toLowerCase()).append("%");
-
+		StringBuilder term = new StringBuilder(32);
+		String[] terms = StringUtil.checkVal(req.getParameter(REQ_SEARCH)).split(" ");
+		for (int i=0; i < terms.length; i++) {
+			if (i > 0) term.append(" & ");
+			term.append(terms[i]).append(":*");
+		}
+		log.debug("Search Term: " + term);
+		
 		StringBuilder sql = new StringBuilder(512);
+		sql.append("select key, value from ( ");
 		sql.append("select location_id as key, coalesce(provider_nm, '') || ' - ' ");
 		sql.append("|| coalesce(location_nm, '') || ' (' || coalesce(store_no, '') || ')  ' ");
-		sql.append("|| coalesce(city_nm, '') || ', ' || coalesce(state_cd, '') as value ");
+		sql.append("|| coalesce(city_nm, '') || ', ' || coalesce(state_cd, '') as value, ");
+		sql.append("to_tsvector(provider_nm) || "); 
+		sql.append("to_tsvector(location_nm) || ");
+		sql.append("to_tsvector(coalesce(store_no, '')) || ");
+		sql.append("to_tsvector(coalesce(city_nm, '')) as document ");
 		sql.append(DBUtil.FROM_CLAUSE).append(getCustomSchema()).append("wsla_provider a ");
 		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("wsla_provider_location b ");
 		sql.append("on a.provider_id = b.provider_id ");
-		sql.append("where provider_type_id = 'RETAILER' ");
-		sql.append("and (lower(provider_nm) like ? or lower(location_nm) like ? ");
-		sql.append("or lower(city_nm) like ? or store_no like ?) ");
-		sql.append("order by provider_nm ");
-
-		List<Object> vals = new ArrayList<>();
-		vals.add(term);
-		vals.add(term);
-		vals.add(term);
-		vals.add(term);
+		sql.append("where provider_type_id = 'RETAILER' ) as search ");
+		sql.append("where search.document @@ to_tsquery('").append(term).append("') ");
+		log.debug(sql);
 
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		db.setGenerateExecutedSQL(log.isDebugEnabled());
-		return db.executeSelect(sql.toString(), vals, new GenericVO(),null,req.getIntegerParameter("offset").intValue(), req.getIntegerParameter("limit").intValue());
+		return db.executeSelect(sql.toString(), null, new GenericVO(),null,req.getIntegerParameter("offset").intValue(), req.getIntegerParameter("limit").intValue());
 	}
 
 	/**
@@ -483,6 +491,66 @@ public class SelectLookupAction extends SBActionAdapter {
 		return data;
 	}
 
+
+	/**
+	 * Returns an auto-complete list of locations for shipping (providers and users)
+	 * 
+	 * @param req
+	 * @return
+	 */
+	public List<GenericVO> getAcShippingLocation(ActionRequest req) {
+		StringBuilder term = new StringBuilder(20);
+		term.append("%").append(StringUtil.checkVal(req.getParameter(REQ_SEARCH)).toLowerCase()).append("%");
+		
+		// Set the "fuzzy" search term
+		String docTerm = StringUtil.checkVal(req.getParameter(REQ_SEARCH)).toLowerCase();
+		while (docTerm.contains("  ")) {
+			docTerm = StringUtil.replace(docTerm, "  ", " ");
+		}
+		docTerm = docTerm.trim();
+		docTerm = StringUtil.replace(docTerm, " ", ":*& ") + ":*";
+		
+		// Set the first part of the query
+		String schema = getCustomSchema();
+		StringBuilder sql = new StringBuilder(750);
+		sql.append(DBUtil.SELECT_CLAUSE).append("key, value").append(DBUtil.FROM_CLAUSE).append("(");
+		sql.append(DBUtil.SELECT_CLAUSE).append("location_id as key, coalesce(provider_nm, '') || ' - ' ");
+		sql.append("|| coalesce(location_nm, '') || ' (' || coalesce(store_no, '') || ') ' ");
+		sql.append("|| coalesce(city_nm, '') || ', ' || coalesce(state_cd, '') as value, ");
+		sql.append("to_tsvector(provider_nm) || ' ' || to_tsvector(location_nm) || ' ' || to_tsvector(coalesce(store_no, '')) || ' ' || ");
+		sql.append("to_tsvector(coalesce(city_nm, '')) || ' ' || to_tsvector(coalesce(state_cd, '')) as document");
+		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("wsla_provider p");
+		sql.append(DBUtil.INNER_JOIN).append(schema).append("wsla_provider_location pl on p.provider_id = pl.provider_id");
+		sql.append(") as search");
+		sql.append(DBUtil.WHERE_CLAUSE).append("search.document @@ to_tsquery(?) ");
+		
+		List<Object> vals = new ArrayList<>();
+		vals.add(docTerm);
+
+		// If a ticket id exists, set the second part of the query
+		String ticketId = req.getParameter(TicketEditAction.TICKET_ID);
+		if (!StringUtil.isEmpty(ticketId)) {
+			sql.append(DBUtil.UNION);
+			sql.append(DBUtil.SELECT_CLAUSE).append("user_id as key, first_nm || ' ' || last_nm ");
+			sql.append("|| ' - ' || coalesce(city_nm, '') || ', ' || coalesce(state_cd, '') as value");
+			sql.append(DBUtil.FROM_CLAUSE).append(schema).append("wsla_ticket t");
+			sql.append(DBUtil.INNER_JOIN).append(schema).append("wsla_user u on t.originator_user_id = u.user_id");
+			sql.append(DBUtil.INNER_JOIN).append("profile_address pa on u.profile_id = pa.profile_id");
+			sql.append(DBUtil.WHERE_CLAUSE).append("(lower(first_nm || ' ' || last_nm) like ? or lower(city_nm) like ?)");
+			sql.append("and ticket_id = ? ");
+			vals.add(term);
+			vals.add(term);
+			vals.add(ticketId);
+		}
+		
+		sql.append(DBUtil.ORDER_BY).append("value");
+		
+		// Execute the query
+		DBProcessor dbp = new DBProcessor(getDBConnection(), getCustomSchema());
+		dbp.setGenerateExecutedSQL(log.isDebugEnabled());
+		return dbp.executeSelect(sql.toString(), vals, new GenericVO());
+	}
+
 	/**
 	 * Returns a list of status codes and their descriptions
 	 * @return
@@ -505,9 +573,12 @@ public class SelectLookupAction extends SBActionAdapter {
 	 */
 	public List<GenericVO> getLocales() {
 		List<GenericVO> data = new ArrayList<>(8);
+		List<WSLALocales> base = Arrays.asList(WSLALocales.getBaseLocales());
 
 		for (WSLALocales val : WSLALocales.values()) {
-			data.add(new GenericVO(val, val.getDesc()));
+			if (!base.contains(val)) {
+				data.add(new GenericVO(val, val.getDesc()));
+			}
 		}
 
 		return data;
@@ -628,7 +699,8 @@ public class SelectLookupAction extends SBActionAdapter {
 		}
 			
 		for (ProductVO product : products.getRowData()) {
-			data.add(new GenericVO(product.getProductId(), product.getProductName()	));
+			String name = product.getCustomerProductId() + " - " + product.getProductName();
+			data.add(new GenericVO(product.getProductId(), name));
 		}
 
 		return data;
@@ -785,11 +857,14 @@ public class SelectLookupAction extends SBActionAdapter {
 		BSTableControlVO bst = new BSTableControlVO(req, LocationItemMasterVO.class);
 		InventoryAction pa = new InventoryAction(getAttributes(), getDBConnection());
 		boolean setFlag = req.getBooleanParameter("setFlag");
+		bst.setLimit(40000);
 		GridDataVO<LocationItemMasterVO> data = pa.listInventory(locationId, null, bst, setFlag);
-		
+
 		List<GenericVO> products = new ArrayList<>(data.getRowData().size());
-		for (LocationItemMasterVO lim : data.getRowData())
+		for (LocationItemMasterVO lim : data.getRowData()) {
 			products.add(new GenericVO(lim.getProductId(), lim.getProductName()));
+		}
+			
 
 		return products;
 	}

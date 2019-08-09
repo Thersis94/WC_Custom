@@ -10,12 +10,14 @@ import java.util.List;
 import java.util.Map;
 
 import com.rezdox.action.RezDoxNotifier.Message;
+import com.rezdox.action.RezDoxUtils.Product;
 import com.rezdox.data.BusinessFormProcessor;
 import com.rezdox.vo.BusinessAttributeVO;
 import com.rezdox.vo.BusinessVO;
 import com.rezdox.vo.ConnectionReportVO;
 import com.rezdox.vo.MemberVO;
-import com.rezdox.vo.MembershipVO.Group;
+import com.rezdox.vo.MembershipVO;
+import com.rezdox.vo.PromotionVO;
 import com.siliconmtn.action.ActionControllerFactoryImpl;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -28,7 +30,6 @@ import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.gis.GeocodeLocation;
 import com.siliconmtn.http.session.SMTSession;
 import com.siliconmtn.io.mail.EmailRecipientVO;
-import com.siliconmtn.sb.email.util.EmailCampaignBuilderUtil;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
@@ -48,6 +49,7 @@ import com.smt.sitebuilder.data.vo.QueryParamVO;
 import com.smt.sitebuilder.security.SBUserRole;
 import com.smt.sitebuilder.security.SBUserRoleContainer;
 import com.smt.sitebuilder.security.SecurityController;
+import com.smt.sitebuilder.util.CampaignMessageSender;
 
 /****************************************************************************
  * <b>Title</b>: BusinessAction.java<p/>
@@ -185,12 +187,12 @@ public class BusinessAction extends SBActionAdapter {
 	 * @throws ActionException 
 	 */
 	private boolean canAddNewBusiness(ActionRequest req) throws ActionException {
-		SMTSession session = req.getSession();
-		MemberVO member = (MemberVO) session.getAttribute(Constants.USER_DATA);
+		MemberVO member = RezDoxUtils.getMember(req);
 
 		// Validate whether the member needs a business upgrade
-		SubscriptionAction sa = (SubscriptionAction) ActionControllerFactoryImpl.loadAction(SubscriptionAction.class.getName(), this);
-		boolean needsUpgrade = sa.checkUpgrade(member, Group.BU);
+		SubscriptionAction sa = ActionControllerFactoryImpl.loadAction(SubscriptionAction.class, this, true);
+		boolean needsUpgrade = sa.checkUpgrade(req, member, Product.BUSINESS);
+		log.debug("needs upgrade first? " + needsUpgrade);
 
 		// A business can be added if they don't need an upgrade
 		return !needsUpgrade;
@@ -350,6 +352,10 @@ public class BusinessAction extends SBActionAdapter {
 	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
+		if (req.hasParameter("testMembership")) {
+			putModuleData(canAddNewBusiness(req),1, false, UPGRADE_MSG);
+			return;
+		}
 		BusinessVO business = new BusinessVO(req);
 		boolean newBusiness = StringUtil.isEmpty(business.getBusinessId());
 		boolean notifyAdmin = false;
@@ -372,10 +378,13 @@ public class BusinessAction extends SBActionAdapter {
 		if (req.hasParameter(REQ_BUSINESS_INFO)) {
 			saveForm(req);
 
-			int count = sa.getUsageQty(memberId, Group.BU); //counts active or pending businesses
+			int count = sa.getUsageQty(memberId, Product.BUSINESS); //counts active or pending businesses
 			if (newBusiness && count == 1) {
 				try {
-					req.setSession(changeMemebersRole(req, false));
+					changeMembersRole(req, false);
+
+					//flush the cached store options so they're refreshed
+					req.getSession().removeAttribute(MembershipAction.RD_STORE);
 
 					// This is the user's first business, give a reward to anyone that might have invited them
 					InvitationAction ia = new InvitationAction(dbConn, attributes);
@@ -383,6 +392,9 @@ public class BusinessAction extends SBActionAdapter {
 
 					//Send First Business Notifications.
 					sendFirstBusinessNotifications(site, memberId);
+
+					//Create Connection to RexDox
+					createConnectionToRezdox(req);
 
 				} catch (DatabaseException e) {
 					log.error("could not update member vo", e);
@@ -410,7 +422,7 @@ public class BusinessAction extends SBActionAdapter {
 			SBUserRole role = ((SBUserRole)req.getSession().getAttribute(Constants.ROLE_DATA));
 			if (count == 0 && RezDoxUtils.REZDOX_RES_BUS_ROLE.equals(role.getRoleId())) {
 				try {
-					req.setSession(changeMemebersRole(req, true));
+					changeMembersRole(req, true);
 					url = RezDoxUtils.MEMBER_ROOT_PATH; //redir to dashboard, they can no longer see the businesses page.
 				} catch (DatabaseException de) {
 					log.error("could not downgrade user account", de);
@@ -421,7 +433,7 @@ public class BusinessAction extends SBActionAdapter {
 
 		} else if (req.hasParameter("savePhoto")) {
 			savePhoto(req);
-			
+
 		} else {
 			try {				
 				putModuleData(saveBusiness(req), 1, false);
@@ -436,6 +448,21 @@ public class BusinessAction extends SBActionAdapter {
 
 
 	/**
+	 * Ccreate a connection to the Rezdox business, so the user has an initial connection.
+	 * Do not send notif emails for this one.
+	 * @param req
+	 * @throws ActionException 
+	 */
+	private void createConnectionToRezdox(ActionRequest req) throws ActionException {
+		ConnectionAction ca = ActionControllerFactoryImpl.loadAction(ConnectionAction.class, this, true);
+		req.setParameter("senderBusinessId", RezDoxUtils.REZDOX_BUSINESS_ID);
+		req.setParameter("recipientBusinessId", req.getParameter(REQ_BUSINESS_ID));
+		req.setParameter("approvedFlag", "1");
+		req.setParameter("skipEmails", "1");
+		ca.build(req);
+	}
+
+	/**
 	 * process notifications and/or emails after saving a business (build method above)
 	 * @param req
 	 * @param notifyAdmin
@@ -446,7 +473,7 @@ public class BusinessAction extends SBActionAdapter {
 		//notify the admin if a new business got created - it requires approval
 		if (notifyAdmin) {
 			//repopulate the VO when what the form handler repositioned for us
-			EmailCampaignBuilderUtil emailer = new EmailCampaignBuilderUtil(getDBConnection(), getAttributes());
+			CampaignMessageSender emailer = new CampaignMessageSender(getAttributes());
 			List<EmailRecipientVO> rcpts = new ArrayList<>();
 			rcpts.add(new EmailRecipientVO(null, site.getAdminEmail(), EmailRecipientVO.TO));
 			Map<String, Object> data = new HashMap<>();
@@ -526,7 +553,7 @@ public class BusinessAction extends SBActionAdapter {
 	 * @return
 	 * @throws DatabaseException 
 	 */
-	private SMTSession changeMemebersRole(ActionRequest req, boolean isHybridDowngrade) throws DatabaseException {
+	private void changeMembersRole(ActionRequest req, boolean isHybridDowngrade) throws DatabaseException {
 		ProfileRoleManager prm = new ProfileRoleManager();
 		SMTSession session = req.getSession();
 		MemberVO member = (MemberVO) session.getAttribute(Constants.USER_DATA);
@@ -539,7 +566,7 @@ public class BusinessAction extends SBActionAdapter {
 		String newRoleName = RezDoxUtils.REZDOX_BUSINESS_ROLE_NAME;
 		int newRoleLevel = RezDoxUtils.REZDOX_BUSINESS_ROLE_LEVEL;
 
-		//downgrade from hybrid to residence - they have no more businesses
+		// Downgrade from hybrid to residence - they have no more businesses
 		if (isHybridDowngrade) {
 			newRoleId = RezDoxUtils.REZDOX_RESIDENCE_ROLE;
 			newRoleName = RezDoxUtils.REZDOX_RESIDENCE_ROLE_NAME;
@@ -550,6 +577,10 @@ public class BusinessAction extends SBActionAdapter {
 			newRoleId = RezDoxUtils.REZDOX_RES_BUS_ROLE;
 			newRoleName = RezDoxUtils.REZDOX_RES_BUS_ROLE_NAME;
 			newRoleLevel = RezDoxUtils.REZDOX_RES_BUS_ROLE_LEVEL;
+
+			// If the user is hybrid already, and this isn't a downgrade, don't make any changes
+		} else if (RezDoxUtils.REZDOX_RES_BUS_ROLE.equals(role.getRoleId())) {
+			return;
 		}
 
 		prm.removeRole(role.getProfileRoleId(), dbConn);
@@ -560,7 +591,7 @@ public class BusinessAction extends SBActionAdapter {
 
 		role.setProfileRoleId(prm.checkRole(member.getProfileId(),  RezDoxUtils.MAIN_SITE_ID, dbConn));
 		session.setAttribute(Constants.ROLE_DATA, role);				
-		return session;
+		req.setSession(session);
 	}
 
 	/**
@@ -606,6 +637,23 @@ public class BusinessAction extends SBActionAdapter {
 			}
 		} catch(Exception e) {
 			throw new DatabaseException(e);
+		}
+
+		//when a new business is created, add 100 connections (the free offering) to it
+		if (newBusiness) {
+			MembershipAction ma = new MembershipAction(dbConn, attributes);
+			req.setParameter(MembershipAction.MEMBERSHIP_ID, RezDoxUtils.FREE_CONNECTIONS_PKID);
+			List<MembershipVO> data = ma.retrieveMemberships(req);
+			if (!data.isEmpty()) {
+				SubscriptionAction sa = new SubscriptionAction(dbConn, attributes);
+				try {
+					MembershipVO vo = data.get(0);
+					vo.setCostNo(0); // these are free the 1st time
+					sa.addSubscription(RezDoxUtils.getMember(req), vo, new PromotionVO(), business.getBusinessId());
+				} catch (ActionException e) {
+					log.error("could not give business " + business.getBusinessId() + " its free connections", e);
+				}
+			}
 		}
 
 		// Save the Business/Member XR and Category XR
@@ -733,5 +781,25 @@ public class BusinessAction extends SBActionAdapter {
 		} catch (Exception e) {
 			log.error("Couldn't save business settings", e);
 		}
+	}
+
+	
+	/**
+	 * loads the member's 1st/priority business.  Caches in session for repeat calls.
+	 * Used by directory and connections - where we work against the user's 
+	 * business rather than the member (if the role fits)
+	 * @param req
+	 * @return
+	 */
+	public String getMyDefaultBusinessId(ActionRequest req) {
+		String businessId = (String) req.getSession().getAttribute("RD_DEF_BUSINESS");
+		if (!StringUtil.isEmpty(businessId)) return businessId; //return cached if previously looked-up
+
+		List<BusinessVO> bizList = loadBusinessList(req);
+		if (bizList != null && !bizList.isEmpty()) {
+			businessId = bizList.get(0).getBusinessId();
+			req.getSession().setAttribute("RD_DEF_BUSINESS", businessId);
+		}
+		return businessId;
 	}
 }

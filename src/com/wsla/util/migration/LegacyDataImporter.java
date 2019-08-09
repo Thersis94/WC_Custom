@@ -41,19 +41,9 @@ public class LegacyDataImporter extends CommandLineUtil {
 //		importers.add(LocationInventory.class.getName()); //deps: InventoryLocation, Product
 
 //		importers.add(SOHeader.class.getName());
-//		importers.add(SOLineItems.class.getName());
+		importers.add(SOLineItems.class.getName());
 //		importers.add(SOExtendedData.class.getName());
-		/*
-		 * TODO:
-			Ticket
-			TicketComment // N/A
-			TicketAssignment // N/A
-			TicketSchedule? // N/A
-			Diagnostic (what needs to be preloaded - extracts from tickets?)
-			TicketDiagnostic
-			Attribute (also extracts?)
-			TicketAttribute? XDD file
-		 */
+
 	}
 
 
@@ -88,6 +78,8 @@ public class LegacyDataImporter extends CommandLineUtil {
 				importer.setAttributes(dbConn, props, args);
 				importer.run();
 				log.info("completed " + className + "\r\r\r");
+			} catch (RuntimeException re) {
+				throw re; //pass these up, something bad happened
 			} catch (Exception e) {
 				log.error("could not run importer " + className, e);
 			}
