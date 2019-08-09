@@ -17,8 +17,8 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.Node;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
+import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
-import com.smt.sitebuilder.util.CacheAdministrator;
 
 /****************************************************************************
  * <b>Title</b>: AbstractTreeAction.java
@@ -119,15 +119,16 @@ public abstract class AbstractTreeAction extends SBActionAdapter {
 	 */
 	@SuppressWarnings("unchecked")
 	public void loadFullTree(ActionRequest req) {
-		CacheAdministrator admin = new CacheAdministrator(attributes);
-		
-		List<Node> sections = (ArrayList<Node>) admin.readObjectFromCache(SectionHierarchyAction.CONTENT_HIERARCHY_CACHE_KEY);
+		List<Node> sections = (List<Node>) super.readFromCache(SectionHierarchyAction.CONTENT_HIERARCHY_CACHE_KEY).getActionData();
 		
 		if (sections == null) {
 			SmarttrakTree t = loadDefaultTree();
 			t.buildNodePaths();
 			sections = t.preorderList();
-			admin.writeToCache(SectionHierarchyAction.CONTENT_HIERARCHY_CACHE_KEY, sections);
+			ModuleVO m = new ModuleVO();
+			m.setPageModuleId(SectionHierarchyAction.CONTENT_HIERARCHY_CACHE_KEY);
+			m.setActionData(sections);
+			super.writeToCache(m);
 		}
 		req.setAttribute("hierarchyTree", sections);
 	}
