@@ -117,20 +117,19 @@ public abstract class AbstractTreeAction extends SBActionAdapter {
 	 * Load the full tree (from cache or DB) and place it on the request object
 	 * @param req
 	 */
-	@SuppressWarnings("unchecked")
 	public void loadFullTree(ActionRequest req) {
-		List<Node> sections = (List<Node>) super.readFromCache(SectionHierarchyAction.CONTENT_HIERARCHY_CACHE_KEY).getActionData();
+		ModuleVO m = super.readFromCache(SectionHierarchyAction.CONTENT_HIERARCHY_CACHE_KEY);
 		
-		if (sections == null) {
+		if (m == null) {
 			SmarttrakTree t = loadDefaultTree();
 			t.buildNodePaths();
-			sections = t.preorderList();
-			ModuleVO m = new ModuleVO();
+			List<Node>sections = t.preorderList();
+			m = new ModuleVO();
 			m.setPageModuleId(SectionHierarchyAction.CONTENT_HIERARCHY_CACHE_KEY);
 			m.setActionData(sections);
 			super.writeToCache(m);
 		}
-		req.setAttribute("hierarchyTree", sections);
+		req.setAttribute("hierarchyTree", m.getActionData());
 	}
 
 	/**
