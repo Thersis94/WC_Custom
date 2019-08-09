@@ -18,11 +18,16 @@ import java.util.Set;
 import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.Column;
+import com.siliconmtn.db.util.DatabaseException;
+import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
+import com.siliconmtn.util.UUIDGenerator;
+import com.wsla.data.ticket.StatusCode;
 import com.wsla.data.ticket.TicketAssignmentVO;
 import com.wsla.data.ticket.TicketAssignmentVO.TypeCode;
 import com.wsla.data.ticket.TicketDataVO;
+import com.wsla.data.ticket.TicketLedgerVO;
 import com.wsla.util.migration.vo.SOXDDFileVO;
 
 /****************************************************************************
@@ -48,18 +53,14 @@ public class SOExtendedData extends AbsImporter {
 	 */
 	private static Map<String, String> retailLocnMap = new HashMap<>(20, 1);
 
-
-	/**
-	 * SW Operators - start with a static mapping and add the users table to it.
-	 */
-	private static Map<String, String> operatorMap = new HashMap<>(200);
-
 	private Map<String, String> defectMap;
 	private String deleteSql;
 	private String deleteNote = "deleted %d existing attributes from ticket %s";
 
 	private int saveCnt;
 	private int delCnt;
+
+	private UUIDGenerator uuid = new UUIDGenerator();
 
 	static {
 		retailLocnMap.put("16","90133a088d6121f57f0001018b72cfa3");
@@ -127,18 +128,17 @@ public class SOExtendedData extends AbsImporter {
 		loadTicketIds();
 		setTicketIds();
 
+		//save the data - involves ticket_data and ticket_ledger
 		save();
-		log.info(String.format("replaced %d ticket_data records", delCnt));
-		log.info(String.format("added %d ticket_data records", saveCnt-delCnt));
 
 		//update purchase dates on the tickets
 		updatePurchaseDates();
 
 		//update all ledger entries to be dispositioned by the SW User ID
-//		updateLedgerDispositions();
+		updateLedgerDispositions();
 
 		//affiliate the Retailers to the tickets
-				addRetailerAssignments();
+		addRetailerAssignments();
 	}
 
 	/**
@@ -162,6 +162,8 @@ public class SOExtendedData extends AbsImporter {
 				log.error("could not save ticket data", e);
 			}
 		}
+		log.info(String.format("replaced %d ticket_data records", delCnt));
+		log.info(String.format("added %d ticket_data records", saveCnt-delCnt));
 	}
 
 
@@ -209,25 +211,17 @@ public class SOExtendedData extends AbsImporter {
 
 	/**
 	 * update the ticket_ledger entries for the tickets (entries where dispositioned_by_id=null) 
-	 * to reference the SW userId
+	 * to reference the default SW userId
 	 */
 	private void updateLedgerDispositions() {
-		//TODO make sure thes users exist first
-
-		String sql = StringUtil.join(DBUtil.UPDATE_CLAUSE, schema, "wsla_ticket_ledger ",
-				"set disposition_by_id=? where ticket_id=? and disposition_by_id is null");
+		String sql = StringUtil.join(DBUtil.UPDATE_CLAUSE, schema, "wsla_ticket_ledger a ",
+				"set disposition_by_id=? from ", schema, "wsla_ticket t ",
+				"where a.ticket_id=t.ticket_id and t.historical_flg=1 and a.disposition_by_id is null");
 		log.debug(sql);
 		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
-			for (SOXDDFileVO vo : data) {
-				if (!StringUtil.isEmpty(vo.getSwUserId())) {
-					ps.setString(1, vo.getSwUserId());
-					ps.setString(2, vo.getSoNumber());
-					ps.addBatch();
-				}
-			}
-			int[] cnt = ps.executeBatch();
-			log.info(String.format("updated %d ledger dispositions", cnt.length));
-
+			ps.setString(1, SOHeader.LEGACY_USER_ID);
+			int cnt = ps.executeUpdate();
+			log.info(String.format("updated %d ledger dispositions", cnt));
 		} catch (Exception e) {
 			log.error("could not save ledger dispositions", e);
 		}
@@ -341,14 +335,18 @@ public class SOExtendedData extends AbsImporter {
 				Object value = m.invoke(row);
 				//use the isIdentity() hook to know when we have to transpose defect codes
 				String valueStr = anno.isIdentity() ? lookupDefectCode((String)value) : formatValue(value);
-				if (!StringUtil.isEmpty(valueStr) && !isBogusData(valueStr)) {
-					//create a TicketDataVO and add it to the stack
-					TicketDataVO vo = new TicketDataVO();
-					vo.setTicketId(row.getSoNumber());
-					vo.setAttributeCode(anno.name());
-					vo.setValue(valueStr);
-					attribs.put(vo.getAttributeCode(), vo);
-				}
+				if (StringUtil.isEmpty(valueStr) || isBogusData(valueStr)) continue;
+
+				//create a TicketDataVO and add it to the stack
+				TicketDataVO vo = new TicketDataVO();
+				vo.setTicketId(row.getSoNumber());
+				vo.setAttributeCode(anno.name());
+				vo.setValue(valueStr);
+				//possibly create a ledger entry if isAutoGen is set true
+				if (anno.isAutoGen())
+					vo.setLedgerEntryId(createLedgerEntry(row.getSoNumber()));
+
+				attribs.put(vo.getAttributeCode(), vo);
 
 			} catch (Exception e) {
 				log.error("could not read data value", e);
@@ -360,13 +358,33 @@ public class SOExtendedData extends AbsImporter {
 
 
 	/**
+	 * Creates a ledger entry for the ticket to bind to the ticket_data table.
+	 * Typically these trigger for attributes which are event-based, like "the user uploaded a receipt".
+	 * @param soNumber
+	 * @return
+	 * @throws DatabaseException
+	 * @throws InvalidDataException
+	 */
+	private String createLedgerEntry(String ticketId) throws Exception {
+		TicketLedgerVO vo = new TicketLedgerVO();
+		vo.setTicketId(ticketId);
+		vo.setDispositionBy(SOHeader.LEGACY_USER_ID);
+		vo.setSummary("Usuario Agrega Evidencia");
+		vo.setStatusCode(StatusCode.USER_DATA_APPROVAL_PENDING);
+		vo.setLedgerEntryId(uuid .getUUID());
+
+		db.save(vo);
+		return vo.getLedgerEntryId();
+	}
+
+	/**
 	 * transpose partial defect & repair codes to the full pkId values stored in our DB.
 	 * Note: this method is duplicated in SOHeader - change both when revising
 	 * @param problemCode
 	 * @return
 	 */
 	private String lookupDefectCode(String partialDefectCode) {
-		if (StringUtil.isEmpty(partialDefectCode)) return null;
+		if (StringUtil.checkVal(partialDefectCode).trim().isEmpty()) return null;
 		if (partialDefectCode.matches("0+")) partialDefectCode="0";
 
 		String code = defectMap.get(partialDefectCode);
