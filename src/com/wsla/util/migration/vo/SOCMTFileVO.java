@@ -114,12 +114,13 @@ public class SOCMTFileVO {
 	 * return a list of comments from this row of data that need to be written to the DB.
 	 * If Steve decides to concat all 6 down to one DB entry we can make this method return a one-item list
 	 * and not change downstream code.
+	 * @param seed - where to start iterating; after the 1st comment, which gets saved as description
 	 * @return
 	 */
-	public List<TicketCommentVO> getComments() {
+	public List<TicketCommentVO> getComments(int seed) {
 		List<TicketCommentVO> data = new ArrayList<>();
 
-		for (int x=1; x < 7; x++) {
+		for (int x=seed; x < 7; x++) {
 			String comment = getComment(x);
 			if (StringUtil.isEmpty(comment)) continue;
 
@@ -148,7 +149,8 @@ public class SOCMTFileVO {
 			case 4: return getComment4();
 			case 3: return getComment3();
 			case 2: return getComment2();
-			default: return getComment1();
+			case 1: return getComment1();
+			default: return null;
 		}
 	}
 
@@ -160,7 +162,7 @@ public class SOCMTFileVO {
 		if (incrHrs < 2 || receivedDate == null) return receivedDate;
 		Calendar cal = Calendar.getInstance();
 		cal.setTime(receivedDate);
-		cal.add(Calendar.HOUR_OF_DAY, incrHrs);
+		cal.add(Calendar.HOUR_OF_DAY, 24-incrHrs);
 		return cal.getTime();
 	}
 }

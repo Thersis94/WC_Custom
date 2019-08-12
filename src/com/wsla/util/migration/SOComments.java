@@ -1,6 +1,7 @@
 package com.wsla.util.migration;
 
 import java.io.File;
+import java.sql.PreparedStatement;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -48,6 +49,7 @@ public class SOComments extends AbsImporter {
 
 		//save the data
 		save();
+		saveTicketDesc();
 	}
 
 	/**
@@ -62,7 +64,7 @@ public class SOComments extends AbsImporter {
 
 		//loop the tickets, add each one's comment to the larger batch
 		for (SOCMTFileVO row : data) {
-			List<TicketCommentVO> cmts = row.getComments();
+			List<TicketCommentVO> cmts = row.getComments(2);
 			log.debug(String.format("found %d comments in ticket %s", cmts.size(), row.getSoNumber()));
 			batch.addAll(cmts);
 		}
@@ -71,6 +73,29 @@ public class SOComments extends AbsImporter {
 			writeToDB(batch);
 		} catch (Exception e) {
 			log.error("could not save ticket comments", e);
+		}
+	}
+
+
+	/**
+	 * Save comment#1 as the ticket's description - which is the user-reported problem
+	 */
+	private void saveTicketDesc() {
+		String sql = StringUtil.join("update ", schema, "wsla_ticket set desc_txt=? where ticket_id=?");
+		log.debug(sql);
+		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
+			for (SOCMTFileVO row : data) {
+				if (!StringUtil.isEmpty(row.getComment1())) {
+					ps.setString(1, row.getComment1());
+					ps.setString(2, row.getTicketId());
+					ps.addBatch();
+				}
+			}
+			int[] cnt = ps.executeBatch();
+			log.info(String.format("Added descriptions to %d tickets", cnt.length));
+
+		} catch (Exception e) {
+			log.error("could not save ticket descriptions", e);
 		}
 	}
 
