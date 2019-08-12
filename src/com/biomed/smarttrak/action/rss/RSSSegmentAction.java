@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.biomed.smarttrak.action.rss.vo.RSSFeedSegment;
+import com.biomed.smarttrak.admin.AccountAction;
+import com.biomed.smarttrak.vo.UserVO.AssigneeSection;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
@@ -87,6 +89,7 @@ public class RSSSegmentAction extends SBActionAdapter {
 		if(req.hasParameter(SEGMENT_ID) && "ADD".equals(req.getParameter(SEGMENT_ID)))
 			return;
 		this.putModuleData(loadSegments(req.getParameter(SEGMENT_ID)));
+		loadManagers(req);
 	}
 
 	/* (non-Javadoc)
@@ -148,5 +151,17 @@ public class RSSSegmentAction extends SBActionAdapter {
 		sql.append("on a.FEED_SEGMENT_ID = b.FEED_SEGMENT_ID ");
 		sql.append("order by cast(b.FEED_SEGMENT_ID as int), FEED_GROUP_NM ");
 		return sql.toString();
+	}
+
+	/**
+	 * Load smarttrak managers for use with assigning tickets.
+	 * @param req
+	 * @throws ActionException
+	 */
+	protected void loadManagers(ActionRequest req) {
+		AccountAction aa = new AccountAction(this.actionInit);
+		aa.setAttributes(getAttributes());
+		aa.setDBConnection(getDBConnection());
+		aa.loadManagerList(req, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA), AssigneeSection.NEWS_ROOM);
 	}
 }

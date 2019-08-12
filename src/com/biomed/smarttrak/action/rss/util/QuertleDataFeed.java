@@ -30,6 +30,7 @@ import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.io.http.SMTHttpConnectionManager;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
+import com.smt.sitebuilder.search.SMTIndexIntfc;
 
 /****************************************************************************
  * <b>Title:</b> QuertleDataFeed.java <b>Project:</b> WC_Custom
@@ -55,10 +56,11 @@ public class QuertleDataFeed extends AbstractSmarttrakRSSFeed {
 	private static final QName SERVICE_NAME = new QName("http://base.webservice.quertle.com/", "SearchWSImplementationsService");
 
 	/**
+	 * @param index 
 	 * @param args
 	 */
-	public QuertleDataFeed(Connection dbConn, Properties props) {
-		super(dbConn,props);
+	public QuertleDataFeed(Connection dbConn, Properties props, SMTIndexIntfc index) {
+		super(dbConn,props,index);
 		feedName = "Quertle RSS Feed";
 	}
 
@@ -193,6 +195,7 @@ public class QuertleDataFeed extends AbstractSmarttrakRSSFeed {
 		article.setArticleGuid(articleGuid);
 		article.setRssEntityId(props.getProperty(QUERTLE_ENTITY_ID));
 		article.setArticleSourceType(ArticleSourceType.QUERTLE);
+		article.setAffiliation(resultAttrs.getAffiliation());
 
 		//Set special attributes based on Application or Grant Type.
 		if (searchType.equals(props.get(PATENT_APPLICATION_TYPE))) {

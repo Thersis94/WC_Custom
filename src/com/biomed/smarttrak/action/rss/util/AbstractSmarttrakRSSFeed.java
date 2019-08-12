@@ -37,6 +37,7 @@ import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
 import com.smt.sitebuilder.common.constants.Constants;
+import com.smt.sitebuilder.search.SMTIndexIntfc;
 
 /****************************************************************************
  * <b>Title:</b> AbstractSmarttrakRSSFeed.java
@@ -77,12 +78,16 @@ public abstract class AbstractSmarttrakRSSFeed {
 	private Map<String, Long> accessTimes;
 	private static final long LAG_TIME_MS = 2000;
 
+	private SMTIndexIntfc index;
+
 	/**
+	 * @param index 
 	 * @param args
 	 */
-	public AbstractSmarttrakRSSFeed(Connection dbConn, Properties props) {
+	public AbstractSmarttrakRSSFeed(Connection dbConn, Properties props, SMTIndexIntfc index) {
 		this.dbConn = dbConn;
 		this.props = props;
+		this.index = index;
 		customDb = props.getProperty(Constants.CUSTOM_DB_SCHEMA);
 		replaceSpanText = props.getProperty(REPLACE_SPAN);
 		mockUserAgent = props.getProperty("mockUserAgent");
@@ -240,6 +245,9 @@ public abstract class AbstractSmarttrakRSSFeed {
 			} else {
 				this.addMessage(String.format("<b>All Articles Exist for article:</b> %s<br/>", article.getTitleTxt()));
 				log.info("Article Already Exists: " + article.getRssArticleId());
+			}
+			if(index != null && !historyValues.isEmpty()) {
+				index.indexItems(historyValues.keySet().toArray(new String[historyValues.size()]));
 			}
 		} catch (InvalidDataException | DatabaseException e) {
 			log.error("Error Saving Articles", e);
