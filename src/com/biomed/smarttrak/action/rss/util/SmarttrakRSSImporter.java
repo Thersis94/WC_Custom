@@ -15,6 +15,7 @@ import java.util.Map.Entry;
 
 import org.apache.solr.client.solrj.SolrClient;
 
+import com.biomed.smarttrak.action.rss.util.AbstractSmarttrakRSSFeed.MsgKey;
 import com.biomed.smarttrak.action.rss.vo.RSSArticleVO.ArticleSourceType;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.exception.ApplicationException;
@@ -41,9 +42,11 @@ import com.smt.sitebuilder.search.SMTIndexIntfc;
 public class SmarttrakRSSImporter extends CommandLineUtil {
 
 	private static final String SCRIPT_PROPERTIES_PATH = "scripts/bmg_smarttrak/rss_config.properties";
+
 	public static final int MAX_KEEP_DAYS = 60;
 	private static final String FEEDS_OOB_INDEXER_CLASSPATH = "feedsSolrClasspath";
-	private Map<String, List<String>> messages; 
+	private static final String SUBJECT = "subject";
+	private Map<String, Map<MsgKey, List<String>>> messages;
 	private long startTime;
 	protected SolrClient server;
 	private SMTIndexIntfc index;
@@ -113,6 +116,19 @@ public class SmarttrakRSSImporter extends CommandLineUtil {
 
 		// send email
 		sendEmail();
+
+		//Only send Error Email if we have errors.
+		for(Entry<String, Map<MsgKey, List<String>>> e : messages.entrySet()) {
+			//Check Errors List
+			if(!e.getValue().get(MsgKey.ERROR).isEmpty()) {
+
+				//Send Error Email.
+				sendErrorEmail();
+
+				//Send one email for the script.
+				break;
+			}
+		}
 	}
 
 	/**
@@ -136,7 +152,37 @@ public class SmarttrakRSSImporter extends CommandLineUtil {
 		if (asf != null) {
 			log.info("****************   Beginning " + ast + " Feed ****************");
 			asf.run();
+
 			messages.put(asf.getFeedName(), asf.getMessages());
+		}
+	}
+
+	/**
+	 * Send secondary email to recipients containing any error messages that were captured.
+	 */
+	protected void sendErrorEmail() {
+		final String br = "<br/>";
+		StringBuilder msg = new StringBuilder(500);
+		msg.append("<h3>SmartTRAK RSS Feeds Importer Errors &mdash; ");
+		msg.append(Convert.formatDate(new Date(startTime), Convert.DATETIME_SLASH_PATTERN));
+		msg.append("</h3>");
+		for (Entry<String, Map<MsgKey, List<String>>> feedData : messages.entrySet()) {
+
+			//If this is a single Run, update the Subject Line to reflect the run.
+			if(messages.size() == 1) {
+				String subject = props.getProperty(SUBJECT);
+				props.replace(SUBJECT, StringUtil.join(subject, " - ", feedData.getKey()));
+			}
+			msg.append(feedData.getKey()).append(br);
+			for(String m : feedData.getValue().get(MsgKey.ERROR)) {
+				msg.append(m).append(br);
+			}
+		}
+
+		try {
+			super.sendEmail(msg,null);
+		} catch (Exception e) {
+			log.error("Error sending RSS importer admin email", e);
 		}
 	}
 
@@ -150,15 +196,15 @@ public class SmarttrakRSSImporter extends CommandLineUtil {
 		msg.append(Convert.formatDate(new Date(startTime), Convert.DATETIME_SLASH_PATTERN));
 		msg.append("</h3>");
 		msg.append("<h4>Feeds processed: ").append("</h4>");
-		for (Entry<String, List<String>> feedData : messages.entrySet()) {
+		for (Entry<String, Map<MsgKey, List<String>>> feedData : messages.entrySet()) {
 
 			//If this is a single Run, update the Subject Line to reflect the run.
 			if(messages.size() == 1) {
-				String subject = props.getProperty("subject");
-				props.replace("subject", StringUtil.join(subject, " - ", feedData.getKey()));
+				String subject = props.getProperty(SUBJECT);
+				props.replace(SUBJECT, StringUtil.join(subject, " - ", feedData.getKey()));
 			}
 			msg.append(feedData.getKey()).append(br);
-			for(String m : feedData.getValue()) {
+			for(String m : feedData.getValue().get(MsgKey.STANDARD)) {
 				msg.append(m).append(br);
 			}
 		}
