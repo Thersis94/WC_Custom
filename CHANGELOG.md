@@ -1,5 +1,12 @@
 WC_Custom Changelog (auto-generated)
 
+# [3.23.0](https://github.com/smtadmin/WC_Custom/compare/3.22.3...3.23.0) (2019-08-09)
+
+
+### Features
+
+* **Misc:** Misc cleanup before launch ([2061094](https://github.com/smtadmin/WC_Custom/commit/2061094))
+
 ## [3.22.3](https://github.com/smtadmin/WC_Custom/compare/3.22.2...3.22.3) (2019-08-07)
 
 
