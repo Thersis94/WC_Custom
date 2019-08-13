@@ -4,6 +4,7 @@ package com.mts.security;
 import java.util.Map;
 import java.sql.Connection;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 // MTS Libs
@@ -125,15 +126,19 @@ public class MTSLoginModule extends DBLoginModule {
 		sql.append(DBUtil.SELECT_FROM_STAR).append(schema).append("mts_user a "); 
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema);
 		sql.append("mts_subscription_publication_xr b on a.user_id = b.user_id ");
-		sql.append("where profile_id = ? and expiration_dt is not null ");
-		sql.append("and expiration_dt > now() and active_flg = 1 ");
+		sql.append("where profile_id = ? ");
 		log.debug(sql.length() + "|" + sql + "|" + vals);
 		
 		// Get the user extended info and assign it to the user object  
 		DBProcessor db = new DBProcessor(conn);
 		List<MTSUserVO> userPubs = db.executeSelect(sql.toString(), vals, new MTSUserVO());
-		if (! userPubs.isEmpty())
-			authUser.setUserExtendedInfo(userPubs.get(0));
+		MTSUserVO user = (!userPubs.isEmpty()) ? userPubs.get(0) : new MTSUserVO();
+		
+		// If the user is an author or admion assign.  Otherwise only assign
+		// if expiration date is in the future
+		if (user.getActiveFlag() == 0) return;
+		if ("100".equals(user.getRoleId()) || "AUTHOR".equals(user.getRoleId()) || new Date().before(user.getExpirationDate())) 
+			authUser.setUserExtendedInfo(user);
 	}
 
 }

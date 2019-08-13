@@ -270,7 +270,7 @@ public class UserAction extends UserBaseWidget {
 		
 		StringBuilder sql = new StringBuilder(768);
 		sql.append("select a.email_address_txt, last_login_dt, a.user_id, a.first_nm, a.last_nm, ");
-		sql.append("a.company_nm, a.expiration_dt, a.active_flg, c.role_nm, b.profile_role_id, subscription_type_cd, ");
+		sql.append("a.company_nm, a.expiration_dt, a.active_flg, c.role_nm, b.profile_role_id, subscription_type_cd, cv_desc, ");
 		sql.append("d.authentication_id, a.create_dt, string_agg(f.publication_nm, ',') as note_txt, b.role_id ");
 		sql.append(DBUtil.FROM_CLAUSE).append(getCustomSchema()).append("mts_user a ");
 		sql.append(DBUtil.INNER_JOIN).append("profile_role b ");
