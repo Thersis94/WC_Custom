@@ -1,5 +1,19 @@
 WC_Custom Changelog (auto-generated)
 
+# [3.24.0](https://github.com/smtadmin/WC_Custom/compare/3.23.0...3.24.0) (2019-08-12)
+
+
+### Bug Fixes
+
+* **Auth:** Changed the query to get the assigned publications.  Added a field to the query for the m ([827497e](https://github.com/smtadmin/WC_Custom/commit/827497e))
+* **Sc-1506:** Add year_no and market group id column. ([463f058](https://github.com/smtadmin/WC_Custom/commit/463f058))
+* **Sc-1537:** Set grid row details when loading all grids. ([c55c267](https://github.com/smtadmin/WC_Custom/commit/c55c267))
+
+
+### Features
+
+* **SC-1278:** Initial Solr Integrations for Feeds UI Updates. ([daa4ff5](https://github.com/smtadmin/WC_Custom/commit/daa4ff5))
+
 # [3.23.0](https://github.com/smtadmin/WC_Custom/compare/3.22.3...3.23.0) (2019-08-09)
 
 

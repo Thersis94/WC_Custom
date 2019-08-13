@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -30,6 +31,7 @@ import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.io.http.SMTHttpConnectionManager;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
+import com.smt.sitebuilder.search.SMTIndexIntfc;
 
 /****************************************************************************
  * <b>Title:</b> QuertleDataFeed.java <b>Project:</b> WC_Custom
@@ -55,10 +57,11 @@ public class QuertleDataFeed extends AbstractSmarttrakRSSFeed {
 	private static final QName SERVICE_NAME = new QName("http://base.webservice.quertle.com/", "SearchWSImplementationsService");
 
 	/**
+	 * @param index 
 	 * @param args
 	 */
-	public QuertleDataFeed(Connection dbConn, Properties props) {
-		super(dbConn,props);
+	public QuertleDataFeed(Connection dbConn, Properties props, SMTIndexIntfc index) {
+		super(dbConn,props,index);
 		feedName = "Quertle RSS Feed";
 	}
 
@@ -111,8 +114,8 @@ public class QuertleDataFeed extends AbstractSmarttrakRSSFeed {
 
 			//If we have results, process them.
 			if (!results.isEmpty()) {
-				int existingCnt = processResults(results, searchType);
-				patentCnt += results.size() - existingCnt; //increment our 'new' count using #found - #existing
+				processResults(results, searchType);
+				patentCnt += results.size(); //Increment count using results count.
 			}
 		}
 		log.info("loaded " + patentCnt + " new patents from Quertle for type=" + searchType);
@@ -124,40 +127,49 @@ public class QuertleDataFeed extends AbstractSmarttrakRSSFeed {
 	 * Apply Filtering to VO before returning.
 	 * @param results
 	 */
-	private int processResults(List<ResultAttributes> results, String searchType) {
+	private void processResults(List<ResultAttributes> results, String searchType) {
 		// Load existing Article Ids for Quertle.
 		Map<String, GenericVO> articleGuids = getExistingIds(searchType, results);
 		log.info("found " + articleGuids.size() + " existing articles for type=" + searchType + " and loaded each one's feedGroupIds");
 
 		RSSArticleVO article;
-		// Iterate Results and Builds Article VOs.
-		for (ResultAttributes resultAttrs : results) {
+		// Iterate Results and process.
+		Iterator<ResultAttributes> iter = results.iterator();
+		while(iter.hasNext()) {
+			ResultAttributes resultAttrs = iter.next();
 			long start = System.currentTimeMillis();
 			String id = searchType + resultAttrs.getApplicationNumber();
 
+			//Build base Article Data
 			article = buildArticleVO(id, searchType, resultAttrs);
 			log.info("article VO took " + (System.currentTimeMillis()-start) + "ms");
 
 			//Check if publishDate is outside the accepted range.
 			if(article.getPublishDt().before(cutOffDate)) {
-				return 0;
+				log.info("Article is before cutOffDate.  Skipping.");
+				iter.remove();
+				continue;
 			}
 
+			//Apply Filters
 			applyFilters(article, articleGuids);
 			log.info("article filters took " + (System.currentTimeMillis()-start) + "ms");
 
 			// Remove the Full Article Text to lessen memory overhead.
 			article.setFullArticleTxt(null);
 
+			/*
+			 * Determine if we need to store results or remove article data if
+			 * nothing matched.
+			 */
 			if (!article.getFilterVOs().isEmpty()) {
 				storeArticle(article);
 			} else {
 				log.info("************** article did not match filters, discarding ****************");
+				iter.remove();
 			}
 			log.info("article took " + (System.currentTimeMillis()-start) + "ms");
 		}
-		// return the # of existing records, so we can report how many new ones we found in the logs.
-		return articleGuids.size();
 	}
 
 
@@ -168,8 +180,14 @@ public class QuertleDataFeed extends AbstractSmarttrakRSSFeed {
 	 * @param ids 
 	 */
 	private void applyFilters(RSSArticleVO a, Map<String, GenericVO> articleGuids) {
+		boolean loadedArticle = false;
 		for (RSSFeedGroupVO g : groups) {
 			if (! articleExists(a, g.getFeedGroupId(), articleGuids)) {
+				//Only load fullArticleText if we're processing it.
+				if(!loadedArticle) {
+					a.setFullArticleTxt(loadArticle(a.getArticleUrl(), 0));
+					loadedArticle = true;
+				}
 				//Apply Matching Filters to article.
 				applyFilter(a, g.getFeedGroupId(), g.getFeedGroupNm(), true);
 			}
@@ -193,6 +211,7 @@ public class QuertleDataFeed extends AbstractSmarttrakRSSFeed {
 		article.setArticleGuid(articleGuid);
 		article.setRssEntityId(props.getProperty(QUERTLE_ENTITY_ID));
 		article.setArticleSourceType(ArticleSourceType.QUERTLE);
+		article.setAffiliation(resultAttrs.getAffiliation());
 
 		//Set special attributes based on Application or Grant Type.
 		if (searchType.equals(props.get(PATENT_APPLICATION_TYPE))) {
@@ -209,7 +228,6 @@ public class QuertleDataFeed extends AbstractSmarttrakRSSFeed {
 			}
 		}
 
-		article.setFullArticleTxt(loadArticle(article.getArticleUrl()));
 		return article;
 	}
 
@@ -381,10 +399,10 @@ public class QuertleDataFeed extends AbstractSmarttrakRSSFeed {
 	 * @param articleUrl
 	 * @return
 	 */
-	private String loadArticle(String url) {
+	private String loadArticle(String url, int ctr) {
 		if (StringUtil.isEmpty(url)) return null;
 		SMTHttpConnectionManager conn = createBaseHttpConnection();
-
+		String resp = null;
 		try {
 			throttleRequests(url);
 			
@@ -398,17 +416,33 @@ public class QuertleDataFeed extends AbstractSmarttrakRSSFeed {
 
 			//trap all errors generated by LL
 			if (404 == conn.getResponseCode())
-				return null;
+				return resp;
 
 			if (200 != conn.getResponseCode())
 				throw new IOException("Transaction Unsuccessful, code=" + conn.getResponseCode());
 
+			//Convert data stream to String
 			if (data != null)
-				return new String(data);
+				resp = new String(data);
 
+			/*
+			 * If response doesn't contain the No Patents Error Response, return.
+			 * Else attempt to retrieve the page up to 10 times.  If still no
+			 * response, return null and log the error so we know.
+			 */
+			if(!StringUtil.checkVal(resp).contains("No patents have matched your query")) {
+				return resp;
+			} else if(ctr < 10) {
+				log.info(String.format("Failed to retrieve proper url.  Sleeping 1000ms and trying again.  Count: %d", ctr));
+				Thread.sleep(1000);
+				resp = loadArticle(url, ++ctr);
+			} else {
+				super.addErrorMessage(String.format("Failed to load Full Text Article at %s", url));
+				return null;
+			}
 		} catch (Exception ioe) {
 			log.error("could not load data from url=" + url, ioe);
 		}
-		return null;
+		return resp;
 	}
 }
