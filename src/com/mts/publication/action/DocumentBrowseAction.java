@@ -125,7 +125,7 @@ public class DocumentBrowseAction extends SimpleActionAdapter {
 		sql.append(") as i on b.document_id = i.document_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(getCustomSchema()).append("mts_user_info e ");
 		sql.append("on b.unique_cd = e.value_txt and e.user_id = ? and e.user_info_type_cd = 'BOOKMARK' ");
-		sql.append("where 1=1 ");
+		sql.append("where c.approval_flg = 1 ");
 		
 		// Add the text search
 		if (bst.hasSearch()) addSearchFilter(sql, vals, bst);

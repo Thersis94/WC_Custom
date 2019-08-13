@@ -111,7 +111,7 @@ public class MTSDocumentAction extends SimpleActionAdapter {
 			doc.setAuthor(user);
 			setModuleData(doc);
 		} catch (Exception e) {
-			log.error("Unable to retrieve document", e);
+			log.debug("Unable to retrieve document", e);
 			setModuleData(null, 0, e.getLocalizedMessage());
 		}
 	}
