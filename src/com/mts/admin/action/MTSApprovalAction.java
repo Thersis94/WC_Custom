@@ -2,15 +2,16 @@ package com.mts.admin.action;
 
 // MTS Libs
 import com.mts.common.MTSConstants.MTSRole;
-
+import com.mts.publication.action.MTSDocumentAction;
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
-
+import com.siliconmtn.util.StringUtil;
 // WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.approval.ApprovalAction;
+import com.smt.sitebuilder.approval.ApprovalController.SyncTransaction;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.security.SBUserRole;
 
@@ -64,6 +65,17 @@ public class MTSApprovalAction extends SBActionAdapter {
 			// Call the approval Action
 			ApprovalAction ac = new ApprovalAction(getDBConnection(), getAttributes());
 			ac.update(req);
+			
+			// if the type is revert and the action_id matches the group id, 
+			// then remove from mts_document.  This is a doc that was created
+			// But never approved and then cacelled
+			SyncTransaction st = SyncTransaction.valueOf(req.getParameter("wcSyncAction"));
+			String actionId = StringUtil.checkVal(req.getParameter("wcKeyId"));
+			String actionGroupId = req.getParameter("wcOrigKeyId");
+			if (SyncTransaction.Cancel.equals(st) && actionId.equals(actionGroupId)) {
+				MTSDocumentAction da = new MTSDocumentAction(getDBConnection(), getAttributes());
+				da.deleteDocument(actionGroupId);
+			}
 		} catch (Exception e) {
 			log.error("Error performing an approval", e);
 			setModuleData(null, 0, e.getLocalizedMessage());
