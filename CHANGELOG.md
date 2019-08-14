@@ -1,5 +1,14 @@
 WC_Custom Changelog (auto-generated)
 
+## [3.24.1](https://github.com/smtadmin/WC_Custom/compare/3.24.0...3.24.1) (2019-08-14)
+
+
+### Bug Fixes
+
+* **Cancel:** Modified the flow when a new article is cancelled to remove the article form the mts do ([bd2ac96](https://github.com/smtadmin/WC_Custom/commit/bd2ac96))
+* **Security:** Made sure that an issue and the documents are approved before displaying on the site ([2626206](https://github.com/smtadmin/WC_Custom/commit/2626206))
+* **Security and Authors:** Fixed a login bug where an author wasn't getting loaded into the userdata ([8cf35ee](https://github.com/smtadmin/WC_Custom/commit/8cf35ee))
+
 # [3.24.0](https://github.com/smtadmin/WC_Custom/compare/3.23.0...3.24.0) (2019-08-12)
 
 
