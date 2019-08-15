@@ -356,7 +356,7 @@ public class SelectLookupAction extends SBActionAdapter {
 
 		for (int i=0; i < terms.length; i++) {
 			if (i > 0) term.append(" & ");
-			term.append(terms[i].replace("'","")).append(":*");
+			term.append(terms[i].replace("'","''")).append(":*");
 		}
 		
 		// Build the sql using Full text indexing
