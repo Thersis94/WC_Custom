@@ -168,6 +168,9 @@ public class TicketOverviewAction extends BasePortalAction {
 		} else if (req.getBooleanParameter("warrantyExpiredFlag") && !req.getBooleanParameter("attr_userFunded")) {
 			bta.changeStatus(ticket.getTicketId(), user.getUserId(), StatusCode.EXPIRED_WARRANTY, null, null);
 			ticket.setStatusCode(StatusCode.CLOSED);
+		} else if (req.getIntegerParameter("attr_cc_config_flag", 0) == 1) {
+			bta.changeStatus(ticket.getTicketId(), user.getUserId(), StatusCode.CC_CONFIG, null, null);
+			ticket.setStatusCode(StatusCode.CC_CONFIG);
 		}
 		// Save the ticket core data
 		this.saveCoreTicket(ticket);
