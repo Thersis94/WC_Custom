@@ -13,7 +13,13 @@ public class ArticlePaneAction extends SBActionAdapter {
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		try {
-			SMTHttpConnectionManager conn = new SMTHttpConnectionManager();
+			SMTHttpConnectionManager conn = new SMTHttpConnectionManager(true);
+			conn.addRequestHeader("User-Agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.113 Safari/537.36");
+			conn.addRequestHeader("Accept", "*/*");
+			conn.addRequestHeader("Accept-Language", "en-US,en;q=0.8");
+			conn.addRequestHeader("Cache-Control" , "no-cache");
+			conn.addRequestHeader("Connection", "keep-alive");
+			conn.addRequestHeader("Pragma" , "no-cache");
 			conn.setConnectionTimeout(30000);
 			conn.setFollowRedirects(true);
 			String url = StringEncoder.urlDecode(req.getParameter("articleUrl"));
