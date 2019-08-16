@@ -86,7 +86,7 @@ public class ArticleByCategoryAction extends SimpleActionAdapter {
 		sql.append("on b.action_group_id = c.document_id ");
 		sql.append("inner join ").append(getCustomSchema()).append("mts_issue d ");
 		sql.append("on c.issue_id = d.issue_id ");
-		sql.append("where widget_meta_data_id = ? "); 
+		sql.append("where d.approval_flg = 1 and widget_meta_data_id = ? "); 
 		if (! StringUtil.isEmpty(pubId)) {
 			sql.append("and publication_id = ? ");
 			vals.add(pubId);

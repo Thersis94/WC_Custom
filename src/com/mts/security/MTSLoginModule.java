@@ -4,6 +4,7 @@ package com.mts.security;
 import java.util.Map;
 import java.sql.Connection;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 // MTS Libs
@@ -131,8 +132,13 @@ public class MTSLoginModule extends DBLoginModule {
 		// Get the user extended info and assign it to the user object  
 		DBProcessor db = new DBProcessor(conn);
 		List<MTSUserVO> userPubs = db.executeSelect(sql.toString(), vals, new MTSUserVO());
-		if (! userPubs.isEmpty())
-			authUser.setUserExtendedInfo(userPubs.get(0));
+		MTSUserVO user = (!userPubs.isEmpty()) ? userPubs.get(0) : new MTSUserVO();
+		
+		// If the user is an author or admion assign.  Otherwise only assign
+		// if expiration date is in the future
+		if (user.getActiveFlag() == 0) return;
+		if ("100".equals(user.getRoleId()) || "AUTHOR".equals(user.getRoleId()) || new Date().before(user.getExpirationDate())) 
+			authUser.setUserExtendedInfo(user);
 	}
 
 }

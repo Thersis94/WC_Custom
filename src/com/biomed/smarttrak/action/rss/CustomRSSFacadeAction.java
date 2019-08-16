@@ -94,7 +94,7 @@ public class CustomRSSFacadeAction extends SBActionAdapter {
 		if(req.hasParameter(FACADE_TYPE)) {
 			// Determine the request type and forward to the appropriate action
 			ActionInterface ai = getAction(FeedType.valueOf(req.getParameter(FACADE_TYPE)));
-			if(Convert.formatBoolean(req.getParameter("isAdmin"))) {
+			if(Convert.formatBoolean(req.getParameter("isAdmin")) && !FeedType.CONSOLE.name().equals(req.getParameter(FACADE_TYPE))) {
 				ai.list(req);
 			} else {
 				ai.retrieve(req);

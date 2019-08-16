@@ -125,7 +125,7 @@ public class DocumentBrowseAction extends SimpleActionAdapter {
 		sql.append(") as i on b.document_id = i.document_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(getCustomSchema()).append("mts_user_info e ");
 		sql.append("on b.unique_cd = e.value_txt and e.user_id = ? and e.user_info_type_cd = 'BOOKMARK' ");
-		sql.append("where 1=1 ");
+		sql.append("where c.approval_flg = 1 ");
 		
 		// Add the text search
 		if (bst.hasSearch()) addSearchFilter(sql, vals, bst);
@@ -136,7 +136,7 @@ public class DocumentBrowseAction extends SimpleActionAdapter {
 		
 		if (!StringUtil.isEmpty(bst.getOrder())) sql.append("order by ").append(bst.getOrder());
 		else sql.append("order by action_nm ");
-		log.info(sql.length() + "|" + sql + "|" + vals);
+		log.debug(sql.length() + "|" + sql + "|" + vals);
 		
 		DBProcessor db = new DBProcessor(getDBConnection());
 		return db.executeSQLWithCount(sql.toString(), vals, new MTSDocumentVO(), bst);
@@ -149,7 +149,9 @@ public class DocumentBrowseAction extends SimpleActionAdapter {
 	 * @param bst
 	 */
 	public void addSearchFilter(StringBuilder sql, List<Object> vals, BSTableControlVO bst) {
-		sql.append("and (lower(action_nm) like ? or lower(action_desc) like ?)");
+		sql.append("and (lower(action_nm) like ? or lower(action_desc) like ? ");
+		sql.append("or lower(first_nm || ' ' || last_nm) like ?) ");
+		vals.add(bst.getLikeSearch().toLowerCase());
 		vals.add(bst.getLikeSearch().toLowerCase());
 		vals.add(bst.getLikeSearch().toLowerCase());
 	}
