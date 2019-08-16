@@ -165,4 +165,35 @@ public class SOCMTFileVO {
 		cal.add(Calendar.HOUR_OF_DAY, 24-incrHrs);
 		return cal.getTime();
 	}
+
+	/**
+	 * squash all the comments (from this row) into a single 'legacy' comment
+	 * @return
+	 */
+	public TicketCommentVO getCobinedComment() {
+		StringBuilder cmts = new StringBuilder(1000);
+		for (int x=1; x < 7; x++) {
+			String comment = getComment(x);
+			if (comment != null)
+				cmts.append(comment);
+		}
+		if (cmts.length() == 0) return null;
+		
+		//create a comment VO for each and add it to the list
+		TicketCommentVO vo = new TicketCommentVO();
+		vo.setActivityType(ActivityType.COMMENT);
+		vo.setUserId(SOHeader.LEGACY_USER_ID);
+		vo.setTicketId(getTicketId());
+		vo.setCreateDate(getReceivedDate(0));
+		vo.setComment(cmts.toString());
+		return vo;
+	}
+
+	/**
+	 * @return
+	 */
+	public String getCombinedComment() {
+		TicketCommentVO vo = getCobinedComment();
+		return vo != null ? vo.getComment() : null;
+	}
 }

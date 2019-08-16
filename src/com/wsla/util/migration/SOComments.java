@@ -64,9 +64,11 @@ public class SOComments extends AbsImporter {
 
 		//loop the tickets, add each one's comment to the larger batch
 		for (SOCMTFileVO row : data) {
-			List<TicketCommentVO> cmts = row.getComments(2);
-			log.debug(String.format("found %d comments in ticket %s", cmts.size(), row.getSoNumber()));
-			batch.addAll(cmts);
+			//List<TicketCommentVO> cmts = row.getComments(2)
+			//log.debug(String.format("found %d comments in ticket %s", cmts.size(), row.getSoNumber()))
+			TicketCommentVO cmt = row.getCobinedComment();
+			if (cmt != null)
+				batch.add(cmt);
 		}
 
 		try {
@@ -85,8 +87,9 @@ public class SOComments extends AbsImporter {
 		log.debug(sql);
 		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
 			for (SOCMTFileVO row : data) {
-				if (!StringUtil.isEmpty(row.getComment1())) {
-					ps.setString(1, row.getComment1());
+				String cmt = row.getCombinedComment();
+				if (!StringUtil.isEmpty(cmt)) {
+					ps.setString(1, cmt);
 					ps.setString(2, row.getTicketId());
 					ps.addBatch();
 				}
