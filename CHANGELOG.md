@@ -1,5 +1,13 @@
 WC_Custom Changelog (auto-generated)
 
+## [3.24.2](https://github.com/smtadmin/WC_Custom/compare/3.24.1...3.24.2) (2019-08-16)
+
+
+### Bug Fixes
+
+* **DePuy IFU:** Monitor dbConns for timeout and re-open as needed ([3636756](https://github.com/smtadmin/WC_Custom/commit/3636756))
+* **DePuy-IFU:** Transpose IFU_GROUP_ID.  Create wc_sync records ([9c18a93](https://github.com/smtadmin/WC_Custom/commit/9c18a93))
+
 ## [3.24.1](https://github.com/smtadmin/WC_Custom/compare/3.24.0...3.24.1) (2019-08-14)
 
 
