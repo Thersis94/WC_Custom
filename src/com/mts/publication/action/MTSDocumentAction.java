@@ -2,6 +2,7 @@ package com.mts.publication.action;
 
 // JDK 1.8.x
 import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -80,6 +81,24 @@ public class MTSDocumentAction extends SimpleActionAdapter {
 		this.setDBConnection(dbConn);
 	}
 	
+	/**
+	 * Deletes a document.  This is only used of a document is created, never approved
+	 * and cancelled.  This is because WC will remove the article
+	 * @param req
+	 * @throws SQLException 
+	 * @throws ActionException
+	 */
+	public void deleteDocument(String actionGroupId) throws SQLException {
+		StringBuilder sql = new StringBuilder(84);
+		sql.append("delete from ").append(getCustomSchema()).append("mts_document ");
+		sql.append("where action_group_id = ?");
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, actionGroupId);
+			ps.executeUpdate();
+		}
+	}
+	
 	/*
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.action.ActionRequest)
@@ -111,7 +130,7 @@ public class MTSDocumentAction extends SimpleActionAdapter {
 			doc.setAuthor(user);
 			setModuleData(doc);
 		} catch (Exception e) {
-			log.error("Unable to retrieve document", e);
+			log.debug("Unable to retrieve document", e);
 			setModuleData(null, 0, e.getLocalizedMessage());
 		}
 	}

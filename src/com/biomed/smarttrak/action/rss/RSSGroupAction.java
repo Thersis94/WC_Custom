@@ -139,7 +139,7 @@ public class RSSGroupAction extends SBActionAdapter {
 
 		if(hasGroupId)
 			sql.append("where g.feed_group_id = ? ");
-		sql.append("order by g.FEED_GROUP_NM ");
+		sql.append("order by g.FEED_GROUP_NM");
 
 		return sql.toString();
 	}
