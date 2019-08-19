@@ -186,6 +186,7 @@ public class ShowpadDivisionUtil {
 		params.put("name", title);
 		params.put("resourcetype", ShowpadResourceType.getResourceType(fType)); //Showpad Constant for all assets
 		params.put("suppress_response_codes","true"); //forces a 200 response header
+		params.put("isDivisionShared", "false");
 
 		//distinguish some values for EMEA private assets only - trigger off the tag passed from that script marking them as 'internal'
 		if (DSPrivateAssetsImporter.INTERNAL_TAG.equals(tagMgr.getSourceConstant())) {
@@ -198,8 +199,17 @@ public class ShowpadDivisionUtil {
 			params.put("isDownloadable", "true");
 		}
 
-		params.put("isDivisionShared", "false");
-		params.put("releasedAt", Convert.formatDate(vo.getModifiedDt(), Convert.DATE_TIME_SLASH_PATTERN));
+		if (vo.getExpirationDt() != null) {
+			params.put("expiresAt", Long.toString(vo.getExpirationDt().getTime()/1000));
+			log.debug("pushing expirationDate: " + vo.getExpirationDt().getTime()/1000);
+			log.debug(vo);
+		}
+
+		if (vo.getModifiedDt() != null) {
+			params.put("releasedAt", Long.toString(vo.getModifiedDt().getTime()/1000));
+			log.debug("pushing releasedAt: " + vo.getModifiedDt().getTime()/1000);
+		}
+		
 		if (vo.getDownloadTypeTxt() != null)
 			params.put("description", vo.getDownloadTypeTxt());
 

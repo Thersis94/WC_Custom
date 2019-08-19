@@ -481,7 +481,7 @@ public class MediaBinAssetVO extends SBModuleVO {
 		if (a == null && b == null) return true;
 		if (a == null && b != null) return false;
 		if (a != null && b == null) return false;
-		return a.equals(b);
+		return a.compareTo(b) == 0;
 	}
 	
 	/**
@@ -494,7 +494,7 @@ public class MediaBinAssetVO extends SBModuleVO {
 		if (a == null && b == null) return true;
 		if (a == null && b != null) return false;
 		if (a != null && b == null) return false;
-		return a.equals(b);
+		return a.compareTo(b) == 0;
 	}
 	
 	/**
@@ -507,7 +507,7 @@ public class MediaBinAssetVO extends SBModuleVO {
 		if (a == null && b == null) return true;
 		if (a == null && b != null) return false;
 		if (a != null && b == null) return false;
-		return a.equals(b);
+		return a.compareTo(b) == 0;
 	}
 	
 	@Override
