@@ -347,11 +347,12 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 
 		for (MediaBinAssetVO vo : assets) {
 			String mask = vo.getExpirationDt().after(today) ? expiresSoon : expired;
-			msg.append("<tr><td>").append(String.format(mask, Convert.formatDate(vo.getExpirationDt(), "dd/MM/yyyy"))).append("</td>");
+			msg.append("<tr><td>").append(String.format(mask, Convert.formatDate(vo.getExpirationDt(), "MM/dd/yyyy"))).append("</td>");
 			msg.append("<td nowrap>").append(String.format(mask, vo.getTrackingNoTxt())).append("</td>");
 			msg.append("<td>").append(String.format(mask, vo.getTitleTxt())).append("</td></tr>\r");
 		}
 		msg.append("</tbody></table>\r");
-		msg.append("Color Code:").append(String.format(expiresSoon, "Expiring <3mos. ")).append(String.format(expired, " Expired.  Deleted from Showpad."));
+		msg.append("Color Code: ").append(String.format(expiresSoon, "Expiring within 3mos. ")).append(String.format(expired, " Expired.  Unusable within Showpad."));
+		msg.append("<hr/>\r\n");
 	}
 }
