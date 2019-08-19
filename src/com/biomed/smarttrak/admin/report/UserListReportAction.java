@@ -91,6 +91,11 @@ public class UserListReportAction extends SimpleActionAdapter {
 
 		// 2. build PS
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			String [] params = getRetrieveAccountUsersParams();
+			int i = 1;
+			for(String p : params) {
+				ps.setString(i++, p);
+			}
 			ResultSet rs = ps.executeQuery();
 
 			return parseAccountUsers(se,rs);
@@ -99,6 +104,14 @@ public class UserListReportAction extends SimpleActionAdapter {
 			log.error("Error retrieving accounts and users, ",sqle);
 			return new ArrayList<>();
 		}
+	}
+
+	/**
+	 * Build Params list for the RetrieveAccountUsers Query.
+	 * @return
+	 */
+	protected String[] getRetrieveAccountUsersParams() {
+		return new String [0];
 	}
 
 	/**

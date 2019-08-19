@@ -16,6 +16,8 @@ import com.biomed.smarttrak.admin.report.LinkReportAction;
 import com.biomed.smarttrak.admin.report.LinkWebReportVO;
 import com.biomed.smarttrak.admin.report.MonthlyPageViewReportAction;
 import com.biomed.smarttrak.admin.report.MonthlyPageViewReportVO;
+import com.biomed.smarttrak.admin.report.RedYellowGreenReportVO;
+import com.biomed.smarttrak.admin.report.RedYellowGreenReportAction;
 import com.biomed.smarttrak.admin.report.SupportReportAction;
 import com.biomed.smarttrak.admin.report.SupportReportVO;
 import com.biomed.smarttrak.admin.report.UserActivityAction;
@@ -68,7 +70,8 @@ public class ReportFacadeAction extends SBActionAdapter {
 		SUPPORT,
 		LINK,
 		EMAIL_METRICS,
-		MONTHLY_PAGE_VIEW;
+		MONTHLY_PAGE_VIEW,
+		RED_YELLOW_GREEN_REPORT;
 	}
 
 	/**
@@ -115,6 +118,9 @@ public class ReportFacadeAction extends SBActionAdapter {
 			case USER_LIST:
 				rpt = generateUserListReport(req);
 				break;
+			case RED_YELLOW_GREEN_REPORT:
+				rpt = generateRedYellowGreenReport(req);
+				break;
 			case USER_PERMISSIONS:
 				rpt = generateUserPermissionsReport(req, true);
 				break;
@@ -152,6 +158,22 @@ public class ReportFacadeAction extends SBActionAdapter {
 		CookieUtil.add(resp, "reportLoadingCookie", "", "/", 0);
 	}
 
+
+	/**
+	 * Build the Red Yellow Green Report User Login Statistics report.
+	 * @param req
+	 * @return
+	 * @throws ActionException 
+	 */
+	private AbstractSBReportVO generateRedYellowGreenReport(ActionRequest req) throws ActionException {
+		RedYellowGreenReportAction rgu = new RedYellowGreenReportAction();
+		rgu.setDBConnection(dbConn);
+		rgu.setAttributes(getAttributes());
+
+		AbstractSBReportVO rpt = new RedYellowGreenReportVO();
+		rpt.setData(rgu.retrieveMergedUsers(req));
+		return rpt;
+	}
 
 	/*
 	 * (non-Javadoc)
