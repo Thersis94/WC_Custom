@@ -78,7 +78,7 @@ public class ArticleByCategoryAction extends SimpleActionAdapter {
 		
 		StringBuilder sql = new StringBuilder(464);
 		sql.append("select action_nm, action_desc, a.action_id, document_id, ");
-		sql.append("unique_cd, publication_id, direct_access_pth ");
+		sql.append("unique_cd, publication_id, direct_access_pth, publish_dt ");
 		sql.append("from widget_meta_data_xr  a ");
 		sql.append("inner join sb_action b on a.action_id = b.action_id and b.pending_sync_flg = 0 ");
 		sql.append("inner join document doc on b.action_id = doc.action_id ");
@@ -86,7 +86,7 @@ public class ArticleByCategoryAction extends SimpleActionAdapter {
 		sql.append("on b.action_group_id = c.document_id ");
 		sql.append("inner join ").append(getCustomSchema()).append("mts_issue d ");
 		sql.append("on c.issue_id = d.issue_id ");
-		sql.append("where widget_meta_data_id = ? "); 
+		sql.append("where d.approval_flg = 1 and widget_meta_data_id = ? "); 
 		if (! StringUtil.isEmpty(pubId)) {
 			sql.append("and publication_id = ? ");
 			vals.add(pubId);
@@ -119,7 +119,9 @@ public class ArticleByCategoryAction extends SimpleActionAdapter {
 		StringBuilder sql = new StringBuilder(256);
 		sql.append("select object_key_id, document_path, document_asset_id, asset_type_cd ");
 		sql.append("from ").append(getCustomSchema()).append("mts_document_asset ");
-		sql.append("where object_key_id in (").append(DBUtil.preparedStatmentQuestion(docs.size() + 3)).append(") and asset_type_cd != 'PDF_DOC' ");
+		sql.append("where asset_type_cd in ('FEATURE_IMG') and object_key_id in (");
+		sql.append(DBUtil.preparedStatmentQuestion(docs.size() + 3));
+		sql.append(") and asset_type_cd != 'PDF_DOC' ");
 		sql.append("order by random() ");
 		log.debug(sql.length() + "|" + sql);
 		

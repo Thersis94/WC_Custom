@@ -119,13 +119,13 @@ public class DocumentBrowseAction extends SimpleActionAdapter {
 		sql.append("from custom.mts_document a ");
 		sql.append("inner join sb_action b on a.action_group_id = b.action_group_id and pending_sync_flg = 0 ");
 		sql.append("left outer join widget_meta_data_xr c on b.action_id = c.action_id ");
-		sql.append("left outer join custom.mts_document_asset da on c.widget_meta_data_id = da.object_key_id and da.asset_type_cd != 'PDF_DOC' ");
-		sql.append("left outer join custom.mts_document_asset da1 on a.document_id = da1.object_key_id and da1.asset_type_cd != 'PDF_DOC' ");
+		sql.append("left outer join custom.mts_document_asset da on c.widget_meta_data_id = da.object_key_id and da.asset_type_cd = 'FEATURE_IMG' ");
+		sql.append("left outer join custom.mts_document_asset da1 on a.document_id = da1.object_key_id and da1.asset_type_cd = 'FEATURE_IMG' ");
 		sql.append("group by document_id ");
 		sql.append(") as i on b.document_id = i.document_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(getCustomSchema()).append("mts_user_info e ");
 		sql.append("on b.unique_cd = e.value_txt and e.user_id = ? and e.user_info_type_cd = 'BOOKMARK' ");
-		sql.append("where 1=1 ");
+		sql.append("where c.approval_flg = 1 ");
 		
 		// Add the text search
 		if (bst.hasSearch()) addSearchFilter(sql, vals, bst);
@@ -149,7 +149,9 @@ public class DocumentBrowseAction extends SimpleActionAdapter {
 	 * @param bst
 	 */
 	public void addSearchFilter(StringBuilder sql, List<Object> vals, BSTableControlVO bst) {
-		sql.append("and (lower(action_nm) like ? or lower(action_desc) like ?)");
+		sql.append("and (lower(action_nm) like ? or lower(action_desc) like ? ");
+		sql.append("or lower(first_nm || ' ' || last_nm) like ?) ");
+		vals.add(bst.getLikeSearch().toLowerCase());
 		vals.add(bst.getLikeSearch().toLowerCase());
 		vals.add(bst.getLikeSearch().toLowerCase());
 	}

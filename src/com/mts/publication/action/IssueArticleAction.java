@@ -92,10 +92,11 @@ public class IssueArticleAction extends SBActionAdapter {
 		try {
 			if (req.hasParameter("related")) {
 				setModuleData(getRelatedArticles(req.getParameter("actionGroupId")));
-			} else if (req.hasParameter("documentId")) {
 				
+			} else if (req.hasParameter("documentId")) {
 				String userId = AppUtil.getMTSUserId(req);
 				setModuleData(getDocument(req.getParameter("documentId"), null, false, userId));
+
 			} else {
 				setModuleData(getArticles(new BSTableControlVO(req, MTSDocumentVO.class), req));
 			}
@@ -155,23 +156,31 @@ public class IssueArticleAction extends SBActionAdapter {
 		if (!StringUtil.isEmpty(documentId)) {
 			sql.append("where a.document_id = ? order by pending_sync_flg desc ");
 		} else {
-			sql.append("where c.direct_access_pth = ? order by pending_sync_flg ");
+			sql.append("where c.direct_access_pth = ? ");
+			if (! pagePreview) 
+				sql.append("and d.approval_flg = 1 and a.publish_dt is not null and b.pending_sync_flg = 0 ");
+			
+			sql.append("order by pending_sync_flg ");
 			sql.append(pagePreview ? "desc" : "asc");
 		}
 		
 		log.debug(sql.length() + "|" + sql + "|" + documentId + "|" + directPath + "|" + pagePreview);
 		
 		MTSDocumentVO doc = new MTSDocumentVO();
+		boolean isFound = false;
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, userId);
 			ps.setString(2, StringUtil.isEmpty(documentId) ? directPath : documentId);
 			
 			try (ResultSet rs = ps.executeQuery()) {
-				if (rs.next()) doc = new MTSDocumentVO(rs);
+				if (rs.next()) {
+					doc = new MTSDocumentVO(rs);
+					isFound = true;
+				}
 			}
 		}
 		
-		doc.setCategories(getCategories(doc.getActionId()));
+		if (isFound) doc.setCategories(getCategories(doc.getActionId()));
 		return doc;
 	}
 	
@@ -217,7 +226,7 @@ public class IssueArticleAction extends SBActionAdapter {
 		sql.append(") m on c.action_id = m.action_id ");
 
 		if (! useLatest && ! StringUtil.isEmpty(catId)) {
-			sql.append("where p.publication_id = ? and widget_meta_data_id = ? ");
+			sql.append("where b.approval_flg = 1 and p.publication_id = ? and widget_meta_data_id = ? ");
 		} else {
 			sql.append("where issue_dt in ( ");
 			sql.append("select max(issue_dt) as latest ");
