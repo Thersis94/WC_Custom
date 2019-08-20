@@ -102,7 +102,10 @@ public class ContentFeedJob extends AbstractSMTJob {
 		SimpleDateFormat sdf =new SimpleDateFormat(pattern);
 		fileLoc += sdf.format(d) + ".json";
 		
+		// Get the docs published in the past day.  Exit of no articles found
 		ContentFeedVO docs = getArticles(feedTitle, feedDesc, baseUrl);
+		if (docs.getItems().isEmpty()) return;
+		
 		String json = convertArticlesJson(docs);
 		
 		// Save document
