@@ -1,9 +1,17 @@
 package com.wsla.action.ticket.transaction;
 
+import java.net.URLDecoder;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
+import java.util.Map.Entry;
 
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -21,6 +29,7 @@ import com.wsla.action.ticket.TicketEditAction;
 import com.wsla.action.ticket.TicketOverviewAction;
 import com.wsla.data.ticket.DiagnosticRunVO;
 import com.wsla.data.ticket.DiagnosticTicketVO;
+import com.wsla.data.ticket.DiagnosticVO;
 import com.wsla.data.ticket.DispositionCode;
 import com.wsla.data.ticket.LedgerSummary;
 import com.wsla.data.ticket.StatusCode;
@@ -74,6 +83,13 @@ public class DiagnosticTransaction extends BaseTransactionAction {
 				saveDisposition(req);
 			}else if(req.hasParameter("isBypass") && req.hasParameter("isClose")) {
 				closeTicket(req);
+			}else if(req.hasParameter("idOrderMap")) {
+				String data = URLDecoder.decode(req.getParameter("idOrderMap"), "UTF-8");
+				JsonParser jsonParser = new JsonParser();
+				JsonObject js = jsonParser.parse(data).getAsJsonObject();
+				updateOrderNumbers(js);
+				return;
+				
 			}else {
 				saveDiagnosticRun(req);
 			}
@@ -83,6 +99,26 @@ public class DiagnosticTransaction extends BaseTransactionAction {
 		}
 	}
 
+	/**
+	 * @param js
+	 * @param db
+	 * @throws DatabaseException 
+	 * @throws InvalidDataException 
+	 */
+	private void updateOrderNumbers(JsonObject js) throws InvalidDataException, DatabaseException {
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		String[] cols = {"order_no","diagnostic_cd"};
+		Set<Entry<String, JsonElement>> map = js.entrySet();
+		for (Entry<String, JsonElement> ele : map) {
+			DiagnosticVO dvo = new DiagnosticVO();
+			dvo.setDiagnosticCode(ele.getKey());
+			dvo.setOrderNumber(ele.getValue().getAsNumber().intValue());
+			db.update(dvo, new ArrayList<>(Arrays.asList(cols)));
+		}
+		
+	}
+
+	
 	/**
 	 * closes the ticket early if a by pass was triggered
 	 * @param req
