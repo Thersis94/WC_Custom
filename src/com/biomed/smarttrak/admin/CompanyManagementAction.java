@@ -38,6 +38,7 @@ import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.EnumUtil;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
 import com.smt.sitebuilder.action.search.SolrAction;
@@ -1398,7 +1399,7 @@ public class CompanyManagementAction extends ManagementAction {
 		String companyId = req.getParameter(COMPANY_ID);
 		if (!StringUtil.isEmpty(companyId)) {
 			String status = req.getParameter("statusNo");
-			if (StringUtil.isEmpty(status))
+			if (StringUtil.isEmpty(status) || ActionType.COMPANY != EnumUtil.safeValueOf(ActionType.class, req.getParameter(ACTION_TYPE)))
 				status = findStatus(companyId);
 			updateSolr(companyId, status);
 		}
