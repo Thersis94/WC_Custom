@@ -340,19 +340,19 @@ public class ShowpadMediaBinDecorator extends DSMediaBinImporterV2 {
 
 		msg.append("<h4>Asset Expiration</h4>");
 		msg.append("<table border='1' width='95%' align='center'><thead><tr>");
-		msg.append("<th>Expiration</th>");
 		msg.append("<th>Tracking Number</th>");
+		msg.append("<th>Expiration</th>");
 		msg.append("<th>Title</th>");
 		msg.append("</tr></thead>\r<tbody>");
 
 		for (MediaBinAssetVO vo : assets) {
 			String mask = vo.getExpirationDt().after(today) ? expiresSoon : expired;
-			msg.append("<tr><td>").append(String.format(mask, Convert.formatDate(vo.getExpirationDt(), "MM/dd/yyyy"))).append("</td>");
-			msg.append("<td nowrap>").append(String.format(mask, vo.getTrackingNoTxt())).append("</td>");
+			msg.append("<tr><td>").append(String.format(mask, vo.getTrackingNoTxt())).append("</td>");
+			msg.append("<td>").append(String.format(mask, Convert.formatDate(vo.getExpirationDt(), "MM/dd/yyyy"))).append("</td>");
 			msg.append("<td>").append(String.format(mask, vo.getTitleTxt())).append("</td></tr>\r");
 		}
 		msg.append("</tbody></table>\r");
-		msg.append("Color Code: ").append(String.format(expiresSoon, "Expiring within 3mos. ")).append(String.format(expired, " Expired.  Unusable within Showpad."));
+		msg.append("<p>Color Code: ").append(String.format(expiresSoon, "Expiring within 3mos. ")).append(String.format(expired, " Expired.  Hidden from Showpad.</p>"));
 		msg.append("<hr/>\r\n");
 	}
 }
