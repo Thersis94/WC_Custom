@@ -1523,7 +1523,7 @@ public class ProductManagementAction extends ManagementAction {
 		if (!StringUtil.isEmpty(productId)) {
 			String status = req.getParameter("statusNo");
 
-			if (ActionTarget.PRODUCT != ActionTarget.valueOf(req.getParameter(ACTION_TARGET)))
+			if (ActionTarget.PRODUCT != EnumUtil.safeValueOf(ActionTarget.class, req.getParameter(ACTION_TARGET)))
 				status = findStatus(productId);
 			updateSolr(productId, status);
 		}

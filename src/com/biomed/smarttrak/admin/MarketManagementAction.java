@@ -42,6 +42,7 @@ import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.http.session.SMTCookie;
 import com.siliconmtn.io.http.SMTHttpConnectionManager;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.EnumUtil;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
 import com.smt.sitebuilder.action.AbstractSBReportVO;
@@ -1024,7 +1025,7 @@ public class MarketManagementAction extends ManagementAction {
 		if (!StringUtil.isEmpty(marketId)) {
 			String status = req.getParameter("statusNo");
 
-			if (ActionTarget.MARKET != ActionTarget.valueOf(req.getParameter(ACTION_TARGET)))
+			if (ActionTarget.MARKET != EnumUtil.safeValueOf(ActionTarget.class, req.getParameter(ACTION_TARGET)))
 				status = findStatus(marketId);
 			writeToSolr(marketId, status);
 		}
