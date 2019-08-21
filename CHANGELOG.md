@@ -1,5 +1,14 @@
 WC_Custom Changelog (auto-generated)
 
+## [3.24.3](https://github.com/smtadmin/WC_Custom/compare/3.24.2...3.24.3) (2019-08-21)
+
+
+### Bug Fixes
+
+* **Sc-1584:** Chang eto use EnumUtil. ([5ece437](https://github.com/smtadmin/WC_Custom/commit/5ece437))
+* **Sc-1584:** Fix issue with solr indexing. ([950912b](https://github.com/smtadmin/WC_Custom/commit/950912b))
+* **Sc-1584:** Return empty checks ([1d6fca1](https://github.com/smtadmin/WC_Custom/commit/1d6fca1))
+
 ## [3.24.2](https://github.com/smtadmin/WC_Custom/compare/3.24.1...3.24.2) (2019-08-16)
 
 
