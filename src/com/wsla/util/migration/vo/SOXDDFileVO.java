@@ -188,7 +188,7 @@ public class SOXDDFileVO {
 	public String getRepairType() {
 		if (StringUtil.isEmpty(getExitCode())) return null;
 		//if the exit code matches a billable code, return it.  Otherwise null
-		return getExitCode().matches("(?i)RP01|M0[1-7]") ? getExitCode() : null;
+		return getExitCode().matches("(?i)M0[1-7]") ? "repair-" + getExitCode() : null;
 	}
 	public String getShipmentTrackingNumber() {
 		return shipmentTrackingNumber;
@@ -222,7 +222,6 @@ public class SOXDDFileVO {
 	public String getPrimary3Status() {
 		return primary3Status;
 	}
-	@Column(name="attr_dispositionCode")
 	public String getProductDisposition() {
 		return productDisposition;
 	}

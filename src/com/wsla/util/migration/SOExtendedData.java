@@ -140,6 +140,10 @@ public class SOExtendedData extends AbsImporter {
 
 		//affiliate the Retailers to the tickets
 		addRetailerAssignments();
+		
+		//TODO process harvested tickets based on the PRODUCTION DISPOSITION column.
+		//if not "N/A" (there are a handful of values) these TVs were harvested, destroyed, or otherwise reworked.
+		//need those workflows - this is the entrypoint.
 	}
 
 	/**
@@ -370,7 +374,7 @@ public class SOExtendedData extends AbsImporter {
 		vo.setStatusCode(StatusCode.USER_DATA_APPROVAL_PENDING);
 		vo.setLedgerEntryId(uuid .getUUID());
 
-		db.save(vo);
+		db.insert(vo);
 		return vo.getLedgerEntryId();
 	}
 

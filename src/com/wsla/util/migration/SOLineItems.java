@@ -114,8 +114,14 @@ public class SOLineItems extends AbsImporter {
 	 * @return
 	 **/
 	private PartVO transposeInventoryData(SOLNIFileVO dataVo, PartVO vo) {
-		vo.setProductId(productIds.get(dataVo.getProductId())); //transposed
-		vo.setCustomerProductId(dataVo.getProductId()); //capture the original so we can report missing products
+		String id = dataVo.getProductId();
+		vo.setProductId(productIds.get(id)); //transposed
+		if (StringUtil.isEmpty(vo.getProductId())) { //try removing any harvesting suffix
+			id = id.replaceAll("^([A-Z0-9]+):?H$","$1");
+			log.debug("trying " + id + " from " + dataVo.getProductId());
+			vo.setProductId(productIds.get(id));
+		}
+		vo.setCustomerProductId(id); //capture the original (w/o harvesting flags) so we can report missing products
 		vo.setTicketId(ticketIds.get(dataVo.getSoNumber())); //transposed
 		vo.setQuantity(dataVo.getDefectiveQnty());
 		vo.setQuantityReceived(dataVo.getQntyCommitted());

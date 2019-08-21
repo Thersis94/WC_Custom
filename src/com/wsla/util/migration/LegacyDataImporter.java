@@ -40,11 +40,10 @@ public class LegacyDataImporter extends CommandLineUtil {
 //		importers.add(WSLAStaff.class.getName()); //WSLA Staff, WSLA's default provider location
 //		importers.add(LocationInventory.class.getName()); //deps: InventoryLocation, Product
 
-//		importers.add(SOHeader.class.getName());
+		importers.add(SOHeader.class.getName());
+		importers.add(SOExtendedData.class.getName());
+		importers.add(SOComments.class.getName());
 //		importers.add(SOLineItems.class.getName());
-//		importers.add(SOExtendedData.class.getName());
-//		importers.add(SOComments.class.getName());
-
 	}
 
 

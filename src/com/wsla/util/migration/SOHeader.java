@@ -253,6 +253,8 @@ public class SOHeader extends AbsImporter {
 		Map<String, String> locations = new HashMap<>(1000);
 		String sql = StringUtil.join("select location_id as key, provider_id as value from ", schema, "wsla_provider_location");
 		MapUtil.asMap(locations, db.executeSelect(sql, null, new GenericVO()));
+		//add a couple hard-coded translations - legacy to GUID translations:
+		locations.put("WLSA_XXX", "00001"); //TODO, coming from Ryan/Steve
 		log.debug("loaded " + locations.size() + " CAS locations");
 
 		Set<String> missingLocns = new HashSet<>();
@@ -263,11 +265,11 @@ public class SOHeader extends AbsImporter {
 
 			//create an entry for the cas
 			if (!StringUtil.isEmpty(tkt.getCasLocationId()) && !tkt.getCasLocationId().matches("0+")) {
-				vo = new TicketAssignmentVO();
-				vo.setTypeCode(TypeCode.CAS);
-				vo.setTicketId(tkt.getTicketId());
 				locnId = locations.get(tkt.getCasLocationId());
 				if (!StringUtil.isEmpty(locnId)) {
+					vo = new TicketAssignmentVO();
+					vo.setTypeCode(TypeCode.CAS);
+					vo.setTicketId(tkt.getTicketId());
 					vo.setLocationId(locnId);
 					assgs.add(vo);
 				} else {
@@ -833,7 +835,17 @@ public class SOHeader extends AbsImporter {
 		if ("40".equals(dataVo.getUserArea2()))
 			vo.setStandingCode(Standing.CRITICAL);
 
-
+		attachTicketData(dataVo, vo);
+		return vo;
+	}
+	
+	
+	/**
+	 * split from above to reduce complexity.  Transpose ticket_data table/fields
+	 * @param dataVo
+	 * @param vo
+	 */
+	private void attachTicketData(SOHDRFileVO dataVo, ExtTicketVO vo) {
 		//add attribute for Received Method
 		TicketDataVO attr;
 		if (!StringUtil.isEmpty(dataVo.getReceivedMethod())) {
@@ -863,11 +875,17 @@ public class SOHeader extends AbsImporter {
 		}
 
 		//add attribute for Coverage Code
-		if (!StringUtil.isEmpty(dataVo.getCoverageCode())) {
+		if (!StringUtil.isEmpty(dataVo.getCoverageCode()) && !StringUtil.isEmpty(vo.getCasLocationId())) {
 			attr = new TicketDataVO();
 			attr.setTicketId(vo.getTicketId());
 			attr.setAttributeCode("attr_dispositionCode");
-			attr.setValue(dataVo.getCoverageCode());
+			if (vo.getClosedDate() != null && "CNG".equals(dataVo.getCoverageCode())) {
+				attr.setValue("REPAIRED");
+			} else if ("CNG".equals(dataVo.getCoverageCode())) {
+				attr.setValue("REPAIRABLE");
+			} else { //SNG
+				attr.setValue("NONREPAIRABLE");
+			}
 			vo.addTicketData(attr);
 		}
 
@@ -880,8 +898,6 @@ public class SOHeader extends AbsImporter {
 		//			attr.setValue("defect-" + dataVo.getActionCode());
 		//			vo.addTicketData(attr);
 		//		}
-
-		return vo;
 	}
 
 

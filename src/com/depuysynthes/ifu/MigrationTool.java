@@ -164,13 +164,17 @@ public class MigrationTool extends CommandLineUtil {
 			// Some of these copies are slow, which cause timeout issues.
 			// Make sure the connections are open, or close & re-open them
 			try {
-				if (!dbConn.isValid(10) && !destDbConn.isValid(10)) {
+				if (!dbConn.isValid(10) && !destDbConn.isValid(10))
+					throw new SQLException("invalid");
+			} catch (SQLException e) {
+				try {
 					log.info("re-establishing database connections");
 					closeDBConnection();
 					loadDBConnection(props);
+				} catch (Exception sqle) {
+					log.error("could not reopen dbConns", sqle);
 				}
-			} catch (SQLException e) {
-				log.error("could not reopen dbConns", e);
+				
 			}
 		}
 	}
