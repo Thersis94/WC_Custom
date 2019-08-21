@@ -910,7 +910,8 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 				Date modDt = Convert.formatDate(Convert.DATE_TIME_SLASH_PATTERN_FULL_12HR, row.get("Check In Time"));
 				if (modDt == null) modDt = Convert.formatDate(Convert.DATE_TIME_SLASH_PATTERN_FULL_12HR, row.get("Insertion Time"));
 				//NOTE Asset Description overlaps with assetDesc below...INT uses the fallback field for assetDesc instead of this one.
-				Date expirationDt = Convert.formatDate("MM/dd/yyyy", row.get("Asset Description"));
+				//replace possible MM.DD.YYYY notations with MM/DD/YYYY for consistency - deviace introduced by Pierre 08/21/19
+				Date expirationDt = Convert.formatDate("MM/dd/yyyy", StringUtil.replace(row.get("Asset Description"),".","/"));
 
 				// Insert the record
 				vo.setAssetNm(StringUtil.checkVal(row.get("Asset Name")).replace('\\','/'));
@@ -1272,7 +1273,7 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 				html.append("Solr Total: ").append(dataCounts.get("solr")).append("<br/>");
 
 			long timeSpent = System.nanoTime()-startNano;
-			double millis = timeSpent/1000000;
+			double millis = timeSpent / (double) 1000000;
 			if (millis > (60*1000)) {
 				html.append("Execution Time: ").append(Math.round(millis / (60*1000))).append(" minutes");
 			} else {

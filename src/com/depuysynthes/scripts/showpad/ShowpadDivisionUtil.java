@@ -174,6 +174,7 @@ public class ShowpadDivisionUtil {
 
 	/**
 	 * pushes the asset to the API Util - called from above 'pushAsset' method
+	 * Note: Always send 'dates' to the API in Seconds -JM- 08/21/19 (per Showpad support)
 	 * @param postUrl
 	 * @param title
 	 * @param fType
@@ -199,16 +200,8 @@ public class ShowpadDivisionUtil {
 			params.put("isDownloadable", "true");
 		}
 
-		if (vo.getExpirationDt() != null) {
+		if (vo.getExpirationDt() != null)
 			params.put("expiresAt", Long.toString(vo.getExpirationDt().getTime()/1000));
-			log.debug("pushing expirationDate: " + vo.getExpirationDt().getTime()/1000);
-			log.debug(vo);
-		}
-
-		if (vo.getModifiedDt() != null) {
-			params.put("releasedAt", Long.toString(vo.getModifiedDt().getTime()/1000));
-			log.debug("pushing releasedAt: " + vo.getModifiedDt().getTime()/1000);
-		}
 		
 		if (vo.getDownloadTypeTxt() != null)
 			params.put("description", vo.getDownloadTypeTxt());
