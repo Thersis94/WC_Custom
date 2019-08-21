@@ -1399,7 +1399,7 @@ public class CompanyManagementAction extends ManagementAction {
 		String companyId = req.getParameter(COMPANY_ID);
 		if (!StringUtil.isEmpty(companyId)) {
 			String status = req.getParameter("statusNo");
-			if (ActionType.COMPANY != EnumUtil.safeValueOf(ActionType.class, req.getParameter(ACTION_TYPE)))
+			if (StringUtil.isEmpty(status) || ActionType.COMPANY != EnumUtil.safeValueOf(ActionType.class, req.getParameter(ACTION_TYPE)))
 				status = findStatus(companyId);
 			updateSolr(companyId, status);
 		}

@@ -1025,7 +1025,7 @@ public class MarketManagementAction extends ManagementAction {
 		if (!StringUtil.isEmpty(marketId)) {
 			String status = req.getParameter("statusNo");
 
-			if (ActionTarget.MARKET != EnumUtil.safeValueOf(ActionTarget.class, req.getParameter(ACTION_TARGET)))
+			if (StringUtil.isEmpty(status) || ActionTarget.MARKET != EnumUtil.safeValueOf(ActionTarget.class, req.getParameter(ACTION_TARGET)))
 				status = findStatus(marketId);
 			writeToSolr(marketId, status);
 		}
