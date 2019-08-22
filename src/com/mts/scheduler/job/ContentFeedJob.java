@@ -64,6 +64,7 @@ public class ContentFeedJob extends AbstractSMTJob {
 	@Override
 	public void execute(JobExecutionContext ctx) throws JobExecutionException {
 		super.execute(ctx);
+		
 		attributes = ctx.getMergedJobDataMap().getWrappedMap();
 		String message = "Success";
 		boolean success = true;
@@ -119,16 +120,22 @@ public class ContentFeedJob extends AbstractSMTJob {
 	 * @throws IOException
 	 */
 	protected void saveFile(String json, String fileLoc, String host, String user, String pwd) 
-			throws IOException {
+	throws IOException {
 		// Connect to the server and authenticate
-		Connection conn = new Connection(host);
-		conn.connect();
-		boolean isAuth = conn.authenticateWithPassword(user, pwd);
-		if (! isAuth) throw new IOException("Authentication Failed");
+		Connection sftpConn = new Connection(host);
+		
+		try {
+			sftpConn.connect(null, 3000, 0);
+			boolean isAuth = sftpConn.authenticateWithPassword(user, pwd);
+			if (! isAuth) throw new IOException("Authentication Failed");
+		
+		} catch (Exception e) {
+			throw new IOException("Connection / Authentication Failed");
+		}
 		
 		// Write the file to the server
 		ByteArrayInputStream bais = new ByteArrayInputStream(json.getBytes());
-		SFTPv3Client sftp = new SFTPv3Client(conn);
+		SFTPv3Client sftp = new SFTPv3Client(sftpConn);
 		SFTPv3FileHandle handle = sftp.createFile(fileLoc);
 		byte[] buffer = new byte[1024];
 		long offset=0;
