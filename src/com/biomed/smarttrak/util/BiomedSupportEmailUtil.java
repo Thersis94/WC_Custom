@@ -515,7 +515,7 @@ public class BiomedSupportEmailUtil {
 			
 			try {
 				CampaignManager cm = new CampaignManager(dbConn, attributes);
-				CampaignSendVO vo = cm.getEmailCampaigns(dbConn, null, ecbu.validateId((String)attributes.get(ACT_TICKET_CAMP_INST_ID)), true, null).get(0);
+				CampaignSendVO vo = cm.getEmailCampaigns(dbConn, null, ecbu.validateId((String)attributes.get(ACT_TICKET_CAMP_INST_ID)), true, null, true).get(0);
 				if (r.getKey() == EmailType.PUBLIC && !StringUtil.isEmpty(t.getAssignedEmail())) {
 					vo.setEmailReply(t.getAssignedEmail());
 				}
