@@ -215,14 +215,14 @@ public class SelectLookupAction extends SBActionAdapter {
 		UserVO user = (UserVO) getAdminUser(req).getUserExtendedInfo();
 		ResourceBundle rb = WCResourceBundle.getBundle(site.getResourceBundleClass(),user.getUserLocale());
 		String prefix = "refrep.approvalType.";
-		
+
 		List<GenericVO> list = new ArrayList<>();
 		for (ApprovalTypes at : RefundReplacementTransaction.ApprovalTypes.values()) {
 			list.add(new GenericVO(at.name(), rb.getString(prefix+at.name())));
 		}
 		return list;
 	}
-	
+
 	/**
 	 * gets the refund replacement disposition type and return an internationalized name and value
 	 * @return
@@ -232,15 +232,15 @@ public class SelectLookupAction extends SBActionAdapter {
 		UserVO user = (UserVO) getAdminUser(req).getUserExtendedInfo();
 		ResourceBundle rb = WCResourceBundle.getBundle(site.getResourceBundleClass(),user.getUserLocale());
 		String prefix = "refund.disposition.";
-		
+
 		List<GenericVO> list = new ArrayList<>();
 		for (DispositionCodes dt : RefundReplacementTransaction.DispositionCodes.values()) {
 			list.add(new GenericVO(dt.name(), rb.getString(prefix+dt.name())));
 		}
 		return list;
 	}
-	
-	
+
+
 	/**
 	 * selects the existing attribute groups
 	 * @return
@@ -285,7 +285,7 @@ public class SelectLookupAction extends SBActionAdapter {
 	public List<GenericVO> getYesNoLookup(ActionRequest req) {
 		LocaleWrapper lw = new LocaleWrapper(req);
 		List<GenericVO> yesNo = new ArrayList<>();
-		
+
 		if (lw.getLocale().equals(new Locale("es", "MX"))) {
 			yesNo.add(new GenericVO("1","Sí"));
 			yesNo.add(new GenericVO("0","No"));
@@ -362,7 +362,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		ProviderType pt = null;
 		if (! providerType.isEmpty() && ! "ALL".equalsIgnoreCase(providerType)) 
 			pt = EnumUtil.safeValueOf(ProviderType.class, providerType);
-		
+
 		int limit = req.getIntegerParameter("limit", 0);
 		return new ProviderAction(getAttributes(), getDBConnection()).getProviderOptions(pt, search, incUnknown, limit);
 	}
@@ -451,7 +451,7 @@ public class SelectLookupAction extends SBActionAdapter {
 			term.append(terms[i]).append(":*");
 		}
 		log.debug("Search Term: " + term);
-		
+
 		StringBuilder sql = new StringBuilder(512);
 		sql.append("select key, value from ( ");
 		sql.append("select location_id as key, coalesce(provider_nm, '') || ' - ' ");
@@ -518,14 +518,14 @@ public class SelectLookupAction extends SBActionAdapter {
 			sql.append(" and a.provider_id = ? ");
 			vals.add(providerId);
 		}
-		
+
 		if("harvestCas".equalsIgnoreCase(req.getStringParameter(SELECT_KEY))) {
 			sql.append("and b.location_id in (select location_id from ").append(getCustomSchema());
 			sql.append("wsla_ticket_assignment where assg_type_cd = 'CAS' and ticket_id in ");
 			sql.append("( SELECT ticket_id FROM ").append(getCustomSchema()).append("wsla_ticket where status_cd = 'HARVEST_APPROVED' )");
 			sql.append("order by ticket_id, location_id asc ) ");
 		}
-		
+
 		sql.append("order by provider_nm");
 		log.debug(" sql " + sql +"|" + vals);
 
@@ -545,7 +545,7 @@ public class SelectLookupAction extends SBActionAdapter {
 	public List<GenericVO> getAcShippingLocation(ActionRequest req) {
 		StringBuilder term = new StringBuilder(20);
 		term.append("%").append(StringUtil.checkVal(req.getParameter(REQ_SEARCH)).toLowerCase()).append("%");
-		
+
 		// Set the "fuzzy" search term
 		String docTerm = StringUtil.checkVal(req.getParameter(REQ_SEARCH)).toLowerCase();
 		while (docTerm.contains("  ")) {
@@ -553,7 +553,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		}
 		docTerm = docTerm.trim();
 		docTerm = StringUtil.replace(docTerm, " ", ":*& ") + ":*";
-		
+
 		// Set the first part of the query
 		String schema = getCustomSchema();
 		StringBuilder sql = new StringBuilder(750);
@@ -567,7 +567,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("wsla_provider_location pl on p.provider_id = pl.provider_id");
 		sql.append(") as search");
 		sql.append(DBUtil.WHERE_CLAUSE).append("search.document @@ to_tsquery(?) ");
-		
+
 		List<Object> vals = new ArrayList<>();
 		vals.add(docTerm);
 
@@ -586,9 +586,9 @@ public class SelectLookupAction extends SBActionAdapter {
 			vals.add(term);
 			vals.add(ticketId);
 		}
-		
+
 		sql.append(DBUtil.ORDER_BY).append("value");
-		
+
 		// Execute the query
 		DBProcessor dbp = new DBProcessor(getDBConnection(), getCustomSchema());
 		dbp.setGenerateExecutedSQL(log.isDebugEnabled());
@@ -604,7 +604,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		List<GenericVO> data = new ArrayList<>(64);
 		StatusCodeAction sca = new StatusCodeAction(getDBConnection(), getAttributes());
 		List<StatusCodeVO> codes = sca.getStatusCodes(req.getParameter("roleId"), lw.getLocale(), null);
-		
+
 		for(StatusCodeVO sc : codes) {
 			data.add(new GenericVO(sc.getStatusCode(), sc.getStatusName().trim()));
 		}
@@ -635,7 +635,7 @@ public class SelectLookupAction extends SBActionAdapter {
 	public List<GenericVO> getGenders(ActionRequest req) {
 		LocaleWrapper lw = new LocaleWrapper(req);
 		List<GenericVO> data = new ArrayList<>(8);
-		
+
 		if (lw.getLocale().equals(new Locale("es", "MX"))) {
 			data.add(new GenericVO("F", "Mujer"));
 			data.add(new GenericVO("M", "Hombre"));
@@ -643,7 +643,7 @@ public class SelectLookupAction extends SBActionAdapter {
 			data.add(new GenericVO("F", "Female"));
 			data.add(new GenericVO("M", "Male"));
 		}
-		
+
 		return data;
 	}
 
@@ -659,7 +659,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		params.add(locale.getLanguage());
 		params.add(locale.getCountry());
 		params.add(req.getStringParameter("defectType", "DEFECT_CODE"));
-		
+
 		StringBuilder sql = new StringBuilder(64);
 		sql.append("select defect_cd as key, ");
 		sql.append("case when value_txt is null then defect_nm else value_txt end as value ");
@@ -676,7 +676,7 @@ public class SelectLookupAction extends SBActionAdapter {
 
 		sql.append(") order by value");
 		log.debug("defects SQL " + sql + "|" + params);
-		
+
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		return db.executeSelect(sql.toString(), params, new GenericVO());
 	}
@@ -688,7 +688,7 @@ public class SelectLookupAction extends SBActionAdapter {
 	public List<GenericVO> getPrefix(ActionRequest req) {
 		LocaleWrapper lw = new LocaleWrapper(req);
 		List<GenericVO> selectList = new ArrayList<>(8);
-		
+
 		if (lw.getLocale().equals(new Locale("es", "MX"))) {
 			selectList.add(new GenericVO("Mr.", "Señor"));
 			selectList.add(new GenericVO("Mrs.", "Señora"));
@@ -734,17 +734,16 @@ public class SelectLookupAction extends SBActionAdapter {
 		bst.setLimit(1000);
 		bst.setOffset(0);
 		GridDataVO<ProductSetVO> products = psa.getSet(req.getParameter("productId"), bst);
-		
+
 		List<GenericVO> data;
-		if(products ==null) {
+		if (products != null) {
+			data = new ArrayList<>(products.getTotal());	
+			for (ProductVO product : products.getRowData()) {
+				String name = product.getCustomerProductId() + " - " + product.getProductName();
+				data.add(new GenericVO(product.getProductId(), name));
+			}
+		} else {
 			data = new ArrayList<>();
-		}else {
-			data = new ArrayList<>(products.getTotal());
-		}
-			
-		for (ProductVO product : products.getRowData()) {
-			String name = product.getCustomerProductId() + " - " + product.getProductName();
-			data.add(new GenericVO(product.getProductId(), name));
 		}
 
 		return data;
@@ -867,16 +866,16 @@ public class SelectLookupAction extends SBActionAdapter {
 	public List<GenericVO> getInventorySuppliers(ActionRequest req) {
 		String partId = req.getParameter(REQ_PRODUCT_ID, req.getParameter("custProductId"));
 		Integer min = req.getIntegerParameter("minInventory", 0); //the minimum inventory to be on hand in order to match
-		
+
 		UserVO user = null;
 		String roleId = ((SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA)).getRoleId();
 		if (StringUtil.isEmpty(partId) && !WSLARole.ADMIN.getRoleId().equals(roleId)) {
 			user = (UserVO) getAdminUser(req).getUserExtendedInfo();
 		}
-		
+
 		InventoryAction ia = new InventoryAction(getAttributes(), getDBConnection());
 		List<LocationItemMasterVO> data = ia.listInvetorySuppliers(partId, min, user);
-		
+
 		// Convert the location item master to a generic vo
 		List<GenericVO> results = new ArrayList<>(data.size());
 		for (LocationItemMasterVO im : data) {
@@ -886,7 +885,7 @@ public class SelectLookupAction extends SBActionAdapter {
 			name.append(im.getLocation().getStoreNumber());
 			results.add(new GenericVO(im.getLocationId(), name));
 		}
-		
+
 		return results;
 	}
 
@@ -897,7 +896,7 @@ public class SelectLookupAction extends SBActionAdapter {
 	 */
 	public List<GenericVO> getLocationInventory(ActionRequest req) {
 		String locationId = req.getParameter("locationId");
-		
+
 		BSTableControlVO bst = new BSTableControlVO(req, LocationItemMasterVO.class);
 		InventoryAction pa = new InventoryAction(getAttributes(), getDBConnection());
 		boolean setFlag = req.getBooleanParameter("setFlag");
@@ -908,7 +907,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		for (LocationItemMasterVO lim : data.getRowData()) {
 			products.add(new GenericVO(lim.getProductId(), lim.getProductName()));
 		}
-			
+
 
 		return products;
 	}
@@ -969,7 +968,7 @@ public class SelectLookupAction extends SBActionAdapter {
 
 		return data;
 	}
-	
+
 	/**
 	 * Returns any OEMs that have an 800 / support number assigned  Key is the 
 	 * name and the value is the phone number
@@ -977,7 +976,7 @@ public class SelectLookupAction extends SBActionAdapter {
 	 */
 	public List<GenericVO> getSupportNumbers(ActionRequest req) {
 		boolean phoneNumberKey = req.getBooleanParameter("phoneNumberKey");
-		
+
 		StringBuilder sql = new StringBuilder(192);
 		sql.append("select b.*, a.provider_nm ").append(DBUtil.FROM_CLAUSE);
 		sql.append(getCustomSchema()).append("wsla_provider a ");
@@ -985,7 +984,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		sql.append("wsla_provider_phone b on a.provider_id = b.provider_id ");
 		sql.append("where b.active_flg = 1 order by provider_nm ");
 		log.debug(sql.length() + "|" + sql);
-		
+
 		DBProcessor db = new DBProcessor(getDBConnection());
 		List<ProviderPhoneVO> phones = db.executeSelect(sql.toString(), null, new ProviderPhoneVO());
 		List<GenericVO> data = new ArrayList<>(phones.size());
@@ -993,18 +992,18 @@ public class SelectLookupAction extends SBActionAdapter {
 		for (ProviderPhoneVO entry : phones) {
 			String pn = entry.getPhoneNumber();
 			PhoneNumberFormat pnf = new PhoneNumberFormat(pn, entry.getCountryCode(), PhoneNumberFormat.INTERNATIONAL_FORMAT);
-			
+
 			if (phoneNumberKey) {
 				data.add(new GenericVO(pn, pnf.getFormattedNumber()));
-				
+
 			} else {
 				data.add(new GenericVO(entry.getProviderName(), pnf.getFormattedNumber()));
 			}
 		}
-		
+
 		return data;
 	}
-	
+
 	/**
 	 * Performs a fuzzy search against multiple fields
 	 * @param req
@@ -1012,10 +1011,10 @@ public class SelectLookupAction extends SBActionAdapter {
 	 */
 	public List<GenericVO> ticketSearch(ActionRequest req) {
 		TicketSearchAction tsa = new TicketSearchAction(getDBConnection(), getAttributes());
-		
+
 		return tsa.getTickets(req.getParameter(REQ_SEARCH));
 	}
-	
+
 	/**
 	 * Gets the standing list
 	 * @return
@@ -1030,10 +1029,10 @@ public class SelectLookupAction extends SBActionAdapter {
 				else if (standing.equals(Standing.CRITICAL)) value="Crítico";
 				else value="Retrasado";
 			}
-			
+
 			data.add(new GenericVO(standing.name(), StringUtil.capitalize(value)));
 		}
-		
+
 		// Sort the collection by the value
 		Collections.sort(data, (a, b) -> ((String)a.getValue()).compareTo(((String)b.getValue())));
 

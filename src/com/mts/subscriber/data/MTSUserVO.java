@@ -95,8 +95,9 @@ public class MTSUserVO extends UserVO {
 	 * @return
 	 */
 	public boolean isPublicationAssigned(String publicationId) {
+		if("100".equals(getRoleId()) || "AUTHOR".equals(getRoleId()) || "BLOG".equalsIgnoreCase(publicationId)) 
+			return true;
 		
-		if("100".equals(getRoleId()) || "AUTHOR".equals(getRoleId())) return true;
 		if (StringUtil.isEmpty(publicationId)) return false;
 		
 		for(SubscriptionUserVO sub : subscriptions) {

@@ -26,6 +26,7 @@ import com.siliconmtn.common.html.BSTableControlVO;
 import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.*;
+import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 
@@ -95,6 +96,15 @@ public class SelectLookupAction extends SBActionAdapter {
 	 */
 	public SelectLookupAction(ActionInitVO actionInit) {
 		super(actionInit);
+	}
+	
+	/**
+	 * @param actionInit
+	 */
+	public SelectLookupAction(SMTDBConnection dbConn, Map<String, Object> attributes) {
+		super();
+		setDBConnection(dbConn);
+		setAttributes(attributes);
 	}
 
 	/*
@@ -216,7 +226,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		bst.setLimit(1000);
 		
 		UserAction ua = new UserAction(getDBConnection(), getAttributes());
-		GridDataVO<MTSUserVO> users = ua.getAllUsers(bst, roleId, subType);
+		GridDataVO<MTSUserVO> users = ua.getAllUsers(bst, roleId, subType, null);
 		
 		for (MTSUserVO user : users.getRowData()) {
 			data.add(new GenericVO(user.getUserId(), user.getFullName()));
@@ -343,9 +353,10 @@ public class SelectLookupAction extends SBActionAdapter {
 		// Build the serach terms
 		StringBuilder term = new StringBuilder(32);
 		String[] terms = StringUtil.checkVal(req.getParameter(REQ_SEARCH)).split(" ");
+
 		for (int i=0; i < terms.length; i++) {
 			if (i > 0) term.append(" & ");
-			term.append(terms[i]).append(":*");
+			term.append(terms[i].replace("'","''")).append(":*");
 		}
 		
 		// Build the sql using Full text indexing
@@ -367,7 +378,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("mts_user c ");
 		sql.append("on a.author_id = c.user_id ) as search ");
 		sql.append("where search.document @@ to_tsquery('").append(term).append("') ");
-		sql.append("order by action_nm limit 20");
+		sql.append("order by action_nm limit 10");
 		log.debug(sql.length() + "|" + sql);
 		
 		DBProcessor db = new DBProcessor(getDBConnection());

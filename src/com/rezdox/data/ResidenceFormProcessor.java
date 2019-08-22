@@ -201,6 +201,7 @@ public class ResidenceFormProcessor extends FormDataProcessor {
 				fl.setFileName(fpdb.getFileName());
 				fl.setPath(rootUploadPath);
 				fl.writeFiles();
+				fl.reorientFiles();
 
 				GenericVO field = fileMap.get(fpdb.getKey());
 				if (field != null) {

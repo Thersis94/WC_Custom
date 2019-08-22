@@ -88,6 +88,8 @@ public class CategoryAction extends SBActionAdapter {
 			
 			if (req.getBooleanParameter("isInsert")) {
 				db.insert(mdvo);
+			} else if (req.getBooleanParameter("isDelete")) {
+				db.delete(mdvo);
 			} else {
 				db.update(mdvo);
 			}

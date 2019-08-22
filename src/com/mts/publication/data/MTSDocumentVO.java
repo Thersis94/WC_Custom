@@ -8,10 +8,12 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.mts.common.MTSConstants;
 // MTS Libs
 import com.mts.publication.data.AssetVO.AssetType;
 import com.mts.subscriber.data.MTSUserVO;
@@ -67,6 +69,8 @@ public class MTSDocumentVO extends DocumentVO {
 	private String publicationId;
 	private String publicationName;
 	private String userInfoId;
+	private int bookmarkFlag;
+	private Map<String, List<WidgetMetadataVO>> cats = new LinkedHashMap<>();
 	
 	/**
 	 * 
@@ -107,7 +111,8 @@ public class MTSDocumentVO extends DocumentVO {
 	 */
 	public WidgetMetadataVO getCategory() {
 		for (WidgetMetadataVO cat : categories) {
-			if ("CHANNELS".equals(cat.getParentId())) return cat;
+			if (! StringUtil.isEmpty(cat.getWidgetMetadataXrId()) && "CHANNELS".equals(cat.getParentId())) 
+				return cat;
 		}
 		
 		return null;
@@ -124,6 +129,46 @@ public class MTSDocumentVO extends DocumentVO {
 		}
 		
 		return topics;
+	}
+	
+	/**
+	 * Returns a map of all of the categories and their parent.
+	 * @return
+	 */
+	public Map<String, List<WidgetMetadataVO>> getCategoryMap() {
+		if (! cats.isEmpty()) return cats;
+		Map<String, String> keyMap = new HashMap<>(); 
+		
+		for (WidgetMetadataVO md : categories) {
+			
+			if (StringUtil.isEmpty(md.getParentId())) {
+				keyMap.put(md.getWidgetMetadataId(), md.getFieldName());
+				cats.put(md.getFieldName(), new ArrayList<WidgetMetadataVO>());
+			} else {
+				cats.get(keyMap.get(md.getParentId())).add(md);
+			}
+		}
+		
+		return cats;
+	}
+	
+	/**
+	 * Determines if the category key has categories that are selected by the 
+	 * author for this article.
+	 * @param key
+	 * @return true if article has entries for that category,  false if none selected
+	 */
+	public boolean hasCategory(String key) {
+		if (cats.isEmpty()) getCategoryMap();
+		
+		List<WidgetMetadataVO> items = cats.get(key);
+		if (items == null || items.isEmpty()) return false;
+		
+		for (WidgetMetadataVO vo : items) {
+			if (! StringUtil.isEmpty(vo.getWidgetMetadataXrId())) return true;
+		}
+		
+		return false;
 	}
 	
 	/**
@@ -154,10 +199,22 @@ public class MTSDocumentVO extends DocumentVO {
 	public AssetVO getPrimaryAsset() {
 		List<AssetVO> dAsset = new ArrayList<>();
 		for (AssetVO asset : assets) {
-			if (asset.getObjectKeyId().equals(documentId)) dAsset.add(asset);
+			if (StringUtil.checkVal(asset.getObjectKeyId()).equals(this.documentId)) {
+				dAsset.add(asset);
+			}
 		}
 		
-		if (dAsset.isEmpty()) dAsset.add(getFeatureAsset());
+		if (dAsset.isEmpty()) {
+			AssetVO fa = getFeatureAsset();
+			if (fa != null && !StringUtil.isEmpty(fa.getDocumentPath()))
+				dAsset.add(getFeatureAsset());
+			else {
+				fa = new AssetVO();
+				fa.setDocumentAssetId(PublicationTeaserVO.DEFAULT_FEATURE_IMG);
+				fa.setDocumentPath(MTSConstants.DEF_FEATURE_IMG_PATH);
+				dAsset.add(fa);
+			}
+		}
 		Collections.shuffle(dAsset);
 		
 		return dAsset.get(0);
@@ -484,6 +541,21 @@ public class MTSDocumentVO extends DocumentVO {
 	 */
 	public void setRelatedArticles(List<MTSDocumentVO> relatedArticles) {
 		this.relatedArticles = relatedArticles;
+	}
+
+	/**
+	 * @return the bookmarkFlag
+	 */
+	@Column(name="bookmark_flg", isReadOnly=true)
+	public int getBookmarkFlag() {
+		return bookmarkFlag;
+	}
+
+	/**
+	 * @param bookmarkFlag the bookmarkFlag to set
+	 */
+	public void setBookmarkFlag(int bookmarkFlag) {
+		this.bookmarkFlag = bookmarkFlag;
 	}
 }
 

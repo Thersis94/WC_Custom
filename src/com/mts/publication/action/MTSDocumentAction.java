@@ -2,6 +2,7 @@ package com.mts.publication.action;
 
 // JDK 1.8.x
 import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -14,7 +15,7 @@ import com.mts.admin.action.UserAction;
 import com.mts.publication.data.MTSDocumentVO;
 import com.mts.publication.data.PublicationTeaserVO;
 import com.mts.subscriber.data.MTSUserVO;
-
+import com.mts.util.AppUtil;
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -33,6 +34,7 @@ import com.smt.sitebuilder.action.content.DocumentAction;
 import com.smt.sitebuilder.action.metadata.WidgetMetadataVO;
 import com.smt.sitebuilder.approval.ApprovalDecoratorAction;
 import com.smt.sitebuilder.common.ModuleVO;
+import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
@@ -79,6 +81,24 @@ public class MTSDocumentAction extends SimpleActionAdapter {
 		this.setDBConnection(dbConn);
 	}
 	
+	/**
+	 * Deletes a document.  This is only used of a document is created, never approved
+	 * and cancelled.  This is because WC will remove the article
+	 * @param req
+	 * @throws SQLException 
+	 * @throws ActionException
+	 */
+	public void deleteDocument(String actionGroupId) throws SQLException {
+		StringBuilder sql = new StringBuilder(84);
+		sql.append("delete from ").append(getCustomSchema()).append("mts_document ");
+		sql.append("where action_group_id = ?");
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, actionGroupId);
+			ps.executeUpdate();
+		}
+	}
+	
 	/*
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.action.ActionRequest)
@@ -86,8 +106,12 @@ public class MTSDocumentAction extends SimpleActionAdapter {
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		try {
+			PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
+	        boolean isPreview = page.isPreviewMode();
+			boolean pagePreview = req.hasParameter("pagePreview") || isPreview;
+			String userId = AppUtil.getMTSUserId(req);
 			IssueArticleAction iac = new IssueArticleAction(getDBConnection(), getAttributes());
-			MTSDocumentVO doc = iac.getDocument(null, req.getParameter("reqParam_1"));
+			MTSDocumentVO doc = iac.getDocument(null, req.getParameter("reqParam_1"), pagePreview, userId);
 			if (StringUtil.isEmpty(doc.getActionId())) throw new Exception("Unable to locate article");
 			
 			// Get the Related Articles
@@ -106,7 +130,7 @@ public class MTSDocumentAction extends SimpleActionAdapter {
 			doc.setAuthor(user);
 			setModuleData(doc);
 		} catch (Exception e) {
-			log.error("Unable to retrieve document", e);
+			log.debug("Unable to retrieve document", e);
 			setModuleData(null, 0, e.getLocalizedMessage());
 		}
 	}

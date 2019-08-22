@@ -38,6 +38,7 @@ import com.wsla.data.ticket.TicketAssignmentVO;
 import com.wsla.data.ticket.TicketAssignmentVO.TypeCode;
 import com.wsla.data.ticket.TicketDataVO;
 import com.wsla.data.ticket.TicketLedgerVO;
+import com.wsla.data.ticket.TicketVO.Standing;
 import com.wsla.data.ticket.TicketVO.UnitLocation;
 import com.wsla.data.ticket.UserVO;
 import com.wsla.util.migration.vo.ExtTicketVO;
@@ -55,6 +56,8 @@ import com.wsla.util.migration.vo.SOHDRFileVO;
  * <b>Changes:</b>
  ****************************************************************************/
 public class SOHeader extends AbsImporter {
+
+	public static final String LEGACY_USER_ID = "WSLA_MH-NC"; // Mariana Hernandez at WSLA
 
 	private List<SOHDRFileVO> data = new ArrayList<>(50000);
 
@@ -98,33 +101,6 @@ public class SOHeader extends AbsImporter {
 		delete(sql);
 
 		save();
-
-		//update all of the tickets we just created to have traceability to Southware
-		setHistoricalFlg();
-	}
-
-
-	/**
-	 * load the defects table from the DB.  This accepts DBProcessor because it's invoked from other importers
-	 * @param dbConn
-	 * @return
-	 */
-	public static Map<String, String> loadDefectCodes(DBProcessor dbp, String schema) {
-		String sql = StringUtil.join("select split_part(defect_cd,'-',2) as key, defect_cd as value from ", schema, "wsla_defect");
-		Map<String, String> defects = new HashMap<>(250);
-		MapUtil.asMap(defects, dbp.executeSelect(sql, null, new GenericVO()));
-		return defects;
-	}
-
-
-	/**
-	 * Reset the warranty_valid_flg and set the historical marker - its only set on 
-	 * records imported by this script (not part of code/VOs)
-	 */
-	private void setHistoricalFlg() {
-		String sql = StringUtil.join("update ", schema, 
-				"wsla_ticket set locked_by_id=null, historical_flg=1 where locked_by_id='MIGRATION'");
-		db.executeSQLCommand(sql);
 	}
 
 
@@ -146,7 +122,7 @@ public class SOHeader extends AbsImporter {
 			tickets.put(vo.getTicketId(), vo);
 		}
 
-		// remark 'delete' if you're not running all of these!
+		// comment 'delete' (line 98) if you're not running all of these!
 
 		//transpose OEMs.  Replace value in vo.getOemId()
 		bindOEMs(tickets.values());
@@ -187,6 +163,19 @@ public class SOHeader extends AbsImporter {
 
 
 	/**
+	 * load the defects table from the DB.  This accepts DBProcessor because it's invoked from other importers
+	 * @param dbConn
+	 * @return
+	 */
+	public static Map<String, String> loadDefectCodes(DBProcessor dbp, String schema) {
+		String sql = StringUtil.join("select split_part(defect_cd,'-',2) as key, defect_cd as value from ", schema, "wsla_defect");
+		Map<String, String> defects = new HashMap<>(250);
+		MapUtil.asMap(defects, dbp.executeSelect(sql, null, new GenericVO()));
+		return defects;
+	}
+
+
+	/**
 	 * Create an Opened and Closed (if closed) ledger entries
 	 * @param values
 	 * @throws Exception 
@@ -204,6 +193,7 @@ public class SOHeader extends AbsImporter {
 			vo.setSummary(StatusCode.OPENED.codeName);
 			vo.setCreateDate(tkt.getCreateDate());
 			vo.setBillableAmtNo(0);
+			vo.setDispositionBy(LEGACY_USER_ID);
 			entries.add(vo);
 
 			//ticket closed?
@@ -215,6 +205,7 @@ public class SOHeader extends AbsImporter {
 				vo.setSummary(StatusCode.CLOSED.codeName);
 				vo.setCreateDate(tkt.getClosedDate());
 				vo.setBillableAmtNo(0);
+				vo.setDispositionBy(LEGACY_USER_ID);
 				entries.add(vo);
 			}
 		}
@@ -262,6 +253,8 @@ public class SOHeader extends AbsImporter {
 		Map<String, String> locations = new HashMap<>(1000);
 		String sql = StringUtil.join("select location_id as key, provider_id as value from ", schema, "wsla_provider_location");
 		MapUtil.asMap(locations, db.executeSelect(sql, null, new GenericVO()));
+		//add a couple hard-coded translations - legacy to GUID translations:
+		locations.put("WLSA_XXX", "00001"); //TODO, coming from Ryan/Steve
 		log.debug("loaded " + locations.size() + " CAS locations");
 
 		Set<String> missingLocns = new HashSet<>();
@@ -272,11 +265,11 @@ public class SOHeader extends AbsImporter {
 
 			//create an entry for the cas
 			if (!StringUtil.isEmpty(tkt.getCasLocationId()) && !tkt.getCasLocationId().matches("0+")) {
-				vo = new TicketAssignmentVO();
-				vo.setTypeCode(TypeCode.CAS);
-				vo.setTicketId(tkt.getTicketId());
 				locnId = locations.get(tkt.getCasLocationId());
 				if (!StringUtil.isEmpty(locnId)) {
+					vo = new TicketAssignmentVO();
+					vo.setTypeCode(TypeCode.CAS);
+					vo.setTicketId(tkt.getTicketId());
 					vo.setLocationId(locnId);
 					assgs.add(vo);
 				} else {
@@ -392,7 +385,7 @@ public class SOHeader extends AbsImporter {
 
 		//if we're missing OEMs, the import script must fail
 		if (!missing.isEmpty()) {
-			log.fatal("MISSING OEMS:\n");
+			log.fatal("ADDING THESE MISSING OEMS:\n");
 			for (String s : missing) {
 				log.fatal(s);
 				ProviderVO vo = new ProviderVO();
@@ -401,12 +394,15 @@ public class SOHeader extends AbsImporter {
 				vo.setProviderType(ProviderType.OEM);
 				vo.setReviewFlag(1);
 				try {
-					//NOTE this will not insert records, only print SQL to be run manually
 					db.insert(vo);
-				} catch (Exception e) { /*don't need this exception */ }
+				} catch (Exception e) { 
+					log.error("could not create OEM " + s, e);
+				}
 			}
-			throw new RuntimeException("missing OEMs, run these SQL statements please, perhaps slightly "+
-					"mutated, but do not change the primary keys unless you're adding a mapping to this file (code)");
+			// Pause and go around again
+			// There shouldn't be any missing OEMs, and the tickets that were missing OEMs need populated
+			sleepThread(1000);
+			bindOEMs(tickets);
 		}
 		log.debug("all OEMs exist");
 	}
@@ -424,7 +420,7 @@ public class SOHeader extends AbsImporter {
 
 		//add the database lookups to the hard-coded 'special' mappings already in this file
 		for (ExtTicketVO tkt : tickets)
-			tkt.setPhoneNumber(oemPhones.get(tkt.getOemId()));
+			tkt.setPhoneNumber(oemPhones.get(tkt.getPhoneLookup()));
 
 		log.info("phone numbers set");
 	}
@@ -687,7 +683,7 @@ public class SOHeader extends AbsImporter {
 	 */
 	private void createUserProfiles(Map<String, ExtTicketVO> tickets) {
 		//get a list of emails->userIds first, so we can ignore existing users
-		String sql = StringUtil.join("select email_address_txt as key, user_id as value from ", 
+		String sql = StringUtil.join("select lower(email_address_txt) as key, user_id as value from ", 
 				schema, "wsla_user order by create_dt desc"); //if dups, the earliest/inital record will be used
 		Map<String, String> existingUsers = new HashMap<>(tickets.size());
 		MapUtil.asMap(existingUsers, db.executeSelect(sql, null, new GenericVO()));
@@ -696,22 +692,22 @@ public class SOHeader extends AbsImporter {
 		Map<String, UserVO> users = new HashMap<>(tickets.size());
 		//build a unique set to save to the DB
 		String pkId = null;
-		for (ExtTicketVO vo : tickets.values()) {
-			UserVO user = vo.getOriginator();
+		for (ExtTicketVO tkt : tickets.values()) {
+			UserVO user = tkt.getOriginator();
 			pkId = user.getEmail();
 			if (StringUtil.isEmpty(pkId)) { //ensure users with no email don't collide - we'll let ProfileManager de-duplicate these.
-				pkId = vo.getTicketIdText();
+				pkId = tkt.getTicketIdText();
 			} else {
-				String userId = existingUsers.get(user.getEmail());
+				String userId = existingUsers.get(pkId.toLowerCase());
 				if (userId != null) {
-					vo.setUserId(userId);
+					tkt.setUserId(userId);
 					log.debug("existing user, skipping");
 					continue;
 				}
 			}
 			//these two will tell us how to link up the originator after the user is saved or created
 			user.setRoleName(pkId);
-			vo.setUniqueUserId(pkId);
+			tkt.setUniqueUserId(pkId);
 			users.put(pkId, user);
 		}
 		log.info(String.format("identified %d unique user profiles to add or further audit", users.size()));
@@ -833,8 +829,23 @@ public class SOHeader extends AbsImporter {
 		vo.setWarrantyValidFlag("CNG".equalsIgnoreCase(dataVo.getCoverageCode()) ? 1 : 0); //this is the only code that results in warranty coverage
 		vo.setProductCategoryId(dataVo.getProductCategory());
 		vo.setCasLocationId(dataVo.getServiceTech());
+		vo.setHistoricalFlag(1);
+		vo.setOperator(dataVo.getOperator());
 
+		if ("40".equals(dataVo.getUserArea2()))
+			vo.setStandingCode(Standing.CRITICAL);
 
+		attachTicketData(dataVo, vo);
+		return vo;
+	}
+	
+	
+	/**
+	 * split from above to reduce complexity.  Transpose ticket_data table/fields
+	 * @param dataVo
+	 * @param vo
+	 */
+	private void attachTicketData(SOHDRFileVO dataVo, ExtTicketVO vo) {
 		//add attribute for Received Method
 		TicketDataVO attr;
 		if (!StringUtil.isEmpty(dataVo.getReceivedMethod())) {
@@ -849,7 +860,7 @@ public class SOHeader extends AbsImporter {
 		if (!StringUtil.isEmpty(dataVo.getProblemCode())) {
 			attr = new TicketDataVO();
 			attr.setTicketId(vo.getTicketId());
-			attr.setAttributeCode("attr_symptomsComments");
+			attr.setAttributeCode("attr_unitDefect");
 			attr.setValue(lookupDefectCode(dataVo.getProblemCode()));
 			vo.addTicketData(attr);
 		}
@@ -864,11 +875,17 @@ public class SOHeader extends AbsImporter {
 		}
 
 		//add attribute for Coverage Code
-		if (!StringUtil.isEmpty(dataVo.getCoverageCode())) {
+		if (!StringUtil.isEmpty(dataVo.getCoverageCode()) && !StringUtil.isEmpty(vo.getCasLocationId())) {
 			attr = new TicketDataVO();
 			attr.setTicketId(vo.getTicketId());
 			attr.setAttributeCode("attr_dispositionCode");
-			attr.setValue(dataVo.getCoverageCode());
+			if (vo.getClosedDate() != null && "CNG".equals(dataVo.getCoverageCode())) {
+				attr.setValue("REPAIRED");
+			} else if ("CNG".equals(dataVo.getCoverageCode())) {
+				attr.setValue("REPAIRABLE");
+			} else { //SNG
+				attr.setValue("NONREPAIRABLE");
+			}
 			vo.addTicketData(attr);
 		}
 
@@ -881,13 +898,6 @@ public class SOHeader extends AbsImporter {
 		//			attr.setValue("defect-" + dataVo.getActionCode());
 		//			vo.addTicketData(attr);
 		//		}
-
-
-		//This is a temporary flag to mark they records we're adding to the DB.
-		//We'll correct it when we set the historical bit at the end of the import.
-		vo.setLockedBy("MIGRATION");
-
-		return vo;
 	}
 
 

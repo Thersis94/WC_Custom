@@ -45,6 +45,7 @@ public class SOXDDFileVO {
 	private Date partSentDate; //goes in part table
 	private Date partRcvdDate; //goes in part table
 	private String productLocation;
+	private String actionCode;
 	private String exitCode;
 	private String shipmentTrackingNumber; //goes in shipment table
 	private String partDescription;
@@ -85,7 +86,20 @@ public class SOXDDFileVO {
 	}
 	@Column(name="attr_ownsTv")
 	public String getEquipOwned() {
-		return equipOwned;
+		if (StringUtil.isEmpty(equipOwned)) 
+			return null;
+
+		switch (equipOwned) {
+			case "1": return "END_USER";
+			case "2": return "RETAILER";
+			case "3": return "OEM";
+			case "4": return "COURIER";
+			default: return null;
+		}
+	}
+	@Column(name="attr_calling")
+	public String getWhosCalling() {
+		return getEquipOwned();
 	}
 	public String getRetailer() {
 		return retailer;
@@ -145,7 +159,7 @@ public class SOXDDFileVO {
 	public String getStoreAppliedCreditNote() {
 		return storeAppliedCreditNote;
 	}
-	@Column(name="attr_proofPurchase")
+	@Column(name="attr_proofPurchase", isAutoGen=true)
 	public int getPopAttached() {
 		return popAttached;
 	}
@@ -162,17 +176,19 @@ public class SOXDDFileVO {
 	public String getProductLocation() {
 		return productLocation;
 	}
-	@Column(name="attr_unitDefect", isIdentity=true)
-	public String getExitCode() {
-		return exitCode;
+	@Column(name="attr_issueResolved", isIdentity=true)
+	public String getActionCode() {
+		return getExitCode();
 	}
 	@Column(name="attr_unitRepairCode", isIdentity=true)
-	public String getRepairCode() {
-		return getExitCode();
+	public String getExitCode() {
+		return !StringUtil.isEmpty(exitCode) ? exitCode : actionCode; //actionCode holds the equiv legacy value
 	}
 	@Column(name="attr_unitRepairType", isIdentity=true)
 	public String getRepairType() {
-		return getExitCode();
+		if (StringUtil.isEmpty(getExitCode())) return null;
+		//if the exit code matches a billable code, return it.  Otherwise null
+		return getExitCode().matches("(?i)M0[1-7]") ? "repair-" + getExitCode() : null;
 	}
 	public String getShipmentTrackingNumber() {
 		return shipmentTrackingNumber;
@@ -193,7 +209,7 @@ public class SOXDDFileVO {
 	public String getProductInsured() {
 		return productInsured;
 	}
-//	@Column(name="attr_symptomsComments")
+	//	@Column(name="attr_symptomsComments")
 	public String getProductInstructions() {
 		return productInstructions;
 	}
@@ -206,7 +222,6 @@ public class SOXDDFileVO {
 	public String getPrimary3Status() {
 		return primary3Status;
 	}
-	@Column(name="attr_dispositionCode")
 	public String getProductDisposition() {
 		return productDisposition;
 	}
@@ -363,6 +378,10 @@ public class SOXDDFileVO {
 	@Importable(name="PRODUCT LOCATION")
 	public void setProductLocation(String productLocation) {
 		this.productLocation = productLocation;
+	}
+	@Importable(name="Action Code 1")
+	public void setActionCode(String actionCode) {
+		this.actionCode = actionCode;
 	}
 	@Importable(name="EXIT CODE")
 	public void setExitCode(String exitCode) {
