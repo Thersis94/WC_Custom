@@ -34,12 +34,10 @@ import com.wsla.data.ticket.TicketVO;
 public class TicketTimeline {
 
 	protected static Logger log = Logger.getLogger(TicketTimeline.class);
-	private Connection dbConn;
 	private Map<String,String> statusCodeMap = new HashMap<>(80);
 
 	public TicketTimeline(Connection dbConn, String schema) {
 		super();
-		this.dbConn = dbConn;
 
 		//load the status codes
 		String sql = StringUtil.join("select lower(status_nm) as key, status_cd as value from ", schema, "wsla_ticket_status");
