@@ -1,21 +1,17 @@
 package com.wsla.action.ticket.transaction;
 
-import java.net.URLDecoder;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.Map.Entry;
 
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
@@ -83,11 +79,15 @@ public class DiagnosticTransaction extends BaseTransactionAction {
 				saveDisposition(req);
 			}else if(req.hasParameter("isBypass") && req.hasParameter("isClose")) {
 				closeTicket(req);
-			}else if(req.hasParameter("idOrderMap")) {
-				String data = URLDecoder.decode(req.getParameter("idOrderMap"), "UTF-8");
-				JsonParser jsonParser = new JsonParser();
-				JsonObject js = jsonParser.parse(data).getAsJsonObject();
-				updateOrderNumbers(js);
+			}else if(req.hasParameter("orderNumberUpdate")) {
+				String movedCode = req.getParameter("movedDiagId");
+				String locationCode = req.getParameter("locationDiagId");
+				String rowRelation = req.getParameter("rowRelation");
+
+				List<DiagnosticVO> diag = getExistingDiagnosticOrder();
+				
+				processReorderDiagnostics(movedCode, locationCode, rowRelation, diag);
+				
 				return;
 				
 			}else {
@@ -100,23 +100,71 @@ public class DiagnosticTransaction extends BaseTransactionAction {
 	}
 
 	/**
-	 * @param js
-	 * @param db
+	 * processes the change in order for the diagnostics table
+	 * @param diag 
+	 * @param rowRelation 
+	 * @param locationCode 
+	 * @param movedCode 
 	 * @throws DatabaseException 
 	 * @throws InvalidDataException 
+	 * 
 	 */
-	private void updateOrderNumbers(JsonObject js) throws InvalidDataException, DatabaseException {
-		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
-		String[] cols = {"order_no","diagnostic_cd"};
-		Set<Entry<String, JsonElement>> map = js.entrySet();
-		for (Entry<String, JsonElement> ele : map) {
-			DiagnosticVO dvo = new DiagnosticVO();
-			dvo.setDiagnosticCode(ele.getKey());
-			dvo.setOrderNumber(ele.getValue().getAsNumber().intValue());
-			db.update(dvo, new ArrayList<>(Arrays.asList(cols)));
+	private void processReorderDiagnostics(String movedCode, String locationCode, String rowRelation, List<DiagnosticVO> diag) throws InvalidDataException, DatabaseException {
+
+		//remove the moved id from its old postion
+		for (DiagnosticVO di : diag) {
+			if (di.getDiagnosticCode().equals(movedCode)) {
+				diag.remove(di);
+				break;
+			}
 		}
 		
+		//place the moved id in the correct postion
+		//find the location of the location code
+		for (int i=0; i<diag.size(); i++) { 
+			if(diag.get(i).getDiagnosticCode().equals(locationCode)) {
+				int targetIndex = i;
+					//if the moved row is above the location row drop the index by one and add the moved row if its 
+					//under the location row increase the index.
+					if("above".equals(rowRelation)) {
+						targetIndex++;
+					}else {
+						targetIndex--;
+						targetIndex = (targetIndex < 0 )?  0 : targetIndex;
+					}
+					DiagnosticVO dvo = new DiagnosticVO();
+					dvo.setDiagnosticCode(movedCode);
+					diag.add(targetIndex, dvo);
+				break;
+			}
+		}
+		
+		//loop all list and reindex
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		for (int i=0; i<diag.size(); i++) { 
+			DiagnosticVO d = diag.get(i);
+			d.setOrderNumber(i);
+			db.update(d,  Arrays.asList("order_no", "diagnostic_cd"));
+		}
+		
+		
 	}
+
+	/**
+	 * returns all diagnostics codes and order numbers ordered by order number
+	 * @return
+	 */
+	private List<DiagnosticVO> getExistingDiagnosticOrder() {
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		
+		StringBuilder sql = new StringBuilder(82);
+		sql.append(DBUtil.SELECT_CLAUSE).append("diagnostic_cd, order_no ").append(DBUtil.FROM_CLAUSE).append(getCustomSchema());
+		sql.append("wsla_diagnostic ").append(DBUtil.ORDER_BY).append("order_no asc");
+		
+		return db.executeSelect(sql.toString(), new ArrayList<Object>(), new DiagnosticVO());
+		
+	}
+
 
 	
 	/**
