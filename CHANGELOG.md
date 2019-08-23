@@ -1,5 +1,15 @@
 WC_Custom Changelog (auto-generated)
 
+## [3.24.4](https://github.com/smtadmin/WC_Custom/compare/3.24.3...3.24.4) (2019-08-23)
+
+
+### Bug Fixes
+
+* **Connection:** Modified the SFTP connection timeout to be reduced to 3 seconds and to exit more gr ([9e719af](https://github.com/smtadmin/WC_Custom/commit/9e719af))
+* **feature-wsla-i6:** fix to allow view of opened ticketed ([f1435da](https://github.com/smtadmin/WC_Custom/commit/f1435da))
+* **Job:** Added code to exit the job if no articles are found ([70f75c5](https://github.com/smtadmin/WC_Custom/commit/70f75c5))
+* **Security:** Using the passed in IP address instead of the req remote address ([ae4651e](https://github.com/smtadmin/WC_Custom/commit/ae4651e))
+
 ## [3.24.3](https://github.com/smtadmin/WC_Custom/compare/3.24.2...3.24.3) (2019-08-21)
 
 
