@@ -44,9 +44,7 @@ public class TicketCallCenterReviewTransaction extends BaseTransactionAction {
 	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
-		log.info("#################ticket call review called");
-		log.info("######################ticket id " + req.getParameter("ticketId"));
-		
+	
 		TicketEditAction tea = new TicketEditAction(getDBConnection(), getAttributes());
 		TicketOverviewAction toa =  new TicketOverviewAction(getDBConnection(), getAttributes());
 		UserDataVO profile = (UserDataVO)req.getSession().getAttribute(Constants.USER_DATA);
@@ -56,9 +54,7 @@ public class TicketCallCenterReviewTransaction extends BaseTransactionAction {
 		tat.setAttributes(getAttributes());
 		tat.setDBConnection(getDBConnection());
 		
-		
 		try {
-			log.info("#################in try");
 			TicketVO tvo = tea.getCompleteTicket(req.getParameter("ticketId"));
 			changeStatus(tvo.getTicketId(), user.getUserId(), StatusCode.USER_CALL_DATA_INCOMPLETE, null, null);
 			
@@ -71,8 +67,6 @@ public class TicketCallCenterReviewTransaction extends BaseTransactionAction {
 			log.error("could not create restate ticket after call center review", e);
 			putModuleData(tea, 0, false, e.getLocalizedMessage(), true);
 		}
-		
-		
 		
 	}
 	

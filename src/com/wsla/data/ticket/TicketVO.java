@@ -158,25 +158,6 @@ public class TicketVO extends BeanDataVO {
 	}
 	
 	/**
-	 * used to loop the ticket data list and find the attribute by key and return that ticket data vo
-	 * 
-	 * will return null when it can not find the attribute by key
-	 * 
-	 * @param key
-	 * @return
-	 */
-	public TicketDataVO getAttribute(String key) {
-		
-		for (TicketDataVO d : ticketData) {
-			if(d.getAttributeCode()!= null && d.getAttributeCode().equalsIgnoreCase(key)) {
-				return d;
-			}
-		}
-		
-		return null;
-	}
-
-	/**
 	 * Assigns any request parameters with the appropriate attribute prefix
 	 * to the ticket attribute collection.  Note, on new ticket create, the ticketId 
 	 * will not be assigned as it does not exist in the req object.  Needs to be manually
