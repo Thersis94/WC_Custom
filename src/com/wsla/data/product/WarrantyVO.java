@@ -41,6 +41,9 @@ public class WarrantyVO extends BeanDataVO {
 	private String description;
 	private int requireApprovalFlag;
 	private int warrantyLength;
+	private int activeFlag; 
+	private int flatRateFlag; 
+	
 	private Date createDate;
 	private Date updateDate;
 
@@ -148,6 +151,36 @@ public class WarrantyVO extends BeanDataVO {
 	@Column(name="warranty_service_type_cd")
 	public ServiceTypeCode getServiceTypeCode() {
 		return serviceTypeCode;
+	}
+
+	/**
+	 * @return the activeFlag
+	 */
+	@Column(name="active_flg")
+	public int getActiveFlag() {
+		return activeFlag;
+	}
+
+	/**
+	 * @return the flatRateFlag
+	 */
+	@Column(name="flat_rate_flg")
+	public int getFlatRateFlag() {
+		return flatRateFlag;
+	}
+
+	/**
+	 * @param flatRateFlag the flatRateFlag to set
+	 */
+	public void setFlatRateFlag(int flatRateFlag) {
+		this.flatRateFlag = flatRateFlag;
+	}
+
+	/**
+	 * @param activeFlag the activeFlag to set
+	 */
+	public void setActiveFlag(int activeFlag) {
+		this.activeFlag = activeFlag;
 	}
 
 	/**

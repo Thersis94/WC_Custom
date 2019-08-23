@@ -249,6 +249,7 @@ public class ProviderLocationAction extends BatchImport {
 		db.executeSQLCommand(sql.toString());
 	}
 
+	
 	/**
 	 * Retrieves a list of locations for a given provider
 	 * @param providerId
@@ -256,13 +257,25 @@ public class ProviderLocationAction extends BatchImport {
 	 * @return
 	 */
 	public GridDataVO<ProviderLocationVO> getLocations(String providerId, BSTableControlVO bst) {
+		return getLocations(providerId,bst,false);
+	}
+	
+	/**
+	 * Retrieves a list of locations for a given provider
+	 * @param providerId
+	 * @param bst
+	 * @return
+	 */
+	public GridDataVO<ProviderLocationVO> getLocations(String providerId, BSTableControlVO bst, boolean getProvider) {
 		String schema = getCustomSchema();
 		String orderBy = null;
 		StringBuilder sql = new StringBuilder(128);
 		List<Object> params = new ArrayList<>();
 
 		//if we don't have a providerId, join the provider table so we can grab the OEM names
-		if (StringUtil.isEmpty(providerId)) {
+		// getProvider forces the join in the event we have the id but not the name
+		log.debug("providerId " + providerId + " getProvider " + getProvider  );
+		if (StringUtil.isEmpty(providerId) || getProvider) {
 			sql.append("select lcn.*, p.provider_nm from ").append(schema).append("wsla_provider_location lcn ");
 			sql.append(DBUtil.INNER_JOIN).append(schema).append("wsla_provider p on lcn.provider_id=p.provider_id ");
 			orderBy = "p.provider_nm, lcn.location_nm";

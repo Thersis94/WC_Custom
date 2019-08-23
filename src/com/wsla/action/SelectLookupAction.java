@@ -117,6 +117,8 @@ public class SelectLookupAction extends SBActionAdapter {
 		keyMap.put("attributes", new GenericVO("getAttributes", Boolean.TRUE));
 		keyMap.put(PROVIDER_TYPE, new GenericVO("getProviderTypes", Boolean.FALSE));
 		keyMap.put("provider", new GenericVO("getProviders", Boolean.TRUE));
+		keyMap.put("providerWLoc", new GenericVO("getProvidersWithLocations", Boolean.TRUE));
+		keyMap.put("userProvider", new GenericVO("getUserProviders", Boolean.TRUE));
 		keyMap.put("oemParts", new GenericVO("getProviderParts", Boolean.TRUE));
 		keyMap.put("providerLocations", new GenericVO("getProviderLocations", Boolean.TRUE));
 		keyMap.put("activeFlag", new GenericVO("getYesNoLookup", Boolean.TRUE));
@@ -325,6 +327,29 @@ public class SelectLookupAction extends SBActionAdapter {
 	}
 
 	/**
+	 * Load a list of Providers that have users assigned to locations.  
+	 * @return
+	 */
+	public List<GenericVO> getUserProviders(ActionRequest req) {
+
+		List<Object> vals = new ArrayList<>();
+		
+		StringBuilder sql = new StringBuilder(150);
+		sql.append("select pl.provider_id as key, p.provider_nm as value from ").append(getCustomSchema()).append("wsla_provider_location pl ");
+		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("wsla_provider p on pl.provider_id = p.provider_id ");
+		sql.append("where location_id in ( ");
+		sql.append("select location_id from ").append(getCustomSchema()).append("wsla_provider_user_xr group by location_id ");
+		sql.append(") group by pl.provider_id, p.provider_nm order by value ");
+		
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		db.setGenerateExecutedSQL(log.isDebugEnabled());
+		List<GenericVO> data = db.executeSelect(sql.toString(), vals, new GenericVO());
+		log.debug("user providers size " + data.size());
+		return data;
+		
+	}
+	
+	/**
 	 * Load a list of Providers from the ProviderAction.  Must pass in the 
 	 * ProviderType to determine which type to retrieve.  If providerType is not passed, 
 	 * default to OEM
@@ -342,6 +367,25 @@ public class SelectLookupAction extends SBActionAdapter {
 		return new ProviderAction(getAttributes(), getDBConnection()).getProviderOptions(pt, search, incUnknown, limit);
 	}
 
+	
+	/**
+	 *Loads a list of provides that have provider locations
+	 * @return
+	 */
+	public List<GenericVO> getProvidersWithLocations(ActionRequest req) {
+		List<Object> vals = new ArrayList<>();
+		
+		StringBuilder sql = new StringBuilder(100);
+		sql.append(DBUtil.SELECT_CLAUSE).append("distinct pro.provider_id as key, pro.provider_nm as value from ").append(getCustomSchema()).append("wsla_provider pro ");
+		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("wsla_provider_location pl on pro.provider_id = pl.provider_id order by value ");
+
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		db.setGenerateExecutedSQL(log.isDebugEnabled());
+		List<GenericVO> data = db.executeSelect(sql.toString(), vals, new GenericVO());
+		log.debug("data size " + data.size());
+		return data;
+	}
+	
 	/**
 	 * return a list of OEMs - a specific type of providers.  Distinguished from 'getProvider' to avoid coupling in View logic.
 	 * @param req
@@ -380,13 +424,13 @@ public class SelectLookupAction extends SBActionAdapter {
 		BSTableControlVO bst = new BSTableControlVO(req, ProviderLocationVO.class);
 		bst.setLimit(100000); //get them all
 		ProviderLocationAction pla = new ProviderLocationAction(getAttributes(), getDBConnection());
-		GridDataVO<ProviderLocationVO> locations = pla.getLocations(req.getParameter(REQ_PROVIDER_ID), bst);
+		GridDataVO<ProviderLocationVO> locations = pla.getLocations(req.getParameter(REQ_PROVIDER_ID), bst, req.getBooleanParameter("getProvider"));
 
 		//turn the locations into relevant <locationId,locationName> pairs (GenericVO)
 		String name;
 		List<GenericVO> data = new ArrayList<>(locations.getRowData().size());
 		for (ProviderLocationVO vo : locations.getRowData()) {
-			name = StringUtil.join(vo.getProviderName(), ": ", vo.getLocationName(), " ", vo.getStoreNumber());
+			name = StringUtil.join(StringUtil.checkVal(vo.getProviderName()), ": ", StringUtil.checkVal(vo.getLocationName()), " ", StringUtil.checkVal(vo.getStoreNumber()));
 			data.add(new GenericVO(vo.getLocationId(), name));
 		}
 

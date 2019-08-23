@@ -18,7 +18,7 @@ import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.security.AbstractRoleModule;
 import com.siliconmtn.security.AuthenticationException;
 import com.siliconmtn.security.UserDataVO;
-
+import com.siliconmtn.util.Convert;
 // WC Libs
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.security.DBLoginModule;
@@ -84,7 +84,9 @@ public class MTSLoginModule extends DBLoginModule {
 		// Authenticate the user by IP address or form the std db login
 		if (CORPORATE_DEFAULT_EMAIL.equalsIgnoreCase(user)) {
 			ActionRequest req = (ActionRequest) getAttribute(AbstractRoleModule.HTTP_REQUEST);
-			authUser = getUserByIPAddr(req.getRemoteAddr(), conn);
+			log.debug("*** Req: " + req.getRemoteAddr() + "|" + req.getParameter("clientIpAddress"));
+			
+			authUser = getUserByIPAddr(req.getParameter("clientIpAddress"), conn);
 			
 		} else {
 			authUser = super.authenticateUser(user, pwd);
@@ -103,6 +105,7 @@ public class MTSLoginModule extends DBLoginModule {
 	 * @return
 	 */
 	public UserDataVO getUserByIPAddr(String ip, Connection conn) {
+		
 		IPSecurityAction isa = new IPSecurityAction(conn, getAttributes());
 		String profileId = isa.getProfileIdByIP(ip);
 		if (profileId == null) return null;
@@ -137,6 +140,7 @@ public class MTSLoginModule extends DBLoginModule {
 		// If the user is an author or admion assign.  Otherwise only assign
 		// if expiration date is in the future
 		if (user.getActiveFlag() == 0) return;
+		if (user.getExpirationDate() == null) user.setExpirationDate(Convert.formatDate("01/01/2000"));
 		if ("100".equals(user.getRoleId()) || "AUTHOR".equals(user.getRoleId()) || new Date().before(user.getExpirationDate())) 
 			authUser.setUserExtendedInfo(user);
 	}
