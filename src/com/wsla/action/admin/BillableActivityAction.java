@@ -16,6 +16,7 @@ import com.siliconmtn.db.orm.GridDataVO;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
+import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 // WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
@@ -75,7 +76,10 @@ public class BillableActivityAction extends SBActionAdapter {
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		BSTableControlVO bst = new BSTableControlVO(req, BillableActivityVO.class);
-		setModuleData(getCodes(req.getParameter("billableTypeCode"), req.getBooleanParameter("isMiscActivites"), bst));
+		int activityFlag = Convert.formatInteger(req.getParameter("activeFlag"));
+		boolean hasActivityFlag = req.hasParameter("activeFlag");
+		
+		setModuleData(getCodes(activityFlag, hasActivityFlag, req.getParameter("billableTypeCode"), req.getBooleanParameter("isMiscActivites"), bst));
 	}
 	
 	/**
@@ -83,6 +87,16 @@ public class BillableActivityAction extends SBActionAdapter {
 	 * @return
 	 */
 	public GridDataVO<BillableActivityVO> getCodes(String btc, boolean isMiscActivites, BSTableControlVO bst) {
+		return getCodes(0, false, btc, isMiscActivites, bst);
+	}
+	
+	/**
+	 * Gets the complete or filtered list of codes
+	 * @param hasActivityFlag 
+	 * @param activityFlag 
+	 * @return
+	 */
+	public GridDataVO<BillableActivityVO> getCodes(int activityFlag, boolean hasActivityFlag, String btc, boolean isMiscActivites, BSTableControlVO bst) {
 		List<Object> vals = new ArrayList<>();
 		StringBuilder sql = new StringBuilder(80);
 		sql.append(DBUtil.SELECT_FROM_STAR).append(getCustomSchema()).append("wsla_billable_activity ");
@@ -103,6 +117,13 @@ public class BillableActivityAction extends SBActionAdapter {
 			sql.append("and lower(activity_nm) like ? ");
 			vals.add(bst.getLikeSearch());
 		}
+		
+		if(hasActivityFlag) {
+			sql.append("and active_flg = ? ");
+			vals.add(activityFlag);
+			
+		}
+		
 		sql.append(bst.getSQLOrderBy("activity_nm", "asc"));
 		log.debug(sql.length() + "|" + sql);
 		DBProcessor db = new DBProcessor(getDBConnection());
@@ -110,7 +131,8 @@ public class BillableActivityAction extends SBActionAdapter {
 		
 		GridDataVO<BillableActivityVO> data = db.executeSQLWithCount(sql.toString(), vals, new BillableActivityVO(), bst);
 		
-		log.debug("@ " + data);
+		if(data != null)
+		log.debug("billable Activites returned " + data.getTotal());
 				
 		return data;
 	}

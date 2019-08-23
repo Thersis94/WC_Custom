@@ -43,6 +43,8 @@ public class ProviderVO extends BeanDataVO {
 	private String domainUrl;
 	private String phoneNumber;
 	private int reviewFlag;
+	private int activeFlag;
+	private int locationReviewNumber;
 	private Date createDate;
 	private Date updateDate;
 	
@@ -140,6 +142,36 @@ public class ProviderVO extends BeanDataVO {
 	 */
 	public List<ProviderLocationVO> getLocations() {
 		return locations;
+	}
+
+	/**
+	 * @return the locationReviewNumber
+	 */
+	@Column(name="review_location_no", isReadOnly = true)
+	public int getLocationReviewNumber() {
+		return locationReviewNumber;
+	}
+
+	/**
+	 * @return the activeFlag
+	 */
+	@Column(name="active_flg")
+	public int getActiveFlag() {
+		return activeFlag;
+	}
+
+	/**
+	 * @param activeFlag the activeFlag to set
+	 */
+	public void setActiveFlag(int activeFlag) {
+		this.activeFlag = activeFlag;
+	}
+
+	/**
+	 * @param locationReviewNumber the locationReviewNumber to set
+	 */
+	public void setLocationReviewNumber(int locationReviewNumber) {
+		this.locationReviewNumber = locationReviewNumber;
 	}
 
 	/**
