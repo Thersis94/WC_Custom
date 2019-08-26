@@ -2,7 +2,6 @@ package com.wsla.action.ticket.transaction;
 
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionRequest;
-import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.security.UserDataVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.wsla.action.ticket.BaseTransactionAction;
@@ -16,7 +15,7 @@ import com.wsla.data.ticket.TicketAssignmentVO.ProductOwner;
 /****************************************************************************
  * <b>Title</b>: TicketCallCenterReviewTransaction.java
  * <b>Project</b>: WC_Custom
- * <b>Description: </b> TODO Put Something Here
+ * <b>Description: </b> handles a the transaction after the call cennter asked for more review
  * <b>Copyright:</b> Copyright (c) 2019
  * <b>Company:</b> Silicon Mountain Technologies
  * 
