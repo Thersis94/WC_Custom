@@ -59,7 +59,12 @@ public class StandingCodeJob extends AbstractSMTJob {
 	
 	// Number of days the service order can be in the given status before being marked CRITICAL.
 	private static Map<StatusCode, Integer> statusDaysToCritical = new EnumMap<>(StatusCode.class);
+	
+	// Number of days the service order can be in the given status before being CLOSED.
+	private static Map<StatusCode, Integer> statusDaysToClosed = new EnumMap<>(StatusCode.class);
+
 	static {
+		// Set the Days to Critical rules
 		statusDaysToCritical.put(StatusCode.CAS_ASSIGNED, 2);
 		statusDaysToCritical.put(StatusCode.CAS_IN_DIAG, 2);
 		statusDaysToCritical.put(StatusCode.CAS_IN_REPAIR, 2);
@@ -68,11 +73,8 @@ public class StandingCodeJob extends AbstractSMTJob {
 		statusDaysToCritical.put(StatusCode.RAR_PENDING_NOTIFICATION, 3);
 		statusDaysToCritical.put(StatusCode.UNLISTED_SERIAL_NO, 1);
 		statusDaysToCritical.put(StatusCode.USER_DATA_INCOMPLETE, 3);
-	}
-	
-	// Number of days the service order can be in the given status before being CLOSED.
-	private static Map<StatusCode, Integer> statusDaysToClosed = new EnumMap<>(StatusCode.class);
-	static {
+
+		// Set the Days to Closed rules
 		statusDaysToClosed.put(StatusCode.MISSING_SERIAL_NO, 7);
 		statusDaysToClosed.put(StatusCode.OPENED, 5);
 		statusDaysToClosed.put(StatusCode.USER_DATA_INCOMPLETE, 7);
@@ -233,26 +235,22 @@ public class StandingCodeJob extends AbstractSMTJob {
 		String schema = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		
 		// Build the sql
-		StringBuilder sql = new StringBuilder(300);
+		StringBuilder sql = new StringBuilder(100);
 		sql.append(DBUtil.UPDATE_CLAUSE).append(schema).append("wsla_ticket ");
 		sql.append("set standing_cd = ?, update_dt = ? ");
-		sql.append(DBUtil.WHERE_CLAUSE).append("ticket_id in (");
-		sql.append(DBUtil.preparedStatmentQuestion(ticketIds.size()));
-		sql.append(")");
+		sql.append(DBUtil.WHERE_CLAUSE).append("ticket_id = ?");
 		
 		// Update the records
 		try (PreparedStatement ps = conn.prepareStatement(sql.toString())) {
-			int ctr = 1;
-			ps.setString(ctr++, standingCode.name());
-			ps.setDate(ctr++, Convert.formatSQLDate(new Date()));
-			
-			// Set all of the ticket id parameters
 			for (String ticketId : ticketIds) {
-				ps.setString(ctr++, ticketId);
+				ps.setString(1, standingCode.name());
+				ps.setDate(2, Convert.formatSQLDate(new Date()));
+				ps.setString(3, ticketId);
+				ps.addBatch();
 			}
 			
-			// Update the ticket records
-			ps.executeUpdate();
+			// Execute the batch
+			ps.executeBatch();
 		}
 	}
 }
