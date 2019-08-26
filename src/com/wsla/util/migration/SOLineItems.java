@@ -9,7 +9,7 @@ import java.util.Map;
 import java.util.Set;
 
 import com.siliconmtn.data.GenericVO;
-import com.siliconmtn.db.orm.DBProcessor;
+import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.util.MapUtil;
 import com.siliconmtn.util.StringUtil;
 import com.wsla.data.ticket.CreditMemoVO;
@@ -181,20 +181,26 @@ public class SOLineItems extends AbsImporter {
 	 */
 	private void loadTicketIds() {
 		String sql = StringUtil.join("select ticket_no as key, ticket_id as value from ", schema, "wsla_ticket where historical_flg=1");
-		DBProcessor dbp = new DBProcessor(dbConn, schema);
-		MapUtil.asMap(ticketIds, dbp.executeSelect(sql, null, new GenericVO()));
+
+		MapUtil.asMap(ticketIds, db.executeSelect(sql, null, new GenericVO()));
 		log.debug("loaded " + ticketIds.size() + " ticketIds");
 	}
 
 
 	/**
-	 * Populate the Map<Product#, ProductId> from the database to marry the soNumbers in the Excel
+	 * Populate the Map<Legacy/Product#/Alias, CypherProductId> from the 
+	 * database to marry the soNumbers in the Excel.
+	 * The Order By here prioritizes best matches over desparation matches (desc_txt)
 	 */
 	private void loadProductIds() {
-		String sql = StringUtil.join("select coalesce(cust_product_id,sec_cust_product_id,desc_txt) as key, ",
-				"product_id as value from ", schema, "wsla_product_master");
-		DBProcessor dbp = new DBProcessor(dbConn, schema);
-		MapUtil.asMap(productIds, dbp.executeSelect(sql, null, new GenericVO()));
+		String sql = StringUtil.join("select 3, cust_product_id as key, ",
+				"product_id as value from ", schema, "wsla_product_master where length(cust_product_id)>0 ", 
+				DBUtil.UNION_ALL,"select 2, sec_cust_product_id as key, product_id as value from ", 
+				schema, "wsla_product_master where length(sec_cust_product_id)>0 ", 
+				DBUtil.UNION_ALL,"select 1, desc_txt as key, product_id as value from ", 
+				schema, "wsla_product_master where length(desc_txt)>0 order by 1");
+
+		MapUtil.asMap(productIds, db.executeSelect(sql, null, new GenericVO()));
 		log.debug("loaded " + productIds.size() + " productIds");
 	}
 }
