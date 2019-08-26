@@ -6,6 +6,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -15,6 +16,7 @@ import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
 
 // SMT Base Libs
+import com.siliconmtn.common.constants.GlobalConfig;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.DatabaseNote;
 import com.siliconmtn.db.DatabaseNote.DBType;
@@ -24,6 +26,7 @@ import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.http.filter.fileupload.Constants;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.workflow.SMTWorkflowQueueHandler;
 
 // WC Libs
 import com.smt.sitebuilder.scheduler.AbstractSMTJob;
@@ -58,12 +61,21 @@ public class StandingCodeJob extends AbstractSMTJob {
 	private static Map<StatusCode, Integer> statusDaysToCritical = new EnumMap<>(StatusCode.class);
 	static {
 		statusDaysToCritical.put(StatusCode.CAS_ASSIGNED, 2);
+		statusDaysToCritical.put(StatusCode.CAS_IN_DIAG, 2);
+		statusDaysToCritical.put(StatusCode.CAS_IN_REPAIR, 2);
+		statusDaysToCritical.put(StatusCode.MISSING_SERIAL_NO, 3);
+		statusDaysToCritical.put(StatusCode.PENDING_UNIT_RETURN, 3);
+		statusDaysToCritical.put(StatusCode.RAR_PENDING_NOTIFICATION, 3);
+		statusDaysToCritical.put(StatusCode.UNLISTED_SERIAL_NO, 1);
+		statusDaysToCritical.put(StatusCode.USER_DATA_INCOMPLETE, 3);
 	}
 	
 	// Number of days the service order can be in the given status before being CLOSED.
 	private static Map<StatusCode, Integer> statusDaysToClosed = new EnumMap<>(StatusCode.class);
 	static {
+		statusDaysToClosed.put(StatusCode.MISSING_SERIAL_NO, 7);
 		statusDaysToClosed.put(StatusCode.OPENED, 5);
+		statusDaysToClosed.put(StatusCode.USER_DATA_INCOMPLETE, 7);
 	}
 	
 	public StandingCodeJob() {
@@ -81,6 +93,15 @@ public class StandingCodeJob extends AbstractSMTJob {
 		String message = "Success";
 		boolean success = true;
 		attributes = ctx.getMergedJobDataMap().getWrappedMap();
+		
+		// Transpose the attributes for the workflow queue handler
+		Map<Object, Object> queueAttr = new HashMap<>();
+		for (Map.Entry<String, Object> entry : attributes.entrySet()) {
+			queueAttr.put(entry.getKey(), entry.getValue());
+		}
+		
+		// Override the Quartz workflow handler used elsewhere, this is used when sending notifications on a status change
+		attributes.put(GlobalConfig.KEY_DEFAULT_WORKFLOW_HANDLER, new SMTWorkflowQueueHandler(queueAttr));
 		
 		// Get the list of open tickets in good/critical standing, including # of business days in the current status
 		List<TicketVO> tickets = getTickets();
@@ -104,6 +125,7 @@ public class StandingCodeJob extends AbstractSMTJob {
 
 	/**
 	 * Get's the open tickets which might require a status change or standing code change.
+	 * The status age is calculated in business days (M-F only).
 	 * 
 	 * @return
 	 */
@@ -114,7 +136,7 @@ public class StandingCodeJob extends AbstractSMTJob {
 		// Build the sql
 		StringBuilder sql = new StringBuilder(625);
 		sql.append(DBUtil.SELECT_CLAUSE).append("ticket_id, originator_user_id, status_cd, standing_cd, ");
-		sql.append("sum(case when extract(dow from series.series_dt) in (1,2,3,4,5) then 1 else 0 end) as weekdays_age_no");
+		sql.append("sum(case when extract(dow from series.series_dt) in (1,2,3,4,5) then 1 else 0 end) as status_age_no");
 		sql.append(DBUtil.FROM_CLAUSE).append("(");
 		sql.append(DBUtil.SELECT_CLAUSE).append("t.ticket_id, t.originator_user_id, t.status_cd, t.standing_cd, ");
 		sql.append("generate_series(max(tl.create_dt) + interval '1 day', now(), '1 day'::interval) as series_dt");
@@ -154,7 +176,7 @@ public class StandingCodeJob extends AbstractSMTJob {
 			
 			// Check if criteria are matched, and close the ticket accordingly
 			Integer daysToClose = statusDaysToClosed.get(ticket.getStatusCode());
-			if (daysToClose != null && ticket.getWeekdaysAge() >= daysToClose) {
+			if (daysToClose != null && ticket.getStatusAge() >= daysToClose) {
 				BaseTransactionAction bta = new BaseTransactionAction(new SMTDBConnection(conn), attributes);
 				bta.changeStatus(ticket.getTicketId(), ticket.getUserId(), StatusCode.CLOSED, LedgerSummary.TICKET_CLOSED.summary + ": Cerrado Automáticamente", null);
 				iter.remove();
@@ -188,7 +210,7 @@ public class StandingCodeJob extends AbstractSMTJob {
 			
 			// Check if criteria are matched, and add to the list of tickets to update
 			Integer daysToCritical = statusDaysToCritical.get(ticket.getStatusCode());
-			if (daysToCritical != null && ticket.getWeekdaysAge() >= daysToCritical) {
+			if (daysToCritical != null && ticket.getStatusAge() >= daysToCritical) {
 				criticalTicketIds.add(ticket.getTicketId());
 				iter.remove();
 			}

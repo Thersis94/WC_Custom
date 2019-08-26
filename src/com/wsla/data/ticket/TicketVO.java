@@ -96,7 +96,7 @@ public class TicketVO extends BeanDataVO {
 	private String userId;
 	private String statusName;
 	private boolean ticketLocked;
-	private int weekdaysAge;
+	private long statusAge;
 
 	// Bean Sub-Element
 	private List<TicketDataVO> ticketData = new ArrayList<>(32);
@@ -848,17 +848,17 @@ public class TicketVO extends BeanDataVO {
 	}
 
 	/**
-	 * @return the weekdaysAge
+	 * @return the statusAge
 	 */
-	@Column(name="weekdays_age_no", isReadOnly=true)
-	public int getWeekdaysAge() {
-		return weekdaysAge;
+	@Column(name="status_age_no", isReadOnly=true)
+	public long getStatusAge() {
+		return statusAge;
 	}
 
 	/**
-	 * @param weekdaysAge the weekdaysAge to set
+	 * @param statusAge the statusAge to set
 	 */
-	public void setWeekdaysAge(int weekdaysAge) {
-		this.weekdaysAge = weekdaysAge;
+	public void setStatusAge(long statusAge) {
+		this.statusAge = statusAge;
 	}
 }
