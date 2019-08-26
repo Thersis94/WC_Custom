@@ -251,10 +251,14 @@ public class SOHeader extends AbsImporter {
 		String locnId;
 		TicketAssignmentVO vo;
 		Map<String, String> locations = new HashMap<>(1000);
-		String sql = StringUtil.join("select location_id as key, provider_id as value from ", schema, "wsla_provider_location");
+		String sql = StringUtil.join("select location_id as key, location_id as value from ", schema, "wsla_provider_location");
 		MapUtil.asMap(locations, db.executeSelect(sql, null, new GenericVO()));
 		//add a couple hard-coded translations - legacy to GUID translations:
-		locations.put("WLSA_XXX", "00001"); //TODO, coming from Ryan/Steve
+		locations.put("MEX100","7d6a960cb55b751aac10029055efc669");
+		locations.put("TIJ100","17e4e465b55dc48aac100290de8056e9");
+		locations.put("NLE100","cb55f611b55ec39cac100290224759fd");
+		locations.put("SON100","6dee5855b55cc0cfac10029011cb825e");
+		locations.put("000001","b89e4d5a3e2c439f879a25aee66bedde");  //WSLA Bodega (Warehouse)
 		log.debug("loaded " + locations.size() + " CAS locations");
 
 		Set<String> missingLocns = new HashSet<>();
@@ -838,8 +842,8 @@ public class SOHeader extends AbsImporter {
 		attachTicketData(dataVo, vo);
 		return vo;
 	}
-	
-	
+
+
 	/**
 	 * split from above to reduce complexity.  Transpose ticket_data table/fields
 	 * @param dataVo

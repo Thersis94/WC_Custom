@@ -236,6 +236,27 @@ public class TicketVO extends BeanDataVO {
 	}
 	
 	/**
+	 * used to loop the ticket data list and find the attribute by key and return that ticket data vo
+	 * 
+	 * will return null when it can not find the attribute by key
+	 * 
+	 * @param key
+	 * @return
+	 */
+	public TicketDataVO getAttribute(String key) {
+
+		for (TicketDataVO d : ticketData) {
+			if(d.getAttributeCode()!= null && d.getAttributeCode().equalsIgnoreCase(key)) {
+				return d;
+			}
+		}
+
+		return null;
+	}
+
+
+	
+	/**
 	 * @return the ticketId
 	 */
 	@Column(name="ticket_id", isPrimaryKey=true)
