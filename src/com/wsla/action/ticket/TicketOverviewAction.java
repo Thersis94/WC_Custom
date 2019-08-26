@@ -145,7 +145,7 @@ public class TicketOverviewAction extends BasePortalAction {
 	}
 	
 	/**
-	 * 
+	 * checks verious ticket status or ledger states after the ticket is saved.
 	 * @param ticket 
 	 * @param owner 
 	 * @param req 
@@ -212,6 +212,7 @@ public class TicketOverviewAction extends BasePortalAction {
 	}
 	
 	/**
+	 * voiurs status checks that occure while a ticket is being saved
 	 * @param ticket
 	 * @param req 
 	 * @param user 
