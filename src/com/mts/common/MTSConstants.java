@@ -33,19 +33,21 @@ public class MTSConstants {
 	}
 	
 	/**
-	 * Site org ID
+	 * Organiztion ID
 	 */
 	public static final String ORGANIZATON_ID = "MTS";
 	
 	/**
-	 * Portal Site ID
+	 * Portal Site ID - /portal
+	 * @deprecated - only used for initial data import.  If you need it, please dedeprecate. -JM- 08/27/19
 	 */
-	public static final String PORTAL_SITE_ID = "MTS_2";
+	@Deprecated
+	public static final String PORTAL_SITE_ID = "MTS_1";
 	
 	/**
-	 * Portal Site ID
+	 * Subscriber Site ID - the parent site
 	 */
-	public static final String SUBSCRIBER_SITE_ID = "MTS_1";
+	public static final String SUBSCRIBER_SITE_ID = "MTS_2";
 	
 	/**
 	 * Root folder to utilize when creating a new publication as all articles
