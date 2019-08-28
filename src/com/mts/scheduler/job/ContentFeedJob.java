@@ -1,12 +1,17 @@
 package com.mts.scheduler.job;
 
 // JDK 1.8.x
+import java.io.BufferedWriter;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -18,7 +23,10 @@ import org.quartz.JobExecutionException;
 import com.google.gson.Gson;
 
 // SMT Base libs
+import com.siliconmtn.db.DatabaseConnection;
 import com.siliconmtn.db.orm.DBProcessor;
+import com.siliconmtn.exception.DatabaseException;
+import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.html.tool.HTMLFeedParser;
 import com.siliconmtn.http.filter.fileupload.Constants;
 import com.siliconmtn.util.Convert;
@@ -48,13 +56,47 @@ import ch.ethz.ssh2.SFTPv3FileHandle;
 public class ContentFeedJob extends AbstractSMTJob {
 	
 	// Members
-	private Map<String, Object> attributes;
+	private Map<String, Object> attributes = new HashMap<>();
+	private boolean isManualJob = false;
 	
 	/**
 	 * 
 	 */
 	public ContentFeedJob() {
 		super();
+	}
+	
+	
+	public static void main(String[] args) throws Exception {
+		// Set job Information
+		ContentFeedJob cfj = new ContentFeedJob();
+		cfj.attributes.put("FEED_RECPT", "MTS_DOCUMENT_");
+		cfj.attributes.put("FEED_TITLE", "MTS Publications News Feed");
+		cfj.attributes.put("FEED_DESC", "We help you better understand your world as you make key decisions impacting your day-to-day business and long-term strategic goals.");
+		cfj.attributes.put("BASE_URL", "https://www.mystrategist.com");
+		cfj.attributes.put("FEED_FILE_PATH", "/home/etewa/Desktop/");
+		cfj.attributes.put("START_DT", "2019-08-01");
+		cfj.attributes.put("END_DT", "2019-08-31");
+		cfj.attributes.put(Constants.CUSTOM_DB_SCHEMA, "custom.");
+		cfj.isManualJob = true;
+		cfj.setDBConnection();
+		
+		// Run the job
+		cfj.processDocuments();
+	}
+	
+	/**
+	 * get job database connection
+	 * @throws DatabaseException
+	 * @throws InvalidDataException
+	 */
+	private void setDBConnection() throws DatabaseException, InvalidDataException {
+		DatabaseConnection dc = new DatabaseConnection();
+		dc.setDriverClass("org.postgresql.Driver");
+		dc.setUrl("jdbc:postgresql://sonic:5432/webcrescendo_dev082019_sb?defaultRowFetchSize=25&amp;prepareThreshold=3");
+		dc.setUserName("ryan_user_sb");
+		dc.setPassword("sqll0gin");
+		conn = dc.getConnection();
 	}
 
 	/*
@@ -110,7 +152,22 @@ public class ContentFeedJob extends AbstractSMTJob {
 		String json = convertArticlesJson(docs);
 		
 		// Save document
-		saveFile(json, fileLoc, host, user, pwd);
+		if (isManualJob) saveFile(json, fileLoc);
+		else saveFile(json, fileLoc, host, user, pwd);
+	}
+	
+	/** 
+	 * saves the file to the file system 
+	 * @param json
+	 * @param fileLoc
+	 * @throws IOException
+	 */
+	protected void saveFile(String json, String fileLoc) throws IOException {
+		Path p = Paths.get(attributes.get("FEED_FILE_PATH") + fileLoc);
+		try(BufferedWriter bw = Files.newBufferedWriter(p)) {
+			bw.write(json);
+			bw.flush();
+		}
 	}
 	
 	/**
@@ -166,11 +223,17 @@ public class ContentFeedJob extends AbstractSMTJob {
 		sql.append("mts_user u on a.author_id = u.user_id ");
 		sql.append("where publish_dt between ? and ? ");
 		
-		Date yesterday = Convert.formatDate(new Date(), Calendar.DAY_OF_YEAR, -1);
 		List<Object> vals = new ArrayList<>();
-		vals.add(Convert.formatStartDate(yesterday));
-		vals.add(Convert.formatEndDate(yesterday));
-		log.debug(sql.length() + "|" + sql + "|" + vals);
+		if (isManualJob) {
+			vals.add(Convert.formatStartDate((String)attributes.get("START_DT")));
+			vals.add(Convert.formatEndDate((String)attributes.get("END_DT")));
+		} else {
+			Date yesterday = Convert.formatDate(new Date(), Calendar.DAY_OF_YEAR, -1);
+			vals.add(Convert.formatStartDate(yesterday));
+			vals.add(Convert.formatEndDate(yesterday));
+		}
+		
+		log.info(sql.length() + "|" + sql + "|" + vals);
 		
 		// Create the wrapper bean
 		ContentFeedVO feed = new ContentFeedVO();
@@ -184,7 +247,8 @@ public class ContentFeedJob extends AbstractSMTJob {
 		DBProcessor db = new DBProcessor(conn);		
 		feed.setItems(db.executeSelect(sql.toString(), vals, new ContentFeedItemVO()));
 		updateRelativeLinks(feed, baseUrl);
-
+		log.info("Number Articles: " + feed.getItems().size());
+		
 		return feed;
 		
 	}
