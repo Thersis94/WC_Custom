@@ -156,7 +156,7 @@ public class TicketVO extends BeanDataVO {
 			}
 		}
 	}
-
+	
 	/**
 	 * Assigns any request parameters with the appropriate attribute prefix
 	 * to the ticket attribute collection.  Note, on new ticket create, the ticketId 
