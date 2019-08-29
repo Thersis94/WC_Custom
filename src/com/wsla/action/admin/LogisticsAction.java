@@ -173,7 +173,11 @@ public class LogisticsAction extends SBActionAdapter {
 		
 		// Get the ticket
 		TicketEditAction tea = new TicketEditAction(getDBConnection(), getAttributes());
-		TicketVO ticket = tea.getCompleteTicket(shmpt.getTicketId());
+		TicketVO ticket = new TicketVO();
+		if(!StringUtil.isEmpty(shmpt.getTicketId())) {
+			ticket = tea.getCompleteTicket(shmpt.getTicketId());
+		}
+		
 		
 		String templateDir = rp + attributes.get(Constants.INCLUDE_DIRECTORY) + "templates/";
 		String path = templateDir + "packing_list.ftl";
@@ -227,7 +231,7 @@ public class LogisticsAction extends SBActionAdapter {
 		ProviderLocationVO location = pla.getProviderLocation(locationId);
 		
 		// If there is no location returned, this is a user
-		if (StringUtil.isEmpty(location.getLocationName())) {
+		if (location != null && StringUtil.isEmpty(location.getLocationName())) {
 			BasePortalAction bpa = new BasePortalAction(getDBConnection(), getAttributes());
 			try {
 				UserVO user = bpa.getUser(locationId);
