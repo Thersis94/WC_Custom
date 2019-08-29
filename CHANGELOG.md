@@ -1,5 +1,18 @@
 WC_Custom Changelog (auto-generated)
 
+## [3.24.5](https://github.com/smtadmin/WC_Custom/compare/3.24.4...3.24.5) (2019-08-29)
+
+
+### Bug Fixes
+
+* **DS-527:** Trap exception caused by isValid test and reopen them safely ([46ec621](https://github.com/smtadmin/WC_Custom/commit/46ec621))
+* **Sc-1566:** Allow sections to have differing current quarters and make manage and public current q ([40fb44f](https://github.com/smtadmin/WC_Custom/commit/40fb44f))
+* **Sc-1578:** Change enum name to match parent attribute id properly. ([1e97b6b](https://github.com/smtadmin/WC_Custom/commit/1e97b6b))
+* **Sc-1586:** Add analyses to the link tool's search. ([b5e65d5](https://github.com/smtadmin/WC_Custom/commit/b5e65d5))
+* **WSLA-Migration:** Combine Southware comments into a single Cypher comment ([a668adb](https://github.com/smtadmin/WC_Custom/commit/a668adb))
+* **WSLA-Migration:** Import Ticket Comments ([72ff661](https://github.com/smtadmin/WC_Custom/commit/72ff661))
+* **WSLA-Migration:** Save comment1 as tkt description.  Save the rest as tkt comments ([e61303c](https://github.com/smtadmin/WC_Custom/commit/e61303c))
+
 ## [3.24.4](https://github.com/smtadmin/WC_Custom/compare/3.24.3...3.24.4) (2019-08-23)
 
 
