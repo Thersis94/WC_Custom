@@ -1,5 +1,20 @@
 WC_Custom Changelog (auto-generated)
 
+# [3.25.0](https://github.com/smtadmin/WC_Custom/compare/3.24.5...3.25.0) (2019-08-30)
+
+
+### Bug Fixes
+
+* **Sc-1581:** Add account permissions summary report. ([4cef038](https://github.com/smtadmin/WC_Custom/commit/4cef038))
+* **Security:** disallowed access to the site for logins with an active flag of 0 ([48e63cc](https://github.com/smtadmin/WC_Custom/commit/48e63cc))
+* **WSLA-Migration:** Include product lookup across the alias fields ([ba695b9](https://github.com/smtadmin/WC_Custom/commit/ba695b9))
+
+
+### Features
+
+* **Command Line:** Modified the Content Feed Job to run form the command line.  This allows for the ([d0d8fb9](https://github.com/smtadmin/WC_Custom/commit/d0d8fb9))
+* **Filter:** Addd a fliter to the feed so only medtech strategist publication areticles are being s ([f3e1387](https://github.com/smtadmin/WC_Custom/commit/f3e1387))
+
 ## [3.24.5](https://github.com/smtadmin/WC_Custom/compare/3.24.4...3.24.5) (2019-08-29)
 
 
