@@ -75,7 +75,7 @@ public class ContentFeedJob extends AbstractSMTJob {
 		cfj.attributes.put("FEED_DESC", "We help you better understand your world as you make key decisions impacting your day-to-day business and long-term strategic goals.");
 		cfj.attributes.put("BASE_URL", "https://www.mystrategist.com");
 		cfj.attributes.put("FEED_FILE_PATH", "/home/etewa/Desktop/");
-		cfj.attributes.put("START_DT", "2019-08-01");
+		cfj.attributes.put("START_DT", "2019-07-15");
 		cfj.attributes.put("END_DT", "2019-08-31");
 		cfj.attributes.put(Constants.CUSTOM_DB_SCHEMA, "custom.");
 		cfj.isManualJob = true;
@@ -93,7 +93,7 @@ public class ContentFeedJob extends AbstractSMTJob {
 	private void setDBConnection() throws DatabaseException, InvalidDataException {
 		DatabaseConnection dc = new DatabaseConnection();
 		dc.setDriverClass("org.postgresql.Driver");
-		dc.setUrl("jdbc:postgresql://sonic:5432/webcrescendo_dev082019_sb?defaultRowFetchSize=25&amp;prepareThreshold=3");
+		dc.setUrl("jdbc:postgresql://sonic:5432/webcrescnedo_dev08282019_sb?defaultRowFetchSize=25&amp;prepareThreshold=3");
 		dc.setUserName("ryan_user_sb");
 		dc.setPassword("sqll0gin");
 		conn = dc.getConnection();
@@ -215,13 +215,15 @@ public class ContentFeedJob extends AbstractSMTJob {
 		String schema = (String)this.attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(400);
 		sql.append("select first_nm || ' ' || last_nm as author_nm, a.unique_cd, action_desc, ");
-		sql.append("action_nm, publish_dt, document_txt from ").append(schema);
-		sql.append("mts_document a ").append("inner join sb_action b ");
+		sql.append("action_nm, publish_dt, document_txt from ").append(schema).append("mts_document a ");
+		sql.append("inner join ").append(schema).append("mts_issue i on a.issue_id = i.issue_id ");
+		sql.append("inner join sb_action b ");
 		sql.append("on a.document_id = b.action_group_id and b.pending_sync_flg = 0 ");
 		sql.append("inner join document c on b.action_id = c.action_id ");
 		sql.append("left outer join ").append(schema);
 		sql.append("mts_user u on a.author_id = u.user_id ");
-		sql.append("where publish_dt between ? and ? ");
+		sql.append("where publish_dt between ? and ? and publication_id = 'MEDTECH-STRATEGIST' ");
+		sql.append("order by publish_dt ");
 		
 		List<Object> vals = new ArrayList<>();
 		if (isManualJob) {
@@ -233,7 +235,7 @@ public class ContentFeedJob extends AbstractSMTJob {
 			vals.add(Convert.formatEndDate(yesterday));
 		}
 		
-		log.info(sql.length() + "|" + sql + "|" + vals);
+		log.debug(sql.length() + "|" + sql + "|" + vals);
 		
 		// Create the wrapper bean
 		ContentFeedVO feed = new ContentFeedVO();
@@ -247,7 +249,7 @@ public class ContentFeedJob extends AbstractSMTJob {
 		DBProcessor db = new DBProcessor(conn);		
 		feed.setItems(db.executeSelect(sql.toString(), vals, new ContentFeedItemVO()));
 		updateRelativeLinks(feed, baseUrl);
-		log.info("Number Articles: " + feed.getItems().size());
+		log.debug("Number Articles: " + feed.getItems().size());
 		
 		return feed;
 		
