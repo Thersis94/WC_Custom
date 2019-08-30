@@ -188,7 +188,8 @@ public class SOXDDFileVO {
 	public String getRepairType() {
 		if (StringUtil.isEmpty(getExitCode())) return null;
 		//if the exit code matches a billable code, return it.  Otherwise null
-		return getExitCode().matches("(?i)M0[1-7]") ? "repair-" + getExitCode() : null;
+		//note these values match the dropdown on the overview tab, not defect table records
+		return getExitCode().matches("(?i)RP01|M0[1-7]") ? getExitCode() : null;
 	}
 	public String getShipmentTrackingNumber() {
 		return shipmentTrackingNumber;

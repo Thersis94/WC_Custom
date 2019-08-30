@@ -6,6 +6,7 @@ import java.util.Map;
 import javax.servlet.http.HttpServletResponse;
 
 import com.biomed.smarttrak.admin.report.AccountCountReportVO;
+import com.biomed.smarttrak.admin.report.AccountPermissionsSummaryReportVO;
 //WC custom
 import com.biomed.smarttrak.admin.report.AccountReportVO;
 import com.biomed.smarttrak.admin.report.AccountsReportAction;
@@ -65,6 +66,7 @@ public class ReportFacadeAction extends SBActionAdapter {
 		USER_LIST,
 		USER_PERMISSIONS,
 		ACCOUNT_PERMISSIONS,
+		ACCOUNT_PERMISSIONS_SUMMARY,
 		USAGE_ROLLUP_DAILY,
 		USAGE_ROLLUP_MONTHLY,
 		SUPPORT,
@@ -127,6 +129,9 @@ public class ReportFacadeAction extends SBActionAdapter {
 			case ACCOUNT_PERMISSIONS:
 				rpt = generateUserPermissionsReport(req, false);
 				break;
+			case ACCOUNT_PERMISSIONS_SUMMARY:
+				rpt = generateAccountPermissionsSummaryReport(req);
+				break;
 			case USAGE_ROLLUP_DAILY:
 				rpt = generateUserUtilizationReport(req,true);
 				break;
@@ -156,6 +161,25 @@ public class ReportFacadeAction extends SBActionAdapter {
 		//delete the 'waiting' cookie on the response, so the loading icon disappears
 		HttpServletResponse resp = (HttpServletResponse) req.getAttribute(GlobalConfig.HTTP_RESPONSE);
 		CookieUtil.add(resp, "reportLoadingCookie", "", "/", 0);
+	}
+
+
+	/**
+	 * Build the account permissions summary report
+	 * @param req
+	 * @return
+	 * @throws ActionException
+	 */
+	private AbstractSBReportVO generateAccountPermissionsSummaryReport(ActionRequest req) throws ActionException {
+		UserPermissionsReportAction upra = new UserPermissionsReportAction();
+		upra.setDBConnection(dbConn);
+		upra.setAttributes(getAttributes());
+	
+		AbstractSBReportVO rpt = new AccountPermissionsSummaryReportVO();
+		Map<String, Object> data = new HashMap<>(1);
+		data.put("accounts", upra.retrieveUserPermissions(req));
+		rpt.setData(data);
+		return rpt;
 	}
 
 
