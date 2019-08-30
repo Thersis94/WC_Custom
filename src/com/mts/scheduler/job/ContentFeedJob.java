@@ -216,7 +216,7 @@ public class ContentFeedJob extends AbstractSMTJob {
 		StringBuilder sql = new StringBuilder(400);
 		sql.append("select first_nm || ' ' || last_nm as author_nm, a.unique_cd, action_desc, ");
 		sql.append("action_nm, publish_dt, document_txt from ").append(schema).append("mts_document a ");
-		sql.append("inner join custom.mts_issue i on a.issue_id = i.issue_id ");
+		sql.append("inner join ").append(schema).append("mts_issue i on a.issue_id = i.issue_id ");
 		sql.append("inner join sb_action b ");
 		sql.append("on a.document_id = b.action_group_id and b.pending_sync_flg = 0 ");
 		sql.append("inner join document c on b.action_id = c.action_id ");
