@@ -43,7 +43,8 @@ public class SubscriptionAction extends SBActionAdapter {
 		USER("End User"),
 		CORPORATE("Corporate Account"),
 		IP("IP Address"),
-		MULTIPLE("Multi-User Account");
+		MULTIPLE("Multi-User Account"),
+		SSO("Single Sign-on");
 
 		private String typeName;
 		SubscriptionType(String typeName) {  
@@ -137,7 +138,7 @@ public class SubscriptionAction extends SBActionAdapter {
 		sql.append(DBUtil.SELECT_FROM_STAR).append(schema).append("mts_user a "); 
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema);
 		sql.append("mts_subscription_publication_xr b on a.user_id=b.user_id ");
-		sql.append("where profile_id=?");
+		sql.append("where a.profile_id=? and a.active_flg=1");
 		log.debug(sql.length() + "|" + sql + "|" + vals);
 
 		// Get the user extended info and assign it to the user object 

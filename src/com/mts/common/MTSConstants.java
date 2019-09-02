@@ -67,6 +67,12 @@ public class MTSConstants {
 	public static final String DEF_FEATURE_IMG_PATH = "/binary/file_transfer/000/000/feature.png";
 	
 	/**
+	 * The database guid & class-path for the SAML module this website will use for all customer installations
+	 */
+	public static final String SAML_LOGIN_MODULE_ID = "34ea3cf9v5bce3dbac10029045b1b9a8";
+	public static final String SAML_LOGIN_MODULE_CLASSPATH = com.mts.security.MTSLoginModule.class.getName();
+	
+	/**
 	 * 
 	 */
 	private MTSConstants() {

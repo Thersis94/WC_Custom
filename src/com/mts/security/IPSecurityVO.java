@@ -14,6 +14,7 @@ import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.StringUtil;
 
 /****************************************************************************
  * <b>Title</b>: IPSecurityVO.java
@@ -75,6 +76,8 @@ public class IPSecurityVO extends BeanDataVO {
 	 * @return
 	 */
 	public boolean insideIPRange(String ip) {
+		if (StringUtil.isEmpty(ip)) return false;
+
 		String base = ip.substring(0, ip.lastIndexOf('.'));
 		int host = Convert.formatInteger(ip.substring(ip.lastIndexOf('.') + 1));
 		return (base.equalsIgnoreCase(ipBase) && host >= ipStart && host <= ipEnd);
