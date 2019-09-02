@@ -18,6 +18,11 @@ import com.smt.sitebuilder.common.constants.Constants;
  * @updates:
  ****************************************************************************/
 public class AppUtil {
+	
+	private AppUtil() {
+		//static class
+	}
+	
 	/**
 	 * Gets the MTS user info from the session
 	 * @param req

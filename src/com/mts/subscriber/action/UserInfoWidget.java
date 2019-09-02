@@ -5,16 +5,16 @@ import java.util.Arrays;
 import java.util.List;
 
 import com.mts.publication.data.MTSDocumentVO;
-import com.mts.subscriber.data.MTSUserVO;
 import com.mts.subscriber.data.UserExtendedVO;
 import com.mts.subscriber.data.UserExtendedVO.TypeCode;
+import com.mts.util.AppUtil;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
-import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.EnumUtil;
+import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.security.SBUserRole;
@@ -57,10 +57,10 @@ public class UserInfoWidget extends SimpleActionAdapter {
 	public void retrieve(ActionRequest req) throws ActionException {
 		if (!req.hasParameter("json")) return;
 
-		UserDataVO user = getAdminUser(req);
-		String userId = ((MTSUserVO) user.getUserExtendedInfo()).getUserId();
-		TypeCode typeCode = EnumUtil.safeValueOf(TypeCode.class, req.getParameter("typeCode"));
+		String userId = AppUtil.getMTSUserId(req);
+		if (StringUtil.isEmpty(userId)) return;
 
+		TypeCode typeCode = EnumUtil.safeValueOf(TypeCode.class, req.getParameter("typeCode"));
 		if (TypeCode.BOOKMARK == typeCode) {
 			setModuleData(getBookmarks(userId));
 		} else {
@@ -79,7 +79,7 @@ public class UserInfoWidget extends SimpleActionAdapter {
 		List<Object> vals = new ArrayList<>();
 		vals.add(userId);
 
-		StringBuilder sql = new StringBuilder(128);
+		StringBuilder sql = new StringBuilder(500);
 		sql.append(DBUtil.SELECT_FROM_STAR).append(getCustomSchema()).append("mts_user_info ");
 		sql.append("where user_id=? ");
 		if (typeCode != null) {
@@ -103,7 +103,7 @@ public class UserInfoWidget extends SimpleActionAdapter {
 	public List<MTSDocumentVO> getBookmarks(String userId) {
 		List<Object> vals = Arrays.asList(userId);
 		String schema = getCustomSchema();
-		StringBuilder sql = new StringBuilder(320);
+		StringBuilder sql = new StringBuilder(500);
 		sql.append(DBUtil.SELECT_FROM_STAR).append(schema).append("mts_user_info a ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("mts_document d ");
 		sql.append("on a.value_txt = d.unique_cd ");
@@ -141,10 +141,9 @@ public class UserInfoWidget extends SimpleActionAdapter {
 			if (req.hasParameter("delete")) {
 				db.delete(vo);
 			} else {
-				UserDataVO user = getAdminUser(req);
-				vo.setUserId(((MTSUserVO) user.getUserExtendedInfo()).getUserId());
+				vo.setUserId(AppUtil.getMTSUserId(req));
 				db.save(vo);
-				setModuleData(user);
+				setModuleData(getAdminUser(req));
 			}
 		} catch (Exception e) {
 			log.error("Unable to save extended data: " + vo, e);
