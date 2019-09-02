@@ -100,6 +100,32 @@ public class WarrantyBillableAction extends SBActionAdapter {
 		return db.executeSelect(sql.toString(), vals, new WarrantyBillableVO());
 	}
 	
+	/**
+	 * 
+	 * @param warrantyId
+	 * @param activityCode
+	 * @return
+	 */
+	public WarrantyBillableVO getBillableActivity (String warrantyId, String activityCode) {
+		if (StringUtil.isEmpty(warrantyId) || StringUtil.isEmpty(activityCode) ) return new WarrantyBillableVO();
+		
+		List<Object> vals = new ArrayList<>();
+		vals.add(activityCode);
+		vals.add(warrantyId);
+		
+		StringBuilder sql = new StringBuilder(154);
+		sql.append(DBUtil.SELECT_FROM_STAR).append(getCustomSchema()).append("wsla_warranty_billable_xr where billable_activity_cd = ? and warranty_id = ?");
+		
+		DBProcessor db = new DBProcessor(getDBConnection());
+		List<WarrantyBillableVO> data = db.executeSelect(sql.toString(), vals, new WarrantyBillableVO());
+		
+		if (data != null && !data.isEmpty() ){
+			return data.get(0);
+		}else {
+			return new WarrantyBillableVO();
+		}
+	}
+	
 	/*
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.action.ActionRequest)

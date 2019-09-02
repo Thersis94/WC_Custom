@@ -128,6 +128,23 @@ public class WarrantyAction extends SBActionAdapter {
 		return data != null && !data.isEmpty() ? data.get(0) : new WarrantyVO();
 	}
 
+	/**
+	 * gets the warranty when sent a ticket id
+	 * @param TicketId
+	 * @return
+	 */
+	public WarrantyVO getWarrantyByTicketId(String ticketId) {
+		
+		StringBuilder sql = new StringBuilder(255);
+		sql.append(DBUtil.SELECT_CLAUSE).append(" w.* ").append(DBUtil.FROM_CLAUSE).append(getCustomSchema()).append("wsla_ticket t ");
+		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("wsla_product_warranty pw on t.product_warranty_id = pw.product_warranty_id ");
+		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("wsla_warranty w on pw.warranty_id = w.warranty_id ");
+		sql.append(DBUtil.WHERE_CLAUSE).append("t.ticket_id = ? ");
+
+		DBProcessor dbp = new DBProcessor(getDBConnection(), getCustomSchema());
+		List<WarrantyVO> data = dbp.executeSelect(sql.toString(), Arrays.asList(ticketId), new WarrantyVO());
+		return data != null && !data.isEmpty() ? data.get(0) : new WarrantyVO();
+	}
 
 	/**
 	 * Return a list of Warranties included in the requested set.
