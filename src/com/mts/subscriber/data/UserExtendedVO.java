@@ -28,7 +28,6 @@ public class UserExtendedVO extends BeanDataVO {
 	 * Enum for the user info type code
 	 */
 	public enum TypeCode {
-		
 		BOOKMARK("User Bookmark");
 		
 		private String typeName;
