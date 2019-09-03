@@ -303,6 +303,7 @@ public class SectionHierarchyAction extends AbstractTreeAction {
 		sql.append("where s.fd_pub_yr = (select max(fd_pub_yr) from ").append(custom).append("biomedgps_section) ");
 		if (sectionId != null) sql.append("and s.section_id = ? ");
 		sql.append("group by s.fd_pub_yr, s.fd_pub_qtr, s2.fd_pub_qtr, s3.fd_pub_qtr, s4.fd_pub_qtr ");
+		sql.append("order by fd_pub_qtr desc ");
 
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			if (sectionId != null) ps.setString(1, sectionId);
