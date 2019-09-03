@@ -1,5 +1,8 @@
 package com.mts.admin.action;
 
+
+import static com.smt.sitebuilder.admin.action.SiteAuthManageAction.LOGIN_MODULE_XR_ID;
+
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.Arrays;
@@ -152,24 +155,29 @@ public class SSOProviderAction extends SimpleActionAdapter {
 	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
-		boolean isDelete = req.hasParameter("isDelete");
-		boolean isLoginModule = req.hasParameter("saveLoginModule");
+		boolean saveLoginModule = req.hasParameter("saveLoginModule");
 		SSOProviderVO vo = new SSOProviderVO(req);
 
 		//call both on deletes, otherwise toggle
-		if (isLoginModule || isDelete) {
-			saveLoginModule(req, isDelete);
+		if (req.hasParameter("isDelete")) {
+			//don't delete the auth details if there's no pkId given (there's no data there anyways)
+			if (req.hasParameter(LOGIN_MODULE_XR_ID))
+				saveLoginModule(req, true);
+
+			saveSSORecord(vo, true);
+
+		} else if (saveLoginModule) {
+			saveLoginModule(req, false);
 
 			//save the created key as a foreign key in our mts_sso table
-			if (!isDelete && StringUtil.isEmpty(vo.getLoginModuleXrId()))
-				saveLMForeignKey(vo.getSsoId(), req.getParameter(SiteAuthManageAction.LOGIN_MODULE_XR_ID));
-		}
+			if (StringUtil.isEmpty(vo.getLoginModuleXrId()))
+				saveLMForeignKey(vo.getSsoId(), req.getParameter(LOGIN_MODULE_XR_ID));
 
-		if (!isLoginModule || isDelete) {
-			saveSSORecord(vo, isDelete);
+		} else {
+			saveSSORecord(vo, false);
 
 			//if the role changed, we need to update the login module too
-			if (!isDelete && !vo.getRoleId().equals(req.getParameter("oldRoleId")))
+			if (req.hasParameter("oldRoleId") && !vo.getRoleId().equals(req.getParameter("oldRoleId")))
 				cascadeRoleChange(vo);
 		}
 	}
@@ -203,9 +211,12 @@ public class SSOProviderAction extends SimpleActionAdapter {
 		LoginConfigurationVO moduleXr = new LoginConfigurationVO(req, false);
 		if (isDelete) {
 			mgr.delete(req);
+			//also flush stored site config
+			String prefix = LoginConfigurationVO.getContextKey(MTSConstants.SAML_LOGIN_MODULE_CLASSPATH, req.getParameter(LOGIN_MODULE_XR_ID));
+			WCConfigUtil.flushPrefixedConfig(dbConn, prefix, MTSConstants.SUBSCRIBER_SITE_ID);
 		} else {
 			String lmXrId = mgr.save(moduleXr);
-			req.setParameter(SiteAuthManageAction.LOGIN_MODULE_XR_ID, lmXrId);
+			req.setParameter(LOGIN_MODULE_XR_ID, lmXrId);
 
 			//transpose the form fields off our form into the ones the downstream action is looking for, so the config gets saved
 			String contextKey = LoginConfigurationVO.getContextKey(MTSConstants.SAML_LOGIN_MODULE_CLASSPATH, lmXrId);
