@@ -22,6 +22,7 @@ import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.solr.common.SolrDocument;
 
 import com.smt.sitebuilder.search.SearchDocumentHandler;
+import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.AbstractSBReportVO;
 
 /****************************************************************************
@@ -150,6 +151,10 @@ public class ProductExplorerReportVO extends AbstractSBReportVO {
 			Row row = sheet.createRow(i++);
 			int j = 0;
 			Cell cell = null;
+			
+			cell = row.createCell(j++);
+			cell.setCellValue(StringUtil.checkVal(doc.getFieldValue(SearchDocumentHandler.DOCUMENT_ID)).replace("PRODUCT_", ""));
+			if (i%2 == 1)cell.setCellStyle(alternate);
 			
 			if (!excludeColumns.contains("1")) {
 				cell = row.createCell(j++);
@@ -329,6 +334,9 @@ public class ProductExplorerReportVO extends AbstractSBReportVO {
 		int count = 0;
 		int green = 0;
 		int blue = 0;
+		count++;
+		headers.add("Product Id");
+		
 		if (!excludeColumns.contains("1")){
 			count++;
 			headers.add("Product Name");
