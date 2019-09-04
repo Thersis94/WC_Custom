@@ -569,8 +569,7 @@ public abstract class AbstractSmarttrakRSSFeed {
 				if(isRequired) {
 					log.info("Matched twice");
 				}
-				// Null out FullArticleTxt to lessen memory overhead
-				af.setFullArticleTxt(null);
+
 				af.setArticleTxt(af.getFilterArticleTxt());
 				af.setTitleTxt(af.getFilterTitleTxt());
 				isRequired = true;
@@ -602,9 +601,6 @@ public abstract class AbstractSmarttrakRSSFeed {
 		boolean isOmitted = false;
 		for (RSSFilterVO filter: rssFilters) {
 			if (checkOmitMatch(af, filter)) {
-
-				// Null out FullArticleTxt to lessen memory overhead
-				af.setFullArticleTxt(null);
 				article.addFilteredText(af);
 				isOmitted = true;
 			}
