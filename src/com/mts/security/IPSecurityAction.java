@@ -43,7 +43,7 @@ public class IPSecurityAction extends SBActionAdapter {
 	 * Ajax Controller key for this action
 	 */
 	public static final String AJAX_KEY = "ip-sec";
-	
+
 	/**
 	 * 
 	 */
@@ -57,7 +57,7 @@ public class IPSecurityAction extends SBActionAdapter {
 	public IPSecurityAction(ActionInitVO actionInit) {
 		super(actionInit);
 	}
-	
+
 	/**
 	 * 
 	 * @param dbConn
@@ -68,7 +68,7 @@ public class IPSecurityAction extends SBActionAdapter {
 		setDBConnection(new SMTDBConnection(dbConn));
 		setAttributes(attributes);
 	}
-	
+
 	/*
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.action.ActionRequest)
@@ -76,14 +76,14 @@ public class IPSecurityAction extends SBActionAdapter {
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		SBUserRole role = (SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA);
-	
+
 		if (req.getBooleanParameter("ipCheck")) {
 			setModuleData(checkIpAddress(req.getParameter("ipAddress")));
 		} else if (role != null && "100".equals(role.getRoleId())) {
 			setModuleData(getListRanges());
 		}
 	}
-	
+
 	/**
 	 * Checks to see if the user's ip address is assigned in the Ip Security table
 	 * @param ipAddress
@@ -91,32 +91,32 @@ public class IPSecurityAction extends SBActionAdapter {
 	 */
 	public boolean checkIpAddress(String ipAddress) {
 		if (StringUtil.isEmpty(ipAddress)) return false;
-		
+
 		boolean auth = false;
 		int index = ipAddress.lastIndexOf('.');
 		String base = ipAddress.substring(0, index);
 		int range = Convert.formatInteger(ipAddress.substring(index + 1));
-		
+
 		StringBuilder sql = new StringBuilder(128);
 		sql.append("select ip_security_id from ").append(getCustomSchema());
 		sql.append("mts_ip_security where ip_base_txt = ? ");
 		sql.append("and ? between ip_start_no and ip_end_no ");
 		log.debug(sql.length() + "|" + sql + "|" + base + "|" + range);
-		
+
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, base);
 			ps.setInt(2, range);
-			
+
 			try (ResultSet rs = ps.executeQuery()) {
 				if (rs.next()) auth = true;
 			}
 		} catch (Exception e) {
 			log.error("Unable to retrieve ip address check", e);
 		}
-		
+
 		return auth;
 	}
-	
+
 	/**
 	 * Gets the security list of companies by IP address range
 	 * @return
@@ -129,11 +129,11 @@ public class IPSecurityAction extends SBActionAdapter {
 		sql.append("mts_user b on a.user_id = b.user_id ");
 		sql.append("order by company_nm, ip_base_txt ");
 		log.debug(sql.length() + "|" + sql);
-		
-		DBProcessor db = new DBProcessor(getDBConnection());
+
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		return db.executeSelect(sql.toString(), null, new IPSecurityVO());
 	}
-	
+
 	/**
 	 * Gets the profile id of the user for the matching ip address 
 	 * @param ip request IP address
@@ -144,7 +144,7 @@ public class IPSecurityAction extends SBActionAdapter {
 		for (IPSecurityVO ipvo : ips) {
 			if (ipvo.insideIPRange(ip)) return ipvo.getUser().getProfileId();
 		}
-		
+
 		return null;
 	}
 
@@ -155,7 +155,7 @@ public class IPSecurityAction extends SBActionAdapter {
 	@Override
 	public void build(ActionRequest req) throws ActionException {
 		IPSecurityVO ip = new IPSecurityVO(req);
-		
+
 		try {
 			if (req.hasParameter("delete")) deleteIPSecurity(ip);
 			else saveIPSecurity(ip);
@@ -166,27 +166,26 @@ public class IPSecurityAction extends SBActionAdapter {
 			setModuleData(ip, 0, e.getLocalizedMessage());
 		}
 	}
-	
+
 	/**
 	 * 
 	 * @param ip
 	 * @throws InvalidDataException
 	 * @throws DatabaseException
 	 */
-	public void saveIPSecurity(IPSecurityVO ip) throws InvalidDataException, DatabaseException {
+	public void saveIPSecurity(IPSecurityVO ip) throws Exception {
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		db.save(ip);
 	}
-	
+
 	/**
 	 * 
 	 * @param ip
 	 * @throws InvalidDataException
 	 * @throws DatabaseException
 	 */
-	public void deleteIPSecurity(IPSecurityVO ip) throws InvalidDataException, DatabaseException {
+	public void deleteIPSecurity(IPSecurityVO ip) throws Exception {
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		db.delete(ip);
 	}
 }
-

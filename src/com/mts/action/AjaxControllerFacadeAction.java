@@ -1,6 +1,19 @@
 package com.mts.action;
 
+//SMT Base Libs
+import com.siliconmtn.action.ActionException;
+import com.siliconmtn.action.ActionInitVO;
+import com.siliconmtn.action.ActionInterface;
+import com.siliconmtn.action.ActionRequest;
+
+//WC Core
+import com.smt.sitebuilder.action.FacadeActionAdapter;
+import com.smt.sitebuilder.common.ModuleVO;
+import com.smt.sitebuilder.common.constants.AdminConstants;
+
+//WC Custom
 import com.mts.admin.action.MTSApprovalAction;
+import com.mts.admin.action.SSOProviderAction;
 import com.mts.admin.action.UserAction;
 import com.mts.publication.action.AssetAction;
 import com.mts.publication.action.CategoryAction;
@@ -9,20 +22,6 @@ import com.mts.publication.action.IssueArticleAction;
 import com.mts.publication.action.MTSDocumentAction;
 import com.mts.publication.action.PublicationAction;
 import com.mts.security.IPSecurityAction;
-
-// RP Libs
-
-
-// SMT Base Libs
-import com.siliconmtn.action.ActionException;
-import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.ActionInterface;
-import com.siliconmtn.action.ActionRequest;
-
-// WC Core
-import com.smt.sitebuilder.action.FacadeActionAdapter;
-import com.smt.sitebuilder.common.ModuleVO;
-import com.smt.sitebuilder.common.constants.AdminConstants;
 
 /****************************************************************************
  * <b>Title</b>: AjaxControllerFacadeAction.java
@@ -45,7 +44,7 @@ public class AjaxControllerFacadeAction extends FacadeActionAdapter {
 	 * Default type if not passed
 	 */
 	public static final String DEFAULT_TYPE = "lookup";
-	
+
 	/**
 	 * Request key utilized top determine widget to call
 	 */
@@ -81,7 +80,7 @@ public class AjaxControllerFacadeAction extends FacadeActionAdapter {
 		actionMap.put(MTSDocumentAction.AJAX_KEY, MTSDocumentAction.class);
 		actionMap.put(MTSApprovalAction.AJAX_KEY, MTSApprovalAction.class);
 		actionMap.put(IPSecurityAction.AJAX_KEY, IPSecurityAction.class);
-		
+		actionMap.put("ssoProviders", SSOProviderAction.class);
 	}
 
 	/*
