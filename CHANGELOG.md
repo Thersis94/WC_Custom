@@ -1,5 +1,20 @@
 WC_Custom Changelog (auto-generated)
 
+# [3.26.0](https://github.com/smtadmin/WC_Custom/compare/3.25.0...3.26.0) (2019-09-05)
+
+
+### Bug Fixes
+
+* Correct typo on update_dt annotation ([51a82d8](https://github.com/smtadmin/WC_Custom/commit/51a82d8))
+* **MTS-i13 SSO:** Fix delete support.  Ensure site config is deleted too ([f6d0c17](https://github.com/smtadmin/WC_Custom/commit/f6d0c17))
+* **MTS-i13 SSO:** Fix NPE ([b65793d](https://github.com/smtadmin/WC_Custom/commit/b65793d))
+* **Sc-1596:** Fix issue where growth did not match group total. ([4cb0aaa](https://github.com/smtadmin/WC_Custom/commit/4cb0aaa))
+
+
+### Features
+
+* **MTS-i13 SSO:** Add SSO support to the site, with /portal mgmt UI ([95cf7e6](https://github.com/smtadmin/WC_Custom/commit/95cf7e6))
+
 # [3.25.0](https://github.com/smtadmin/WC_Custom/compare/3.24.5...3.25.0) (2019-08-30)
 
 
