@@ -300,7 +300,7 @@ public class UserAction extends UserBaseWidget {
 		sql.append("group by authentication_id ");
 		sql.append(") g on d.authentication_id = g.authentication_id "); 
 		sql.append("where 1=1 ");
-		
+
 		vals.add(MTSConstants.SUBSCRIBER_SITE_ID);
 		vals.add(MTSConstants.SUBSCRIBER_SITE_ID);
 
@@ -334,7 +334,12 @@ public class UserAction extends UserBaseWidget {
 		sql.append("group by last_login_dt, a.user_id, a.first_nm, a.last_nm, a.company_nm, ");
 		sql.append("a.expiration_dt, a.pro_title_nm, c.role_nm, b.profile_role_id, d.authentication_id, ");
 		sql.append("a.create_dt, a.active_flg, a.email_address_txt, b.role_id, a.sso_id, d.profile_id ");
-		sql.append(bst.getSQLOrderBy("a.last_nm", "asc"));
+
+		if ("lastLogin".equals(bst.getSort())) {
+			sql.append("order by coalesce(last_login_dt, '2000-01-01') ").append(bst.getOrder()).append(", a.last_nm ");
+		} else {
+			sql.append(bst.getSQLOrderBy("a.last_nm", "asc"));
+		}
 		log.debug(sql.length() + "|" + sql + "|" + bst.getLikeSearch());
 
 		// Query
