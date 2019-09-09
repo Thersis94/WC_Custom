@@ -242,9 +242,8 @@ public class UserAction extends UserBaseWidget {
 	 * @return
 	 */
 	public MTSUserVO userExists(String email) {
-
 		StringBuilder sql = new StringBuilder(64);
-		sql.append("select * from ").append(getCustomSchema()).append("mts_user ");
+		sql.append(DBUtil.SELECT_FROM_STAR).append(getCustomSchema()).append("mts_user ");
 		sql.append("where lower(email_address_txt) = ?");
 
 		DBProcessor db = new DBProcessor(getDBConnection());
@@ -281,16 +280,13 @@ public class UserAction extends UserBaseWidget {
 		List<Object> vals = new ArrayList<>();
 
 		StringBuilder sql = new StringBuilder(768);
-		sql.append("select a.email_address_txt, last_login_dt, a.user_id, a.first_nm, a.last_nm, a.sso_id, ");
+		sql.append("select a.email_address_txt, last_login_dt, a.user_id, a.first_nm, a.last_nm, a.sso_id, d.profile_id, ");
 		sql.append("a.company_nm, a.expiration_dt, a.active_flg, c.role_nm, b.profile_role_id, subscription_type_cd, cv_desc, ");
-		sql.append("d.authentication_id, a.create_dt, string_agg(f.publication_nm, ',') as note_txt, b.role_id ");
+		sql.append("d.authentication_id, a.create_dt, string_agg(f.publication_nm, ',') as note_txt, b.role_id, a.pro_title_nm ");
 		sql.append(DBUtil.FROM_CLAUSE).append(getCustomSchema()).append("mts_user a ");
-		sql.append(DBUtil.INNER_JOIN).append("profile_role b ");
-		sql.append("on a.profile_id = b.profile_id and site_id = 'MTS_2' ");
-		sql.append(DBUtil.INNER_JOIN).append("role c ");
-		sql.append("on b.role_id = c.role_id ");
-		sql.append(DBUtil.INNER_JOIN).append("profile d ");
-		sql.append("on a.profile_id = d.profile_id ");
+		sql.append(DBUtil.INNER_JOIN).append("profile d on a.profile_id = d.profile_id ");
+		sql.append(DBUtil.INNER_JOIN).append("profile_role b on a.profile_id = b.profile_id and site_id =? ");
+		sql.append(DBUtil.INNER_JOIN).append("role c on b.role_id = c.role_id ");
 		sql.append("left outer join ( ");
 		sql.append("select p.publication_id, xr.user_id, publication_nm ");
 		sql.append("from custom.mts_subscription_publication_xr xr ");
@@ -300,10 +296,13 @@ public class UserAction extends UserBaseWidget {
 		sql.append("left outer join ( ");
 		sql.append("select authentication_id, max(login_dt) as last_login_dt ");
 		sql.append("from authentication_log ");
-		sql.append("where site_id like 'MTS%' ");
+		sql.append("where site_id=? ");
 		sql.append("group by authentication_id ");
 		sql.append(") g on d.authentication_id = g.authentication_id "); 
 		sql.append("where 1=1 ");
+
+		vals.add(MTSConstants.SUBSCRIBER_SITE_ID);
+		vals.add(MTSConstants.SUBSCRIBER_SITE_ID);
 
 		// Filter by Roles
 		if (! StringUtil.isEmpty(roleId)) {
@@ -332,9 +331,15 @@ public class UserAction extends UserBaseWidget {
 			vals.add(bst.getLikeSearch().toLowerCase());
 		}
 
-		sql.append("group by last_login_dt, a.user_id, a.first_nm, a.last_nm, a.company_nm, a.expiration_dt, ");
-		sql.append("c.role_nm, b.profile_role_id, d.authentication_id, a.create_dt, a.active_flg, a.email_address_txt, b.role_id ");
-		sql.append(bst.getSQLOrderBy("a.last_nm", "asc"));
+		sql.append("group by last_login_dt, a.user_id, a.first_nm, a.last_nm, a.company_nm, ");
+		sql.append("a.expiration_dt, a.pro_title_nm, c.role_nm, b.profile_role_id, d.authentication_id, ");
+		sql.append("a.create_dt, a.active_flg, a.email_address_txt, b.role_id, a.sso_id, d.profile_id ");
+
+		if ("lastLogin".equals(bst.getSort())) {
+			sql.append("order by coalesce(last_login_dt, '2000-01-01') ").append(bst.getOrder()).append(", a.last_nm ");
+		} else {
+			sql.append(bst.getSQLOrderBy("a.last_nm", "asc"));
+		}
 		log.debug(sql.length() + "|" + sql + "|" + bst.getLikeSearch());
 
 		// Query
