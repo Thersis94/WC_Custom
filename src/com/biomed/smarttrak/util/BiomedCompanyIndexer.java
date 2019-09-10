@@ -28,6 +28,7 @@ import com.siliconmtn.data.Node;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.pool.SMTDBConnection;
+import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SMTAbstractIndex;
@@ -54,10 +55,17 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 
 	private static final String COMPANY_ID  = "COMPANY_ID";
 	private static final String SECTION_ID = "sectionId";
+	private static final String CONFIG_MAX_DOC = "maxDocsIndex";
 	private static final int MAX_COMPANY_INDEX = 500;
 	private static final String DOCUMENT_PREFIX = StringUtil.join(Section.COMPANY.name(), "_");
+	private int maxCompanies;
 	public BiomedCompanyIndexer(Properties config) {
 		this.config = config;
+		if (!StringUtil.isEmpty(config.getProperty(CONFIG_MAX_DOC))) {
+			maxCompanies = Convert.formatInteger(config.getProperty(CONFIG_MAX_DOC));
+		} else {
+			maxCompanies = MAX_COMPANY_INDEX;
+		}
 	}
 
 	/* (non-Javadoc)
@@ -102,7 +110,7 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 		while(iter.hasNext()) {
 
 			//If we have proper number of companies, perform full lookup and send to Solr.
-			if(i > 0 && i % MAX_COMPANY_INDEX == 0) {
+			if(i > 0 && i % maxCompanies == 0) {
 				populateAndSaveCompanies(temp, locationMap, hierarchies, util);
 				log.info(String.format("Processed %d companies of %d", temp.size(), i));
 				temp.clear();
