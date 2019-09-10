@@ -335,7 +335,12 @@ public class SOExtendedData extends AbsImporter {
 			try {
 				Object value = m.invoke(row);
 				//use the isIdentity() hook to know when we have to transpose defect codes
-				String valueStr = anno.isIdentity() ? lookupDefectCode((String)value) : formatValue(value);
+				String valueStr = null;
+				if (anno.isIdentity() && !anno.isUpdateOnly()) { //updateOnly is our flag for repairType, which we can use the raw data to align on.
+					valueStr = lookupDefectCode((String)value);
+				} else {
+					valueStr = formatValue(value);
+				}
 				if (StringUtil.isEmpty(valueStr) || isBogusData(valueStr)) continue;
 
 				//create a TicketDataVO and add it to the stack

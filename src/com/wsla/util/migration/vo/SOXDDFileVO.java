@@ -184,7 +184,7 @@ public class SOXDDFileVO {
 	public String getExitCode() {
 		return !StringUtil.isEmpty(exitCode) ? exitCode : actionCode; //actionCode holds the equiv legacy value
 	}
-	@Column(name="attr_unitRepairType", isIdentity=true)
+	@Column(name="attr_unitRepairType", isIdentity=true, isUpdateOnly=true)
 	public String getRepairType() {
 		if (StringUtil.isEmpty(getExitCode())) return null;
 		//if the exit code matches a billable code, return it.  Otherwise null

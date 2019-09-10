@@ -82,7 +82,7 @@ public class SOLNIFileVO {
 		return "S".equalsIgnoreCase(getCode());
 	}
 	public boolean isInventory() {
-		return "I".equalsIgnoreCase(getCode()) && !getProductId().matches("(?i).*\\ GUIA$"); //shipping labels are not inventory
+		return "I".equalsIgnoreCase(getCode());
 	}
 	public boolean isCreditMemo() {
 		return "N".equalsIgnoreCase(getCode());
