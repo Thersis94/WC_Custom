@@ -718,7 +718,8 @@ public class SelectLookupAction extends SBActionAdapter {
 
 		List<GenericVO> data = new ArrayList<>(products.getTotal());
 		for (ProductVO product : products.getRowData()) {
-			data.add(new GenericVO(product.getProductId(), product.getProductName()	));
+			String name = product.getProductName() + ": " + product.getCustomerProductId();
+			data.add(new GenericVO(product.getProductId(), name	));
 		}
 
 		return data;
