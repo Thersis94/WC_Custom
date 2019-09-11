@@ -277,25 +277,39 @@ public class SectionHierarchyAction extends AbstractTreeAction {
 
 		return sql.toString();
 	}
+	
+	public SectionVO getLatestFdPublish() {
+		return getLatestFdPublish(null);
+	}
 
 	/**
 	 * Gets the year and quarter of the most recently published section.
 	 * 
 	 * @return
 	 */
-	public SectionVO getLatestFdPublish() {
+	public SectionVO getLatestFdPublish(String sectionId) {
 		SectionVO data = new SectionVO();
 		String custom = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 
 		StringBuilder sql = new StringBuilder(250);
-		sql.append("select fd_pub_yr, max(fd_pub_qtr) as fd_pub_qtr ");
-		sql.append("from ").append(custom).append("biomedgps_section ");
-		sql.append("where fd_pub_yr = (select max(fd_pub_yr) from ").append(custom).append("biomedgps_section) ");
-		sql.append("group by fd_pub_yr ");
+		sql.append("select s.fd_pub_yr, greatest(s.fd_pub_qtr, s2.fd_pub_qtr, s3.fd_pub_qtr, s4.fd_pub_qtr) as fd_pub_qtr ");
+		sql.append("from ").append(custom).append("biomedgps_section s ");
+		sql.append("left join ").append(custom).append("biomedgps_section s2 ");
+		sql.append("on s2.parent_id = s.section_id ");
+		sql.append("left join ").append(custom).append("biomedgps_section s3 ");
+		sql.append("on s3.parent_id = s2.section_id ");
+		sql.append("left join ").append(custom).append("biomedgps_section s4 ");
+		sql.append("on s4.parent_id = s3.section_id ");
+		sql.append("where s.fd_pub_yr = (select max(fd_pub_yr) from ").append(custom).append("biomedgps_section) ");
+		if (sectionId != null) sql.append("and s.section_id = ? ");
+		sql.append("group by s.fd_pub_yr, s.fd_pub_qtr, s2.fd_pub_qtr, s3.fd_pub_qtr, s4.fd_pub_qtr ");
+		sql.append("order by fd_pub_qtr desc ");
 
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			if (sectionId != null) ps.setString(1, sectionId);
+			
 			ResultSet rs = ps.executeQuery();
-
+			
 			if (rs.next()) {
 				data.setFdPubQtr(rs.getInt("fd_pub_qtr"));
 				data.setFdPubYr(rs.getInt("fd_pub_yr"));

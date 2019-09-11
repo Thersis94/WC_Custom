@@ -1,5 +1,61 @@
 WC_Custom Changelog (auto-generated)
 
+# [3.27.0](https://github.com/smtadmin/WC_Custom/compare/3.26.0...3.27.0) (2019-09-09)
+
+
+### Bug Fixes
+
+* **MTS-i16:** Default ordering to lastLogin, descending ([5d6099a](https://github.com/smtadmin/WC_Custom/commit/5d6099a))
+* **MTS-i23:** Fix issue with nullable fKey.  Fix optional user fields not saving/displaying ([88b52ab](https://github.com/smtadmin/WC_Custom/commit/88b52ab))
+
+
+### Features
+
+* **IP Security:** Modified the IP Security stuff to allow ip ranges to include class B and class C ([a6e2881](https://github.com/smtadmin/WC_Custom/commit/a6e2881))
+
+# [3.26.0](https://github.com/smtadmin/WC_Custom/compare/3.25.0...3.26.0) (2019-09-05)
+
+
+### Bug Fixes
+
+* Correct typo on update_dt annotation ([51a82d8](https://github.com/smtadmin/WC_Custom/commit/51a82d8))
+* **MTS-i13 SSO:** Fix delete support.  Ensure site config is deleted too ([f6d0c17](https://github.com/smtadmin/WC_Custom/commit/f6d0c17))
+* **MTS-i13 SSO:** Fix NPE ([b65793d](https://github.com/smtadmin/WC_Custom/commit/b65793d))
+* **Sc-1596:** Fix issue where growth did not match group total. ([4cb0aaa](https://github.com/smtadmin/WC_Custom/commit/4cb0aaa))
+
+
+### Features
+
+* **MTS-i13 SSO:** Add SSO support to the site, with /portal mgmt UI ([95cf7e6](https://github.com/smtadmin/WC_Custom/commit/95cf7e6))
+
+# [3.25.0](https://github.com/smtadmin/WC_Custom/compare/3.24.5...3.25.0) (2019-08-30)
+
+
+### Bug Fixes
+
+* **Sc-1581:** Add account permissions summary report. ([4cef038](https://github.com/smtadmin/WC_Custom/commit/4cef038))
+* **Security:** disallowed access to the site for logins with an active flag of 0 ([48e63cc](https://github.com/smtadmin/WC_Custom/commit/48e63cc))
+* **WSLA-Migration:** Include product lookup across the alias fields ([ba695b9](https://github.com/smtadmin/WC_Custom/commit/ba695b9))
+
+
+### Features
+
+* **Command Line:** Modified the Content Feed Job to run form the command line.  This allows for the ([d0d8fb9](https://github.com/smtadmin/WC_Custom/commit/d0d8fb9))
+* **Filter:** Addd a fliter to the feed so only medtech strategist publication areticles are being s ([f3e1387](https://github.com/smtadmin/WC_Custom/commit/f3e1387))
+
+## [3.24.5](https://github.com/smtadmin/WC_Custom/compare/3.24.4...3.24.5) (2019-08-29)
+
+
+### Bug Fixes
+
+* **DS-527:** Trap exception caused by isValid test and reopen them safely ([46ec621](https://github.com/smtadmin/WC_Custom/commit/46ec621))
+* **Sc-1566:** Allow sections to have differing current quarters and make manage and public current q ([40fb44f](https://github.com/smtadmin/WC_Custom/commit/40fb44f))
+* **Sc-1578:** Change enum name to match parent attribute id properly. ([1e97b6b](https://github.com/smtadmin/WC_Custom/commit/1e97b6b))
+* **Sc-1586:** Add analyses to the link tool's search. ([b5e65d5](https://github.com/smtadmin/WC_Custom/commit/b5e65d5))
+* **WSLA-Migration:** Combine Southware comments into a single Cypher comment ([a668adb](https://github.com/smtadmin/WC_Custom/commit/a668adb))
+* **WSLA-Migration:** Import Ticket Comments ([72ff661](https://github.com/smtadmin/WC_Custom/commit/72ff661))
+* **WSLA-Migration:** Save comment1 as tkt description.  Save the rest as tkt comments ([e61303c](https://github.com/smtadmin/WC_Custom/commit/e61303c))
+
 ## [3.24.4](https://github.com/smtadmin/WC_Custom/compare/3.24.3...3.24.4) (2019-08-23)
 
 

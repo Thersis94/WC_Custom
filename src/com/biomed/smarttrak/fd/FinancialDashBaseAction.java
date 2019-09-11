@@ -107,8 +107,8 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 		DashType dashType = (DashType) req.getAttribute(FinancialDashAction.DASH_TYPE);
 
 		FinancialDashVO dash = new FinancialDashVO();
-		SectionVO latest = getLatestPublish();
-		dash.setCurrentQtrYear(dashType, latest);
+		SectionVO latest = getLatestPublish(req.getParameter(REQ_SECTION_ID));
+		dash.setCurrentQtrYear(latest);
 		dash.setData(req, sections);
 		dash.setBehindLatest(latest);
 
@@ -207,9 +207,9 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 	 * 
 	 * @return
 	 */
-	protected SectionVO getLatestPublish() {
+	protected SectionVO getLatestPublish(String sectionId) {
 		SectionHierarchyAction sha = getHierarchyAction();
-		return sha.getLatestFdPublish();
+		return sha.getLatestFdPublish(sectionId);
 	}
 
 	/**

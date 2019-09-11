@@ -90,7 +90,10 @@ public class IPSecurityAction extends SBActionAdapter {
 	 * @return
 	 */
 	public boolean checkIpAddress(String ipAddress) {
+		log.info(ipAddress);
 		if (StringUtil.isEmpty(ipAddress)) return false;
+		int loc = ipAddress.indexOf('.') + 1;
+		String ipBase = ipAddress.substring(0, ipAddress.indexOf('.', loc)) + "%";
 		
 		boolean auth = false;
 		int index = ipAddress.lastIndexOf('.');
@@ -98,17 +101,18 @@ public class IPSecurityAction extends SBActionAdapter {
 		int range = Convert.formatInteger(ipAddress.substring(index + 1));
 		
 		StringBuilder sql = new StringBuilder(128);
-		sql.append("select ip_security_id from ").append(getCustomSchema());
-		sql.append("mts_ip_security where ip_base_txt = ? ");
-		sql.append("and ? between ip_start_no and ip_end_no ");
+		sql.append("select * from ").append(getCustomSchema());
+		sql.append("mts_ip_security where ip_base_txt like ? ");
 		log.debug(sql.length() + "|" + sql + "|" + base + "|" + range);
 		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			ps.setString(1, base);
-			ps.setInt(2, range);
+			ps.setString(1, ipBase);
 			
 			try (ResultSet rs = ps.executeQuery()) {
-				if (rs.next()) auth = true;
+				if (rs.next()) {
+					IPSecurityVO vo = new IPSecurityVO(rs);
+					if (vo.insideIPRange(ipAddress)) auth = true;
+				}
 			}
 		} catch (Exception e) {
 			log.error("Unable to retrieve ip address check", e);
