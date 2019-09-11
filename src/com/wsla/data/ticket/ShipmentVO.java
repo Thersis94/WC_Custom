@@ -63,6 +63,7 @@ public class ShipmentVO extends BeanDataVO {
 	private String fromLocationName;
 	private String toLocationName;
 	private String ticketIdText;
+	private long numberParts;
 
 	public enum CarrierType {
 		DHL, ESTAFETA, FEDEX, UPS
@@ -328,5 +329,20 @@ public class ShipmentVO extends BeanDataVO {
 	 */
 	public void setShipmentType(ShipmentType shipmentType) {
 		this.shipmentType = shipmentType;
+	}
+
+	/**
+	 * @return the numberParts
+	 */
+	@Column(name="parts_num", isReadOnly = true)
+	public long getNumberParts() {
+		return numberParts;
+	}
+
+	/**
+	 * @param numberParts the numberParts to set
+	 */
+	public void setNumberParts(long numberParts) {
+		this.numberParts = numberParts;
 	}
 }
