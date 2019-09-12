@@ -95,6 +95,7 @@ public class LinkChecker extends CommandLineUtil {
 	int extTested;
 	int intTested;
 	int skipped;
+	int maxAttempts;
 	List<LinkVO> linksFailed;
 
 	/**
@@ -118,6 +119,7 @@ public class LinkChecker extends CommandLineUtil {
 		startTime = System.currentTimeMillis();
 		onlyBroken = Convert.formatBoolean(props.getProperty("checkAllBroken"));
 		mockUserAgent = StringUtil.checkVal(props.getProperty("mockUserAgent"));
+		maxAttempts = Convert.formatInteger(props.getProperty("maxAttempts"), 10);
 		System.setProperty("http.agent", "");
 	}
 
@@ -362,6 +364,17 @@ public class LinkChecker extends CommandLineUtil {
 			//check for redirects
 			checkRedirect(vo);
 
+			/*
+			 * If we don't pass, pause 1 seconds and re-attempt for government urls.
+			 * Believe we're hitting a throttling limit like we did in Quertle
+			 * Patent Feeds as these tend to be false positives.
+			 */
+			if(vo.getOutcome() != 200 && vo.getUrl().contains(".gov") && vo.getNumAttempts() < maxAttempts) {
+				log.warn(String.format("Url Failed, Re-attempt #%d, %s", vo.getNumAttempts(), vo.getUrl()));
+				Thread.sleep(1000);
+				vo.setNumAttempts(vo.getNumAttempts() + 1);
+				httpTest(vo);
+			}
 		} catch (Exception e) {
 			log.warn("URL Failed: " + e.getMessage() + " sts=" + vo.getOutcome());
 			if ("Connection reset".equals(e.getMessage()) || 429 == vo.getOutcome()) {
@@ -529,7 +542,6 @@ public class LinkChecker extends CommandLineUtil {
 		UUIDGenerator uuid = new UUIDGenerator();
 		String sql = "insert into custom.biomedgps_link (link_id, company_id, market_id, product_id, insight_id, update_id, " +
 				"url_txt, check_dt, status_no, content_id, create_dt) values (?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)";
-
 		for (LinkVO vo : records) {
 			try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
 				ps.setString(1, uuid.getUUID());
@@ -543,7 +555,6 @@ public class LinkChecker extends CommandLineUtil {
 				ps.setInt(9, vo.getOutcome());
 				ps.setString(10, vo.getContentId());
 				ps.executeUpdate();
-
 			} catch (Exception e) {
 				log.error("could not save outcome for " + vo.getUrl(), e);
 			}
