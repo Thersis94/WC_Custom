@@ -138,9 +138,10 @@ public class LogisticsAction extends SBActionAdapter {
 		} else {
 			UserVO user = (UserVO) getAdminUser(req).getUserExtendedInfo();
 			String roleId = ((SBUserRole)req.getSession().getAttribute(Constants.ROLE_DATA)).getRoleId();
+			String typeFilter = req.getParameter("typeFilter");
 			UserSqlFilter userFilter = new UserSqlFilter(user, roleId, getCustomSchema());
 
-			setModuleData(getData(toLocnId, sts, userFilter, new BSTableControlVO(req, ShipmentVO.class)));
+			setModuleData(getData(toLocnId, typeFilter, sts, userFilter, new BSTableControlVO(req, ShipmentVO.class)));
 		}
 
 
@@ -398,19 +399,23 @@ public class LogisticsAction extends SBActionAdapter {
 	 * @param bst vo to populate data into
 	 * @return
 	 */
-	public GridDataVO<ShipmentVO> getData(String toLocationId, ShipmentStatus status, UserSqlFilter userFilter, BSTableControlVO bst) {
+	public GridDataVO<ShipmentVO> getData(String toLocationId, String typeFilter, ShipmentStatus status, UserSqlFilter userFilter, BSTableControlVO bst) {
 		String schema = getCustomSchema();
 		List<Object> params = new ArrayList<>();
 		StringBuilder sql = new StringBuilder(200);
 		sql.append("select s.*, t.ticket_no, srclcn.*, destlcn.*, ");
 		sql.append("coalesce(srclcn.location_nm, srcusr.first_nm || ' ' || srcusr.last_nm) as from_location_nm, ");
-		sql.append("coalesce(destlcn.location_nm, destusr.first_nm || ' ' || destusr.last_nm) as to_location_nm ");
+		sql.append("coalesce(destlcn.location_nm, destusr.first_nm || ' ' || destusr.last_nm) as to_location_nm, ");
+		sql.append("coalesce(p.total_parts, 0) as parts_num ");
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("wsla_shipment s ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("wsla_provider_location srclcn on s.from_location_id=srclcn.location_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("wsla_provider_location destlcn on s.to_location_id=destlcn.location_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("wsla_user srcusr on s.from_location_id=srcusr.user_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("wsla_user destusr on s.to_location_id=destusr.user_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("wsla_ticket t on s.ticket_id=t.ticket_id ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append("( select shipment_id, count(*) as total_parts from ");
+		sql.append(schema).append("wsla_part group by shipment_id) as p on s.shipment_id = p.shipment_id ");
+		
 		sql.append(userFilter.getTicketFilter("t", params));
 		sql.append("where (s.status_cd != ? or (s.status_cd=? and coalesce(s.shipment_dt, s.update_dt, s.create_dt) > CURRENT_DATE-31)) "); //only show ingested items for 30 days past receipt
 		params.add(ShipmentStatus.RECEIVED.toString());
@@ -441,6 +446,11 @@ public class LogisticsAction extends SBActionAdapter {
 		if (status != null) {
 			sql.append("and s.status_cd=? ");
 			params.add(status);
+		}
+		
+		if (! StringUtil.isEmpty(typeFilter)) {
+			String typeVal = "ALL_SO".equals(typeFilter) ? "not" : "";
+			sql.append("and s.ticket_id is ").append(typeVal).append(" null ");
 		}
 		
 		sql.append(bst.getSQLOrderBy("s.create_dt", "desc"));

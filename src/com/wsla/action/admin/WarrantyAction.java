@@ -108,12 +108,35 @@ public class WarrantyAction extends SBActionAdapter {
 				db.delete(vo);
 			} else {
 				db.save(vo);
+				
+				// Add the default cost and invoice amounts
+				if (StringUtil.isEmpty(req.getParameter("warranty_id"))) 
+					addDefaultBillingInfo(vo.getWarrantyId());
 			}
 		} catch (InvalidDataException | DatabaseException e) {
 			log.error("Unable to save warranty", e);
 		}
 	}
 
+	/**
+	 * Adds the default values for a costs and invoices to the warranty / billable xr
+	 * @param warrantyId
+	 */
+	public void addDefaultBillingInfo(String warrantyId) {
+		StringBuilder sql = new StringBuilder(512);
+		sql.append("insert into ").append(getCustomSchema());
+		sql.append("wsla_warranty_billable_xr (warranty_billable_id, ");
+		sql.append("warranty_id, billable_activity_cd, cost_no, invoice_amount_no, create_dt) ");
+		sql.append("select replace(newid(), '-', ''), '").append(warrantyId);
+		sql.append("', billable_activity_cd, default_cost_no, default_invoice_amt_no, now() ");
+		sql.append("from ").append(getCustomSchema());
+		sql.append("wsla_billable_activity where active_flg = 1 ");
+		sql.append("and parent_id is null and billable_activity_cd not in ('MISC_ACTIVITY')");
+		log.debug(sql.length() + "|" + sql);
+		
+		DBProcessor db = new DBProcessor(getDBConnection());
+		db.executeSQLCommand(sql.toString());
+	}
 
 	/**
 	 * Pull a single warranty from the DB.  Used when creating product_warranty records
