@@ -251,7 +251,7 @@ public class SOHeader extends AbsImporter {
 				vo.setBillableAmtNo(0);
 				vo.setDispositionBy(LEGACY_USER_ID);
 				entries.add(vo);
-				finalTicketStatus = vo.getStatusCode();
+				//finalTicketStatus = vo.getStatusCode()
 
 				//scenario 2: have serial# but no cas
 			} else if (StringUtil.isEmpty(tkt.getCasLocationId())) {

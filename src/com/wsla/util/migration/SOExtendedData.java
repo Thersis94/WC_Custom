@@ -23,7 +23,6 @@ import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.MapUtil;
 import com.siliconmtn.util.StringUtil;
-import com.siliconmtn.util.UUIDGenerator;
 import com.wsla.data.ticket.StatusCode;
 import com.wsla.data.ticket.TicketAssignmentVO;
 import com.wsla.data.ticket.TicketAssignmentVO.TypeCode;
@@ -60,8 +59,6 @@ public class SOExtendedData extends AbsImporter {
 
 	private int saveCnt;
 	private int delCnt;
-
-	private UUIDGenerator uuid = new UUIDGenerator();
 
 	//attributes that display on the Assets tab - we won't import these for open tickets
 	private static final Set<String> ASSET_ATTRS = new HashSet<>();
