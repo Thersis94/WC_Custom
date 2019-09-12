@@ -37,6 +37,7 @@ public class FinancialDashDataRowVO implements Serializable {
 	private String regionCd;
 	private String graphColor;
 	private boolean inactiveFlg;
+	private int fdPubQtr;
 	private int activeCnt; // internal value used to calculate overall inactivity
 	private Map<String, FinancialDashDataColumnVO> columns;
 
@@ -64,6 +65,7 @@ public class FinancialDashDataRowVO implements Serializable {
 
 		setName(util.getStringVal("ROW_NM", rs));
 		setPrimaryKey(util.getStringVal("ROW_ID", rs));
+		setFdPubQtr(rs.getInt("FD_PUB_QTR"));
 
 		// These only come from the edit version of the query
 		setCompanyId(util.getStringVal("COMPANY_ID", rs));
@@ -166,16 +168,14 @@ public class FinancialDashDataRowVO implements Serializable {
 
 			if (FinancialDashBaseAction.QTR_PATTERN.matcher(qtr).matches()) {
 				int yearIdx = Convert.formatInteger(colName.substring(colName.length() - 1, colName.length()));
-				String quarterString = null;
+				
 				// If we are in the current year always compar the the current year
 				// so that unreported quarters don't get used for the year to date comparison.
-				if (year == maxYear && yearIdx == 0 && currQtr > dashboard.getCurrentQtr()) {
-					quarterString = qtr + "-" + maxYear;
-				}
-				addColumn(qtr, yearIdx, maxYear, util, rs, quarterString == null);
+				boolean adjustIncomplete = (year == maxYear && yearIdx == 0 && currQtr <= fdPubQtr);
+				addColumn(qtr, yearIdx, maxYear, util, rs, adjustIncomplete);
 
-				addSummaryColumn(util, qtr, maxYear, yearIdx, rs, FinancialDashBaseAction.CALENDAR_YEAR, quarterString == null);
-				addSummaryColumn(util, qtr, maxYear, yearIdx, rs, FinancialDashBaseAction.YEAR_TO_DATE, quarterString == null);
+				addSummaryColumn(util, qtr, maxYear, yearIdx, rs, FinancialDashBaseAction.CALENDAR_YEAR, adjustIncomplete);
+				addSummaryColumn(util, qtr, maxYear, yearIdx, rs, FinancialDashBaseAction.YEAR_TO_DATE, adjustIncomplete);
 				calculateInactivity(qtr, yearIdx, util, rs, dashboard.getColHeaders(), qtr + "-" + (maxYear-yearIdx), dashboard.showEmpty());
 			}
 		}
@@ -284,7 +284,6 @@ public class FinancialDashDataRowVO implements Serializable {
 	 * @param colId
 	 * @param pk
 	 * @param val
-	 * @param pctDiff
 	 */
 	public void addColumn(String colId, int val, int pVal, String revenueId, boolean adjustImcomplete) {
 		FinancialDashDataColumnVO col;
@@ -421,5 +420,19 @@ public class FinancialDashDataRowVO implements Serializable {
 		}
 
 		totals.put(yearIdx, totals.get(yearIdx) + addDollarValue);
+	}
+
+	/**
+	 * @return the fdPubQtr
+	 */
+	public int getFdPubQtr() {
+		return fdPubQtr;
+	}
+
+	/**
+	 * @param fdPubQtr the fdPubQtr to set
+	 */
+	public void setFdPubQtr(int fdPubQtr) {
+		this.fdPubQtr = fdPubQtr;
 	}
 }

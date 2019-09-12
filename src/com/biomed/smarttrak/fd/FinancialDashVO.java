@@ -448,6 +448,24 @@ public class FinancialDashVO extends SBModuleVO {
 	}
 
 	/**
+	 * Sets both the current quarter and the current year for the financial dashboard.
+	 * 
+	 * Current quarter/year is defined as follows: 
+	 *     - Admin: 3 months in the past, from the current date
+	 *     - Public: Latest system-wide published FD quarter
+	 * 
+	 * @param req
+	 */
+	public void setCurrentQtrYear(DashType dashType, SectionVO data) {
+		log.debug("Setting Current Quarter - Dash Type: " + dashType.toString());
+		if (DashType.ADMIN == dashType) {
+			setCurrentQtrYear();
+		} else {
+			setCurrentQtrYear(data);
+		}
+	}
+
+	/**
 	 * Sets the current quarter/year for the financial dashboard display,
 	 * based on the month offset, from the current date.
 	 */
@@ -469,7 +487,7 @@ public class FinancialDashVO extends SBModuleVO {
 	 * 
 	 * @param data
 	 */
-	public void setCurrentQtrYear(SectionVO data) {
+	private void setCurrentQtrYear(SectionVO data) {
 		setCurrentQtr(data.getFdPubQtr());
 		setCurrentYear(data.getFdPubYr());
 	}
@@ -502,7 +520,7 @@ public class FinancialDashVO extends SBModuleVO {
 	 * @param data
 	 */
 	public void setBehindLatest(SectionVO data) {
-		if (getPublishedYear() < data.getFdPubYr() || (getPublishedYear() == data.getFdPubYr() && getPublishedQtr() < data.getFdPubQtr()))
+		if (getCurrentYear() > data.getFdPubYr() || (getCurrentYear() == data.getFdPubYr() && getCurrentQtr() > data.getFdPubQtr()))
 			setBehindLatest(true);
 		else
 			setBehindLatest(false);
