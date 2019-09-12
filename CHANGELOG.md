@@ -1,5 +1,31 @@
 WC_Custom Changelog (auto-generated)
 
+# [3.28.0](https://github.com/smtadmin/WC_Custom/compare/3.27.0...3.28.0) (2019-09-11)
+
+
+### Bug Fixes
+
+* **DSEMEA-62:** Correct equality test to use primitive values rather than object footprint ([19cc2d5](https://github.com/smtadmin/WC_Custom/commit/19cc2d5))
+* **DSEMEA-62:** Finish expiresAt implementation to Showpad API ([72383dd](https://github.com/smtadmin/WC_Custom/commit/72383dd))
+
+
+### Features
+
+* **DSEMEA-62:** Add Expiration Date to Showpad/Mediabin processing ([7889c31](https://github.com/smtadmin/WC_Custom/commit/7889c31))
+
+# [3.27.0](https://github.com/smtadmin/WC_Custom/compare/3.26.0...3.27.0) (2019-09-09)
+
+
+### Bug Fixes
+
+* **MTS-i16:** Default ordering to lastLogin, descending ([5d6099a](https://github.com/smtadmin/WC_Custom/commit/5d6099a))
+* **MTS-i23:** Fix issue with nullable fKey.  Fix optional user fields not saving/displaying ([88b52ab](https://github.com/smtadmin/WC_Custom/commit/88b52ab))
+
+
+### Features
+
+* **IP Security:** Modified the IP Security stuff to allow ip ranges to include class B and class C ([a6e2881](https://github.com/smtadmin/WC_Custom/commit/a6e2881))
+
 # [3.26.0](https://github.com/smtadmin/WC_Custom/compare/3.25.0...3.26.0) (2019-09-05)
 
 

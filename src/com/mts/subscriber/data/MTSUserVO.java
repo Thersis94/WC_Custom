@@ -408,7 +408,7 @@ public class MTSUserVO extends UserVO {
 
 	@Column(name="sso_id")
 	public String getSsoId() {
-		return ssoId;
+		return StringUtil.checkVal(ssoId, null);
 	}
 
 	public void setSsoId(String ssoId) {
