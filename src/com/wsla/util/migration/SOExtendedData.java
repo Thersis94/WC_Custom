@@ -63,7 +63,17 @@ public class SOExtendedData extends AbsImporter {
 
 	private UUIDGenerator uuid = new UUIDGenerator();
 
+	//attributes that display on the Assets tab - we won't import these for open tickets
+	private static final Set<String> ASSET_ATTRS = new HashSet<>();
+
 	static {
+		ASSET_ATTRS.add("attr_proofPurchase");
+		ASSET_ATTRS.add("attr_receiptSignature");
+		ASSET_ATTRS.add("attr_serialNumberImage"); 
+		ASSET_ATTRS.add("attr_serialPlateReturned");
+		ASSET_ATTRS.add("attr_unitImage");
+		ASSET_ATTRS.add("attr_unitVideo");
+
 		retailLocnMap.put("16","90133a088d6121f57f0001018b72cfa3");
 		retailLocnMap.put("AB","90133a088d6121f57f0001018b72cfa3");
 		retailLocnMap.put("28","276e3b428da92ff77f000101e7198688");
@@ -140,7 +150,7 @@ public class SOExtendedData extends AbsImporter {
 
 		//affiliate the Retailers to the tickets
 		addRetailerAssignments();
-		
+
 		//TODO process harvested tickets based on the PRODUCTION DISPOSITION column.
 		//if not "N/A" (there are a handful of values) these TVs were harvested, destroyed, or otherwise reworked.
 		//need those workflows - this is the entrypoint.
@@ -331,6 +341,10 @@ public class SOExtendedData extends AbsImporter {
 			//determine if this method is one we want to process
 			Column anno = m.getAnnotation(Column.class);
 			if (anno == null || anno.name() == null) continue;
+
+			//do not import assets on openTicketRuns
+			if (isOpenTktRun && ASSET_ATTRS.contains(anno.name())) 
+				continue;
 
 			try {
 				Object value = m.invoke(row);

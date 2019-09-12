@@ -1,6 +1,8 @@
 package com.wsla.util.migration;
 
 import java.io.File;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -58,6 +60,42 @@ public class SOLineItems extends AbsImporter {
 		productIds.put("ST215B011","e7648100b08202f2ac10029083dd7859");
 		productIds.put("TPMT55105PB818","841d7ca9b0837d1cac10029072104401");
 		productIds.put("V400HJ6PE1","b9c1890ab08566a6ac1002901844e517");
+		//wave 2
+		productIds.put("100250", "c34d9ff61bda1432ac1002904d17469e");
+		productIds.put("100267", "de77ef651bdb12f9ac10029011d56dbf");
+		productIds.put("100268", "7be493d11bdc1678ac1002907dbc9200");
+		productIds.put("100272", "c7326e0b1bdd222bac100290931f2967");
+		productIds.put("10L538138022", "47d245e11bde8dc6ac100290de1ed3f8");
+		productIds.put("306011DP7583100", "33d74b93e4985f95ac1002396caabbe7");
+		productIds.put("30604008CXWMQ21", "b2a1673196f33d437f000101eaa0f310");
+		productIds.put("306050C026YLDXK", "8f2c551d96f33d427f00010187983dee");
+		productIds.put("306070KEY40170", "af8b66f296f33d4a7f000101be82f900");
+		productIds.put("306080IR03228A", "2dbfeb5996f33d497f0001017e7d2ad2");
+		productIds.put("55180Z00002", "54a64c111be2ff59ac100290d8992e59");
+		productIds.put("631008M0352002", "2734ea039729e47c7f00010125cff6a5");
+		productIds.put("70532Z2L5PCASY0", "a24535a596f33d437f00010143b5fbc3");
+		productIds.put("845CX508T160159", "d1e337a896f33d467f000101be008007");
+		productIds.put("890CVT3553PC825", "92fb07c796f33d527f0001011a1ee4f1");
+		productIds.put("890CVWB58051GB4", "c1619bee1be82485ac100290f69fa197");
+		productIds.put("890CVWB58055", "cc88ed4dfdb11a6bac100290db87eb60");
+		productIds.put("890CVWBS80550", "cc88ed4dfdb11a6bac100290db87eb60"); //I think the S here was suppose to be a 5 (line above) - someone misread it
+		productIds.put("890CVWBS80550H", "cc88ed4dfdb11a6bac100290db87eb60");
+		productIds.put("890CVWB5805532", "9e205a9296f33d3f7f000101218dd0f5");
+		productIds.put("890CVWB5805542", "5dc0343e1bebdac6ac100290ed0a763e");
+		productIds.put("890CVWB580555", "5c2306d196f33d487f0001011a043e71");
+		productIds.put("890JRA3393BHU32", "87a192299707d13c7f0001018760a680");
+		productIds.put("890JRX3393BHB50", "9236dfdd96f33d477f0001017796f4b5");
+		productIds.put("CVS3393PB8551", "5ca00b479729e47a7f000101b29d6af9");
+		productIds.put("CX550DLEDM", "fa5959f01bf07808ac10029082f5d038");
+		productIds.put("JR3393BH850-3H1", "7b278be51bf3bdffac1002907ffb6176");
+		productIds.put("P752831V60", "a04850f596f33d447f00010113b2974a");
+		productIds.put("P752831V60A021L", "e0cdc89d1bf5fb64ac100290bbdd6640");
+		productIds.put("ST6308RTU-AP132", "557fc3811bf6f712ac100290ec019ef1");
+		productIds.put("TT5461B0325C1", "9bd6760f1bf81f32ac100290ccf61644");
+		productIds.put("Z00073CHOT", "4b529a751bf95827ac1002906066ef2a");
+		productIds.put("Z00088XCN", "b2feebdf1bf9d23cac10029078b45af5");
+		productIds.put("Z00107ST4K", "ebb5b0ee1bfa7a84ac10029016cf0398");
+		productIds.put("Z00110AUO", "a02ef94d1bfadc82ac10029050b19ec0");
 	}
 
 	/* (non-Javadoc)
@@ -65,6 +103,10 @@ public class SOLineItems extends AbsImporter {
 	 */
 	@Override
 	void run() throws Exception {
+		//use this to cross-ref the DB for missing products (copy SQL inserts from production)
+		//for (String s : productIds.values())
+			//System.out.println("('" + s + "'),");
+		
 		File[] files = listFilesMatching(props.getProperty("soLineItemsFile"), "(.*)SOLNI(.*)");
 
 		for (File f : files)
@@ -94,6 +136,8 @@ public class SOLineItems extends AbsImporter {
 
 		//split the data into the 3 categories
 		for (SOLNIFileVO vo : data) {
+			if (isOpenTktRun && vo.getSoNumber().matches("(?i)^WSL0(.*)$")) continue;
+			
 			if (vo.isInventory()) {
 				PartVO part = transposeInventoryData(vo, new PartVO());
 				//skip WSLA* tickets - these are harvesting part recoveries (TODO tie them to the source ticket)
@@ -117,8 +161,9 @@ public class SOLineItems extends AbsImporter {
 		log.info(String.format("found %d service line items (activities)", activities.size()));
 		log.info(String.format("found %d inventory credits (harvested parts)", credits.size()));
 
-
-		saveParts(tktParts);
+		//no parts, no shipments
+		if (!isOpenTktRun)
+			saveParts(tktParts);
 
 		saveActivities(activities);
 
@@ -246,9 +291,31 @@ public class SOLineItems extends AbsImporter {
 	private void saveActivities(List<TicketCommentVO> activities) throws Exception {
 		//write the activities to the comments table 
 		writeToDB(activities);
-
-		//find activities which are billable.  These also need to be written to the ledger (w/costs)
-
+		
+		//wait for the writes to flush so we can read them
+		log.info("waiting 5s for activities to commit");
+		sleepThread(5000);
+		
+		StringBuilder sql = new StringBuilder(700);
+		sql.append(DBUtil.INSERT_CLAUSE).append(schema).append("wsla_ticket_ledger (ledger_entry_id,disposition_by_id,ticket_id,");
+		sql.append("summary_txt,create_dt,billable_amt_no,billable_activity_cd) ");
+		sql.append("select replace(newid(),'-',''), '").append(SOHeader.LEGACY_USER_ID).append("',t.ticket_id, tc.comment_txt, tc.create_dt, ");
+		sql.append("coalesce(wb.invoice_amount_no, 0), ba.billable_activity_cd ");
+		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("wsla_ticket_comment tc ");
+		sql.append(DBUtil.INNER_JOIN).append(schema).append("wsla_ticket t on tc.ticket_id=t.ticket_id ");
+		sql.append(DBUtil.INNER_JOIN).append(schema).append("wsla_product_warranty pw on t.product_warranty_id=pw.product_warranty_id ");
+		//LOJ here because we want to create a timeline entry for all activities - not just those with billable amts attached
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("wsla_billable_activity ba on tc.activity_type_cd=ba.billable_activity_cd ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("wsla_warranty_billable_xr wb on pw.warranty_id=wb.warranty_id and wb.billable_activity_cd=ba.billable_activity_cd ");
+		sql.append("where tc.activity_type_cd != 'COMMENT'");
+		log.debug(sql);
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			int cnt = ps.executeUpdate();
+			log.info(String.format("Added %d rows to the timeline for ticket activities", cnt));
+		} catch (SQLException sqle) {
+			log.error("could not add ledger entries for ticket activies", sqle);
+		}
 	}
 
 
@@ -307,7 +374,7 @@ public class SOLineItems extends AbsImporter {
 		String id = dataVo.getProductId();
 		vo.setProductId(productIds.get(id)); //transposed
 		if (StringUtil.isEmpty(vo.getProductId())) { //try removing any harvesting suffix
-			id = id.replaceAll("(?i)^([A-Z0-9]+):?H$","$1");
+			id = id.replaceAll("(?i)^([A-Z0-9]+):?H{1,}$","$1");
 			log.debug("trying " + id + " from " + dataVo.getProductId());
 			vo.setProductId(productIds.get(id));
 		}
@@ -376,7 +443,7 @@ public class SOLineItems extends AbsImporter {
 	 */
 	private void loadTicketIds() {
 		String sql = StringUtil.join("select ticket_no as key, ticket_id as value from ", schema, 
-				"wsla_ticket where historical_flg=1");
+				"wsla_ticket where ", (isOpenTktRun ? "1=1" : " historical_flg=1"));
 
 		MapUtil.asMap(ticketIds, db.executeSelect(sql, null, new GenericVO()));
 		log.debug(String.format("loaded %d ticketIds", ticketIds.size()));

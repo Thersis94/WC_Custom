@@ -6,6 +6,7 @@ import com.siliconmtn.annotations.Importable;
 import com.siliconmtn.util.StringUtil;
 import com.wsla.data.ticket.StatusCode;
 import com.wsla.data.ticket.TicketOriginCode;
+import com.wsla.util.migration.LegacyDataImporter;
 
 /****************************************************************************
  * <p><b>Title:</b> SOHeaderFileVO.java</p>
@@ -59,10 +60,10 @@ public class SOHDRFileVO {
 		return soNumber;
 	}
 	public Date getReceivedDate() {
-		return receivedDate;
+		return LegacyDataImporter.toUTCDate(receivedDate);
 	}
 	public Date getClosedDate() {
-		return closedDate;
+		return LegacyDataImporter.toUTCDate(closedDate);
 	}
 	public String getServiceTech() {
 		return serviceTech;
@@ -71,7 +72,7 @@ public class SOHDRFileVO {
 		return territory;
 	}
 	public Date getAltKeyDate() {
-		return altKeyDate;
+		return LegacyDataImporter.toUTCDate(altKeyDate);
 	}
 	public String getEquipmentId() {
 		return equipmentId;
@@ -139,17 +140,17 @@ public class SOHDRFileVO {
 			case "D":
 			case "B":
 			case "C": return StatusCode.CLOSED;
-			case "P": return StatusCode.CAS_ASSIGNED;
+			case "P": return !StringUtil.isEmpty(getServiceTech()) ? StatusCode.CAS_ASSIGNED : StatusCode.USER_DATA_COMPLETE;
 			case "S": return StatusCode.DELIVERY_SCHEDULED;
 			case "E":
 			default: return StatusCode.OPENED;
 		}
 	}
 	public Date getStartDate() {
-		return startDate;
+		return LegacyDataImporter.toUTCDate(startDate);
 	}
 	public Date getStatusDate() {
-		return statusDate;
+		return LegacyDataImporter.toUTCDate(statusDate);
 	}
 	public String getUserArea1() {
 		return userArea1;
