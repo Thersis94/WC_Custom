@@ -9,6 +9,7 @@ import com.siliconmtn.annotations.Importable;
 import com.siliconmtn.util.StringUtil;
 import com.wsla.data.ticket.TicketCommentVO;
 import com.wsla.data.ticket.TicketCommentVO.ActivityType;
+import com.wsla.util.migration.LegacyDataImporter;
 import com.wsla.util.migration.SOHeader;
 
 /****************************************************************************
@@ -159,9 +160,9 @@ public class SOCMTFileVO {
 	 * @return
 	 */
 	private Date getReceivedDate(int incrHrs) {
-		if (incrHrs < 2 || receivedDate == null) return receivedDate;
+		if (incrHrs < 2 || receivedDate == null) return LegacyDataImporter.toUTCDate(receivedDate);
 		Calendar cal = Calendar.getInstance();
-		cal.setTime(receivedDate);
+		cal.setTime(LegacyDataImporter.toUTCDate(receivedDate));
 		cal.add(Calendar.HOUR_OF_DAY, 24-incrHrs);
 		return cal.getTime();
 	}

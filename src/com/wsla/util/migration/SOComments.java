@@ -37,7 +37,7 @@ public class SOComments extends AbsImporter {
 	 */
 	@Override
 	void run() throws Exception {
-		File[] files = super.listFilesMatching(props.getProperty("soCommentFile"), "ZZ-OSCMT(.*)");
+		File[] files = super.listFilesMatching(props.getProperty("soCommentFile"), "(.*)OSCMT(.*)");
 
 		for (File f : files)
 			data.addAll(readFile(f, SOCMTFileVO.class, SHEET_1));
@@ -64,6 +64,7 @@ public class SOComments extends AbsImporter {
 
 		//loop the tickets, add each one's comment to the larger batch
 		for (SOCMTFileVO row : data) {
+			if (isOpenTktRun && row.getTicketId().matches("(?i)^WSL0(.*)$")) continue;
 			//List<TicketCommentVO> cmts = row.getComments(2)
 			//log.debug(String.format("found %d comments in ticket %s", cmts.size(), row.getSoNumber()))
 			TicketCommentVO cmt = row.getCobinedComment();

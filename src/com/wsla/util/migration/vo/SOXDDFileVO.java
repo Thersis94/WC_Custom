@@ -4,7 +4,9 @@ import java.util.Date;
 
 import com.siliconmtn.annotations.Importable;
 import com.siliconmtn.db.orm.Column;
+import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
+import com.wsla.util.migration.LegacyDataImporter;
 
 /****************************************************************************
  * <p><b>Title:</b> SOExtendedFileVO.java</p>
@@ -19,6 +21,8 @@ import com.siliconmtn.util.StringUtil;
  ****************************************************************************/
 public class SOXDDFileVO {
 
+	private static final Date MIN_PURCHASE_DT = Convert.formatDate(Convert.DATE_DASH_PATTERN, "2000-01-01");
+	private static final Date TODAY = new Date();
 	private String soNumber;
 	private Date createDate;
 	private String swUserId;
@@ -79,7 +83,7 @@ public class SOXDDFileVO {
 		return soNumber;
 	}
 	public Date getCreateDate() {
-		return createDate;
+		return LegacyDataImporter.toUTCDate(createDate);
 	}
 	public String getSwUserId() {
 		return swUserId;
@@ -106,7 +110,10 @@ public class SOXDDFileVO {
 	}
 	@Column(name="purchaseDate")
 	public Date getPurchaseDate() {
-		return purchaseDate;
+		if (purchaseDate == null) return null;
+		//if the purchase date isn't realistic, use today
+		Date d = LegacyDataImporter.toUTCDate(purchaseDate);
+		return d.before(MIN_PURCHASE_DT) || d.after(TODAY) ? new Date() : d;
 	}
 	@Column(name="attr_mounted")
 	public String getIsTVMounted() {
@@ -135,7 +142,7 @@ public class SOXDDFileVO {
 		return bankDetail;
 	}
 	public Date getMfgAuthDate() {
-		return mfgAuthDate;
+		return LegacyDataImporter.toUTCDate(mfgAuthDate);
 	}
 	@Column(name="attr_credit_memo")
 	public String getStoreCreditNote() {
@@ -145,16 +152,16 @@ public class SOXDDFileVO {
 		return mfgDebitMemoToStore;
 	}
 	public Date getMfgReimbursedStore() {
-		return mfgReimbursedStore;
+		return LegacyDataImporter.toUTCDate(mfgReimbursedStore);
 	}
 	public String getMfgDepositDetail() {
 		return mfgDepositDetail;
 	}
 	public Date getStoreRcvdDeposit() {
-		return storeRcvdDeposit;
+		return LegacyDataImporter.toUTCDate(storeRcvdDeposit);
 	}
 	public Date getStoreRefundedUser() {
-		return storeRefundedUser;
+		return LegacyDataImporter.toUTCDate(storeRefundedUser);
 	}
 	public String getStoreAppliedCreditNote() {
 		return storeAppliedCreditNote;
@@ -168,10 +175,10 @@ public class SOXDDFileVO {
 		return partRequired;
 	}
 	public Date getPartSentDate() {
-		return partSentDate;
+		return LegacyDataImporter.toUTCDate(partSentDate);
 	}
 	public Date getPartRcvdDate() {
-		return partRcvdDate;
+		return LegacyDataImporter.toUTCDate(partRcvdDate);
 	}
 	public String getProductLocation() {
 		return productLocation;
@@ -184,7 +191,7 @@ public class SOXDDFileVO {
 	public String getExitCode() {
 		return !StringUtil.isEmpty(exitCode) ? exitCode : actionCode; //actionCode holds the equiv legacy value
 	}
-	@Column(name="attr_unitRepairType", isIdentity=true)
+	@Column(name="attr_unitRepairType", isIdentity=true, isUpdateOnly=true)
 	public String getRepairType() {
 		if (StringUtil.isEmpty(getExitCode())) return null;
 		//if the exit code matches a billable code, return it.  Otherwise null
@@ -201,10 +208,10 @@ public class SOXDDFileVO {
 		return shipmentReturnTracking;
 	}
 	public Date getPendingPopEndUserConfDate() {
-		return pendingPopEndUserConfDate;
+		return LegacyDataImporter.toUTCDate(pendingPopEndUserConfDate);
 	}
 	public Date getReturnShipmentDate() {
-		return returnShipmentDate;
+		return LegacyDataImporter.toUTCDate(returnShipmentDate);
 	}
 	@Column(name="attr_userFunded")
 	public String getProductInsured() {
@@ -218,7 +225,7 @@ public class SOXDDFileVO {
 		return casInvoiceNumber;
 	}
 	public Date getCasPaidDate() {
-		return casPaidDate;
+		return LegacyDataImporter.toUTCDate(casPaidDate);
 	}
 	public String getPrimary3Status() {
 		return primary3Status;

@@ -23,7 +23,6 @@ import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.MapUtil;
 import com.siliconmtn.util.StringUtil;
-import com.siliconmtn.util.UUIDGenerator;
 import com.wsla.data.ticket.StatusCode;
 import com.wsla.data.ticket.TicketAssignmentVO;
 import com.wsla.data.ticket.TicketAssignmentVO.TypeCode;
@@ -61,9 +60,17 @@ public class SOExtendedData extends AbsImporter {
 	private int saveCnt;
 	private int delCnt;
 
-	private UUIDGenerator uuid = new UUIDGenerator();
+	//attributes that display on the Assets tab - we won't import these for open tickets
+	private static final Set<String> ASSET_ATTRS = new HashSet<>();
 
 	static {
+		ASSET_ATTRS.add("attr_proofPurchase");
+		ASSET_ATTRS.add("attr_receiptSignature");
+		ASSET_ATTRS.add("attr_serialNumberImage"); 
+		ASSET_ATTRS.add("attr_serialPlateReturned");
+		ASSET_ATTRS.add("attr_unitImage");
+		ASSET_ATTRS.add("attr_unitVideo");
+
 		retailLocnMap.put("16","90133a088d6121f57f0001018b72cfa3");
 		retailLocnMap.put("AB","90133a088d6121f57f0001018b72cfa3");
 		retailLocnMap.put("28","276e3b428da92ff77f000101e7198688");
@@ -140,7 +147,7 @@ public class SOExtendedData extends AbsImporter {
 
 		//affiliate the Retailers to the tickets
 		addRetailerAssignments();
-		
+
 		//TODO process harvested tickets based on the PRODUCTION DISPOSITION column.
 		//if not "N/A" (there are a handful of values) these TVs were harvested, destroyed, or otherwise reworked.
 		//need those workflows - this is the entrypoint.
@@ -332,10 +339,19 @@ public class SOExtendedData extends AbsImporter {
 			Column anno = m.getAnnotation(Column.class);
 			if (anno == null || anno.name() == null) continue;
 
+			//do not import assets on openTicketRuns
+			if (isOpenTktRun && ASSET_ATTRS.contains(anno.name())) 
+				continue;
+
 			try {
 				Object value = m.invoke(row);
 				//use the isIdentity() hook to know when we have to transpose defect codes
-				String valueStr = anno.isIdentity() ? lookupDefectCode((String)value) : formatValue(value);
+				String valueStr = null;
+				if (anno.isIdentity() && !anno.isUpdateOnly()) { //updateOnly is our flag for repairType, which we can use the raw data to align on.
+					valueStr = lookupDefectCode((String)value);
+				} else {
+					valueStr = formatValue(value);
+				}
 				if (StringUtil.isEmpty(valueStr) || isBogusData(valueStr)) continue;
 
 				//create a TicketDataVO and add it to the stack
