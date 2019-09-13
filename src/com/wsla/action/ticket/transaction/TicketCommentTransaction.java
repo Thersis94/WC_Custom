@@ -126,8 +126,8 @@ public class TicketCommentTransaction extends SBActionAdapter {
 			WarrantyBillableVO bavo = wba.getBillableActivity(warranty.getWarrantyId(), comment.getActivityType());
 			
 			//if the billable amount is set by the req object keep it in place as it might be the misc activity amount
-			if(ledger.getBillableAmtNo() == 0 && bavo.getCost() != 0) {
-				ledger.setBillableAmtNo(Convert.formatDouble(bavo.getCost()));
+			if(ledger.getBillableAmtNo() == 0 && bavo.getInvoiceAmount() != 0) {
+				ledger.setBillableAmtNo(Convert.formatDouble(bavo.getInvoiceAmount()));
 			}
 			//if the code isnt set by the req object set it from our query return
 			if(ledger.getBillableActivityCode() == null || ledger.getBillableActivityCode().isEmpty()) {
