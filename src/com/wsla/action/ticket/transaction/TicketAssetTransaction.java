@@ -12,6 +12,7 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.GenericVO;
+import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
@@ -19,10 +20,12 @@ import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.EnumUtil;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.common.constants.Constants;
+import com.smt.sitebuilder.security.SBUserRole;
 // WC Libs
 import com.wsla.action.ticket.BaseTransactionAction;
 import com.wsla.action.ticket.CASSelectionAction;
 import com.wsla.action.ticket.TicketEditAction;
+import com.wsla.data.product.WarrantyBillableVO;
 import com.wsla.data.ticket.ApprovalCode;
 import com.wsla.data.ticket.CreditMemoVO;
 // WSLA Libs
@@ -163,7 +166,16 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 			ledger = changeStatus(td.getTicketId(), user.getUserId(), StatusCode.USER_DATA_APPROVAL_PENDING, LedgerSummary.ASSET_LOADED.summary, null);
 			status = ledger.getStatusCode();
 		} else {
-			ledger = addLedger(td.getTicketId(), user.getUserId(), null, LedgerSummary.ASSET_LOADED.summary, null);
+			WarrantyBillableVO billable = getAddAssetBillableAmount(td.getTicketId());
+			SBUserRole role = (SBUserRole)req.getSession().getAttribute(Constants.ROLE_DATA);
+
+			if(null == role || StringUtil.isEmpty(role.getRoleId()) || "0".equals(role.getRoleId()) ) {
+				log.debug("public user detected dont charge for upload");
+				billable.setInvoiceAmount(0);
+			}
+			
+			log.debug("cost " + billable.getInvoiceAmount() );
+			ledger = addLedger(td.getTicketId(), user.getUserId(), null, LedgerSummary.ASSET_LOADED.summary, null, billable.getInvoiceAmount());
 			TicketVO ticket = new TicketEditAction(getDBConnection(), getAttributes()).getBaseTicket(td.getTicketId());
 			status = ticket.getStatusCode();
 		}
@@ -205,6 +217,33 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 			} else {
 				addLedger(td.getTicketId(), user.getUserId(), null, LedgerSummary.CREDIT_MEMO_APPROVED.summary, null);
 			}
+		}
+	}
+
+	/**
+	 * @param ticketId
+	 * @return
+	 */
+	private WarrantyBillableVO getAddAssetBillableAmount(String ticketId) {
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		
+		// Create the SQL for updating the record
+		StringBuilder sql = new StringBuilder(150);
+		sql.append(DBUtil.SELECT_CLAUSE).append("wbxr.* ").append(DBUtil.FROM_CLAUSE).append(getCustomSchema()).append("wsla_ticket t ");
+		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("wsla_product_warranty pw on t.product_warranty_id = pw.product_warranty_id ");
+		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("wsla_warranty_billable_xr wbxr on pw.warranty_id = wbxr.warranty_id");
+		sql.append(DBUtil.WHERE_CLAUSE).append("wbxr.billable_activity_cd = 'ADD_ASSETS' and ticket_id = ? ");
+		
+		log.debug(sql + "|" +ticketId );
+		
+		List<Object> vals = Arrays.asList(ticketId);
+		
+		List<WarrantyBillableVO> data = db.executeSelect(sql.toString(), vals, new WarrantyBillableVO());
+		
+		if(data != null && ! data.isEmpty()) {
+			return data.get(0);
+		}else {
+			return new WarrantyBillableVO();
 		}
 	}
 
