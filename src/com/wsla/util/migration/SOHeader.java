@@ -658,6 +658,7 @@ public class SOHeader extends AbsImporter {
 		oemPhones.put("SKC", "8000623455");
 		oemPhones.put("KON", "8000600075");
 		oemPhones.put("WMT", "8000623555");
+		oemPhones.put("VIZ", "8008010096");
 
 		String sql = StringUtil.join("select provider_id as key, phone_number_txt as value from ", schema, 
 				"wsla_provider_phone where country_cd='MX' and active_flg=1");
@@ -808,7 +809,7 @@ public class SOHeader extends AbsImporter {
 				ser.setProductSerialId(uuid.getUUID());
 				if (isValidSku) ser.setSerialNumber(vo.getSerialNoText());
 				ser.setProductId(vo.getProductId());
-				ser.setValidatedFlag(1);
+				if (isValidSku) ser.setValidatedFlag(1);
 				newSerials.put(ser.getProductId() + (isValidSku ? vo.getSerialNoText() : RandomAlphaNumeric.generateRandom(4)), ser); //key here needs to be product+sku
 				//log.debug("creating serL: " + ser)
 				//give the pkId back to the ticket, so it can be used for serial# inserts
@@ -1282,6 +1283,9 @@ public class SOHeader extends AbsImporter {
 		casLocations.put("NLE100","cb55f611b55ec39cac100290224759fd");
 		casLocations.put("SON100","6dee5855b55cc0cfac10029011cb825e");
 		casLocations.put("000001","b89e4d5a3e2c439f879a25aee66bedde");  //WSLA Bodega (Warehouse)
+		casLocations.put("CHI100", "21d40467271a76d3ac10021bf21d3820");
+		casLocations.put("RDA100", "bfc773e0271cd2ebac10021bf3309f5e");
+		casLocations.put("CTM100", "af14a83e271ec15aac10021b54474781");
 		log.debug("loaded " + casLocations.size() + " CAS locations");
 	}
 }
