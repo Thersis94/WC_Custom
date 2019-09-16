@@ -96,6 +96,7 @@ public class TicketVO extends BeanDataVO {
 	private String userId;
 	private String statusName;
 	private boolean ticketLocked;
+	private long statusAge;
 
 	// Bean Sub-Element
 	private List<TicketDataVO> ticketData = new ArrayList<>(32);
@@ -156,7 +157,7 @@ public class TicketVO extends BeanDataVO {
 			}
 		}
 	}
-
+	
 	/**
 	 * Assigns any request parameters with the appropriate attribute prefix
 	 * to the ticket attribute collection.  Note, on new ticket create, the ticketId 
@@ -865,5 +866,20 @@ public class TicketVO extends BeanDataVO {
 	 */
 	public void setPhoneNumber(String phoneNumber) {
 		this.phoneNumber = phoneNumber;
+	}
+
+	/**
+	 * @return the statusAge
+	 */
+	@Column(name="status_age_no", isReadOnly=true)
+	public long getStatusAge() {
+		return statusAge;
+	}
+
+	/**
+	 * @param statusAge the statusAge to set
+	 */
+	public void setStatusAge(long statusAge) {
+		this.statusAge = statusAge;
 	}
 }

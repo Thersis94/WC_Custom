@@ -30,7 +30,6 @@ import com.smt.sitebuilder.util.solr.SolrDocumentVO;
 public class RSSArticleIndexer extends SMTAbstractIndex {
 
 	public static final String INDEX_TYPE = "BIOMEDGPS_FEED";
-
 	public RSSArticleIndexer(Properties config) {
 		super(config);
 	}
