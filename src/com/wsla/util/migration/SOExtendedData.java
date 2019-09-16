@@ -339,8 +339,8 @@ public class SOExtendedData extends AbsImporter {
 			Column anno = m.getAnnotation(Column.class);
 			if (anno == null || anno.name() == null) continue;
 
-			//do not import assets on openTicketRuns
-			if (isOpenTktRun && ASSET_ATTRS.contains(anno.name())) 
+			//do not import attributes we'll get from the notes/text file (precedence given to it, not us)
+			if (ASSET_ATTRS.contains(anno.name())) 
 				continue;
 
 			try {

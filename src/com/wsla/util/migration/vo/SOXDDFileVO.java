@@ -144,7 +144,7 @@ public class SOXDDFileVO {
 	public Date getMfgAuthDate() {
 		return LegacyDataImporter.toUTCDate(mfgAuthDate);
 	}
-	@Column(name="attr_credit_memo")
+	//TODO - this doesn't go into ticket_data @Column(name="attr_credit_memo")
 	public String getStoreCreditNote() {
 		return storeCreditNote;
 	}
@@ -341,6 +341,7 @@ public class SOXDDFileVO {
 	}
 	@Importable(name="STORE CREDIT NOTE")
 	public void setStoreCreditNote(String storeCreditNote) {
+		if ("N".equalsIgnoreCase(storeCreditNote)) return;
 		this.storeCreditNote = storeCreditNote;
 	}
 	@Importable(name="MFG DEBIT MEMO TO STORE")
