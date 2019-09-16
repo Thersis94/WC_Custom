@@ -85,8 +85,8 @@ public class WarrantyBillableAction extends SBActionAdapter {
 		List<Object> vals = new ArrayList<>();
 		vals.add(warrantyId);
 		
-		StringBuilder sql = new StringBuilder(336);
-		sql.append("select a.*, b.cost_no, warranty_id, ");
+		StringBuilder sql = new StringBuilder(360);
+		sql.append("select a.*, b.cost_no, b.invoice_amount_no, warranty_id, ");
 		sql.append("coalesce(warranty_billable_id, replace(newid(), '-', '')) as warranty_billable_id ");
 		sql.append("from ").append(getCustomSchema()).append("wsla_billable_activity a ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(getCustomSchema());

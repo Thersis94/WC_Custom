@@ -153,12 +153,15 @@ public class NotificationWorkflowModule extends AbstractWorkflowModule {
 		sql.append(DBUtil.INNER_JOIN).append("profile_role d on c.profile_id = d.profile_id ");
 		sql.append(DBUtil.WHERE_CLAUSE).append("provider_id = ? and role_id in (");
 		sql.append(DBUtil.preparedStatmentQuestion(roles.size())).append(") and locale_txt = ? ");
-		sql.append(DBUtil.UNION);
-		sql.append(DBUtil.SELECT_CLAUSE).append("a.user_id, email_address_txt, a.profile_id, locale_txt ");
-		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("wsla_user a ");
-		sql.append(DBUtil.INNER_JOIN).append("profile_role b on a.profile_id = b.profile_id and site_id = 'WSLA_1' ");
-		sql.append(DBUtil.WHERE_CLAUSE).append("role_id in (");
-		sql.append(DBUtil.preparedStatmentQuestion(wRoles.size())).append(") and locale_txt = ? ");
+		if( ! wRoles.isEmpty()) {
+			sql.append(DBUtil.UNION);
+			sql.append(DBUtil.SELECT_CLAUSE).append("a.user_id, email_address_txt, a.profile_id, locale_txt ");
+			sql.append(DBUtil.FROM_CLAUSE).append(schema).append("wsla_user a ");
+			sql.append(DBUtil.INNER_JOIN).append("profile_role b on a.profile_id = b.profile_id and site_id = 'WSLA_1' ");
+			sql.append(DBUtil.WHERE_CLAUSE).append("role_id in (");
+			sql.append(DBUtil.preparedStatmentQuestion(wRoles.size())).append(") and locale_txt = ? ");
+		}
+		
 		
 		// Add the parameters
 		List<Object> vals = new ArrayList<>();
@@ -169,9 +172,10 @@ public class NotificationWorkflowModule extends AbstractWorkflowModule {
 		vals.add(ticket.getOemId());
 		vals.addAll(roles);
 		vals.add(notification.getLocale());
-		vals.addAll(wRoles);
-		vals.add(notification.getLocale());
-		
+		if( ! wRoles.isEmpty()) {
+			vals.addAll(wRoles);
+			vals.add(notification.getLocale());
+		}
 		// Return the data
 		DBProcessor db = new DBProcessor(getConnection());
 		db.setGenerateExecutedSQL(true);

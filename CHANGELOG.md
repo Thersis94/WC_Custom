@@ -1,5 +1,28 @@
 WC_Custom Changelog (auto-generated)
 
+# [3.29.0](https://github.com/smtadmin/WC_Custom/compare/3.28.0...3.29.0) (2019-09-13)
+
+
+### Bug Fixes
+
+* **Email Comments:** discard e-mails without a job id in the reference ([287e5cc](https://github.com/smtadmin/WC_Custom/commit/287e5cc))
+* **feature-wsla-i6:** remove unneeded cde ([8d0c05c](https://github.com/smtadmin/WC_Custom/commit/8d0c05c))
+* **Sc-1487:** Ensure preview selections are passed along with redirects. ([91656f6](https://github.com/smtadmin/WC_Custom/commit/91656f6))
+* **Sc-1596:** Add product id to the product explorer report. ([bec8499](https://github.com/smtadmin/WC_Custom/commit/bec8499))
+* **Sc-1604:** Add ability to set max documents to index at once via the maxDocsIndex property in con ([10e289a](https://github.com/smtadmin/WC_Custom/commit/10e289a))
+* **WSLA-I25:** add additional rules for processing the Standing Code job ([0a0ce24](https://github.com/smtadmin/WC_Custom/commit/0a0ce24))
+* **WSLA-I25:** create nightly job to update ticket standings ([78b9dd3](https://github.com/smtadmin/WC_Custom/commit/78b9dd3))
+* **WSLA-I25:** update service orders to critical in a batch query ([ed4c8f9](https://github.com/smtadmin/WC_Custom/commit/ed4c8f9))
+
+
+### Features
+
+* **Billable and cost:** Modified the billable activities to support a cost and invoice default.  Mo ([a62b1ed](https://github.com/smtadmin/WC_Custom/commit/a62b1ed))
+* **Defaults:** Added default values for cost and invoice amount when a warranty is created ([46d6b35](https://github.com/smtadmin/WC_Custom/commit/46d6b35))
+* **feature-wsla-i6:** add new status for call center review ([f10e706](https://github.com/smtadmin/WC_Custom/commit/f10e706))
+* **feature-wsla-i6:** minor bug fix and drag drop now filters ([2488bb1](https://github.com/smtadmin/WC_Custom/commit/2488bb1))
+* **Filtering:** Added the ability to filter the shipments by weather or not they are assigned to a ([8512547](https://github.com/smtadmin/WC_Custom/commit/8512547))
+
 # [3.28.0](https://github.com/smtadmin/WC_Custom/compare/3.27.0...3.28.0) (2019-09-11)
 
 

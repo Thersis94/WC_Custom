@@ -1558,6 +1558,15 @@ public class CompanyManagementAction extends ManagementAction {
 			url.append("&tab=").append(req.getParameter("tab"));
 		}
 
+		// Add the public preview selected tab and section if present
+		if (req.hasParameter("selTab")) {
+			url.append("&selTab=").append(req.getParameter("selTab"));
+		}
+		
+		if (req.hasParameter("section")) {
+			url.append("&section=").append(req.getParameter("section"));
+		}
+		
 		//if a company is being deleted do not redirect the user to a company page
 		if (!"delete".equals(buildAction) || 
 				ActionType.valueOf(req.getParameter(ACTION_TYPE)) != ActionType.COMPANY) {
