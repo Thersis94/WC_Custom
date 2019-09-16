@@ -522,12 +522,12 @@ public class SelectLookupAction extends SBActionAdapter {
 		if("harvestCas".equalsIgnoreCase(req.getStringParameter(SELECT_KEY))) {
 			sql.append("and b.location_id in (select location_id from ").append(getCustomSchema());
 			sql.append("wsla_ticket_assignment where assg_type_cd = 'CAS' and ticket_id in ");
-			sql.append("( SELECT ticket_id FROM ").append(getCustomSchema()).append("wsla_ticket where status_cd = 'HARVEST_APPROVED' )");
-			sql.append("order by ticket_id, location_id asc ) ");
+			sql.append("( SELECT ticket_id FROM ").append(getCustomSchema());
+			sql.append("wsla_ticket_data where attribute_cd = 'attr_harvest_status' and value_txt = 'HARVEST_APPROVED') ");
 		}
 
-		sql.append("order by provider_nm");
-		log.debug(" sql " + sql +"|" + vals);
+		sql.append(") order by provider_nm");
+		log.info(" sql " + sql +"|" + vals);
 
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		List<GenericVO> data = db.executeSelect(sql.toString(), vals, new GenericVO());

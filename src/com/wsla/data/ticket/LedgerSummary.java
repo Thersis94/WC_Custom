@@ -51,7 +51,8 @@ public enum LedgerSummary {
 	CREDIT_MEMO_CREATED("Nota de Cargo Creada"),
 	CREDIT_MEMO_APPROVED("Nota de Cargo Aprobada"),
 	ASSETS_BYPASSED("Sin Evidencias Requeridas"),
-	REFUND_VERIFIED("Reembolso Verificado");
+	REFUND_VERIFIED("Reembolso Verificado"),
+	RETURN_REFUSED("La devolución de la unidad fue rechazada");
 	
 	public final String summary;
 	LedgerSummary(String summary) { this.summary = summary; }
