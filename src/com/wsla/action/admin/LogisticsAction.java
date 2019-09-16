@@ -338,10 +338,15 @@ public class LogisticsAction extends SBActionAdapter {
 				
 				// Change the service order status when shipping the service order parts or unit
 				if (req.hasParameter(REQ_TICKET_ID) && ShipmentStatus.SHIPPED.equals(vo.getStatus())) {
+					String ticketId = req.getParameter(REQ_TICKET_ID);
 					UserVO user = (UserVO) getAdminUser(req).getUserExtendedInfo();
 					BaseTransactionAction bta = new BaseTransactionAction(getDBConnection(), getAttributes());
 					StatusCode status = getShippedStatusChange(vo.getShipmentType());
-					bta.changeStatus(req.getParameter(REQ_TICKET_ID), user.getUserId(), status, LedgerSummary.SHIPMENT_CREATED.summary, null);
+					
+					//add a ledger entry to record shipping costs in the time-line.
+					bta.addLedger(ticketId, user.getUserId(), status, LedgerSummary.SHIPMENT_COST.summary, null, vo.getCost());
+					
+					bta.changeStatus(ticketId, user.getUserId(), status, LedgerSummary.SHIPMENT_CREATED.summary, null);
 				}
 			}
 

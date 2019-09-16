@@ -26,6 +26,7 @@ public enum LedgerSummary {
 	PARTS_REQUEST_REJECTED ("Refacción no Disponible por Parte de Proveedor"),
 	SHIPMENT_CREATED ("Envío Programado"),
 	SHIPMENT_RECEIVED ("Envío Recibido"),
+	SHIPMENT_COST ("Costo de Envío"),
 	VALID_SERIAL_SAVED("El Número de Serie Capturado en la Órden de Servicio es Invalido"),
 	SERIAL_UPDATED("El Número de Serie Capturado en la Órden de Servicio ha sido Actualizado"),
 	INVALID_SERIAL_SAVED("El Número de Serie Capturado en la Órden de Servicio es Invalido"),
