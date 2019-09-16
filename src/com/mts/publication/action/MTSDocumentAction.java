@@ -57,7 +57,7 @@ public class MTSDocumentAction extends SimpleActionAdapter {
 	 * Ajax Controller key for this action
 	 */
 	public static final String AJAX_KEY = "article";
-	
+
 	/**
 	 * 
 	 */
@@ -71,7 +71,7 @@ public class MTSDocumentAction extends SimpleActionAdapter {
 	public MTSDocumentAction(ActionInitVO actionInit) {
 		super(actionInit);
 	}
-	
+
 	/**
 	 * @param actionInit
 	 */
@@ -80,7 +80,7 @@ public class MTSDocumentAction extends SimpleActionAdapter {
 		this.setAttributes(attributes);
 		this.setDBConnection(dbConn);
 	}
-	
+
 	/**
 	 * Deletes a document.  This is only used of a document is created, never approved
 	 * and cancelled.  This is because WC will remove the article
@@ -92,13 +92,13 @@ public class MTSDocumentAction extends SimpleActionAdapter {
 		StringBuilder sql = new StringBuilder(84);
 		sql.append("delete from ").append(getCustomSchema()).append("mts_document ");
 		sql.append("where action_group_id = ?");
-		
+
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, actionGroupId);
 			ps.executeUpdate();
 		}
 	}
-	
+
 	/*
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.action.ActionRequest)
@@ -107,23 +107,23 @@ public class MTSDocumentAction extends SimpleActionAdapter {
 	public void retrieve(ActionRequest req) throws ActionException {
 		try {
 			PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
-	        boolean isPreview = page.isPreviewMode();
+			boolean isPreview = page.isPreviewMode();
 			boolean pagePreview = req.hasParameter("pagePreview") || isPreview;
 			String userId = AppUtil.getMTSUserId(req);
 			IssueArticleAction iac = new IssueArticleAction(getDBConnection(), getAttributes());
 			MTSDocumentVO doc = iac.getDocument(null, req.getParameter("reqParam_1"), pagePreview, userId);
 			if (StringUtil.isEmpty(doc.getActionId())) throw new Exception("Unable to locate article");
-			
+
 			// Get the Related Articles
-			doc.setRelatedArticles(getRelatedArticles(doc.getActionGroupId()));
-			
+			doc.setRelatedArticles(getRelatedArticles(doc.getActionGroupId(), pagePreview));
+
 			// Get the article assets
 			AssetAction aa = new AssetAction(getDBConnection(), getAttributes());
 			Set<String> ids = doc.getCategoryIds();
 			ids.add(doc.getDocumentId());
 			ids.add(PublicationTeaserVO.DEFAULT_FEATURE_IMG);
 			doc.setAssets(aa.getAllAssets(ids));
-			
+
 			UserAction ua = new UserAction(getDBConnection(), getAttributes());
 			MTSUserVO user = ua.getUserProfile(doc.getAuthorId());
 			user.setArticles(getAuthorArticles(doc.getAuthorId()));
@@ -134,60 +134,67 @@ public class MTSDocumentAction extends SimpleActionAdapter {
 			setModuleData(null, 0, e.getLocalizedMessage());
 		}
 	}
-	
+
 	/**
 	 * 
 	 * @param authorId
 	 * @return
 	 */
 	public List<MTSDocumentVO> getAuthorArticles(String authorId) {
+		String schema = getCustomSchema();
 		StringBuilder sql = new StringBuilder(640);
 		sql.append("select b.publish_dt, b.author_id, unique_cd, b.document_id, ");
 		sql.append("c.*, d.*, doc.*, p.publication_nm, e.*, f.field_nm, f.parent_id, i.publication_id ");
-		sql.append("from ").append(getCustomSchema()).append("mts_document b ");
+		sql.append("from ").append(schema).append("mts_document b ");
 		sql.append("inner join sb_action c ");
 		sql.append("on b.action_group_id = c.action_group_id and c.pending_sync_flg = 0 ");
 		sql.append("inner join document doc on c.action_id = doc.action_id "); 
-		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema());
+		sql.append(DBUtil.INNER_JOIN).append(schema);
 		sql.append("mts_user d on b.author_id = d.user_id ");
-		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema());
+		sql.append(DBUtil.INNER_JOIN).append(schema);
 		sql.append("mts_issue i on b.issue_id = i.issue_id ");
-		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema());
+		sql.append(DBUtil.INNER_JOIN).append(schema);
 		sql.append("mts_publication p on i.publication_id = p.publication_id ");
 		sql.append("left outer join widget_meta_data_xr e on c.action_id = e.action_id ");
 		sql.append("left outer join widget_meta_data f ");
 		sql.append("on e.widget_meta_data_id = f.widget_meta_data_id ");
 		sql.append("where b.author_id = ? order by b.publish_dt desc");
 		log.debug(sql.length() + "|" + sql + "|" + authorId);
-		
-		DBProcessor db = new DBProcessor(getDBConnection());
+
+		DBProcessor db = new DBProcessor(getDBConnection(), schema);
 		return db.executeSelect(sql.toString(), Arrays.asList(authorId), new MTSDocumentVO());
 	}
-	
+
 	/**
 	 * Gets the related articles
 	 * @param actionGroupId
 	 * @return
 	 */
-	public List<MTSDocumentVO> getRelatedArticles(String actionGroupId) {
+	public List<MTSDocumentVO> getRelatedArticles(String actionGroupId, boolean isPagePreview) {
 		StringBuilder sql = new StringBuilder(512);
-		sql.append("select * ");
-		sql.append("from custom.mts_related_article a "); 
-		sql.append("inner join custom.mts_document b on a.related_document_id = b.action_group_id ");
-		sql.append("inner join sb_action c on b.action_group_id = c.action_group_id and c.pending_sync_flg = 0 ");
-		sql.append("inner join document doc on c.action_id = doc.action_id ");
-		sql.append("inner join custom.mts_user d on b.author_id = d.user_id ");
-		sql.append("inner join custom.mts_issue i on b.issue_id = i.issue_id ");
-		sql.append("left outer join widget_meta_data_xr e on c.action_id = e.action_id ");
-		sql.append("left outer join widget_meta_data f on e.widget_meta_data_id = f.widget_meta_data_id ");
-		sql.append("where a.document_id = ? ");
+		String schema = getCustomSchema();
+		sql.append(DBUtil.SELECT_FROM_STAR).append(schema).append("mts_related_article a "); 
+		sql.append(DBUtil.INNER_JOIN).append(schema).append("mts_document b on a.related_document_id = b.action_group_id ");
+		sql.append(DBUtil.INNER_JOIN).append("sb_action c on b.action_group_id = c.action_group_id and c.pending_sync_flg = 0 ");
+		sql.append(DBUtil.INNER_JOIN).append("document doc on c.action_id = doc.action_id ");
+		sql.append(DBUtil.INNER_JOIN).append(schema).append("mts_user d on b.author_id = d.user_id ");
+		sql.append(DBUtil.INNER_JOIN).append(schema).append("mts_issue i on b.issue_id = i.issue_id ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append("widget_meta_data_xr e on c.action_id = e.action_id ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append("widget_meta_data f on e.widget_meta_data_id = f.widget_meta_data_id ");
+		sql.append("where a.document_id=? ");
+
+		if (!isPagePreview) {
+			sql.append(" and (b.publish_dt < CURRENT_TIMESTAMP or b.publish_dt is null) "); //the article released
+			sql.append(" and (i.issue_dt < CURRENT_TIMESTAMP or i.issue_dt is null) "); //the issue released
+		}
+
 		sql.append("order by c.action_id ");
 		log.debug(sql.length() + "|" + sql + actionGroupId);
-		
-		DBProcessor db = new DBProcessor(getDBConnection());
+
+		DBProcessor db = new DBProcessor(getDBConnection(), schema);
 		return db.executeSelect(sql.toString(), Arrays.asList(actionGroupId), new MTSDocumentVO());
 	}
-	
+
 	/*
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#build(com.siliconmtn.action.ActionRequest)
@@ -196,24 +203,24 @@ public class MTSDocumentAction extends SimpleActionAdapter {
 	public void build(ActionRequest req) throws ActionException {
 		ModuleVO mod = (ModuleVO) attributes.get( Constants.MODULE_DATA);
 		mod.setActionId(req.getParameter("moduleTypeId"));
-		
+
 		// Call the document management widget using the approval Decorator
 		DocumentAction da = new DocumentAction(getDBConnection(), getAttributes());
 		ActionInterface ai = new ApprovalDecoratorAction(da);
 		ai.update(req);
-		
+
 		// If its a new document, add the group id.
 		MTSDocumentVO doc = new MTSDocumentVO(req);
 		if (! StringUtil.isEmpty((String)req.getAttribute("DIRECT_ACCCESS_PATH")))
 			doc.setDirectAccessPath((String)req.getAttribute("DIRECT_ACCCESS_PATH"));
-			
+
 		if (StringUtil.isEmpty(doc.getActionGroupId())) {
 			doc.setActionGroupId((String)req.getAttribute(SB_ACTION_GROUP_ID));
 		}
 
 		try {
 			save(doc);
-			
+
 			// Save the categories
 			String sbActionId = doc.getSbActionId();
 			String userId = getAdminUser(req).getProfileId();
@@ -221,28 +228,27 @@ public class MTSDocumentAction extends SimpleActionAdapter {
 			if (!StringUtil.isEmpty(req.getParameter("categories"))) {
 				cats = StringUtil.checkVal(req.getParameter("categories")).split("\\,");
 			}
-			
+
 			updateMetadata(sbActionId, cats, userId);
-			
+
 			//Remove the redirects from the admin actions and return the data
 			req.removeAttribute(Constants.REDIRECT_REQUEST);
 			req.removeAttribute(Constants.REDIRECT_URL);
 			doc.setDocument("");
-			
+
 			setModuleData(doc);
 		} catch (Exception e) {
 			log.error("unable to save document", e);
 			setModuleData(doc, 0, e.getLocalizedMessage());
 		}
 	}
-	
+
 	/**
 	 * 
 	 * @param doc
 	 * @throws DatabaseException
 	 */
 	public void save(MTSDocumentVO doc) throws DatabaseException {
-		
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		try {
 			if (StringUtil.isEmpty(doc.getDocumentId())) {
@@ -251,14 +257,14 @@ public class MTSDocumentAction extends SimpleActionAdapter {
 				db.insert(doc);
 			} else {
 				db.update(doc, Arrays.asList(
-					"document_id", "unique_cd", "publish_dt", "update_dt", "author_id"
-				));
+						"document_id", "unique_cd", "publish_dt", "update_dt", "author_id"
+						));
 			}
 		} catch (Exception e) {
 			throw new DatabaseException("Unable to save document", e);
 		}
 	}
-	
+
 	/**
 	 * Updates the metadata for the given action
 	 * @param actionId
@@ -266,10 +272,10 @@ public class MTSDocumentAction extends SimpleActionAdapter {
 	 * @throws DatabaseException
 	 */
 	public void updateMetadata(String actionId, String[] categories, String userId) 
-	throws DatabaseException {
+			throws DatabaseException {
 		// Delete any existing entries
 		deleteCategories(actionId);
-		
+
 		try {
 			// Loop the cats and create a VO for each
 			if (categories == null || categories.length == 0) return;
@@ -282,7 +288,7 @@ public class MTSDocumentAction extends SimpleActionAdapter {
 				vo.setWidgetMetadataId(cat.replaceAll("\\s", ""));
 				cats.add(vo);
 			}
-			
+
 			// Save the beans
 			DBProcessor db = new DBProcessor(getDBConnection());
 			db.executeBatch(cats, true);
@@ -291,7 +297,7 @@ public class MTSDocumentAction extends SimpleActionAdapter {
 			throw new DatabaseException(e.getLocalizedMessage(), e);
 		}
 	}
-	
+
 	/**
 	 * Deletes the existing categories before adding the new ones
 	 * @param actionId
