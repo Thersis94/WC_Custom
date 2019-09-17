@@ -305,8 +305,10 @@ public class RSSArticleFilterVO extends SolrDocumentVO implements AutoPopulateIn
 	 * @param contents
 	 */
 	public void updateContents(String contents) {
-		StringBuilder s = new StringBuilder(StringUtil.checkVal(getContents()).length() + contents.length() + 1);
-		s.append(getContents()).append(" ").append(contents);
-		super.setContents(s.toString().trim());
+		if(contents != null) {
+			StringBuilder s = new StringBuilder(StringUtil.checkVal(getContents()).length() + contents.length() + 1);
+			s.append(getContents()).append(" ").append(contents);
+			super.setContents(s.toString().trim());
+		}
 	}
 }
