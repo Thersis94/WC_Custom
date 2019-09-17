@@ -5,6 +5,7 @@ import java.util.Date;
 
 import com.siliconmtn.annotations.Importable;
 import com.siliconmtn.util.StringUtil;
+import com.wsla.util.migration.LegacyDataImporter;
 
 /****************************************************************************
  * <p><b>Title:</b> SOLineItemFileVO.java</p>
@@ -39,7 +40,7 @@ public class SOLNIFileVO {
 		return soNumber;
 	}
 	public Date getReceivedDate() {
-		return receivedDate;
+		return LegacyDataImporter.toUTCDate(receivedDate);
 	}
 	public int getOrderNo() {
 		return orderNo;
@@ -82,7 +83,7 @@ public class SOLNIFileVO {
 		return "S".equalsIgnoreCase(getCode());
 	}
 	public boolean isInventory() {
-		return "I".equalsIgnoreCase(getCode()) && !getProductId().matches("(?i).*\\ GUIA$"); //shipping labels are not inventory
+		return "I".equalsIgnoreCase(getCode());
 	}
 	public boolean isCreditMemo() {
 		return "N".equalsIgnoreCase(getCode());

@@ -43,6 +43,7 @@ public class MediaBinAssetVO extends SBModuleVO {
 	private String literatureTypeTxt = null;
 	private String fileNm = null;
 	private Date modifiedDt = null;
+	private Date expirationDt = null;
 	private Integer fileSizeNo = Integer.valueOf(0);
 	private Integer widthNo = Integer.valueOf(0);
 	private Integer heightNo = Integer.valueOf(0);
@@ -83,6 +84,7 @@ public class MediaBinAssetVO extends SBModuleVO {
 		fileNm = db.getStringVal("file_nm", rs);
 		duration = db.getDoubleVal("duration_length_no", rs);
 		modifiedDt = db.getDateVal("modified_dt", rs);
+		expirationDt = db.getDateVal("expiration_dt", rs);
 		fileSizeNo = db.getIntegerVal("orig_file_size_no", rs);
 		prodFamilyNm = db.getStringVal("prod_family", rs);
 		prodNm = db.getStringVal("prod_nm", rs);
@@ -101,7 +103,7 @@ public class MediaBinAssetVO extends SBModuleVO {
 		setChecksum(db.getStringVal("file_checksum_txt", rs));
 		
 		String dims = db.getStringVal("dimensions_txt", rs);
-		if (dims != null && dims.indexOf('~') > 0) {
+		if (dims != null && dims.indexOf('~') > -1) {
 			int delim = dims.indexOf('~');
 			setWidthNo(Convert.formatInteger(dims.substring(0, delim)));
 			setHeightNo(Convert.formatInteger(dims.substring(delim+1)));
@@ -175,6 +177,12 @@ public class MediaBinAssetVO extends SBModuleVO {
 	}
 	public void setModifiedDt(Date modifiedDt) {
 		this.modifiedDt = modifiedDt;
+	}
+	public Date getExpirationDt() {
+		return expirationDt;
+	}
+	public void setExpirationDt(Date expirationDt) {
+		this.expirationDt = expirationDt;
 	}
 	public Integer getFileSizeNo() {
 		return fileSizeNo;
@@ -443,6 +451,9 @@ public class MediaBinAssetVO extends SBModuleVO {
 
 		if (!compareStr(videoChapters, other.videoChapters))
 			this.addDelta(new PropertyChangeEvent(this,"videoChapters",other.videoChapters, videoChapters));
+
+		if (!compareDate(expirationDt, other.expirationDt))
+			this.addDelta(new PropertyChangeEvent(this,"expirationDt",other.expirationDt, expirationDt));
 		
 		return deltaList() == null;
 	}
@@ -470,7 +481,7 @@ public class MediaBinAssetVO extends SBModuleVO {
 		if (a == null && b == null) return true;
 		if (a == null && b != null) return false;
 		if (a != null && b == null) return false;
-		return a.equals(b);
+		return a.compareTo(b) == 0;
 	}
 	
 	/**
@@ -483,7 +494,20 @@ public class MediaBinAssetVO extends SBModuleVO {
 		if (a == null && b == null) return true;
 		if (a == null && b != null) return false;
 		if (a != null && b == null) return false;
-		return a.equals(b);
+		return a.compareTo(b) == 0;
+	}
+	
+	/**
+	 * helper to .equals method above; reusable Date equality test to reduce code overhead.
+	 * @param a
+	 * @param b
+	 * @return
+	 */
+	private boolean compareDate(Date a, Date b) {
+		if (a == null && b == null) return true;
+		if (a == null && b != null) return false;
+		if (a != null && b == null) return false;
+		return a.compareTo(b) == 0;
 	}
 	
 	@Override

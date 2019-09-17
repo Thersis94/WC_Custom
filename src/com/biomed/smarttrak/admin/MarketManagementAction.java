@@ -1379,6 +1379,10 @@ public class MarketManagementAction extends ManagementAction {
 		if (req.hasParameter("tab")) {
 			url.append("&tab=").append(req.getParameter("tab"));
 		}
+		// Add the public preview selected tab if present
+		if (req.hasParameter("selTab")) {
+			url.append("&selTab=").append(req.getParameter("selTab"));
+		}
 		//if a market is being deleted do not redirect the user to a market page
 		if (!"delete".equals(buildAction) || 
 				ActionTarget.valueOf(req.getParameter(ACTION_TARGET)) != ActionTarget.MARKET) {
