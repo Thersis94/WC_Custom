@@ -179,7 +179,7 @@ public class RSSArticleFilterVO extends SolrDocumentVO implements AutoPopulateIn
 	 */
 	public void setFilterArticleTxt(String filterArticleTxt) {
 		this.filterArticleTxt = filterArticleTxt;
-		updateContents(filterArticleTxt);
+		appendContents(filterArticleTxt);
 	}
 
 	/**
@@ -237,7 +237,7 @@ public class RSSArticleFilterVO extends SolrDocumentVO implements AutoPopulateIn
 
 	public void setArticleTxt(String articleTxt) {
 		this.articleTxt = articleTxt;
-		updateContents(articleTxt);
+		appendContents(articleTxt);
 	}
 
 	/**
@@ -265,7 +265,7 @@ public class RSSArticleFilterVO extends SolrDocumentVO implements AutoPopulateIn
 		if(!StringUtil.isEmpty(fullArticleTxt)) {
 			try {
 				Document d = Jsoup.parse(fullArticleTxt);
-				updateContents(d.text());
+				appendContents(d.text());
 			} catch(Exception e) {
 				//Can ignore this error.
 			}
@@ -304,16 +304,16 @@ public class RSSArticleFilterVO extends SolrDocumentVO implements AutoPopulateIn
 	 * Builds Content Parameter for Solr Indexing.
 	 * @param contents
 	 */
-	public void updateContents(String contents) {
+	private void appendContents(String contents) {
 
 		/*
-		 * Verify contents is not null.
+		 * Verify contents is not null and fail-fast.
 		 * We set null in other places to ensure no content.
 		 */
-		if(contents != null) {
-			StringBuilder s = new StringBuilder(StringUtil.checkVal(getContents()).length() + contents.length() + 1);
-			s.append(getContents()).append(" ").append(contents);
-			super.setContents(s.toString().trim());
-		}
+		if(StringUtil.isEmpty(contents)) return;
+
+		StringBuilder s = new StringBuilder(StringUtil.checkVal(getContents()).length() + contents.length() + 1);
+		s.append(getContents()).append(" ").append(contents);
+		super.setContents(s.toString().trim());
 	}
 }
