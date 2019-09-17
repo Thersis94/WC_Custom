@@ -305,6 +305,11 @@ public class RSSArticleFilterVO extends SolrDocumentVO implements AutoPopulateIn
 	 * @param contents
 	 */
 	public void updateContents(String contents) {
+
+		/*
+		 * Verify contents is not null.
+		 * We set null in other places to ensure no content.
+		 */
 		if(contents != null) {
 			StringBuilder s = new StringBuilder(StringUtil.checkVal(getContents()).length() + contents.length() + 1);
 			s.append(getContents()).append(" ").append(contents);
