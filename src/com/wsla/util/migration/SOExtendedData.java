@@ -228,10 +228,11 @@ public class SOExtendedData extends AbsImporter {
 	private void updateLedgerDispositions() {
 		String sql = StringUtil.join(DBUtil.UPDATE_CLAUSE, schema, "wsla_ticket_ledger a ",
 				"set disposition_by_id=? from ", schema, "wsla_ticket t ",
-				"where a.ticket_id=t.ticket_id and t.historical_flg=1 and a.disposition_by_id is null");
+				"where a.ticket_id=t.ticket_id and t.batch_txt=? and a.disposition_by_id is null");
 		log.debug(sql);
 		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
 			ps.setString(1, SOHeader.LEGACY_USER_ID);
+			ps.setString(2, batchNm);
 			int cnt = ps.executeUpdate();
 			log.info(String.format("updated %d ledger dispositions", cnt));
 		} catch (Exception e) {
