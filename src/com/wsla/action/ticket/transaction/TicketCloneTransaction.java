@@ -24,6 +24,8 @@ import com.wsla.action.ticket.BaseTransactionAction;
 // WSLA Libs
 import com.wsla.action.ticket.TicketEditAction;
 import com.wsla.common.WSLAConstants;
+import com.wsla.data.ticket.DiagnosticRunVO;
+import com.wsla.data.ticket.DiagnosticTicketVO;
 import com.wsla.data.ticket.DispositionCode;
 import com.wsla.data.ticket.LedgerSummary;
 import com.wsla.data.ticket.StatusCode;
@@ -128,6 +130,9 @@ public class TicketCloneTransaction extends BaseTransactionAction {
 			// Load User and Retailer Assignments
 			ticket.setAssignments(processAssignments(db, ticket, tea));
 			
+			//get and clone the ticket diagnostics
+			ticket.setDiagnosticRun(cloneDiagnostics(ticketIdText, ticket.getTicketId(), tea, db));
+			
 			// Add a ledger entry
 			addLedgerEntry(db, user, ticket.getTicketId());
 		} catch (InvalidDataException | DatabaseException | com.siliconmtn.exception.DatabaseException e) {
@@ -137,6 +142,41 @@ public class TicketCloneTransaction extends BaseTransactionAction {
 		return ticket;
 	}
 	
+	/**
+	 * gets all the diagnostics for the old ticket nubmer changes the ticket id and returns them so they can be added to the child ticket
+	 * @param oldTicketId
+	 * @param newTicketId
+	 * @param tea 
+	 * @param db 
+	 * @return
+	 * @throws DatabaseException 
+	 * @throws InvalidDataException 
+	 */
+	private List<DiagnosticRunVO> cloneDiagnostics(String oldTicketId, String newTicketId, TicketEditAction tea, DBProcessor db) throws InvalidDataException, DatabaseException {
+		List<DiagnosticRunVO> diags = tea.getDiagnostics(oldTicketId);
+		
+		for (DiagnosticRunVO d : diags) {
+			log.debug("setting ticket id to "+ newTicketId + " and  setting comments to cloned: " + d.getDiagComments());
+			d.setDiagnosticRunId(null);
+			d.setTicketId(newTicketId);
+			d.setDiagComments("Cloned: "+d.getDiagComments());
+			
+			db.insert(d);
+			
+			List<DiagnosticTicketVO> diagRows = d.getDiagnostics();
+			//loop the line items and update them with the new id
+			for(DiagnosticTicketVO r : diagRows) {
+				r.setDiagnosticRunId(d.getDiagnosticRunId());
+				r.setDiagnosticTicketId(null);
+				
+				db.insert(r);
+			}
+			
+		}
+		
+		return diags;
+	}
+
 	/**
 	 * Clones a ticket and moves ownership of the unit to WSLA. Sets to in-repair status.
 	 * 
