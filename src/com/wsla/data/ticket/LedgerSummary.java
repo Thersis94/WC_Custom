@@ -52,6 +52,7 @@ public enum LedgerSummary {
 	CREDIT_MEMO_APPROVED("Nota de Cargo Aprobada"),
 	ASSETS_BYPASSED("Sin Evidencias Requeridas"),
 	REFUND_VERIFIED("Reembolso Verificado"),
+	UNIT_DECOMISSIONED("La unidad ha sido desarmada"),
 	RETURN_REFUSED("La devolución de la unidad fue rechazada");
 	
 	public final String summary;

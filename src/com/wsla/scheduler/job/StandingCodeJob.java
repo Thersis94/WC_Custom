@@ -2,8 +2,10 @@ package com.wsla.scheduler.job;
 
 //JDK 1.8.x
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.EnumMap;
 import java.util.HashMap;
@@ -37,6 +39,7 @@ import com.wsla.data.ticket.LedgerSummary;
 import com.wsla.data.ticket.StatusCode;
 import com.wsla.data.ticket.TicketVO;
 import com.wsla.data.ticket.TicketVO.Standing;
+import com.wsla.data.ticket.TicketVO.UnitLocation;
 
 /****************************************************************************
  * <b>Title</b>: StandingCodeJob.java
@@ -91,7 +94,7 @@ public class StandingCodeJob extends AbstractSMTJob {
 	@Override
 	public void execute(JobExecutionContext ctx) throws JobExecutionException {
 		super.execute(ctx);
-		
+
 		String message = "Success";
 		boolean success = true;
 		attributes = ctx.getMergedJobDataMap().getWrappedMap();
@@ -112,9 +115,11 @@ public class StandingCodeJob extends AbstractSMTJob {
 		try {
 			closeTickets(tickets);
 			setCritical(tickets);
-		} catch (DatabaseException | SQLException dbe) {
+			closeRefuseReturn();
+		} catch (DatabaseException | SQLException | InvalidDataException dbe) {
 			message = "Could not update tickets due to a database exception: " + dbe.getMessage();
 			success = false;
+			log.error("Unable to run WSLA standing job", dbe);
 		}
 		
 		// Finalize the job
@@ -123,6 +128,64 @@ public class StandingCodeJob extends AbstractSMTJob {
 		} catch (InvalidDataException e) {
 			log.error("Unable to finalize job");
 		}
+	}
+	
+	/**
+	 * @throws SQLException 
+	 * @throws DatabaseException 
+	 * @throws InvalidDataException 
+	 * 
+	 */
+	private void closeRefuseReturn() throws SQLException, DatabaseException, InvalidDataException {
+		String schema = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
+		
+		// Get the tickets that a user refused return for over 30 days
+		StringBuilder sql = new StringBuilder(256);
+		sql.append("select a.ticket_id, originator_user_id, refuse_dt ");
+		sql.append("from ").append(schema).append("wsla_ticket a ");
+		sql.append("inner join ( ");
+		sql.append("select ticket_id, min(create_dt) as refuse_dt ");
+		sql.append("from ").append(schema).append("wsla_ticket_data ");
+		sql.append("where attribute_cd = 'attr_returnRefused' ");
+		sql.append("group by ticket_id ");
+		sql.append(") as td on a.ticket_id = td.ticket_id ");
+		sql.append("where standing_cd = 'CRITICAL' and status_cd = 'DELIVERY_SCHEDULED' ");
+		sql.append("and date_part('days', current_timestamp - refuse_dt::timestamp) > 30; ");
+		
+		BaseTransactionAction bta = new BaseTransactionAction(new SMTDBConnection(conn), attributes);
+		try (PreparedStatement ps = conn.prepareStatement(sql.toString())) {
+			try (ResultSet rs = ps.executeQuery()) {
+				
+				while(rs.next()) {
+					String ticketId = rs.getString(1);
+					
+					// Close the ticket
+					bta.changeStatus(ticketId, rs.getString(2), StatusCode.CLOSED, LedgerSummary.TICKET_CLOSED.summary + ": Cerrado Automáticamente", null);
+					
+					// Mark the unit as disposed - DECOMMISSIONED
+					bta.addLedger(ticketId, rs.getString(2), null, LedgerSummary.UNIT_DECOMISSIONED.summary, UnitLocation.DECOMMISSIONED);
+					updateUnitLocation(ticketId, UnitLocation.DECOMMISSIONED);
+				}
+			}
+		} 
+	}
+	
+	/**
+	 * 
+	 * @param ticketId
+	 * @param loc
+	 * @throws DatabaseException 
+	 * @throws InvalidDataException 
+	 */
+	public void updateUnitLocation(String ticketId, UnitLocation loc) 
+	throws InvalidDataException, DatabaseException {
+		String schema = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
+		TicketVO ticket = new TicketVO();
+		ticket.setTicketId(ticketId);
+		ticket.setUnitLocation(loc);
+		
+		DBProcessor db = new DBProcessor(conn, schema);
+		db.update(ticket, Arrays.asList("ticket_id", "unit_location_cd"));
 	}
 
 	/**

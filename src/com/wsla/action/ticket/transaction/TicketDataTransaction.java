@@ -26,6 +26,7 @@ import com.wsla.data.ticket.UserVO;
 import com.wsla.data.ticket.TicketAssignmentVO.TypeCode;
 import com.wsla.data.ticket.TicketDataVO;
 import com.wsla.data.ticket.TicketLedgerVO;
+import com.wsla.data.ticket.TicketVO;
 
 /****************************************************************************
  * <b>Title</b>: TicketDataTransaction.java
@@ -84,30 +85,31 @@ public class TicketDataTransaction extends BaseTransactionAction {
 	public void build(ActionRequest req) throws ActionException {
 		UserVO user = ((UserVO)getAdminUser(req).getUserExtendedInfo());
 		String ticketId = req.getParameter("ticketId");
+		String attr = req.getParameter("attr");
+		String value = req.getParameter("value");
+		String metaValue = req.getParameter("metaValue");
+		boolean overwrite = req.getBooleanParameter("overwrite");
 		
 		try {
 			if (req.hasParameter("lockState")) {
 				toggleTicketLock(ticketId, user.getUserId(), req.getBooleanParameter("lockState"));
+			
+			} else if (req.hasParameter("returnRefused")) {
+				TicketLedgerVO ledger = addLedger(ticketId, user.getUserId(), null, LedgerSummary.RETURN_REFUSED.summary, null);
+				saveTicketData(null, ledger.getLedgerEntryId(), ticketId, attr, value, metaValue);
+				
+				// Update the ticket to critical standing
+				TicketTransaction tta = new TicketTransaction(getAttributes(), getDBConnection());
+				tta.assignStanding(ticketId, TicketVO.Standing.CRITICAL);
+				
 			} else if (req.hasParameter("watchedState")) {
 				toggleTicketWatch(ticketId, user.getUserId(), req.getBooleanParameter("watchedState"));
+			
 			} else if (req.hasParameter("saveData")) {
-				
-				String attr = req.getParameter("attr");
-				String value = req.getParameter("value");
-				String metaValue = req.getParameter("metaValue");
-				boolean overwrite = req.getBooleanParameter("overwrite");
-				
-				if (req.hasParameter("returnRefused")) {
-					log.info("adding ledger");
-					TicketLedgerVO ledger = addLedger(ticketId, user.getUserId(), null, LedgerSummary.RETURN_REFUSED.summary, null);
-					log.info("Saving details");
-					saveTicketData(null, ledger.getLedgerEntryId(), ticketId, attr, value, metaValue);
-					log.info("complete");
-				} else {
-					saveDataAttribute(ticketId, attr, value, metaValue, overwrite);
-				}
+				saveDataAttribute(ticketId, attr, value, metaValue, overwrite);
 			}
 		} catch (Exception e) {
+			log.error("unable to update ticket data", e);
 			setModuleData(null, 0, e.getLocalizedMessage());
 		}
 	}
