@@ -53,6 +53,7 @@ public enum LedgerSummary {
 	ASSETS_BYPASSED("Sin Evidencias Requeridas"),
 	REFUND_VERIFIED("Reembolso Verificado"),
 	UNIT_DECOMISSIONED("La unidad ha sido desarmada"),
+	SURVEY_SUBMITTED("El usuario ha enviado una encuesta."),
 	RETURN_REFUSED("La devolución de la unidad fue rechazada");
 	
 	public final String summary;

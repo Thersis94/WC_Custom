@@ -157,7 +157,7 @@ public class TicketDataTransaction extends BaseTransactionAction {
 	 * @param value
 	 * @throws SQLException
 	 */
-	private void saveTicketData(String id, String lId, String ticketId, String attr, String value, String metaValue) 
+	public void saveTicketData(String id, String lId, String ticketId, String attr, String value, String metaValue) 
 	throws SQLException {
 		
 		// Build a ticket data vo
