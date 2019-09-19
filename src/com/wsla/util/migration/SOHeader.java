@@ -137,6 +137,8 @@ public class SOHeader extends AbsImporter {
 				// this will need a hook for compiling transactional data
 			} else if (isOpenTktRun && vo.getTicketId().matches("(?i)^WSL0(.*)$")) {
 				continue; //discard alleged harvests from open ticket runs
+			} else if (isClosedTktRun && vo.getClosedDate() == null) {
+				continue;
 			}
 			tickets.put(vo.getTicketId(), vo);
 		}
@@ -659,6 +661,10 @@ public class SOHeader extends AbsImporter {
 		oemPhones.put("KON", "8000600075");
 		oemPhones.put("WMT", "8000623555");
 		oemPhones.put("VIZ", "8008010096");
+		oemPhones.put("WES", "8009378464");
+		//these two don't exist - its ok to leave blank
+		oemPhones.put("WSL", "");
+		oemPhones.put("MIL", "");
 
 		String sql = StringUtil.join("select provider_id as key, phone_number_txt as value from ", schema, 
 				"wsla_provider_phone where country_cd='MX' and active_flg=1");
@@ -1091,6 +1097,7 @@ public class SOHeader extends AbsImporter {
 	 * @return
 	 */
 	private ExtTicketVO transposeTicketData(SOHDRFileVO dataVo, ExtTicketVO vo) {
+		vo.setBatchName(batchNm);
 		vo.setTicketId(dataVo.getSoNumber());
 		vo.setTicketIdText(dataVo.getSoNumber());
 		vo.setCreateDate(dataVo.getReceivedDate());
@@ -1105,7 +1112,7 @@ public class SOHeader extends AbsImporter {
 		vo.setWarrantyValidFlag("CNG".equalsIgnoreCase(dataVo.getCoverageCode()) ? 1 : 0); //this is the only code that results in warranty coverage
 		vo.setProductCategoryId(dataVo.getProductCategory());
 		vo.setCasLocationId(dataVo.getServiceTech());
-		vo.setHistoricalFlag(!isOpenTktRun ? 1 : 0);
+		vo.setHistoricalFlag(isClosedTktRun ? 1 : 0);
 		vo.setOperator(dataVo.getOperator());
 		
 		if (isOpenTktRun) {
@@ -1116,6 +1123,8 @@ public class SOHeader extends AbsImporter {
 			} else { //have serial, have cas
 				vo.setStatusCode(StatusCode.USER_DATA_COMPLETE);
 			}
+		} else if (isClosedTktRun) {
+			vo.setStatusCode(StatusCode.CLOSED);
 		} else {
 			vo.setStatusCode(dataVo.getStatusCode()); //there's a switch nested in here doing transposition
 		}

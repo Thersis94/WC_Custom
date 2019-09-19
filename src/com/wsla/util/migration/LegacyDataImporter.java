@@ -7,6 +7,7 @@ import java.util.Date;
 import java.util.List;
 
 import com.siliconmtn.util.CommandLineUtil;
+import com.siliconmtn.util.RandomAlphaNumeric;
 import com.siliconmtn.util.SMTClassLoader;
 
 /****************************************************************************
@@ -23,6 +24,7 @@ import com.siliconmtn.util.SMTClassLoader;
 public class LegacyDataImporter extends CommandLineUtil {
 
 	private static final List<String> importers = new ArrayList<>();
+	protected final String batchNm = RandomAlphaNumeric.generateRandom(10);
 	
 	/*
 	 * the time zone of Mexico City - which is what we'll presume all incoming dates/times to be.
@@ -35,12 +37,14 @@ public class LegacyDataImporter extends CommandLineUtil {
 
 //		importers.add(LocationInventory.class.getName()); //deps: InventoryLocation, Product
 
-		importers.add(SOHeader.class.getName());
-		importers.add(SOExtendedData.class.getName());
-		importers.add(SOComments.class.getName());
-		importers.add(SOLineItems.class.getName());
+//		importers.add(SOHeader.class.getName());
+//		importers.add(SOExtendedData.class.getName());
+//		importers.add(SOComments.class.getName());
+//		importers.add(SOLineItems.class.getName());
+//		importers.add(AssetParser.class.getName());
 
-		importers.add(AssetParser.class.getName());
+		//post-process refunds, this class relies on both the tickets already being loaded and the raw files
+		importers.add(Refund.class.getName());
 	}
 
 
@@ -73,6 +77,7 @@ public class LegacyDataImporter extends CommandLineUtil {
 			try {
 				AbsImporter importer = (AbsImporter) SMTClassLoader.getClassInstance(className);
 				importer.setAttributes(dbConn, props, args);
+				importer.batchNm = batchNm;
 				importer.run();
 				log.info("completed " + className + "\r\r\r");
 			} catch (RuntimeException re) {
@@ -81,6 +86,7 @@ public class LegacyDataImporter extends CommandLineUtil {
 				log.error("could not run importer " + className, e);
 			}
 		}
+		log.info("finished batch import " + batchNm);
 	}
 
 	/**
