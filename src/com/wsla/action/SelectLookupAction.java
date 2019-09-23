@@ -152,6 +152,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		keyMap.put("refRepDispostionType", new GenericVO("getRefRepDispostionType", Boolean.TRUE));
 		keyMap.put("standing", new GenericVO("getStanding", Boolean.TRUE));
 		keyMap.put("acShipLocation", new GenericVO("getAcShippingLocation", Boolean.TRUE));
+		keyMap.put("surveyResults", new GenericVO("getSurveyResults", Boolean.TRUE));
 	}
 
 	/**
@@ -1038,5 +1039,25 @@ public class SelectLookupAction extends SBActionAdapter {
 		Collections.sort(data, (a, b) -> ((String)a.getValue()).compareTo(((String)b.getValue())));
 
 		return data;
+	}
+	
+	/**
+	 * Gets the questions and responses for the survey
+	 * @param req - Need "fsi" req parameter
+	 * @return
+	 */
+	public List<GenericVO> getSurveyResults(ActionRequest req) {
+		String fsi = req.getParameter("fsi");
+		StringBuilder sql = new StringBuilder(384);
+		sql.append("select b.field_label_nm as key, d.label_txt as value ");
+		sql.append("from form_data a ");
+		sql.append("inner join form_field b on a.form_field_group_id = b.form_field_group_id ");
+		sql.append("left outer join form_field_attr c on b.form_field_id = c.form_field_id and attr_key = 'srcList' ");
+		sql.append("left outer join list_data d on c.attr_val = d.list_id and a.value_txt = d.value_txt ");
+		sql.append("where form_submittal_id = ? order by a.value_txt");
+		log.debug(sql.length() + "|" + sql + "|" + fsi);
+		
+		DBProcessor db = new DBProcessor(getDBConnection());
+		return db.executeSelect(sql.toString(), Arrays.asList(fsi), new GenericVO());
 	}
 }
