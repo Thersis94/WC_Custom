@@ -54,7 +54,7 @@ public class SurveyWrapperAction extends SimpleActionAdapter {
 	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
-		String ticketNumber = req.getParameter("hidePf");
+		String ticketNumber = req.getParameter("formParam1");
 		String surveyId = req.getParameter("fsi");
 		if (StringUtil.isEmpty(ticketNumber) || StringUtil.isEmpty(surveyId)) return;
 		
