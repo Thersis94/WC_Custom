@@ -14,6 +14,7 @@ import com.biomed.smarttrak.admin.AccountNotesAction;
 import com.biomed.smarttrak.admin.AccountPermissionAction;
 import com.biomed.smarttrak.admin.AccountUserAction;
 import com.biomed.smarttrak.admin.AdminSiteSearchAction;
+import com.biomed.smarttrak.admin.ArticlePaneAction;
 import com.biomed.smarttrak.admin.AuditLogAction;
 import com.biomed.smarttrak.admin.CRMAction;
 import com.biomed.smarttrak.admin.CompanyManagementAction;
@@ -208,7 +209,7 @@ public class AdminControllerAction extends SimpleActionAdapter {
 	 * populates the action map when the static constructor is called.  This will make our map live once in the JVM
 	 */
 	static {
-		ACTIONS = new HashMap<>(43);
+		ACTIONS = new HashMap<>(45);
 		ACTIONS.put("tickets", ZohoIntegrationAction.class);
 		ACTIONS.put("hierarchy", SectionHierarchyAction.class);
 		ACTIONS.put("agap", GapAnalysisAdminAction.class);
@@ -252,6 +253,7 @@ public class AdminControllerAction extends SimpleActionAdapter {
 		ACTIONS.put("feature", FeaturedInsightsAction.class);
 		ACTIONS.put("dupCheck", DuplicateItemCheckerAction.class);
 		ACTIONS.put("quickLink", QuickLinkAction.class);
+		ACTIONS.put("articlePane", ArticlePaneAction.class);
 		ACTIONS.put(DEFAULT_ACTION, com.biomed.smarttrak.action.UpdatesAction.class);
 	}
 
