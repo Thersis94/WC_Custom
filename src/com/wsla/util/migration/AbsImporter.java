@@ -16,6 +16,7 @@ import org.apache.log4j.Logger;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.UUIDGenerator;
 import com.siliconmtn.util.databean.FilePartDataBean;
 import com.siliconmtn.util.parser.AnnotationExcelParser;
 
@@ -43,13 +44,23 @@ public abstract class AbsImporter {
 	protected static final int SHEET_4 = 3;
 	protected static final int SHEET_5 = 4;
 
+	/*
+	 * batch name is unique to each time we run the importer.  It helps us earmark the ones we've 
+	 * added/changed during execution so we don't harm exisitng records.
+	 * This column is meant to be purged from the DB when all is said and done (late 2019). 
+	 */
+	protected String batchNm;
 	protected boolean purgeTablesFirst = false;
+	protected boolean isOpenTktRun;
+	protected boolean isClosedTktRun;
 	protected String schema; //custom.
 	protected DBProcessor db;
+	protected UUIDGenerator uuid;
 
 	AbsImporter() {
 		super();
 		log = Logger.getLogger(getClass());
+		uuid = new UUIDGenerator();
 	}
 
 	/**
@@ -63,6 +74,8 @@ public abstract class AbsImporter {
 		this.props = props;
 		this.args = args;
 		purgeTablesFirst = Convert.formatBoolean(props.getProperty("purgeTablesFirst", "false"));
+		isOpenTktRun = Convert.formatBoolean(props.getProperty("isOpenTktRun", "false"));
+		isClosedTktRun = Convert.formatBoolean(props.getProperty("isClosedTktRun", "true"));
 		schema = props.getProperty("customDbSchema", "custom.");
 		db = new DBProcessor(dbConn, schema);
 		db.setGenerateExecutedSQL(log.isDebugEnabled());
@@ -201,6 +214,20 @@ public abstract class AbsImporter {
 			return passedFilePtr.listFiles((d, name) -> name.matches(pattern));
 		} else {
 			return new File[] { passedFilePtr };
+		}
+	}
+
+
+	/**
+	 * Put the thread to sleep.  We do this between writes and reads, to give 
+	 * the DB time to commit.
+	 * @param i
+	 */
+	protected void sleepThread(int durationMillis) {
+		try {
+			Thread.sleep(durationMillis);
+		} catch (Exception e ) {
+			log.fatal("could not sleep thread", e);
 		}
 	}
 }

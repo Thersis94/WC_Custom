@@ -174,6 +174,7 @@ public class ShowpadDivisionUtil {
 
 	/**
 	 * pushes the asset to the API Util - called from above 'pushAsset' method
+	 * Note: Always send 'dates' to the API in Seconds -JM- 08/21/19 (per Showpad support)
 	 * @param postUrl
 	 * @param title
 	 * @param fType
@@ -186,6 +187,7 @@ public class ShowpadDivisionUtil {
 		params.put("name", title);
 		params.put("resourcetype", ShowpadResourceType.getResourceType(fType)); //Showpad Constant for all assets
 		params.put("suppress_response_codes","true"); //forces a 200 response header
+		params.put("isDivisionShared", "false");
 
 		//distinguish some values for EMEA private assets only - trigger off the tag passed from that script marking them as 'internal'
 		if (DSPrivateAssetsImporter.INTERNAL_TAG.equals(tagMgr.getSourceConstant())) {
@@ -198,8 +200,9 @@ public class ShowpadDivisionUtil {
 			params.put("isDownloadable", "true");
 		}
 
-		params.put("isDivisionShared", "false");
-		params.put("releasedAt", Convert.formatDate(vo.getModifiedDt(), Convert.DATE_TIME_SLASH_PATTERN));
+		if (vo.getExpirationDt() != null)
+			params.put("expiresAt", Long.toString(vo.getExpirationDt().getTime()/1000));
+		
 		if (vo.getDownloadTypeTxt() != null)
 			params.put("description", vo.getDownloadTypeTxt());
 

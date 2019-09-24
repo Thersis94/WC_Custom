@@ -29,6 +29,7 @@ public class ExtTicketVO extends TicketVO {
 	private String casLocationId;
 	private Date closedDate;
 	private String operator;
+	private String batchName;
 
 	@Override
 	@Column(name="originator_user_id")
@@ -99,5 +100,14 @@ public class ExtTicketVO extends TicketVO {
 	 */
 	public String getPhoneLookup() {
 		return StringUtil.checkVal(operator, getOemId());
+	}
+
+	@Column(name="batch_txt", isInsertOnly=true)
+	public String getBatchName() {
+		return batchName;
+	}
+
+	public void setBatchName(String batchName) {
+		this.batchName = batchName;
 	}
 }

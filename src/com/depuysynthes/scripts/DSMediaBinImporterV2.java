@@ -111,6 +111,8 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 	private String limeLightUrl = MediaBinLinkAction.US_BASE_URL;
 
 	protected Map<String, Integer> dataCounts = new HashMap<>();
+	
+	protected final String schema;
 
 	/**
 	 * Initializes the Logger, config files and the database connection
@@ -124,6 +126,8 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 
 		if (args.length > 0 && Convert.formatInteger(args[0]) > 0) type = Convert.formatInteger(args[0]);
 		importFile = props.getProperty("importFile" + type);
+		
+		schema = props.getProperty(Constants.CUSTOM_DB_SCHEMA);
 
 		if (type == 2) limeLightUrl = MediaBinLinkAction.INT_BASE_URL;
 	}
@@ -199,8 +203,8 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 			failures.add(new Exception("Error parsing file: " + e.getMessage(), e));
 		}
 
-		DBUtil.close(dbConn);
 		sendEmail(startNano, masterRecords);
+		DBUtil.close(dbConn);
 	}
 
 
@@ -246,8 +250,7 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 		sql.append("select a.*, ");
 		//only include video chapters when they've changed, because the delta's coming out of the EXP file won't have these to compare against
 		sql.append("case when coalesce(b.update_dt, b.create_dt) > CURRENT_DATE - interval '1 day' then b.META_CONTENT_TXT else null end as META_CONTENT_TXT ");
-		sql.append("from ").append(props.get(Constants.CUSTOM_DB_SCHEMA));
-		sql.append("dpy_syn_mediabin a ");
+		sql.append("from ").append(schema).append("dpy_syn_mediabin a ");
 		sql.append("left join video_meta_content b on a.dpy_syn_mediabin_id=b.asset_id and b.asset_type='MEDIABIN' ");
 		sql.append("where a.import_file_cd=?");
 		log.debug(sql);
@@ -277,12 +280,10 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 	 */
 	protected void countDBRecords() {
 		int cnt = 0;
-		StringBuilder sql = new StringBuilder(100);
-		sql.append("select count(*) from ").append(props.get(Constants.CUSTOM_DB_SCHEMA));
-		sql.append("dpy_syn_mediabin where import_file_cd=?");
+		String sql = StringUtil.join("select count(*) from ", schema, "dpy_syn_mediabin where import_file_cd=?");
 		log.debug(sql);
 
-		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
 			ps.setInt(1,  type);
 			ResultSet rs = ps.executeQuery();
 			if (rs.next())
@@ -908,6 +909,9 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 				//note modDt now gets overwritten with the Last Modified header coming back from LimeLight. -JM 11-23-15
 				Date modDt = Convert.formatDate(Convert.DATE_TIME_SLASH_PATTERN_FULL_12HR, row.get("Check In Time"));
 				if (modDt == null) modDt = Convert.formatDate(Convert.DATE_TIME_SLASH_PATTERN_FULL_12HR, row.get("Insertion Time"));
+				//NOTE Asset Description overlaps with assetDesc below...INT uses the fallback field for assetDesc instead of this one.
+				//replace possible MM.DD.YYYY notations with MM/DD/YYYY for consistency - deviace introduced by Pierre 08/21/19
+				Date expirationDt = Convert.formatDate("MM/dd/yyyy", StringUtil.replace(row.get("Asset Description"),".","/"));
 
 				// Insert the record
 				vo.setAssetNm(StringUtil.checkVal(row.get("Asset Name")).replace('\\','/'));
@@ -920,6 +924,7 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 				vo.setLanguageCode(parseLanguage(row.get("SOUS - Language"))); // language_cd
 				vo.setLiteratureTypeTxt(StringUtil.checkVal(row.get("Literature Type"), row.get("SOUS - Literature Category")));
 				vo.setModifiedDt(Convert.getTimestamp(modDt, true));
+				vo.setExpirationDt(Convert.getTimestamp(expirationDt, false));
 				vo.setFileNm(row.get("Name"));
 				vo.setDimensionsTxt(row.get("Dimensions (pixels)"));
 				vo.setFileSizeNo(Convert.formatInteger(row.get("Original File Size")));
@@ -1007,22 +1012,22 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 		// Build the SQL Statement
 		StringBuilder sql = new StringBuilder(350);
 		if (isInsert) {
-			sql.append("insert into ").append(props.getProperty(Constants.CUSTOM_DB_SCHEMA)).append("dpy_syn_mediabin ");
+			sql.append("insert into ").append(schema).append("dpy_syn_mediabin ");
 			sql.append("(asset_nm, asset_desc, asset_type, body_region_txt, ");
 			sql.append("business_unit_nm, business_unit_id, download_type_txt, language_cd, literature_type_txt, ");
 			sql.append("modified_dt, file_nm, dimensions_txt, orig_file_size_no, prod_family, ");
 			sql.append("prod_nm, revision_lvl_txt, opco_nm, title_txt, tracking_no_txt, ");
 			sql.append("import_file_cd, duration_length_no, anatomy_txt, desc_txt, meta_kywds_txt, ");
-			sql.append("file_checksum_txt, ecopy_revision_lvl_txt, dpy_syn_mediabin_id) ");
-			sql.append("values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)" );
+			sql.append("file_checksum_txt, ecopy_revision_lvl_txt, expiration_dt, dpy_syn_mediabin_id) ");
+			sql.append("values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)" );
 		} else {
-			sql.append("update ").append(props.getProperty(Constants.CUSTOM_DB_SCHEMA)).append("dpy_syn_mediabin ");
+			sql.append("update ").append(schema).append("dpy_syn_mediabin ");
 			sql.append("set asset_nm=?, asset_desc=?, asset_type=?, body_region_txt=?, ");
 			sql.append("business_unit_nm=?, business_unit_id=?, download_type_txt=?, language_cd=?, literature_type_txt=?, ");
 			sql.append("modified_dt=?, file_nm=?, dimensions_txt=?, orig_file_size_no=?, prod_family=?, ");
 			sql.append("prod_nm=?, revision_lvl_txt=?, opco_nm=?, title_txt=?, tracking_no_txt=?, ");
 			sql.append("import_file_cd=?, duration_length_no=?, anatomy_txt=?, desc_txt=?, ");
-			sql.append("meta_kywds_txt=?, file_checksum_txt=?, ecopy_revision_lvl_txt=? ");
+			sql.append("meta_kywds_txt=?, file_checksum_txt=?, ecopy_revision_lvl_txt=?, expiration_dt=? ");
 			sql.append("where dpy_syn_mediabin_id=?");
 		}
 		log.debug(sql);
@@ -1060,7 +1065,8 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 				ps.setString(24, vo.getMetaKeywords());
 				ps.setString(25, vo.getChecksum());
 				ps.setString(26, vo.geteCopyRevisionLvl());
-				ps.setString(27, vo.getDpySynMediaBinId());
+				ps.setDate(27, Convert.formatSQLDate(vo.getExpirationDt()));
+				ps.setString(28, vo.getDpySynMediaBinId());
 				ps.executeUpdate();
 				log.debug((isInsert ? "Inserted: " : "Updated: ") + vo.getDpySynMediaBinId());
 				++cnt;
@@ -1085,7 +1091,7 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 		int cnt = 0;
 		// Build the SQL Statement
 		StringBuilder sql = new StringBuilder(350);
-		sql.append("delete from ").append(props.getProperty(Constants.CUSTOM_DB_SCHEMA)).append("dpy_syn_mediabin ");
+		sql.append("delete from ").append(schema).append("dpy_syn_mediabin ");
 		sql.append("where dpy_syn_mediabin_id in ('~'");
 		for (MediaBinDeltaVO vo : masterRecords.values()) {
 			if (vo.getRecordState() == State.Delete) {
@@ -1267,7 +1273,7 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 				html.append("Solr Total: ").append(dataCounts.get("solr")).append("<br/>");
 
 			long timeSpent = System.nanoTime()-startNano;
-			double millis = timeSpent/1000000;
+			double millis = timeSpent / (double) 1000000;
 			if (millis > (60*1000)) {
 				html.append("Execution Time: ").append(Math.round(millis / (60*1000))).append(" minutes");
 			} else {
@@ -1335,7 +1341,7 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 		msg.append("<th>eCopy Tracking Number</th>");
 		msg.append("<th>File Name</th>");
 		if (State.Update == st) msg.append("<th>Changes</th>");
-		msg.append("</tr></thead><tbody>");
+		msg.append("</tr></thead>\r<tbody>");
 
 		for (MediaBinDeltaVO vo : masterRecords.values()) {
 			if (st != vo.getRecordState()) continue; //only print the ones we want
@@ -1360,7 +1366,7 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 				}
 				msg.append("</td>");
 			}
-			msg.append("</tr>");
+			msg.append("</tr>\r");
 		}
 		msg.append("</tbody></table>");
 	}
