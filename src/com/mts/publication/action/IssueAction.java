@@ -23,6 +23,8 @@ import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 //WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
+import com.smt.sitebuilder.common.PageVO;
+import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
  * <b>Title</b>: IssueAction.java
@@ -78,7 +80,9 @@ public class IssueAction extends SBActionAdapter {
 		if (! req.hasParameter("json")) return;
 		String pubId = req.getParameter("publicationId");
 		BSTableControlVO bst = new BSTableControlVO(req, IssueVO.class);
-		setModuleData(getIssues(pubId, false, bst));
+		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
+		//turn off date filtering in the portal, or if the page is being previewed
+		setModuleData(getIssues(pubId, false, bst, ("ajax_ctrl".equals(req.getParameter("amid")) || page.isPreviewMode())));
 	}
 	
 	/*
@@ -99,30 +103,34 @@ public class IssueAction extends SBActionAdapter {
 	 * 
 	 * @return
 	 */
-	public GridDataVO<IssueVO> getIssues(String pubId, boolean beenIssued, BSTableControlVO bst) {
+	public GridDataVO<IssueVO> getIssues(String pubId, boolean beenIssued, BSTableControlVO bst, boolean isPagePreview) {
 		// Add the params
 		List<Object> vals = new ArrayList<>();
 		vals.add(pubId);
 		
+		String schema = getCustomSchema();
 		StringBuilder sql = new StringBuilder(352);
 		sql.append("select coalesce(article_count, 0) as article_no, a.*, b.*, da.*  from ");
-		sql.append(getCustomSchema()).append("mts_issue a ");
-		sql.append(DBUtil.LEFT_OUTER_JOIN).append(getCustomSchema()).append("mts_user b ");
-		sql.append("on a.editor_id = b.user_id ");
+		sql.append(schema).append("mts_issue a ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("mts_user b on a.editor_id = b.user_id ");
 		sql.append("left outer join ( ");
 		sql.append("select issue_id, count(*) as article_count ");
-		sql.append("from ").append(getCustomSchema()).append("mts_document d ");
+		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("mts_document d ");
 		sql.append("inner join sb_action s on d.action_group_id = s.action_group_id ");
 		sql.append("and pending_sync_flg = 0 ");
+		if (!isPagePreview) 
+			sql.append("and (d.publish_dt < CURRENT_TIMESTAMP or d.publish_dt is null) ");
 		sql.append("group by issue_id ");
 		sql.append(") c on a.issue_id = c.issue_id ");
 		sql.append("left outer join ( ");
 		sql.append("select object_key_id, string_agg(document_path, ',') as document_path ");
-		sql.append("from custom.mts_document_asset where asset_type_cd = 'COVER_IMG' ");
+		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("mts_document_asset where asset_type_cd = 'COVER_IMG' ");
 		sql.append("group by object_key_id ");
 		sql.append(") as da on a.issue_id = da.object_key_id ");
 		sql.append("where publication_id = ? ");
-		if (beenIssued) sql.append("and issue_dt > '2000-01-01' ");
+		if (beenIssued) sql.append("and issue_dt is not null ");
+		if (!isPagePreview) 
+			sql.append("and (a.issue_dt < CURRENT_TIMESTAMP or a.issue_dt is null) ");
 		
 		// Add the search vals
 		if(bst.hasSearch()) {
@@ -133,7 +141,7 @@ public class IssueAction extends SBActionAdapter {
 		sql.append(bst.getSQLOrderBy("issue_dt", "desc"));
 		log.debug(sql.length() + "|" + sql + "|" + pubId + "|" + bst.getOffset());
 		
-		DBProcessor db = new DBProcessor(getDBConnection());
+		DBProcessor db = new DBProcessor(getDBConnection(), schema);
 		return db.executeSQLWithCount(sql.toString(), vals, new IssueVO(), bst);
 	}
 	
@@ -173,7 +181,7 @@ public class IssueAction extends SBActionAdapter {
 		sql.append(getCustomSchema()).append("mts_publication b ");
 		sql.append("on a.publication_id = b.publication_id ");
 		sql.append("inner join (select issue_id, count(*) as article_no ");
-		sql.append("from ").append(getCustomSchema()).append("mts_document ");
+		sql.append(DBUtil.FROM_CLAUSE).append(getCustomSchema()).append("mts_document ");
 		sql.append("where issue_id = ? group by issue_id ) as n ");
 		sql.append("on a.issue_id = n.issue_id ");
 		sql.append("where a.issue_id = ? ");
