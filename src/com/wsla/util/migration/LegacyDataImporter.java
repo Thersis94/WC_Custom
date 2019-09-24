@@ -37,14 +37,15 @@ public class LegacyDataImporter extends CommandLineUtil {
 
 //		importers.add(LocationInventory.class.getName()); //deps: InventoryLocation, Product
 
-//		importers.add(SOHeader.class.getName());
-//		importers.add(SOExtendedData.class.getName());
-//		importers.add(SOComments.class.getName());
-//		importers.add(SOLineItems.class.getName());
-//		importers.add(AssetParser.class.getName());
+		importers.add(SOHeader.class.getName());
+		importers.add(SOExtendedData.class.getName());
+		importers.add(SOComments.class.getName());
+		importers.add(SOLineItems.class.getName());
+		importers.add(AssetParser.class.getName());
 
 		//post-process refunds, this class relies on both the tickets already being loaded and the raw files
 		importers.add(Refund.class.getName());
+		importers.add(Replacement.class.getName());
 	}
 
 

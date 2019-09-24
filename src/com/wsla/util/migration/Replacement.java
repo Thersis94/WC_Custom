@@ -2,24 +2,26 @@ package com.wsla.util.migration;
 
 import java.io.File;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.db.DBUtil;
-import com.siliconmtn.util.MapUtil;
-import com.siliconmtn.util.RandomAlphaNumeric;
 import com.siliconmtn.util.StringUtil;
-import com.wsla.common.WSLAConstants;
-import com.wsla.data.ticket.CreditMemoVO;
+import com.wsla.data.ticket.PartVO;
 import com.wsla.data.ticket.RefundReplacementVO;
+import com.wsla.data.ticket.ShipmentVO;
+import com.wsla.data.ticket.ShipmentVO.CarrierType;
+import com.wsla.data.ticket.ShipmentVO.ShipmentStatus;
+import com.wsla.data.ticket.ShipmentVO.ShipmentType;
 import com.wsla.data.ticket.StatusCode;
 import com.wsla.data.ticket.TicketDataVO;
 import com.wsla.data.ticket.TicketLedgerVO;
@@ -29,20 +31,19 @@ import com.wsla.util.migration.vo.SOHDRFileVO;
 
 /****************************************************************************
  * <p><b>Title:</b> Refunds.java</p>
- * <p><b>Description:</b> Read the "these should be refunds" tickets from the raw files, then correct the
- * data/ticket in Cypher's database.</p>
+ * <p><b>Description:</b> Read the "these should be replacements" tickets from the raw files, 
+ * then correct the data/ticket in Cypher's database.</p>
  * <p> 
  * <p>Copyright: Copyright (c) 2019, All Rights Reserved</p>
  * <p>Company: Silicon Mountain Technologies</p>
  * @author James McKain
  * @version 1.0
- * @since Sept 18, 2019
+ * @since Sept 23, 2019
  * <b>Changes:</b>
  ****************************************************************************/
 public class Replacement extends AbsImporter {
 
 	private List<SOHDRFileVO> data = new ArrayList<>(50000);
-	private Map<String, String> ticketIds = new HashMap<>(5000);
 
 
 	/* (non-Javadoc)
@@ -55,7 +56,6 @@ public class Replacement extends AbsImporter {
 		for (File f : files)
 			data.addAll(readFile(f, SOHDRFileVO.class, SHEET_1));
 
-		loadTicketIds();
 		save();
 	}
 
@@ -70,33 +70,61 @@ public class Replacement extends AbsImporter {
 		//turn the list of data into a unique list of tickets
 		Map<String, ExtTicketVO> tickets= new HashMap<>(data.size());
 		for (SOHDRFileVO dataVo : data) {
-			//025 are refunds and all we care about
-//			if ("025".equals(dataVo.getSoType()) && "WMT00113336".equals(dataVo.getSoNumber())) { 
-//				ExtTicketVO vo = transposeTicketData(dataVo, new ExtTicketVO());
-//				tickets.put(vo.getTicketId(), vo);
-//				log.info(vo.getTicketId());
-//				break;
-//			}
+			//010 are replacements and all we care about
+			if ("010".equals(dataVo.getSoType())) {
+				ExtTicketVO vo = transposeTicketData(dataVo, new ExtTicketVO());
 
-			if (dataVo.getSoNumber().matches("(?i)^WSL0(.*)$") && !StringUtil.isEmpty(dataVo.getCustPO()) && ticketIds.get(dataVo.getCustPO()) == null) {
-				System.out.println(dataVo.getCustPO());
+				tickets.put(vo.getTicketId(), vo);
+				log.info(vo.getTicketId());
+				break;
 			}
 		}
 
+		populateTicketDBData(tickets);
+
+		removeGhostRecords(tickets);
+
+		//don't bother with the rest of this class if we have no tickets
+		if (tickets.isEmpty()) return;
+
 		decomissionUnits(tickets.keySet()); //ticket
 
-		purgeParts(tickets.keySet());
+		purgePartShipments(tickets.keySet()); //calls purgeShipments to cascade deletion
 
-		purgeShipments(tickets.keySet());
+		createPartShipments(tickets.values()); //calls createShipments to appease dependency
 
 		setDispositionCode(tickets); //ticket_data attr_dispositionCode	NONREPAIRABLE
 
+		releaseRepairs(tickets.values()); //ref_rep entry
+
 		correctLedgerEntries(tickets);
 
-		changeSchedule(tickets.keySet()); //wsla_ticket_schedule - remove PICKUP
+	}
 
-		releaseCredits(tickets.values());  //add row to wsla_ticket_ref_rep, then wsla_credit_memo
 
+	/**
+	 * Prune any tickets we found in the Excel files that aren't also in the database.
+	 * We can't update/mutated DB records that don't exist!
+	 * @param tickets
+	 * @return
+	 */
+	private void removeGhostRecords(Map<String, ExtTicketVO> tickets) {
+		int startCnt = tickets.size();
+
+		for (Map.Entry<String, ExtTicketVO> entry : tickets.entrySet()) {
+			if (StringUtil.isEmpty(entry.getValue().getTicketIdText())) {
+				log.warn(String.format("database does not contain ticket %s", entry.getKey()));
+				tickets.remove(entry.getKey());
+			} else if (StringUtil.isEmpty(entry.getValue().getProductId())) {
+				log.warn(String.format("database does not contain product for ticket %s", entry.getKey()));
+				tickets.remove(entry.getKey());
+			} else if (StringUtil.isEmpty(entry.getValue().getCasLocationId())) {
+				log.warn(String.format("database does not contain CAS for ticket %s", entry.getKey()));
+				tickets.remove(entry.getKey());
+			}
+		}
+
+		log.info(String.format("trimmed ticket list from %d to %d", startCnt, tickets.size()));
 	}
 
 
@@ -104,7 +132,6 @@ public class Replacement extends AbsImporter {
 	 * @param values
 	 */
 	private void decomissionUnits(Set<String> ticketIds) {
-		if (ticketIds == null || ticketIds.isEmpty()) return;
 		String sql = StringUtil.join(DBUtil.UPDATE_CLAUSE, schema, "wsla_ticket set unit_location_cd=? where ticket_id=?");
 		log.debug(sql);
 
@@ -126,8 +153,7 @@ public class Replacement extends AbsImporter {
 	/**
 	 * @param keySet
 	 */
-	private void purgeParts(Set<String> ticketIds) {
-		if (ticketIds == null || ticketIds.isEmpty()) return;
+	private void purgePartShipments(Set<String> ticketIds) {
 		String sql = StringUtil.join(DBUtil.DELETE, schema, "wsla_part where ticket_id=?");
 		log.debug(sql);
 
@@ -142,6 +168,8 @@ public class Replacement extends AbsImporter {
 		} catch (SQLException sqle) {
 			log.error("could not delete parts", sqle);
 		}
+
+		purgeShipments(ticketIds);
 	}
 
 
@@ -149,7 +177,6 @@ public class Replacement extends AbsImporter {
 	 * @param keySet
 	 */
 	private void purgeShipments(Set<String> ticketIds) {
-		if (ticketIds == null || ticketIds.isEmpty()) return;
 		String sql = StringUtil.join(DBUtil.DELETE, schema, "wsla_shipment where ticket_id=?");
 		log.debug(sql);
 
@@ -168,14 +195,70 @@ public class Replacement extends AbsImporter {
 
 
 	/**
+	 * create a part & shipment for the new TV going back to the CAS (from the warehouse)
+	 * @param tickets
+	 * @throws Exception 
+	 */
+	private void createPartShipments(Collection<ExtTicketVO> tickets) throws Exception {
+		Map<String, String> shipmentMap = createShipments(tickets);
+		PartVO vo;
+		List<PartVO> parts = new ArrayList<>(tickets.size());
+		for (ExtTicketVO tkt : tickets) {
+			vo = new PartVO();
+			vo.setTicketId(vo.getTicketId());
+			vo.setProductId(tkt.getProductId());
+			vo.setShipmentId(shipmentMap.get(tkt.getTicketId()));
+			vo.setQuantity(1);
+			vo.setQuantityReceived(1);
+			vo.setUsedQuantityNo(1);
+			vo.setCreateDate(stepTime(tkt.getClosedDate(), -110));
+			vo.setSubmitApprovalFlag(1);
+			parts.add(vo);
+		}
+		log.info(String.format("saving %d parts for %d tickets", parts.size(), tickets.size()));
+		writeToDB(parts);
+	}
+
+
+	/**
+	 * create a shipment for the new TV going back to the CAS (from the warehouse)
+	 * @param tickets
+	 * @throws Exception 
+	 */
+	private Map<String, String> createShipments(Collection<ExtTicketVO> tickets) throws Exception {
+		if (tickets == null || tickets.isEmpty()) return Collections.emptyMap();
+
+		ShipmentVO vo;
+		Map<String, String> shipmentMap = new HashMap<>(tickets.size());
+		List<ShipmentVO> shipments = new ArrayList<>(tickets.size());
+		for (ExtTicketVO tkt : tickets) {
+			vo = new ShipmentVO();
+			vo.setShipmentId(uuid.getUUID());
+			vo.setTicketId(tkt.getTicketId());
+			vo.setFromLocationId(SOHeader.LEGACY_PARTS_LOCN);
+			vo.setToLocationId(tkt.getCasLocationId());
+			vo.setShipmentType(ShipmentType.REPLACEMENT_UNIT);
+			vo.setShippedById(SOHeader.LEGACY_USER_ID);
+			vo.setCarrierType(CarrierType.ESTAFETA); //a presumption to fill a void
+			vo.setCreateDate(stepTime(tkt.getClosedDate(), -110));
+			vo.setArrivalDate(vo.getCreateDate());
+			vo.setStatus(ShipmentStatus.RECEIVED); //implies created & sent
+			shipments.add(vo);
+			shipmentMap.put(tkt.getTicketId(), vo.getShipmentId());
+		}
+		log.info(String.format("saving %d shipments for %d tickets", shipments.size(), tickets.size()));
+		writeToDB(shipments);
+		return shipmentMap;
+	}
+
+
+	/**
 	 * get a list of tickets that need updated.  Often there is no record, so we need 
 	 * to distinguish updates from inserts here
 	 * @param keySet
 	 * @throws Exception 
 	 */
 	private void setDispositionCode(Map<String, ExtTicketVO> tickets) throws Exception {
-		if (tickets == null || tickets.isEmpty()) return;
-
 		//create a ledger entry for each ticket
 		TicketLedgerVO vo;
 		Map<String, TicketLedgerVO> ledgers = new HashMap<>(tickets.size());
@@ -243,26 +326,10 @@ public class Replacement extends AbsImporter {
 	 * @throws Exception 
 	 */
 	private void correctLedgerEntries(Map<String, ExtTicketVO> tickets) throws Exception {
-		//these units were never returned to the owner - delete those entries
-		String sql = StringUtil.join(DBUtil.DELETE, schema, "wsla_ticket_ledger where ",
-				"(status_cd='PENDING_PICKUP' or status_cd='PICKUP_COMPLETE') ",
-				"and ticket_id=?");
-		log.debug(sql);
-		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
-			for (String ticketId : tickets.keySet()) {
-				ps.setString(1, ticketId);
-				ps.addBatch();
-			}
-			int[] cnt = ps.executeBatch();
-			log.info(String.format("deleted %d delivery-related ledger entries from %d tickets", cnt.length, tickets.size()));
-
-		} catch (SQLException sqle) {
-			log.error("could not delete delivery-related ledger entries", sqle);
-		}
-
-		//add entries for RAR and addtl diags
+		//add entries for Replacement and addtl diags
 		TicketLedgerVO vo;
-		List<TicketLedgerVO> ledgers = new ArrayList<>(tickets.size()*6);
+		List<TicketLedgerVO> ledgers = new ArrayList<>(tickets.size()*9);
+
 		for (ExtTicketVO tkt : tickets.values()) {
 			vo = new TicketLedgerVO();
 			vo.setTicketId(tkt.getTicketId());
@@ -298,7 +365,7 @@ public class Replacement extends AbsImporter {
 			vo = new TicketLedgerVO();
 			vo.setTicketId(tkt.getTicketId());
 			vo.setDispositionBy(SOHeader.LEGACY_USER_ID);
-			vo.setStatusCode(StatusCode.REFUND_REQUEST);
+			vo.setStatusCode(StatusCode.REPLACEMENT_REQUEST);
 			vo.setCreateDate(stepTime(tkt.getClosedDate(), -52));
 			ledgers.add(vo);
 
@@ -309,67 +376,55 @@ public class Replacement extends AbsImporter {
 			vo.setCreateDate(stepTime(tkt.getClosedDate(), -50));
 			vo.setUnitLocation(UnitLocation.DECOMMISSIONED);
 			ledgers.add(vo);
+
+			vo = new TicketLedgerVO();
+			vo.setTicketId(tkt.getTicketId());
+			vo.setDispositionBy(SOHeader.LEGACY_USER_ID);
+			vo.setStatusCode(StatusCode.REPLACEMENT_CONFIRMED);
+			vo.setCreateDate(stepTime(tkt.getClosedDate(), -40));
+			ledgers.add(vo);
+
+			vo = new TicketLedgerVO();
+			vo.setTicketId(tkt.getTicketId());
+			vo.setDispositionBy(SOHeader.LEGACY_USER_ID);
+			vo.setStatusCode(StatusCode.RPLC_DELIVERY_SCHED);
+			vo.setSummary("Envío Programado");
+			vo.setCreateDate(stepTime(tkt.getClosedDate(), -21));
+			ledgers.add(vo);
+
+			vo = new TicketLedgerVO();
+			vo.setTicketId(tkt.getTicketId());
+			vo.setDispositionBy(SOHeader.LEGACY_USER_ID);
+			vo.setStatusCode(StatusCode.RPLC_DELIVEY_RCVD);
+			vo.setSummary("Envío Recibido");
+			vo.setCreateDate(stepTime(tkt.getClosedDate(), -20));
+			ledgers.add(vo);
 		}
 		writeToDB(ledgers);
 	}
 
 
 	/**
-	 * @param keySet
-	 */
-	private void changeSchedule(Set<String> ticketIds) {
-		if (ticketIds == null || ticketIds.isEmpty()) return;
-		String sql = StringUtil.join(DBUtil.DELETE, schema, "wsla_ticket_schedule where transfer_type_cd='PICKUP' and ticket_id=?");
-		log.debug(sql);
-
-		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
-			for (String ticketId : ticketIds) {
-				ps.setString(1, ticketId);
-				ps.addBatch();
-			}
-			int[] cnt = ps.executeBatch();
-			log.info(String.format("deleted pickup scheduling from %d tickets", cnt.length));
-
-		} catch (SQLException sqle) {
-			log.error("could not delete pickup scheduling", sqle);
-		}
-
-	}
-
-
-	/**
-	 * add row to wsla_ticket_ref_rep, then to wsla_credit_memo
+	 * add row to wsla_ticket_ref_rep
 	 * @param tickets
 	 * @throws Exception 
 	 */
-	private void releaseCredits(Collection<ExtTicketVO> tickets) throws Exception {
+	private void releaseRepairs(Collection<ExtTicketVO> tickets) throws Exception {
 		RefundReplacementVO refRep;
-		Map<String, RefundReplacementVO> refReps = new HashMap<>(tickets.size());
+		List<RefundReplacementVO> refReps = new ArrayList<>(tickets.size());
 		for (ExtTicketVO tkt : tickets) {
 			refRep = new RefundReplacementVO();
 			refRep.setTicketId(tkt.getTicketId());
 			refRep.setCreateDate(stepTime(tkt.getClosedDate(),-30)); //30mins before closing, ~20mins after unit disposal
 			refRep.setRefundAmount(0);
-			refRep.setApprovalType("REFUND_REQUEST");
+			refRep.setApprovalType("REPLACEMENT_REQUEST");
 			refRep.setUnitDisposition("DISPOSE");
 			refRep.setBackOrderFlag(0);
-			refReps.put(tkt.getTicketId(), refRep);
+			refRep.setReplacementLocationId(tkt.getCasLocationId());
+			refRep.setReplacementProductId(tkt.getProductId());
+			refReps.add(refRep);
 		}
-		writeToDB(new ArrayList<>(refReps.values()));
-
-		//create the credit memo, which references back to the refRep pkId above
-		CreditMemoVO credit;
-		List<CreditMemoVO> credits = new ArrayList<>(tickets.size());
-		for (ExtTicketVO tkt : tickets) {
-			credit = new CreditMemoVO();
-			credit.setTicketId(tkt.getTicketId());
-			credit.setCreateDate(stepTime(tkt.getClosedDate(), -30));
-			credit.setRefundAmount(0);
-			credit.setRefundReplacementId(refReps.getOrDefault(tkt.getTicketId(), new RefundReplacementVO()).getRefundReplacementId());
-			credit.setCustomerMemoCode(RandomAlphaNumeric.generateRandom(WSLAConstants.TICKET_RANDOM_CHARS).toUpperCase());
-			credits.add(credit);
-		}
-		writeToDB(credits);
+		writeToDB(refReps);
 	}
 
 
@@ -388,11 +443,43 @@ public class Replacement extends AbsImporter {
 
 
 	/**
-	 * Populate the Map<Ticket#, TicketId> from the database to marry the soNumbers in the Excel
+	 * go to the database for previously-computed data we can reuse...avoids 
+	 * duplicating complex lookups & logic (using data we may not have).
+	 * need to know:  
+	 * 1) The CAS assigned
+	 * 2) the productId
+	 * 3) the actual ticketId - on the rare chance its not the same as ticketNo/soNumber
+	 * @param tickets
 	 */
-	private void loadTicketIds() {
-		String sql = StringUtil.join("select ticket_no as key, ticket_id as value from ", schema, "wsla_ticket");
-		MapUtil.asMap(ticketIds, db.executeSelect(sql, null, new GenericVO()));
-		log.debug(String.format("loaded %d ticketIds", ticketIds.size()));
+	private void populateTicketDBData(Map<String, ExtTicketVO> tickets) {
+		if (tickets == null || tickets.isEmpty()) return;
+		String sql = StringUtil.join("select distinct t.ticket_id, t.ticket_no, ta.location_id, ps.product_id",
+				DBUtil.FROM_CLAUSE, schema, "wsla_ticket t",
+				DBUtil.LEFT_OUTER_JOIN, schema, "wsla_ticket_assignment ta on t.ticket_id=ta.ticket_id and ta.assg_type_cd='CAS'",
+				DBUtil.LEFT_OUTER_JOIN, schema, "wsla_product_serial ps on t.product_serial_id=ps.product_serial_id",
+				DBUtil.WHERE_CLAUSE, "t.ticket_no in (", DBUtil.preparedStatmentQuestion(tickets.size()), ")");
+		log.debug(sql);
+
+		int x = 0;
+		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
+			for (String ticketId : tickets.keySet())
+				ps.setString(++x, ticketId);
+
+			ResultSet rs = ps.executeQuery();
+			while (rs.next()) {
+				ExtTicketVO tkt = tickets.get(rs.getString(2));
+				if (tkt == null) {
+					log.error("could not find ticket for " + rs.getString(2));
+					continue;
+				}
+				tkt.setTicketId(rs.getString(1)); //these should be the same as ticketNo, but just in case
+				tkt.setTicketIdText(rs.getString(2));
+				tkt.setCasLocationId(rs.getString(3));
+				tkt.setProductId(rs.getString(4));
+			}
+
+		} catch (SQLException sqle) {
+			log.error("could not populate tickets from DB", sqle);
+		}
 	}
 }

@@ -357,6 +357,7 @@ public class Refund extends AbsImporter {
 		List<CreditMemoVO> credits = new ArrayList<>(tickets.size());
 		for (ExtTicketVO tkt : tickets) {
 			credit = new CreditMemoVO();
+			credit.setCreditMemoId("credit_" + tkt.getTicketId());
 			credit.setTicketId(tkt.getTicketId());
 			credit.setCreateDate(stepTime(tkt.getClosedDate(), -30));
 			credit.setRefundAmount(0);

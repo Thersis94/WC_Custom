@@ -136,19 +136,14 @@ public class SOLineItems extends AbsImporter {
 
 		//split the data into the 3 categories
 		for (SOLNIFileVO vo : data) {
-			if (isOpenTktRun && vo.getSoNumber().matches("(?i)^WSL0(.*)$")) continue;
+			if (vo.getSoNumber().matches("(?i)^WSL0(.*)$")) continue;
 			
 			if (vo.isInventory()) {
 				PartVO part = transposeInventoryData(vo, new PartVO());
-				//skip WSLA* tickets - these are harvesting part recoveries (TODO tie them to the source ticket)
-				if (vo.getSoNumber().matches("(?i)^WSL0(.*)$")) {
-					log.warn(String.format("part looks harvested - ticket %s", part.getTicketId()));
-				} else {
-					List<PartVO> parts = tktParts.get(part.getTicketId());
-					if (parts == null) parts = new ArrayList<>();
-					parts.add(part);
-					tktParts.put(part.getTicketId(), parts);
-				}
+				List<PartVO> parts = tktParts.get(part.getTicketId());
+				if (parts == null) parts = new ArrayList<>();
+				parts.add(part);
+				tktParts.put(part.getTicketId(), parts);
 
 			} else if (vo.isService()) {
 				TicketCommentVO cmt = new TicketCommentVO();
@@ -327,7 +322,7 @@ public class SOLineItems extends AbsImporter {
 	 * Assert we have product_master records for the inventory items
 	 * @param inventory
 	 */
-	private void verifyInventory(Collection<List<PartVO>> tktParts) {
+	static void verifyInventory(Collection<List<PartVO>> tktParts) {
 		Set<String> missingProducts = new HashSet<>(tktParts.size());
 		int removeCnt = 0;
 
@@ -350,7 +345,8 @@ public class SOLineItems extends AbsImporter {
 			for (String s : missingProducts) {
 				System.err.println(s);
 			}
-			throw new RuntimeException("missing above products, can't proceed");
+			//TODO reinstate this for production runs, once Steve gives us all the missing products
+			//throw new RuntimeException("missing above products, can't proceed");
 		}
 		log.info("all inventory is accounted for!");
 	}
@@ -362,7 +358,7 @@ public class SOLineItems extends AbsImporter {
 	 * @param part
 	 * @return
 	 */
-	private boolean isShippingLabel(PartVO part) {
+	static boolean isShippingLabel(PartVO part) {
 		return part.getCustomerProductId().matches("(?i).*\\ GUIA$");
 	}
 
@@ -468,8 +464,9 @@ public class SOLineItems extends AbsImporter {
 	 * Populate the Map<Legacy/Product#/Alias, CypherProductId> from the 
 	 * database to marry the soNumbers in the Excel.
 	 * The Order By here prioritizes best matches over desparation matches (desc_txt)
+	 * @return 
 	 */
-	private void loadProductIds() {
+	public Map<String, String> loadProductIds() {
 		String sql = StringUtil.join("select 3, cust_product_id as key, ",
 				"product_id as value from ", schema, "wsla_product_master where length(cust_product_id)>0 ", 
 				DBUtil.UNION_ALL,"select 2, sec_cust_product_id as key, product_id as value from ", 
@@ -479,6 +476,7 @@ public class SOLineItems extends AbsImporter {
 
 		MapUtil.asMap(productIds, db.executeSelect(sql, null, new GenericVO()));
 		log.debug(String.format("loaded %d productIds", productIds.size()));
+		return productIds;
 	}
 
 
