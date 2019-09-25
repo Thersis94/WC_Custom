@@ -363,6 +363,8 @@ public class Refund extends AbsImporter {
 			credit.setRefundAmount(0);
 			credit.setRefundReplacementId(refReps.getOrDefault(tkt.getTicketId(), new RefundReplacementVO()).getRefundReplacementId());
 			credit.setCustomerMemoCode(RandomAlphaNumeric.generateRandom(WSLAConstants.TICKET_RANDOM_CHARS).toUpperCase());
+			credit.setApprovalDate(credit.getCreateDate());
+			credit.setApprovedBy("Mariana Hernandez");
 			credits.add(credit);
 		}
 		writeToDB(credits);

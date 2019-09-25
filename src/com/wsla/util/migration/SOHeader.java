@@ -673,14 +673,12 @@ public class SOHeader extends AbsImporter {
 		oemPhones.put("WES", "8009378464");
 		oemPhones.put("RCA", "8009277268");
 		oemPhones.put("VEL", "8003248328");
-		//these two don't exist - its ok to leave blank
-		oemPhones.put("WSL", "");
-		oemPhones.put("MIL", "");
-		//need these
-		oemPhones.put("CT", "");
-		oemPhones.put("SME", "");
-		oemPhones.put("INT", "");
-		oemPhones.put("MIT", "");
+		oemPhones.put("WSL", ""); //doesn't exist - ok blank
+		oemPhones.put("MIL", ""); //doesn't exist - ok blank
+		oemPhones.put("CT", ""); //unknown by WSLA - possibly bad data
+		oemPhones.put("SME", ""); //Steve's initials for testing - ignore
+		oemPhones.put("INT", ""); //INTernal testing - ignore
+		oemPhones.put("MIT", "8888888888");
 
 		String sql = StringUtil.join("select provider_id as key, phone_number_txt as value from ", schema, 
 				"wsla_provider_phone where country_cd='MX' and active_flg=1");

@@ -35,16 +35,16 @@ public class LegacyDataImporter extends CommandLineUtil {
 	//define the ordered list of importers to run.  This will vary through development but all will run at once for staging/prod.
 	static {
 
-		importers.add(SOHeader.class.getName());
-		importers.add(SOExtendedData.class.getName());
-		importers.add(SOComments.class.getName());
-		importers.add(SOLineItems.class.getName());
-		importers.add(AssetParser.class.getName());
-
-		//post-process refunds, this class relies on both the tickets already being loaded and the raw files
-		importers.add(Refund.class.getName());
-		importers.add(Replacement.class.getName());
-		importers.add(DebitMemoImporter.class.getName());
+//		importers.add(SOHeader.class.getName());
+//		importers.add(SOExtendedData.class.getName());
+//		importers.add(SOComments.class.getName());
+//		importers.add(SOLineItems.class.getName());
+//		importers.add(AssetParser.class.getName());
+//
+//		//post-process refunds, this class relies on both the tickets already being loaded and the raw files
+//		importers.add(Refund.class.getName());
+//		importers.add(Replacement.class.getName());
+//		importers.add(DebitMemoImporter.class.getName());
 	}
 
 

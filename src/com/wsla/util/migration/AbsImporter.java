@@ -178,11 +178,12 @@ public abstract class AbsImporter {
 
 	/**
 	 * write the presumed-annotated list of beans to the database using DBProcessor
-	 * @param products
+	 * @param data
+	 * @param forceInsert
 	 * @throws Exception 
 	 */
-	protected int writeToDB(List<?> data, boolean override) throws Exception {
-		int[] cnt = db.executeBatch(data, override);
+	protected int writeToDB(List<?> data, boolean forceInsert) throws Exception {
+		int[] cnt = db.executeBatch(data, forceInsert);
 		log.debug(String.format("saved %d rows to the database", cnt.length));
 		return cnt.length;
 	}

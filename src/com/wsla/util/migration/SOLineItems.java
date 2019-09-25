@@ -105,8 +105,8 @@ public class SOLineItems extends AbsImporter {
 	void run() throws Exception {
 		//use this to cross-ref the DB for missing products (copy SQL inserts from production)
 		//for (String s : productIds.values())
-			//System.out.println("('" + s + "'),");
-		
+		//System.out.println("('" + s + "'),");
+
 		File[] files = listFilesMatching(props.getProperty("soLineItemsFile"), "(.*)SOLNI(.*)");
 
 		for (File f : files)
@@ -137,7 +137,7 @@ public class SOLineItems extends AbsImporter {
 		//split the data into the 3 categories
 		for (SOLNIFileVO vo : data) {
 			if (vo.getSoNumber().matches("(?i)^WSL0(.*)$")) continue;
-			
+
 			if (vo.isInventory()) {
 				PartVO part = transposeInventoryData(vo, new PartVO());
 				if (!StringUtil.isEmpty(part.getTicketId())) {
@@ -292,11 +292,11 @@ public class SOLineItems extends AbsImporter {
 	private void saveActivities(List<TicketCommentVO> activities) throws Exception {
 		//write the activities to the comments table 
 		writeToDB(activities);
-		
+
 		//wait for the writes to flush so we can read them
 		log.info("waiting 5s for activities to commit");
 		sleepThread(5000);
-		
+
 		StringBuilder sql = new StringBuilder(700);
 		sql.append(DBUtil.INSERT_CLAUSE).append(schema).append("wsla_ticket_ledger (ledger_entry_id,disposition_by_id,ticket_id,");
 		sql.append("summary_txt,create_dt,billable_amt_no,billable_activity_cd) ");
@@ -310,7 +310,7 @@ public class SOLineItems extends AbsImporter {
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("wsla_warranty_billable_xr wb on pw.warranty_id=wb.warranty_id and wb.billable_activity_cd=ba.billable_activity_cd ");
 		sql.append("where tc.activity_type_cd != 'COMMENT'");
 		log.debug(sql);
-		
+
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			int cnt = ps.executeUpdate();
 			log.info(String.format("Added %d rows to the timeline for ticket activities", cnt));
@@ -599,6 +599,21 @@ public class SOLineItems extends AbsImporter {
 		activityMap.put("ZENSALD04","EMAIL");
 		activityMap.put("ZENSALD05","EMAIL");
 		activityMap.put("ZENSALD06","EMAIL");
+		//added from full legacy import, per Steve
+		activityMap.put("ENV-IN Z6","OTHER");
+		activityMap.put("ENV-OUT Z1","OTHER");
+		activityMap.put("ENV-OUT","OTHER");
+		activityMap.put("POPADJUNTO", "ADD_ASSETS");
+		activityMap.put("SV-BRDLREP","OTHER");
+		activityMap.put("SV-CASREVI","OTHER");
+		activityMap.put("SV-CORRENV","EMAIL");
+		activityMap.put("SV-CORRREC","EMAIL");
+		activityMap.put("SV-DPPREPL","OTHER");
+		activityMap.put("SV-DPRTREP","OTHER");
+		activityMap.put("SV-MINIREP","OTHER");
+		activityMap.put("SV-SRVDEPO","OTHER");
+		activityMap.put("S-VISIDOM","OTHER");
+
 		log.debug("loaded " + activityMap.size() + " activities");
 	}
 }

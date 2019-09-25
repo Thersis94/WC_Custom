@@ -32,9 +32,6 @@ import com.wsla.data.provider.ProviderVO;
 @Table(name="wsla_debit_memo")
 public class DebitMemoVO extends BeanDataVO {
 
-	/**
-	 * 
-	 */
 	private static final long serialVersionUID = -3300811711353420674L;
 
 	// String Member Variables
@@ -404,4 +401,3 @@ public class DebitMemoVO extends BeanDataVO {
 		this.updateDate = updateDate;
 	}
 }
-
