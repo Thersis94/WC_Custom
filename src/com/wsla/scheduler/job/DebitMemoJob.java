@@ -283,7 +283,7 @@ public class DebitMemoJob extends AbstractSMTJob {
 	private List<DebitMemoVO> getGroupData(String schema) {
 		StringBuilder sql = new StringBuilder(512);
 		sql.append("select replace(newid(), '-', '') as debit_memo_id, c.oem_id, ");
-		sql.append("d.provider_id as retail_id, count(*) as credit_memo_no ");
+		sql.append("d.provider_id as retail_id, count(*) as credit_memo_no, customer_assisted_cd ");
 		sql.append(DBUtil.FROM_CLAUSE).append(schema);
 		sql.append("wsla_credit_memo a ");
 		sql.append(DBUtil.INNER_JOIN).append(schema);
@@ -297,11 +297,11 @@ public class DebitMemoJob extends AbstractSMTJob {
 		sql.append(DBUtil.INNER_JOIN).append(schema);
 		sql.append("wsla_warranty w on e.warranty_id = w.warranty_id ");
 		sql.append("where debit_memo_id is null and approval_dt is not null ");
-		sql.append("and (w.refund_provider_id is null or w.refund_provider_id = '') ");
-		sql.append("group by oem_id, retail_id ");
+		sql.append("and (w.refund_provider_id is null or w.refund_provider_id = '') and (a.customer_assisted_cd is null or a.customer_assisted_cd = '') ");
+		sql.append("group by oem_id, retail_id, customer_assisted_cd ");
 		sql.append("union ");
 		sql.append("select replace(newid(), '-', '') as debit_memo_id, c.oem_id, ");
-		sql.append("d.provider_id as retail_id, count(*) as credit_memo_no ");
+		sql.append("d.provider_id as retail_id, count(*) as credit_memo_no, customer_assisted_cd ");
 		sql.append(DBUtil.FROM_CLAUSE).append(schema);
 		sql.append("wsla_credit_memo a ");
 		sql.append(DBUtil.INNER_JOIN).append(schema);
@@ -314,8 +314,8 @@ public class DebitMemoJob extends AbstractSMTJob {
 		sql.append("wsla_warranty w on e.warranty_id = w.warranty_id ");
 		sql.append(DBUtil.INNER_JOIN).append(schema);
 		sql.append("wsla_provider d on w.refund_provider_id = d.provider_id ");
-		sql.append("where debit_memo_id is null and approval_dt is not null ");
-		sql.append("group by oem_id, retail_id ");
+		sql.append("where debit_memo_id is null and approval_dt is not null and (a.customer_assisted_cd is null or a.customer_assisted_cd = '') ");
+		sql.append("group by oem_id, retail_id, customer_assisted_cd ");
 		sql.append("order by oem_id, retail_id ");
 		log.debug(sql.length() + "|" + sql);
 
@@ -349,8 +349,8 @@ public class DebitMemoJob extends AbstractSMTJob {
 		sql.append(DBUtil.INNER_JOIN).append(schema);
 		sql.append("wsla_product_master f on e.product_id = f.product_id ");
 		sql.append("where debit_memo_id is null and approval_dt is not null ");
-		sql.append("and oem_id = ? and d.provider_id = ? ");
-		log.debug(sql.length() + "|" + sql + "|" + vals);
+		sql.append("and oem_id = ? and d.provider_id = ?  and (a.customer_assisted_cd is null or a.customer_assisted_cd = '') ");
+		log.info(sql.length() + "|" + sql + "|" + vals);
 
 		// Get the memos
 		DBProcessor db = new DBProcessor(conn);

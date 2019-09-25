@@ -11,6 +11,7 @@ import java.util.Map;
 //SMT Base Libs
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
+import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.io.mail.EmailRecipientVO;
 import com.siliconmtn.io.mail.EmailMessageVO.Header;
 import com.siliconmtn.sb.email.util.EmailCampaignBuilderUtil;
@@ -192,6 +193,7 @@ public class NotificationWorkflowModule extends AbstractWorkflowModule {
 	 * @throws SQLException 
 	 */
 	private void sendLocaleEmail(UserVO user, StatusNotificationVO notification) throws SQLException {
+		
 		// Set the email recipient's data
 		List<EmailRecipientVO> rcpts = new ArrayList<>();
 		rcpts.add(new EmailRecipientVO(user.getProfileId(), user.getEmail(), EmailRecipientVO.TO));
@@ -210,6 +212,53 @@ public class NotificationWorkflowModule extends AbstractWorkflowModule {
 		String headerValue = StringUtil.join("<", ticketId, "|", user.getUserId(), WSLAConstants.TICKET_EMAIL_REFERENCE_SUFFIX, ">");
 		mData.put(Header.IN_REPLY_TO.toString(), headerValue);
 		mData.put(Header.REFERENCES.toString(), headerValue);
+		
+		mData.put("firstName", user.getFirstName());
+		mData.put("lastName", user.getLastName());
+		mData.put("emailAddress", user.getEmail());
+		
+		TicketEditAction tea = new TicketEditAction(getConnection(), attributes);
+		try {
+			TicketVO ticket = tea.getCompleteTicket(ticketId);
+			if(ticket.getOem() != null) {
+				mData.put("providerName", StringUtil.checkVal(ticket.getOem().getProviderName()));
+			}else {
+				mData.put("providerName", "");
+			}
+			
+			if( ticket.getProductSerial() != null && ticket.getProductSerial().getProduct() != null) {
+				mData.put("productName", StringUtil.checkVal(ticket.getProductSerial().getProduct().getProductName()));
+			}else {
+				mData.put("productName", "");
+			}
+			
+			if(ticket.getStatus() != null) {
+				mData.put("groupStatusCode", StringUtil.checkVal(ticket.getStatus().getGroupStatusCode()));
+				mData.put("statusName", StringUtil.checkVal(ticket.getStatus().getStatusName()));
+				mData.put("statusCd",  StringUtil.checkVal(ticket.getStatus()));
+			}else {
+				mData.put("groupStatusCode", "");
+				mData.put("statusName", "");
+				mData.put("statusCd",  "");
+			}
+			
+		} catch (DatabaseException e) {
+			log.error("could not get ticket ",e);
+		}
+		
+		if(user.getProfile() != null && user.getProfile().getLocation() != null ) {
+			mData.put("addressText", StringUtil.checkVal(user.getProfile().getLocation().getAddress()));
+			mData.put("address2Text", StringUtil.checkVal(user.getProfile().getLocation().getAddress2()));
+			mData.put("cityName", StringUtil.checkVal(user.getProfile().getLocation().getCity()));
+			mData.put("stateCd", StringUtil.checkVal(user.getProfile().getLocation().getState()));
+			mData.put("zipCode", StringUtil.checkVal(user.getProfile().getLocation().getZipCode()));
+		}else {
+			mData.put("addressText", "");
+			mData.put("address2Text", "");
+			mData.put("cityName", "");
+			mData.put("stateCd", "");
+			mData.put("zipCode", "");
+		}
 		
 		util.sendMessage(mData, rcpts, notification.getCampaignInstanceId());
 	}

@@ -102,7 +102,7 @@ public class DebitMemoWidget extends SBActionAdapter {
 		
 		StringBuilder sql = new StringBuilder(376);
 		sql.append("select d.value_txt as file_path_url, c.ticket_no, a.* ");
-		sql.append("from wsla_credit_memo a ");
+		sql.append("from ").append(getCustomSchema()).append("wsla_credit_memo a ");
 		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema());
 		sql.append("wsla_ticket_ref_rep b on a.ticket_ref_rep_id = b.ticket_ref_rep_id ");
 		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema());

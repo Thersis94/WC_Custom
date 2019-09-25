@@ -57,6 +57,7 @@ import com.wsla.data.ticket.ShipmentVO.ShipmentType;
 import com.wsla.data.ticket.StatusCode;
 import com.wsla.data.ticket.TicketVO;
 import com.wsla.data.ticket.TicketAssignmentVO.TypeCode;
+import com.wsla.data.ticket.TicketVO.Standing;
 import com.wsla.data.ticket.UserVO;
 
 // Freemarker Imports
@@ -348,10 +349,46 @@ public class LogisticsAction extends SBActionAdapter {
 					
 					bta.changeStatus(ticketId, user.getUserId(), status, LedgerSummary.SHIPMENT_CREATED.summary, null);
 				}
+				
+				if(req.hasParameter(REQ_TICKET_ID) && ShipmentStatus.BACKORDERED.equals(vo.getStatus())) {
+					log.debug("backordered change ticket to delayed");
+					updateTicketStandings(req.getParameter(REQ_TICKET_ID), Standing.DELAYED);
+				}
 			}
 
 		} catch (Exception e) {
 			log.error("could not save shipment", e);
+		}
+	}
+	
+	/**
+	 * called to change the standing of a ticket
+	 * @param ticketId
+	 * @param standingCode
+	 * @throws SQLException
+	 * @throws InvalidDataException
+	 */
+	private void updateTicketStandings(String ticketId, Standing standingCode) throws SQLException, InvalidDataException {
+		if (StringUtil.isEmpty(ticketId)) throw new InvalidDataException("blank Ticket Id");
+		
+		String schema = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
+		
+		// Build the sql
+		StringBuilder sql = new StringBuilder(100);
+		sql.append(DBUtil.UPDATE_CLAUSE).append(schema).append("wsla_ticket ");
+		sql.append("set standing_cd = ?, update_dt = ? ");
+		sql.append(DBUtil.WHERE_CLAUSE).append("ticket_id = ?");
+		
+		// Update the records
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+				ps.setString(1, standingCode.name());
+				ps.setDate(2, Convert.formatSQLDate(new Date()));
+				ps.setString(3, ticketId);
+			
+				int cnt = ps.executeUpdate();
+				log.debug(String.format("updated %d service order(s) with ticket id of  %s", cnt, ticketId));
+		}catch(SQLException sqle) {
+			log.error("could not change the ticket standing", sqle);
 		}
 	}
 
