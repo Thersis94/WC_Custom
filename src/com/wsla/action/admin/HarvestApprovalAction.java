@@ -94,7 +94,7 @@ public class HarvestApprovalAction extends SBActionAdapter {
 		// Set the harvest status attribute
 		TicketDataTransaction tdt = new TicketDataTransaction(getDBConnection(), getAttributes());
 		try {
-			tdt.saveDataAttribute(ticketId, "attr_harvest_status", StatusCode.HARVEST_APPROVED.name(), true);
+			tdt.saveDataAttribute(ticketId, "attr_harvest_status", StatusCode.HARVEST_APPROVED.name(), null, true);
 		} catch (SQLException e) {
 			throw new ActionException(e);
 		}
