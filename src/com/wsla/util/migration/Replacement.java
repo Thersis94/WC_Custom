@@ -73,16 +73,13 @@ public class Replacement extends AbsImporter {
 			//010 are replacements and all we care about
 			if ("010".equals(dataVo.getSoType())) {
 				ExtTicketVO vo = transposeTicketData(dataVo, new ExtTicketVO());
-
 				tickets.put(vo.getTicketId(), vo);
-				log.info(vo.getTicketId());
-				break;
 			}
 		}
 
 		populateTicketDBData(tickets);
 
-		removeGhostRecords(tickets);
+		tickets = removeGhostRecords(tickets);
 
 		//don't bother with the rest of this class if we have no tickets
 		if (tickets.isEmpty()) return;
@@ -108,23 +105,23 @@ public class Replacement extends AbsImporter {
 	 * @param tickets
 	 * @return
 	 */
-	private void removeGhostRecords(Map<String, ExtTicketVO> tickets) {
-		int startCnt = tickets.size();
+	private Map<String, ExtTicketVO> removeGhostRecords(Map<String, ExtTicketVO> tickets) {
+		Map<String, ExtTicketVO> tix = new HashMap<>(tickets.size());
 
 		for (Map.Entry<String, ExtTicketVO> entry : tickets.entrySet()) {
 			if (StringUtil.isEmpty(entry.getValue().getTicketIdText())) {
 				log.warn(String.format("database does not contain ticket %s", entry.getKey()));
-				tickets.remove(entry.getKey());
 			} else if (StringUtil.isEmpty(entry.getValue().getProductId())) {
 				log.warn(String.format("database does not contain product for ticket %s", entry.getKey()));
-				tickets.remove(entry.getKey());
 			} else if (StringUtil.isEmpty(entry.getValue().getCasLocationId())) {
 				log.warn(String.format("database does not contain CAS for ticket %s", entry.getKey()));
-				tickets.remove(entry.getKey());
+			} else {
+				tix.put(entry.getKey(), entry.getValue());
 			}
 		}
 
-		log.info(String.format("trimmed ticket list from %d to %d", startCnt, tickets.size()));
+		log.info(String.format("trimmed ticket list from %d to %d", tickets.size(), tix.size()));
+		return tix;
 	}
 
 

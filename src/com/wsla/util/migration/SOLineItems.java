@@ -140,10 +140,12 @@ public class SOLineItems extends AbsImporter {
 			
 			if (vo.isInventory()) {
 				PartVO part = transposeInventoryData(vo, new PartVO());
-				List<PartVO> parts = tktParts.get(part.getTicketId());
-				if (parts == null) parts = new ArrayList<>();
-				parts.add(part);
-				tktParts.put(part.getTicketId(), parts);
+				if (!StringUtil.isEmpty(part.getTicketId())) {
+					List<PartVO> parts = tktParts.get(part.getTicketId());
+					if (parts == null) parts = new ArrayList<>();
+					parts.add(part);
+					tktParts.put(part.getTicketId(), parts);
+				}
 
 			} else if (vo.isService()) {
 				TicketCommentVO cmt = new TicketCommentVO();
