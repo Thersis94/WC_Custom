@@ -74,6 +74,7 @@ public class AssetParser extends AbsImporter {
 
 			//clear the lists before moving on to the next file
 			assets.clear();
+			ledgers.clear();
 			attributes.clear();
 			comments.clear();
 		}
@@ -244,6 +245,7 @@ public class AssetParser extends AbsImporter {
 			} else {
 				//its a comment
 				comment = new TicketCommentVO();
+				comment.setTicketCommentId(uuid.getUUID());
 				comment.setTicketId(vo.getTicketId());
 				comment.setCreateDate(LegacyDataImporter.toUTCDate(vo.getCreateDate()));
 				comment.setPriorityTicketFlag(vo.isAlert() ? 1 : 0);

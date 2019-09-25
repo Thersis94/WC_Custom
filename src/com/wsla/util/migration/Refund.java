@@ -357,11 +357,14 @@ public class Refund extends AbsImporter {
 		List<CreditMemoVO> credits = new ArrayList<>(tickets.size());
 		for (ExtTicketVO tkt : tickets) {
 			credit = new CreditMemoVO();
+			credit.setCreditMemoId("credit_" + tkt.getTicketId());
 			credit.setTicketId(tkt.getTicketId());
 			credit.setCreateDate(stepTime(tkt.getClosedDate(), -30));
 			credit.setRefundAmount(0);
 			credit.setRefundReplacementId(refReps.getOrDefault(tkt.getTicketId(), new RefundReplacementVO()).getRefundReplacementId());
 			credit.setCustomerMemoCode(RandomAlphaNumeric.generateRandom(WSLAConstants.TICKET_RANDOM_CHARS).toUpperCase());
+			credit.setApprovalDate(credit.getCreateDate());
+			credit.setApprovedBy("Mariana Hernandez");
 			credits.add(credit);
 		}
 		writeToDB(credits);
