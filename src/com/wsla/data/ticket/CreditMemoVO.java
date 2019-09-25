@@ -39,6 +39,7 @@ public class CreditMemoVO extends BeanDataVO {
 	private String debitMemoId;
 	private String assetId;
 	private String approvalFlag;
+	private String customerAssistedCode;
 	
 	private String bankName;
 	private String accountNumber;
@@ -62,6 +63,13 @@ public class CreditMemoVO extends BeanDataVO {
 	private String productName;
 	private String ticketId;
 
+	/**
+	 * Standing of the ticket in relation to how its progressing through the workflow
+	 */
+	public enum CustomerAssistedCode {
+		STORE_OWNED_REFUND, MERMA
+	}
+	
 	/**
 	 * 
 	 */
@@ -255,6 +263,28 @@ public class CreditMemoVO extends BeanDataVO {
 	@Column(name="authorization_dt")
 	public Date getAuthorizationDate() {
 		return authorizationDate;
+	}
+	
+	/**
+	 * @return
+	 */
+	@Column(name="customer_assisted_cd")
+	public String getCustomerAssistedCode() {
+		return customerAssistedCode;
+	}
+
+	/**
+	 * @param customerAssistedCode
+	 */
+	public void setCustomerAssistedCode(String customerAssistedCode) {
+		this.customerAssistedCode = customerAssistedCode;
+	}
+	
+	/**
+	 * @param customerAssistedCode
+	 */
+	public void setCustomerAssistedCode(CustomerAssistedCode customerAssistedCode) {
+		this.customerAssistedCode = customerAssistedCode.name();
 	}
 
 	/**

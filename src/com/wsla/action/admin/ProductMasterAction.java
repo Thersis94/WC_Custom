@@ -1,5 +1,7 @@
 package com.wsla.action.admin;
 
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 // JDK 1.8.x
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -26,9 +28,9 @@ import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.BatchImport;
-import com.wsla.data.product.ProductCategoryAssociationVO;
 
 // WSLA Libs
+import com.wsla.data.product.ProductCategoryAssociationVO;
 import static com.wsla.action.admin.ProviderAction.REQ_PROVIDER_ID;
 import com.wsla.data.product.ProductVO;
 
@@ -94,19 +96,53 @@ public class ProductMasterAction extends BatchImport {
 	@Override
 	public void build(ActionRequest req) throws ActionException {
 		ProductVO product = new ProductVO(req);
-
-		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		try {
-
-			db.save(product);
-
-			putModuleData(product);
-		} catch (InvalidDataException | DatabaseException e) {
+			if (req.getBooleanParameter("validate")) {
+				validateProduct(new ProductVO(req), req.getParameter("newProductId"));
+			} else {
+				
+				DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+				db.save(product);
+				putModuleData(product);
+			}
+		} catch (InvalidDataException | DatabaseException | SQLException e) {
 			log.error("Unable to save product", e);
 			putModuleData(product, 0, false, e.getLocalizedMessage(), true);
 		}
 	}
 
+	/**
+	 * 
+	 * @param product
+	 * @throws InvalidDataException
+	 * @throws DatabaseException
+	 */
+	public void validateProduct(ProductVO product, String newProductId) 
+			throws InvalidDataException, DatabaseException, SQLException {
+		
+		// Update the validated flag to 1
+		if (product.getValidatedFlag() == 1) {
+			DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+			db.update(product, Arrays.asList("validated_flg", "product_id"));
+		} else {
+			
+			// Switch any products in the product serial table to the new product
+			StringBuilder sql = new StringBuilder(128);
+			sql.append("update ").append(getCustomSchema());
+			sql.append("wsla_product_serial set product_id = ? where product_id = ?");
+			
+			try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+				ps.setString(1, newProductId);
+				ps.setString(2, product.getProductId());
+				
+				ps.executeUpdate();
+			}
+			
+			// delete the product
+			DBProcessor db  = new DBProcessor(getDBConnection(), getCustomSchema());
+			db.delete(product);
+		}
+	}
 
 	/**
 	 * Gets a list of products - either by ID or for the given provider.

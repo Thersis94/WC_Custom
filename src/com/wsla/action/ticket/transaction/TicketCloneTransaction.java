@@ -172,8 +172,8 @@ public class TicketCloneTransaction extends BaseTransactionAction {
 			
 			// Set the current disposition to repairable & WSLA as the owner of the unit
 			TicketDataTransaction tdt = new TicketDataTransaction(getDBConnection(), getAttributes());
-			tdt.saveDataAttribute(newTicket.getTicketId(), "attr_dispositionCode", DispositionCode.REPAIRABLE.name(), false);
-			tdt.saveDataAttribute(newTicket.getTicketId(), "attr_ownsTv", ProductOwner.WSLA.name(), true);
+			tdt.saveDataAttribute(newTicket.getTicketId(), "attr_dispositionCode", DispositionCode.REPAIRABLE.name(), null, false);
+			tdt.saveDataAttribute(newTicket.getTicketId(), "attr_ownsTv", ProductOwner.WSLA.name(), null, true);
 		} catch (InvalidDataException | DatabaseException | SQLException e) {
 			throw new ActionException(e);
 		}
