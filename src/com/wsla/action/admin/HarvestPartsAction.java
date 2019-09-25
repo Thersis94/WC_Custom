@@ -128,10 +128,10 @@ public class HarvestPartsAction extends SBActionAdapter {
 		TicketDataTransaction tdt = new TicketDataTransaction(getDBConnection(), getAttributes());
 
 		//save the ticket data object to not shipped
-		tdt.saveDataAttribute(ticketId, SN_PLATE_SHIP_ATTRIBUTE, SerialPlateStatus.NOT_SHIPPED.name(), true);
+		tdt.saveDataAttribute(ticketId, SN_PLATE_SHIP_ATTRIBUTE, SerialPlateStatus.NOT_SHIPPED.name(), null, true);
 
 		//save the status of the harvest in the data attribute
-		tdt.saveDataAttribute(ticketId, HARVEST_STATUS_ATTRIBUTE, StatusCode.HARVEST_COMPLETE.name(), true);
+		tdt.saveDataAttribute(ticketId, HARVEST_STATUS_ATTRIBUTE, StatusCode.HARVEST_COMPLETE.name(), null, true);
 		
 		//set the ticket status to harvest complete changing the location to decommissioned
 		tta.addLedger(ticketId, user.getUserId(), StatusCode.HARVEST_COMPLETE, LedgerSummary.HARVEST_COMPETE.summary + summary, UnitLocation.DECOMMISSIONED);
@@ -219,7 +219,7 @@ public class HarvestPartsAction extends SBActionAdapter {
 		String schema = getCustomSchema();
 		List<Object> params = new ArrayList<>();
 		StringBuilder sql = new StringBuilder(200);
-		sql.append("select p.*, ps.*, t.ticket_id, t.ticket_no, t.status_cd, pl.location_nm ");
+		sql.append("select p.*, ps.*, t.ticket_id, t.ticket_no, t.status_cd, pl.* ");
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("wsla_ticket t ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("wsla_product_serial ps on t.product_serial_id=ps.product_serial_id ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("wsla_ticket_data td on t.ticket_id = td.ticket_id and td.attribute_cd = ? and td.value_txt = ? ");
@@ -250,7 +250,7 @@ public class HarvestPartsAction extends SBActionAdapter {
 		log.debug("sql: "+ sql+ "|"+params);
 
 		DBProcessor db = new DBProcessor(getDBConnection(), schema);
-		return db.executeSQLWithCount(sql.toString(), params, new HarvestApprovalVO(), bst.getLimit(), bst.getOffset());
+		return db.executeSQLWithCount(sql.toString(), params, new HarvestApprovalVO(), 1000, 0);
 	}
 
 

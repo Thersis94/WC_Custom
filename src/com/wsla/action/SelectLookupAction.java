@@ -152,6 +152,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		keyMap.put("refRepDispostionType", new GenericVO("getRefRepDispostionType", Boolean.TRUE));
 		keyMap.put("standing", new GenericVO("getStanding", Boolean.TRUE));
 		keyMap.put("acShipLocation", new GenericVO("getAcShippingLocation", Boolean.TRUE));
+		keyMap.put("surveyResults", new GenericVO("getSurveyResults", Boolean.TRUE));
 	}
 
 	/**
@@ -522,12 +523,12 @@ public class SelectLookupAction extends SBActionAdapter {
 		if("harvestCas".equalsIgnoreCase(req.getStringParameter(SELECT_KEY))) {
 			sql.append("and b.location_id in (select location_id from ").append(getCustomSchema());
 			sql.append("wsla_ticket_assignment where assg_type_cd = 'CAS' and ticket_id in ");
-			sql.append("( SELECT ticket_id FROM ").append(getCustomSchema()).append("wsla_ticket where status_cd = 'HARVEST_APPROVED' )");
-			sql.append("order by ticket_id, location_id asc ) ");
+			sql.append("( SELECT ticket_id FROM ").append(getCustomSchema());
+			sql.append("wsla_ticket_data where attribute_cd = 'attr_harvest_status' and value_txt = 'HARVEST_APPROVED') ");
 		}
 
-		sql.append("order by provider_nm");
-		log.debug(" sql " + sql +"|" + vals);
+		sql.append(") order by provider_nm");
+		log.info(" sql " + sql +"|" + vals);
 
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		List<GenericVO> data = db.executeSelect(sql.toString(), vals, new GenericVO());
@@ -714,11 +715,12 @@ public class SelectLookupAction extends SBActionAdapter {
 		bst.setOffset(0);
 		String providerId = req.getParameter(REQ_PROVIDER_ID);
 		Integer setFlag = req.getIntegerParameter("setFlag");
-		GridDataVO<ProductVO> products = ai.getProducts(null, providerId, setFlag, null, bst);
+		GridDataVO<ProductVO> products = ai.getProducts(null, providerId, setFlag, 1, bst);
 
 		List<GenericVO> data = new ArrayList<>(products.getTotal());
 		for (ProductVO product : products.getRowData()) {
-			data.add(new GenericVO(product.getProductId(), product.getProductName()	));
+			String name = product.getCustomerProductId() + " : " + product.getProductName();
+			data.add(new GenericVO(product.getProductId(), name	));
 		}
 
 		return data;
@@ -1037,5 +1039,25 @@ public class SelectLookupAction extends SBActionAdapter {
 		Collections.sort(data, (a, b) -> ((String)a.getValue()).compareTo(((String)b.getValue())));
 
 		return data;
+	}
+	
+	/**
+	 * Gets the questions and responses for the survey
+	 * @param req - Need "fsi" req parameter
+	 * @return
+	 */
+	public List<GenericVO> getSurveyResults(ActionRequest req) {
+		String fsi = req.getParameter("fsi");
+		StringBuilder sql = new StringBuilder(384);
+		sql.append("select b.field_label_nm as key, d.label_txt as value ");
+		sql.append("from form_data a ");
+		sql.append("inner join form_field b on a.form_field_group_id = b.form_field_group_id ");
+		sql.append("left outer join form_field_attr c on b.form_field_id = c.form_field_id and attr_key = 'srcList' ");
+		sql.append("left outer join list_data d on c.attr_val = d.list_id and a.value_txt = d.value_txt ");
+		sql.append("where form_submittal_id = ? order by a.value_txt");
+		log.debug(sql.length() + "|" + sql + "|" + fsi);
+		
+		DBProcessor db = new DBProcessor(getDBConnection());
+		return db.executeSelect(sql.toString(), Arrays.asList(fsi), new GenericVO());
 	}
 }

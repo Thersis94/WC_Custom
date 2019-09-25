@@ -6,6 +6,7 @@ import com.siliconmtn.data.parser.BeanDataVO;
 import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
 import com.wsla.data.product.ProductSerialNumberVO;
+import com.wsla.data.provider.ProviderLocationVO;
 
 /****************************************************************************
  * <p><b>Title:</b> HarvestApprovalVO.java</p>
@@ -25,6 +26,7 @@ public class HarvestApprovalVO extends BeanDataVO {
 
 	private TicketVO ticket;
 	private ProductSerialNumberVO product;
+	private ProviderLocationVO casLocation;
 	private String harvestTicketId;
 	
 	// Helper members
@@ -90,5 +92,20 @@ public class HarvestApprovalVO extends BeanDataVO {
 	 */
 	public void setLocationName(String locationName) {
 		this.locationName = locationName;
+	}
+
+	/**
+	 * @return the casLocation
+	 */
+	public ProviderLocationVO getCasLocation() {
+		return casLocation;
+	}
+
+	/**
+	 * @param casLocation the casLocation to set
+	 */
+	@BeanSubElement
+	public void setCasLocation(ProviderLocationVO casLocation) {
+		this.casLocation = casLocation;
 	}
 }

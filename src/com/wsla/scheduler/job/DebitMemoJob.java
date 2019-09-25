@@ -4,6 +4,7 @@ package com.wsla.scheduler.job;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -68,6 +69,17 @@ public class DebitMemoJob extends AbstractSMTJob {
 	 */
 	public DebitMemoJob() {
 		super();
+	}
+	
+	/**
+	 * 
+	 * @param conn
+	 * @param attributes
+	 */
+	public DebitMemoJob(Connection conn, Map<String, Object> attributes) {
+		super();
+		this.conn = conn;
+		this.attributes = attributes;
 	}
 
 	/**
@@ -241,8 +253,6 @@ public class DebitMemoJob extends AbstractSMTJob {
 		} catch (Exception e) {
 			throw new IOException(e);
 		}
-
-
 	}
 
 	/**

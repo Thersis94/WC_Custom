@@ -17,12 +17,16 @@ import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.util.Convert;
 
 // WC Libs
-import com.smt.sitebuilder.action.SBActionAdapter;
+import com.wsla.action.ticket.BaseTransactionAction;
+import com.wsla.data.ticket.LedgerSummary;
 import com.wsla.data.ticket.TicketAssignmentVO;
+
 // WSLA Libs
 import com.wsla.data.ticket.UserVO;
 import com.wsla.data.ticket.TicketAssignmentVO.TypeCode;
 import com.wsla.data.ticket.TicketDataVO;
+import com.wsla.data.ticket.TicketLedgerVO;
+import com.wsla.data.ticket.TicketVO;
 
 /****************************************************************************
  * <b>Title</b>: TicketDataTransaction.java
@@ -37,7 +41,7 @@ import com.wsla.data.ticket.TicketDataVO;
  * @updates:
  ****************************************************************************/
 
-public class TicketDataTransaction extends SBActionAdapter {
+public class TicketDataTransaction extends BaseTransactionAction {
 
 	/**
 	 * Key for the Ajax Controller to utilize when calling this class
@@ -81,20 +85,31 @@ public class TicketDataTransaction extends SBActionAdapter {
 	public void build(ActionRequest req) throws ActionException {
 		UserVO user = ((UserVO)getAdminUser(req).getUserExtendedInfo());
 		String ticketId = req.getParameter("ticketId");
+		String attr = req.getParameter("attr");
+		String value = req.getParameter("value");
+		String metaValue = req.getParameter("metaValue");
+		boolean overwrite = req.getBooleanParameter("overwrite");
 		
 		try {
 			if (req.hasParameter("lockState")) {
 				toggleTicketLock(ticketId, user.getUserId(), req.getBooleanParameter("lockState"));
+			
+			} else if (req.hasParameter("returnRefused")) {
+				TicketLedgerVO ledger = addLedger(ticketId, user.getUserId(), null, LedgerSummary.RETURN_REFUSED.summary, null);
+				saveTicketData(null, ledger.getLedgerEntryId(), ticketId, attr, value, metaValue);
+				
+				// Update the ticket to critical standing
+				TicketTransaction tta = new TicketTransaction(getAttributes(), getDBConnection());
+				tta.assignStanding(ticketId, TicketVO.Standing.CRITICAL);
+				
 			} else if (req.hasParameter("watchedState")) {
 				toggleTicketWatch(ticketId, user.getUserId(), req.getBooleanParameter("watchedState"));
+			
 			} else if (req.hasParameter("saveData")) {
-				
-				String attr = req.getParameter("attr");
-				String value = req.getParameter("value");
-				boolean overwrite = req.getBooleanParameter("overwrite");
-				saveDataAttribute(ticketId, attr, value, overwrite);
+				saveDataAttribute(ticketId, attr, value, metaValue, overwrite);
 			}
 		} catch (Exception e) {
+			log.error("unable to update ticket data", e);
 			setModuleData(null, 0, e.getLocalizedMessage());
 		}
 	}
@@ -107,7 +122,7 @@ public class TicketDataTransaction extends SBActionAdapter {
 	 * @param overwrite
 	 * @throws SQLException
 	 */
-	public void saveDataAttribute(String ticketId, String attr, String value, boolean overwrite) 
+	public void saveDataAttribute(String ticketId, String attr, String value, String metaValue, boolean overwrite) 
 	throws SQLException {
 		String id = null;
 		String lId = null;
@@ -130,7 +145,7 @@ public class TicketDataTransaction extends SBActionAdapter {
 		}
 		
 		// Save the data 
-		this.saveTicketData(id, lId, ticketId, attr, value);
+		this.saveTicketData(id, lId, ticketId, attr, value, metaValue);
 	}
 	
 	/**
@@ -142,7 +157,7 @@ public class TicketDataTransaction extends SBActionAdapter {
 	 * @param value
 	 * @throws SQLException
 	 */
-	private void saveTicketData(String id, String lId, String ticketId, String attr, String value) 
+	public void saveTicketData(String id, String lId, String ticketId, String attr, String value, String metaValue) 
 	throws SQLException {
 		
 		// Build a ticket data vo
@@ -151,6 +166,7 @@ public class TicketDataTransaction extends SBActionAdapter {
 		tdvo.setLedgerEntryId(lId);
 		tdvo.setTicketId(ticketId);
 		tdvo.setAttributeCode(attr);
+		tdvo.setMetaValue(metaValue);
 		tdvo.setValue(value);
 		
 		// Save the data

@@ -342,6 +342,12 @@ public class TicketListAction extends SimpleActionAdapter {
 			base.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("wsla_credit_memo cm ");
 			base.append("on rr.ticket_ref_rep_id = cm.ticket_ref_rep_id ");
 			base.append("where cm.approval_dt is null) trr on a.ticket_id = trr.ticket_id ");
+		} else if ("WSLA_CAS".equals(status)) {
+			base.append(DBUtil.INNER_JOIN).append("(select ticket_id ");
+			base.append(DBUtil.FROM_CLAUSE).append(getCustomSchema()).append("wsla_ticket_assignment ta ");
+			base.append("where assg_type_cd = 'CAS' and location_id in ( ");
+			base.append("select location_id from ").append(getCustomSchema()).append("wsla_provider_location ");
+			base.append("where provider_id = 'WSLA_ID')) tat on a.ticket_id = tat.ticket_id ");
 		}
 		
 		// Add a filter to make sure users only see the tickets they are supposed to.

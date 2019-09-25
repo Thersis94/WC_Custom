@@ -151,7 +151,11 @@ public class SOLineItems extends AbsImporter {
 				}
 
 			} else if (vo.isService()) {
-				activities.add(transposeCommentData(vo, new TicketCommentVO()));
+				TicketCommentVO cmt = new TicketCommentVO();
+				transposeCommentData(vo, cmt);
+				//don't save comments if we don't have the ticket
+				if (!StringUtil.isEmpty(cmt.getTicketId()))
+					activities.add(cmt);
 
 			} else if (vo.isCreditMemo()) {
 				credits.add(transposeCreditData(vo, new CreditMemoVO()));
@@ -302,7 +306,7 @@ public class SOLineItems extends AbsImporter {
 		sql.append("select replace(newid(),'-',''), '").append(SOHeader.LEGACY_USER_ID).append("',t.ticket_id, tc.comment_txt, tc.create_dt, ");
 		sql.append("coalesce(wb.invoice_amount_no, 0), ba.billable_activity_cd ");
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("wsla_ticket_comment tc ");
-		sql.append(DBUtil.INNER_JOIN).append(schema).append("wsla_ticket t on tc.ticket_id=t.ticket_id ");
+		sql.append(DBUtil.INNER_JOIN).append(schema).append("wsla_ticket t on tc.ticket_id=t.ticket_id ").append("and t.batch_txt=").append(StringUtil.checkVal(batchNm, true));
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("wsla_product_warranty pw on t.product_warranty_id=pw.product_warranty_id ");
 		//LOJ here because we want to create a timeline entry for all activities - not just those with billable amts attached
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("wsla_billable_activity ba on tc.activity_type_cd=ba.billable_activity_cd ");
@@ -442,9 +446,7 @@ public class SOLineItems extends AbsImporter {
 	 * Populate the Map<Ticket#, TicketId> from the database to marry the soNumbers in the Excel
 	 */
 	private void loadTicketIds() {
-		String sql = StringUtil.join("select ticket_no as key, ticket_id as value from ", schema, 
-				"wsla_ticket where ", (isOpenTktRun ? "1=1" : " historical_flg=1"));
-
+		String sql = StringUtil.join("select ticket_no as key, ticket_id as value from ", schema, "wsla_ticket");
 		MapUtil.asMap(ticketIds, db.executeSelect(sql, null, new GenericVO()));
 		log.debug(String.format("loaded %d ticketIds", ticketIds.size()));
 	}

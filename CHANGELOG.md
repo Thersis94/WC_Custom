@@ -1,5 +1,12 @@
 WC_Custom Changelog (auto-generated)
 
+## [3.29.1](https://github.com/smtadmin/WC_Custom/compare/3.29.0...3.29.1) (2019-09-17)
+
+
+### Bug Fixes
+
+* **SC-1614:** Fixed unchecked NPE that could occur in Feeds. ([c7832d2](https://github.com/smtadmin/WC_Custom/commit/c7832d2))
+
 # [3.29.0](https://github.com/smtadmin/WC_Custom/compare/3.28.0...3.29.0) (2019-09-13)
 
 
