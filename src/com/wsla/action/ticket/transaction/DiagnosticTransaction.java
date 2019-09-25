@@ -213,7 +213,7 @@ public class DiagnosticTransaction extends BaseTransactionAction {
 				
 				try {
 					TicketDataTransaction tdt = new TicketDataTransaction(getDBConnection(), getAttributes());
-					tdt.saveDataAttribute(ticketId, "attr_issueResolved", "1", true);
+					tdt.saveDataAttribute(ticketId, "attr_issueResolved", "1", null, true);
 				} catch (SQLException e) {
 					throw new DatabaseException(e);
 				}

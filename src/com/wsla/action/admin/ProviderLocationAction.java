@@ -347,6 +347,7 @@ public class ProviderLocationAction extends BatchImport {
 	 * @throws com.siliconmtn.db.util.DatabaseException
 	 */
 	protected ProviderLocationVO getProviderLocation(String locationId) throws com.siliconmtn.db.util.DatabaseException {
+		if(StringUtil.isEmpty(locationId))return null;
 		DBProcessor dbp = new DBProcessor(getDBConnection(), getCustomSchema());
 		
 		// Try getting the location

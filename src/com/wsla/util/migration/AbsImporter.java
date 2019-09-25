@@ -166,20 +166,26 @@ public abstract class AbsImporter {
 		return (List<T>) entries;
 	}
 
+	/**
+	 * Writes to the db in a batch.  Insert override is defaulted to true
+	 * @param data
+	 * @return
+	 * @throws Exception
+	 */
+	protected int writeToDB(List<?> data) throws Exception {
+		return writeToDB(data, true);
+	}
 
 	/**
 	 * write the presumed-annotated list of beans to the database using DBProcessor
-	 * @param products
+	 * @param data
+	 * @param forceInsert
 	 * @throws Exception 
 	 */
-	protected int writeToDB(List<?> data) throws Exception {
-		try {
-			int[] cnt = db.executeBatch(data, true);
-			log.debug(String.format("saved %d rows to the database", cnt.length));
-			return cnt.length;
-		} catch (Exception e) {
-			throw e;
-		}
+	protected int writeToDB(List<?> data, boolean forceInsert) throws Exception {
+		int[] cnt = db.executeBatch(data, forceInsert);
+		log.debug(String.format("saved %d rows to the database", cnt.length));
+		return cnt.length;
 	}
 
 

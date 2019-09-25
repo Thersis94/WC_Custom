@@ -221,5 +221,22 @@ public class TicketTransaction extends BaseTransactionAction {
 		
 		return ticket;
 	}
+	
+	/**
+	 * Changes the standing of a ticket
+	 * @param ticketId
+	 * @param standingCode
+	 * @throws InvalidDataException
+	 * @throws DatabaseException
+	 */
+	public void assignStanding(String ticketId, TicketVO.Standing standingCode) 
+	throws InvalidDataException, DatabaseException {
+		
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		TicketVO ticket = new TicketVO();
+		ticket.setTicketId(ticketId);
+		ticket.setStandingCode(standingCode);
+		db.update(ticket, Arrays.asList("standing_cd", "ticket_id"));
+	}
 }
 
