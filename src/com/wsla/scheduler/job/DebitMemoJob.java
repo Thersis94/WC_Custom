@@ -4,6 +4,7 @@ package com.wsla.scheduler.job;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -33,7 +34,6 @@ import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
 import com.smt.sitebuilder.action.FileLoader;
 import com.smt.sitebuilder.resource.ResourceBundleLoader;
-
 // WC Libs
 import com.smt.sitebuilder.scheduler.AbstractSMTJob;
 import com.wsla.common.WSLAConstants;
@@ -68,6 +68,17 @@ public class DebitMemoJob extends AbstractSMTJob {
 	 */
 	public DebitMemoJob() {
 		super();
+	}
+
+	/**
+	 * 
+	 * @param conn
+	 * @param attributes
+	 */
+	public DebitMemoJob(Connection conn, Map<String, Object> attributes) {
+		this();
+		this.conn = conn;
+		this.attributes = attributes;
 	}
 
 	/**
@@ -125,10 +136,10 @@ public class DebitMemoJob extends AbstractSMTJob {
 		super.execute(ctx);
 		attributes = ctx.getMergedJobDataMap().getWrappedMap();
 		getResourceBundleData("es", "MX", "WSLA_BUNDLE");
-        boolean success = true;
-        
-        String message = "Success " + processDebitMemos(StringUtil.checkVal(attributes.get(Constants.CUSTOM_DB_SCHEMA)));
-		
+		boolean success = true;
+
+		String message = "Success " + processDebitMemos(StringUtil.checkVal(attributes.get(Constants.CUSTOM_DB_SCHEMA)));
+
 		try {
 			this.finalizeJob(success, message);
 		} catch (Exception e) {
@@ -170,7 +181,7 @@ public class DebitMemoJob extends AbstractSMTJob {
 				log.error("Unable to create debit memo", e);
 				messages.append(e.getLocalizedMessage()).append("|");
 			}
-			
+
 		}
 		return messages.toString();
 	}
@@ -204,12 +215,12 @@ public class DebitMemoJob extends AbstractSMTJob {
 			throws FileWriterException {
 		// Get the file name and path
 		FileTransferStructureImpl fs = new FileTransferStructureImpl(null, "12345678.pdf", attributes);
-		log.info("FS: " + fs.getFullPath());
+		log.debug("FS: " + fs.getFullPath());
 		// Create the file loader and write to the file system
 		FileLoader fl = new FileLoader(attributes);
 		fl.setPath(fs.getFullPath());
 		fl.setFileName(fs.getStorageFileName());
-		log.info("File Name: " + fs.getStorageFileName());
+		log.debug("File Name: " + fs.getStorageFileName());
 		try {
 			fl.setData(createPDF(memo));
 			fl.writeFiles();
@@ -229,50 +240,40 @@ public class DebitMemoJob extends AbstractSMTJob {
 	 * @throws InvalidDataException 
 	 */
 	protected byte[] createPDF(DebitMemoVO memo) throws IOException {
-
-		// Generate the pdf
-		//String path = getClass().getResource("debit_memo.ftl").getPath();
-		//log.info("PATH: " + getClass().getResource("debit_memo.ftl"));
-		
-		try{
+		try {
 			Reader reader = new InputStreamReader(getClass().getResourceAsStream("debit_memo.ftl"));
 			PDFGenerator pdf = new PDFGenerator(reader, memo, resourceBundle);
 			return pdf.generate();
 		} catch (Exception e) {
 			throw new IOException(e);
 		}
-
-
 	}
 
 	/**
 	 * Updates the credit memos with the debit memo id to assign these values
 	 * @param schema
-	 * @param slug
+	 * @param debitMemoId
 	 * @param creditMemos
 	 * @throws SQLException
 	 */
-	public void updateCreditMemos(String schema, String slug, List<CreditMemoVO> creditMemos) 
+	public void updateCreditMemos(String schema, String debitMemoId, List<CreditMemoVO> creditMemos) 
 			throws SQLException {
-		// Build the SQL Statement
-		StringBuilder sql = new StringBuilder();
-		sql.append("update ").append(schema).append("wsla_credit_memo ");
-		sql.append("set debit_memo_id = ? where credit_memo_id in (");
-		DBUtil.preparedStatmentQuestion(creditMemos.size(), sql);
-		sql.append(")");
+		if (creditMemos == null || creditMemos.isEmpty()) return;
 
-		try(PreparedStatement ps = conn.prepareStatement(sql.toString())) {
-			int ctr = 1;
-			ps.setString(ctr++, slug);
+		String sql =StringUtil.join(DBUtil.UPDATE_CLAUSE, schema, "wsla_credit_memo ", 
+				"set debit_memo_id=? where credit_memo_id=?");
+		log.debug(sql);
 
-			// Add all of the credit memos as params
+		try (PreparedStatement ps = conn.prepareStatement(sql)) {
 			for (CreditMemoVO memo : creditMemos) {
-				ps.setString(ctr++, memo.getCreditMemoId());
+				ps.setString(1, debitMemoId);
+				ps.setString(2, memo.getCreditMemoId());
+				ps.addBatch();
 			}
 
 			// Update the credit memos
-			ps.executeUpdate();
-
+			int[] cnt = ps.executeBatch();
+			log.debug(String.format("updated %d credit memos to set debitMemoId=%s", cnt.length, debitMemoId));
 		}
 	}
 
@@ -284,42 +285,30 @@ public class DebitMemoJob extends AbstractSMTJob {
 		StringBuilder sql = new StringBuilder(512);
 		sql.append("select replace(newid(), '-', '') as debit_memo_id, c.oem_id, ");
 		sql.append("d.provider_id as retail_id, count(*) as credit_memo_no ");
-		sql.append(DBUtil.FROM_CLAUSE).append(schema);
-		sql.append("wsla_credit_memo a ");
-		sql.append(DBUtil.INNER_JOIN).append(schema);
-		sql.append("wsla_ticket_ref_rep b on a.ticket_ref_rep_id = b.ticket_ref_rep_id ");
-		sql.append(DBUtil.INNER_JOIN).append(schema);
-		sql.append("wsla_ticket c on b.ticket_id = c.ticket_id ");
-		sql.append(DBUtil.INNER_JOIN).append(schema);
-		sql.append("wsla_provider_location d on c.retailer_id = d.location_id ");
-		sql.append(DBUtil.INNER_JOIN).append(schema);
-		sql.append("wsla_product_warranty e on c.product_warranty_id = e.product_warranty_id ");
-		sql.append(DBUtil.INNER_JOIN).append(schema);
-		sql.append("wsla_warranty w on e.warranty_id = w.warranty_id ");
+		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("wsla_credit_memo a ");
+		sql.append(DBUtil.INNER_JOIN).append(schema).append("wsla_ticket_ref_rep b on a.ticket_ref_rep_id = b.ticket_ref_rep_id ");
+		sql.append(DBUtil.INNER_JOIN).append(schema).append("wsla_ticket c on b.ticket_id = c.ticket_id ");
+		sql.append(DBUtil.INNER_JOIN).append(schema).append("wsla_provider_location d on c.retailer_id = d.location_id ");
+		sql.append(DBUtil.INNER_JOIN).append(schema).append("wsla_product_warranty e on c.product_warranty_id = e.product_warranty_id ");
+		sql.append(DBUtil.INNER_JOIN).append(schema).append("wsla_warranty w on e.warranty_id = w.warranty_id ");
 		sql.append("where debit_memo_id is null and approval_dt is not null ");
 		sql.append("and (w.refund_provider_id is null or w.refund_provider_id = '') ");
 		sql.append("group by oem_id, retail_id ");
-		sql.append("union ");
+		sql.append(DBUtil.UNION);
 		sql.append("select replace(newid(), '-', '') as debit_memo_id, c.oem_id, ");
 		sql.append("d.provider_id as retail_id, count(*) as credit_memo_no ");
-		sql.append(DBUtil.FROM_CLAUSE).append(schema);
-		sql.append("wsla_credit_memo a ");
-		sql.append(DBUtil.INNER_JOIN).append(schema);
-		sql.append("wsla_ticket_ref_rep b on a.ticket_ref_rep_id = b.ticket_ref_rep_id ");
-		sql.append(DBUtil.INNER_JOIN).append(schema);
-		sql.append("wsla_ticket c on b.ticket_id = c.ticket_id ");
-		sql.append(DBUtil.INNER_JOIN).append(schema);
-		sql.append("wsla_product_warranty e on c.product_warranty_id = e.product_warranty_id ");
-		sql.append(DBUtil.INNER_JOIN).append(schema);
-		sql.append("wsla_warranty w on e.warranty_id = w.warranty_id ");
-		sql.append(DBUtil.INNER_JOIN).append(schema);
-		sql.append("wsla_provider d on w.refund_provider_id = d.provider_id ");
+		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("wsla_credit_memo a ");
+		sql.append(DBUtil.INNER_JOIN).append(schema).append("wsla_ticket_ref_rep b on a.ticket_ref_rep_id = b.ticket_ref_rep_id ");
+		sql.append(DBUtil.INNER_JOIN).append(schema).append("wsla_ticket c on b.ticket_id = c.ticket_id ");
+		sql.append(DBUtil.INNER_JOIN).append(schema).append("wsla_product_warranty e on c.product_warranty_id = e.product_warranty_id ");
+		sql.append(DBUtil.INNER_JOIN).append(schema).append("wsla_warranty w on e.warranty_id = w.warranty_id ");
+		sql.append(DBUtil.INNER_JOIN).append(schema).append("wsla_provider d on w.refund_provider_id = d.provider_id ");
 		sql.append("where debit_memo_id is null and approval_dt is not null ");
 		sql.append("group by oem_id, retail_id ");
 		sql.append("order by oem_id, retail_id ");
 		log.debug(sql.length() + "|" + sql);
 
-		DBProcessor db = new DBProcessor(conn);
+		DBProcessor db = new DBProcessor(conn, schema);
 		return db.executeSelect(sql.toString(), null, new DebitMemoVO());
 	}
 
@@ -336,24 +325,18 @@ public class DebitMemoJob extends AbstractSMTJob {
 
 		StringBuilder sql = new StringBuilder(400);
 		sql.append("select c.oem_id, ticket_no, d.provider_id, product_nm, a.* ");
-		sql.append(DBUtil.FROM_CLAUSE).append(schema);
-		sql.append("wsla_credit_memo a ");
-		sql.append(DBUtil.INNER_JOIN).append(schema);
-		sql.append("wsla_ticket_ref_rep b on a.ticket_ref_rep_id = b.ticket_ref_rep_id ");
-		sql.append(DBUtil.INNER_JOIN).append(schema);
-		sql.append("wsla_ticket c on b.ticket_id = c.ticket_id ");
-		sql.append(DBUtil.INNER_JOIN).append(schema);
-		sql.append("wsla_provider_location d on c.retailer_id = d.location_id ");
-		sql.append(DBUtil.INNER_JOIN).append(schema);
-		sql.append("wsla_product_serial e on c.product_serial_id = e.product_serial_id ");
-		sql.append(DBUtil.INNER_JOIN).append(schema);
-		sql.append("wsla_product_master f on e.product_id = f.product_id ");
+		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("wsla_credit_memo a ");
+		sql.append(DBUtil.INNER_JOIN).append(schema).append("wsla_ticket_ref_rep b on a.ticket_ref_rep_id = b.ticket_ref_rep_id ");
+		sql.append(DBUtil.INNER_JOIN).append(schema).append("wsla_ticket c on b.ticket_id = c.ticket_id ");
+		sql.append(DBUtil.INNER_JOIN).append(schema).append("wsla_provider_location d on c.retailer_id = d.location_id ");
+		sql.append(DBUtil.INNER_JOIN).append(schema).append("wsla_product_serial e on c.product_serial_id = e.product_serial_id ");
+		sql.append(DBUtil.INNER_JOIN).append(schema).append("wsla_product_master f on e.product_id = f.product_id ");
 		sql.append("where debit_memo_id is null and approval_dt is not null ");
 		sql.append("and oem_id = ? and d.provider_id = ? ");
 		log.debug(sql.length() + "|" + sql + "|" + vals);
 
 		// Get the memos
-		DBProcessor db = new DBProcessor(conn);
+		DBProcessor db = new DBProcessor(conn, schema);
 		memo.setCreditMemos(db.executeSelect(sql.toString(), vals, new CreditMemoVO()));
 	}
 

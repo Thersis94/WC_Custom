@@ -1,5 +1,23 @@
 WC_Custom Changelog (auto-generated)
 
+## [3.29.2](https://github.com/smtadmin/WC_Custom/compare/3.29.1...3.29.2) (2019-09-24)
+
+
+### Bug Fixes
+
+* **MTS-i22:** Enforce Issue and Article publish dates to public users ([67da862](https://github.com/smtadmin/WC_Custom/commit/67da862))
+* **Sc-1505:** Add ability to load a limited version of an external page via local iframe. ([750f7a6](https://github.com/smtadmin/WC_Custom/commit/750f7a6))
+* **Sc-1505:** Add comments and split out retrieve into multiple methods. ([6a63d93](https://github.com/smtadmin/WC_Custom/commit/6a63d93))
+* **Sc-1505:** Fix issues with requiring cookies enabled. ([e5d52bf](https://github.com/smtadmin/WC_Custom/commit/e5d52bf))
+* **WSLA Migration:** Complete Asset Parser.  Phase 1 - open tickets importing (code complete) ([ec59550](https://github.com/smtadmin/WC_Custom/commit/ec59550))
+
+## [3.29.1](https://github.com/smtadmin/WC_Custom/compare/3.29.0...3.29.1) (2019-09-17)
+
+
+### Bug Fixes
+
+* **SC-1614:** Fixed unchecked NPE that could occur in Feeds. ([c7832d2](https://github.com/smtadmin/WC_Custom/commit/c7832d2))
+
 # [3.29.0](https://github.com/smtadmin/WC_Custom/compare/3.28.0...3.29.0) (2019-09-13)
 
 

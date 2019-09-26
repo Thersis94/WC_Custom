@@ -268,13 +268,19 @@ public class SOExtendedData extends AbsImporter {
 	 * transpose ticketIds.  If some are missing print them, then throw a Runtime to stop the script
 	 */
 	private void setTicketIds() {
-		Set<String> blanks = new HashSet<>();
-		for (SOXDDFileVO row : data) {
-			String ticketId = ticketMap.get(row.getSoNumber());
+		//remove any records for tickets we can't save
+		Set<String> blanks = new HashSet<>(500);
+		ListIterator<SOXDDFileVO> iter = data.listIterator();
+		while (iter.hasNext()) {
+			SOXDDFileVO vo = iter.next();
+			String ticketId = ticketMap.get(vo.getSoNumber());
 			if (!StringUtil.isEmpty(ticketId)) {
-				row.setSoNumber(ticketId);
+				vo.setSoNumber(ticketId);
 			} else {
-				blanks.add(row.getSoNumber());
+				if (!vo.getSoNumber().matches("(?i)^WSL0(.*)$")) {
+					blanks.add(vo.getSoNumber());
+				}
+				iter.remove();
 			}
 		}
 		if (blanks.isEmpty()) return;
@@ -283,14 +289,6 @@ public class SOExtendedData extends AbsImporter {
 		log.error("\nMISSING TICKETS.  DATA FOR THESE TICKETS IS BEING IGNORED:");
 		for (String s : blanks)
 			System.err.println(s);
-
-		//remove any records for tickets we can't save
-		ListIterator<SOXDDFileVO> iter = data.listIterator();
-		while (iter.hasNext()) {
-			SOXDDFileVO vo = iter.next();
-			if (blanks.contains(vo.getSoNumber()))
-				iter.remove();
-		}
 	}
 
 
