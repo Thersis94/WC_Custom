@@ -94,7 +94,9 @@ public class BaseTransactionAction extends SBActionAdapter {
 		try {
 			dbp.getByPrimaryKey(ticket);
 			ticket.setStatusCode(newStatus);
-			ticket.setUnitLocation(location != null ? location : ticket.getUnitLocation());
+			//if the unit is DECOMMISSIONED stop any status change unit location updates 
+			ticket.setUnitLocation((location != null && "DECOMMISSIONED".equalsIgnoreCase(ticket.getUnitLocation().name().toUpperCase()) ? location : ticket.getUnitLocation()));
+			
 			dbp.save(ticket);
 		} catch (InvalidDataException e) {
 			throw new DatabaseException(e);
@@ -210,7 +212,7 @@ public class BaseTransactionAction extends SBActionAdapter {
 				// If we aren't overriding the default amount with a passed in value,
 				// then just use the default amount.
 				if (billableAmt == null) {
-					ledger.setBillableAmtNo(billableData.getCost());
+					ledger.setBillableAmtNo(billableData.getInvoiceAmount());
 				}
 			} catch (SQLException e) {
 				throw new DatabaseException(e);
@@ -248,17 +250,17 @@ public class BaseTransactionAction extends SBActionAdapter {
 	 */
 	private WarrantyBillableVO getBillableData(String ticketId, StatusCode status) throws SQLException {
 		StringBuilder sql = new StringBuilder(416);
-		sql.append(DBUtil.SELECT_CLAUSE).append("ts.billable_activity_cd, b.cost_no");
+		sql.append(DBUtil.SELECT_CLAUSE).append("ts.billable_activity_cd, b.invoice_amount_no");
 		sql.append(DBUtil.FROM_CLAUSE).append(getCustomSchema()).append("wsla_ticket_status ts");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append("(");
-		sql.append(DBUtil.SELECT_CLAUSE).append("wb.cost_no, wb.billable_activity_cd");
+		sql.append(DBUtil.SELECT_CLAUSE).append("wb.invoice_amount_no, wb.billable_activity_cd");
 		sql.append(DBUtil.FROM_CLAUSE).append(getCustomSchema()).append("wsla_ticket t");
 		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("wsla_product_warranty pw on t.product_warranty_id = pw.product_warranty_id");
 		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("wsla_warranty_billable_xr wb on pw.warranty_id = wb.warranty_id");
 		sql.append(DBUtil.WHERE_CLAUSE).append("t.ticket_id = ?");
 		sql.append(") as b on ts.billable_activity_cd = b.billable_activity_cd");
 		sql.append(DBUtil.WHERE_CLAUSE).append("ts.status_cd = ?");
-		log.debug(sql);
+		log.debug(sql+ticketId + "|"+  status.name());
 		
 		WarrantyBillableVO billableData = null;
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {

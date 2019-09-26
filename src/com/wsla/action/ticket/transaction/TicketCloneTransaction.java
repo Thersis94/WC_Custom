@@ -24,6 +24,8 @@ import com.wsla.action.ticket.BaseTransactionAction;
 // WSLA Libs
 import com.wsla.action.ticket.TicketEditAction;
 import com.wsla.common.WSLAConstants;
+import com.wsla.data.ticket.DiagnosticRunVO;
+import com.wsla.data.ticket.DiagnosticTicketVO;
 import com.wsla.data.ticket.DispositionCode;
 import com.wsla.data.ticket.LedgerSummary;
 import com.wsla.data.ticket.StatusCode;
@@ -55,6 +57,7 @@ public class TicketCloneTransaction extends BaseTransactionAction {
 	 * Key for the Ajax Controller to utilize when calling this class
 	 */
 	public static final String AJAX_KEY = "clone";
+	private String orginalTicketId = "";
 	
 	
 	/**
@@ -121,22 +124,63 @@ public class TicketCloneTransaction extends BaseTransactionAction {
 		try {
 			// Load ticket core data
 			ticket = processTicket(db, tea, ticketIdText);
-			
 			// Load ticket data
 			ticket.setTicketData(processTicketData(db, ticket, tea));
 			
 			// Load User and Retailer Assignments
 			ticket.setAssignments(processAssignments(db, ticket, tea));
 			
+			//get and clone the ticket diagnostics
+			ticket.setDiagnosticRun(cloneDiagnostics(ticketIdText, ticket.getTicketId(), tea, db));
+			
 			// Add a ledger entry
 			addLedgerEntry(db, user, ticket.getTicketId());
 		} catch (InvalidDataException | DatabaseException | com.siliconmtn.exception.DatabaseException e) {
 			throw new ActionException(e);
 		}
-
 		return ticket;
 	}
 	
+	/**
+	 * gets all the diagnostics for the old ticket nubmer changes the ticket id and returns them so they can be added to the child ticket
+	 * @param oldTicketId
+	 * @param newTicketId
+	 * @param tea 
+	 * @param db 
+	 * @return
+	 * @throws DatabaseException 
+	 * @throws InvalidDataException 
+	 */
+	private List<DiagnosticRunVO> cloneDiagnostics(String oldTicketId, String newTicketId, TicketEditAction tea, DBProcessor db) throws InvalidDataException, DatabaseException {
+		//it appears some cloning processes send a ticket no if thats the case get the oringal ticket id from ticket processing
+		if (! UUIDGenerator.isUUID(oldTicketId)) {
+			oldTicketId = orginalTicketId;
+		}
+		
+		List<DiagnosticRunVO> diags = tea.getDiagnostics(oldTicketId);
+		log.debug("old ticket id "+ oldTicketId);
+		for (DiagnosticRunVO d : diags) {
+			log.debug("setting ticket id to "+ newTicketId + " and  setting comments to cloned: " + d.getDiagComments());
+			d.setDiagnosticRunId(null);
+			d.setTicketId(newTicketId);
+			d.setDiagComments("Cloned: "+d.getDiagComments());
+			
+			db.insert(d);
+			
+			List<DiagnosticTicketVO> diagRows = d.getDiagnostics();
+			//loop the line items and update them with the new id
+			for(DiagnosticTicketVO r : diagRows) {
+				r.setDiagnosticRunId(d.getDiagnosticRunId());
+				r.setDiagnosticTicketId(null);
+				
+				db.insert(r);
+			}
+			
+		}
+		
+		return diags;
+	}
+
 	/**
 	 * Clones a ticket and moves ownership of the unit to WSLA. Sets to in-repair status.
 	 * 
@@ -196,6 +240,8 @@ public class TicketCloneTransaction extends BaseTransactionAction {
 	public TicketVO processTicket(DBProcessor db, TicketEditAction tea, String ticketIdText) 
 	throws InvalidDataException, DatabaseException {
 		TicketVO ticket = tea.getBaseTicket(ticketIdText);
+		orginalTicketId = ticket.getTicketId();
+		
 		String newTicketIdText = RandomAlphaNumeric.generateRandom(WSLAConstants.TICKET_RANDOM_CHARS);
 		ticket.setParentId(ticket.getTicketId());
 		ticket.setStatusCode(StatusCode.USER_CALL_DATA_INCOMPLETE);
@@ -222,6 +268,8 @@ public class TicketCloneTransaction extends BaseTransactionAction {
 		
 		List<TicketDataVO> extData = tea.getExtendedData(ticket.getParentId(), null);
 		for (TicketDataVO tdvo : extData) {
+			//cloned tickets shouldnt have a disposition.
+			if("attr_dispositionCode".equals(tdvo.getAttributeCode())) {continue;}
 			tdvo.setTicketId(ticket.getTicketId());
 			tdvo.setDataEntryId(new UUIDGenerator().getUUID());
 			tdvo.setUpdateDate(null);
@@ -243,7 +291,7 @@ public class TicketCloneTransaction extends BaseTransactionAction {
 	 */
 	public List<TicketAssignmentVO> processAssignments(DBProcessor db, TicketVO ticket, TicketEditAction tea) 
 	throws InvalidDataException, DatabaseException, com.siliconmtn.exception.DatabaseException {
-		List<TypeCode> types = Arrays.asList(TypeCode.CALLER, TypeCode.OEM, TypeCode.RETAILER);
+		List<TypeCode> types = Arrays.asList(TypeCode.CALLER, TypeCode.OEM, TypeCode.RETAILER, TypeCode.CAS);
 		List<TicketAssignmentVO> assignments = tea.getAssignments(ticket.getParentId());
 		
 		for (TicketAssignmentVO assign : assignments) {

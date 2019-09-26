@@ -33,9 +33,11 @@ import com.smt.sitebuilder.common.constants.Constants;
 
 // WSLA Libs
 import com.wsla.action.BasePortalAction;
+import com.wsla.action.admin.WarrantyAction;
 import com.wsla.action.ticket.transaction.TicketAssetTransaction;
 import com.wsla.common.WSLAConstants;
 import com.wsla.data.product.ProductSerialNumberVO;
+import com.wsla.data.product.WarrantyVO;
 import com.wsla.data.ticket.DiagnosticRunVO;
 import com.wsla.data.ticket.DiagnosticTicketVO;
 import com.wsla.data.ticket.LedgerSummary;
@@ -207,10 +209,39 @@ public class TicketOverviewAction extends BasePortalAction {
 		String callerAssignmentId = req.getParameter("ticketAssignmentId");
 		String ownsTv = req.getParameter("attr_ownsProduct");
 		updateAllAssignments(ticket, callerAssignmentId, ownsTv, caller);
+		
+		updateZeroCostBillableActivities(ticket);
 
 		return ticket;
 	}
 	
+	/**
+	 * when opening a ticket the product warranty relationship doesn't exist yet, 
+	 * @param ticket
+	 * @throws SQLException 
+	 */
+	private void updateZeroCostBillableActivities(TicketVO ticket) throws SQLException {
+		
+		WarrantyAction wa = new WarrantyAction(getAttributes(),getDBConnection());
+		WarrantyVO warranty = wa.getWarrantyByTicketId(ticket.getTicketId());
+		
+		StringBuilder sql = new StringBuilder(40);
+		sql.append(DBUtil.UPDATE_CLAUSE).append(getCustomSchema()).append("wsla_ticket_ledger ");
+		sql.append("set billable_amt_no = wb.invoice_amount_no ");
+		sql.append(DBUtil.FROM_CLAUSE).append(getCustomSchema()).append("wsla_warranty_billable_xr wb  ");
+		sql.append(DBUtil.WHERE_CLAUSE).append(getCustomSchema()).append("wsla_ticket_ledger.billable_activity_cd = wb.billable_activity_cd and ticket_id = ? and (billable_amt_no = 0 or billable_amt_no is null)  ");
+		sql.append("and ").append(getCustomSchema()).append("wsla_ticket_ledger.billable_activity_cd is not null and wb.warranty_id = ? ");
+
+		log.debug("sql " + sql + "|" + ticket.getTicketId() + "|" + warranty.getWarrantyId());
+		
+		try(PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, ticket.getTicketId());
+			ps.setString(2, warranty.getWarrantyId());
+			ps.executeUpdate();
+		}
+		
+	}
+
 	/**
 	 * checks attribute values for status chagnes
 	 * @param ticket
