@@ -28,6 +28,7 @@ import com.wsla.action.BasePortalAction;
 import com.wsla.action.admin.StatusCodeAction;
 import com.wsla.common.WSLAConstants.WSLARole;
 import com.wsla.common.WSLAConstants.WorkflowSlug;
+import com.wsla.data.product.ProductSerialNumberVO;
 import com.wsla.data.product.WarrantyBillableVO;
 import com.wsla.data.ticket.NextStepVO;
 import com.wsla.data.ticket.StatusCode;
@@ -98,7 +99,14 @@ public class BaseTransactionAction extends SBActionAdapter {
 			//if the unit is DECOMMISSIONED stop any status change unit location updates 
 			if( UnitLocation.DECOMMISSIONED.equals( ticket.getUnitLocation( ))){
 				location = UnitLocation.DECOMMISSIONED;
-				ticket.getProductSerial().setDisposeFlag(1);
+
+				ProductSerialNumberVO psvo = ticket.getProductSerial();
+				psvo.setProductSerialId(ticket.getProductSerialId());
+				dbp.getByPrimaryKey(psvo);
+				psvo.setDisposeFlag(1);
+
+				dbp.save(psvo);
+				
 			}
 			
 			ticket.setUnitLocation((location != null) ? location : ticket.getUnitLocation());
