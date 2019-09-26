@@ -545,7 +545,7 @@ public class GridChartAction extends SBActionAdapter {
 		String prefix = val.substring(0, val.indexOf(nonAlpha.charAt(0)));
 		int decimalIdx = nonAlpha.indexOf('.');
 		String formattedNum = String.format("%,d", Convert.formatInteger(decimalIdx > -1? nonAlpha.substring(0, decimalIdx) : nonAlpha));
-		return prefix + formattedNum + (decimalIdx > -1?nonAlpha.substring(decimalIdx):"");
+		return prefix + formattedNum + (decimalIdx > -1?nonAlpha.substring(decimalIdx) : "") + val.substring(val.lastIndexOf(nonAlpha.charAt(nonAlpha.length()-1))+1);
 	}
 
 	/**
