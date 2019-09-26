@@ -94,8 +94,14 @@ public class BaseTransactionAction extends SBActionAdapter {
 		try {
 			dbp.getByPrimaryKey(ticket);
 			ticket.setStatusCode(newStatus);
+			
 			//if the unit is DECOMMISSIONED stop any status change unit location updates 
-			ticket.setUnitLocation((location != null && "DECOMMISSIONED".equalsIgnoreCase(ticket.getUnitLocation().name().toUpperCase()) ? location : ticket.getUnitLocation()));
+			if( UnitLocation.DECOMMISSIONED.equals( ticket.getUnitLocation( ))){
+				location = UnitLocation.DECOMMISSIONED;
+				ticket.getProductSerial().setDisposeFlag(1);
+			}
+			
+			ticket.setUnitLocation((location != null) ? location : ticket.getUnitLocation());
 			
 			dbp.save(ticket);
 		} catch (InvalidDataException e) {
