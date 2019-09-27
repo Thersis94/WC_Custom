@@ -1,5 +1,36 @@
 WC_Custom Changelog (auto-generated)
 
+# [3.30.0](https://github.com/smtadmin/WC_Custom/compare/3.29.2...3.30.0) (2019-09-27)
+
+
+### Bug Fixes
+
+* **feature-wsla-i9:** fix bug where billable amounts were not appearing on time line ([e278aee](https://github.com/smtadmin/WC_Custom/commit/e278aee))
+* **feature-wsla-i9:** fix flow so end users do not get changed for uploading their own photos but ca ([419b046](https://github.com/smtadmin/WC_Custom/commit/419b046))
+* **feature-wsla-i9:** fix for packing slip pdf ([e630449](https://github.com/smtadmin/WC_Custom/commit/e630449))
+* **feature-wsla-i9:** fix keep disposed location of a disposed tv ([9f7327e](https://github.com/smtadmin/WC_Custom/commit/9f7327e))
+* **feature-wsla-i9:** Fix on final save for a new ticket check to see what billable activities have ([cbca817](https://github.com/smtadmin/WC_Custom/commit/cbca817))
+* **feature-wsla-i9:** if unit is destroyed leave it destroyed. ([7c45d48](https://github.com/smtadmin/WC_Custom/commit/7c45d48))
+* **feature-wsla-i9:** when a set is decommisioned make sure the sn can no longer be used ([1a876ee](https://github.com/smtadmin/WC_Custom/commit/1a876ee))
+* **MTS-i22 Site Search:** Exclude unpublished articles from site-search results ([8598b95](https://github.com/smtadmin/WC_Custom/commit/8598b95))
+* **WSLA-Migration:** Complete Harvest workflow ([8c86cdc](https://github.com/smtadmin/WC_Custom/commit/8c86cdc))
+* **WSLA-Migration:** Finish Replacement workflow.  Run importer through all legacy data ([65ed6bc](https://github.com/smtadmin/WC_Custom/commit/65ed6bc))
+
+
+### Features
+
+* **Display:** When displaying the product in a selectpicker, concatenate the product name and sku ([3f96be1](https://github.com/smtadmin/WC_Custom/commit/3f96be1))
+* **feature-wsla-i9:** Add diagnostics to cloned ticket, fix data bug ([61ef925](https://github.com/smtadmin/WC_Custom/commit/61ef925))
+* **feature-wsla-i9:** add feature to mark if a customer(retailer) owns the refund process ([184ef71](https://github.com/smtadmin/WC_Custom/commit/184ef71))
+* **feature-wsla-i9:** change from cost to invoice ([8068f96](https://github.com/smtadmin/WC_Custom/commit/8068f96))
+* **Importer:** Added a Debit Memo Importer ([a8dc3b1](https://github.com/smtadmin/WC_Custom/commit/a8dc3b1))
+* **Return Refused:** Added capability for when a user refuses to have the unit returned. ([4a30a82](https://github.com/smtadmin/WC_Custom/commit/4a30a82))
+* **Survey:** Added the results of a survey to the lookup action ([5d0f70a](https://github.com/smtadmin/WC_Custom/commit/5d0f70a))
+* **Survey Wrapper:** Added a custom post processr for the form creation.  Tied ticket number to the ([f35169a](https://github.com/smtadmin/WC_Custom/commit/f35169a))
+* **Survey Wrapper:** Created a custom post-processor for the survey/forms to connect the form submi ([1974457](https://github.com/smtadmin/WC_Custom/commit/1974457))
+* **WSLA I50:** Added the standing code changes when a user refuses the return of the unit ([2b095c8](https://github.com/smtadmin/WC_Custom/commit/2b095c8))
+* **WSLA i54 and i55:** Added management for the product validation when added by call center. Added ([5b39ed7](https://github.com/smtadmin/WC_Custom/commit/5b39ed7))
+
 ## [3.29.2](https://github.com/smtadmin/WC_Custom/compare/3.29.1...3.29.2) (2019-09-24)
 
 
