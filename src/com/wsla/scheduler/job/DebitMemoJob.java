@@ -99,7 +99,7 @@ public class DebitMemoJob extends AbstractSMTJob {
 		// Get a db connection
 		DatabaseConnection dbc = new DatabaseConnection();
 		dbc.setDriverClass("org.postgresql.Driver");
-		dbc.setUrl("jdbc:postgresql://sonic:5432/webcrescendo_dev032019_sb?defaultRowFetchSize=25&amp;prepareThreshold=3");
+		dbc.setUrl("jdbc:postgresql://sonic:5432/webcrescnedo_dev08282019_sb?defaultRowFetchSize=25&amp;prepareThreshold=3");
 		dbc.setUserName("ryan_user_sb");
 		dbc.setPassword("sqll0gin");
 		job.conn = dbc.getConnection();

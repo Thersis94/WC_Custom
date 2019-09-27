@@ -195,7 +195,7 @@ public class DebitMemoWidget extends SBActionAdapter {
 		}
 		
 		sql.append(bst.getSQLOrderBy("create_dt", "desc"));
-		log.debug(sql.length() + "|" + sql);
+		log.info(sql.length() + "|" + sql);
 		
 		DBProcessor db = new DBProcessor(getDBConnection());
 		return db.executeSQLWithCount(sql.toString(), params, new DebitMemoVO(), bst);
