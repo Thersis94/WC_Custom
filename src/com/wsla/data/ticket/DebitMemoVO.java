@@ -60,7 +60,8 @@ public class DebitMemoVO extends BeanDataVO {
 	private List<CreditMemoVO> creditMemos = new ArrayList<>();
 	private ProviderVO oem;
 	private ProviderVO retailer;
-
+	private UserVO user;
+	
 	/**
 	 * 
 	 */
@@ -399,5 +400,20 @@ public class DebitMemoVO extends BeanDataVO {
 	 */
 	public void setUpdateDate(Date updateDate) {
 		this.updateDate = updateDate;
+	}
+
+	/**
+	 * @return the user
+	 */
+	public UserVO getUser() {
+		return user;
+	}
+
+	/**
+	 * @param user the user to set
+	 */
+	@BeanSubElement
+	public void setUser(UserVO user) {
+		this.user = user;
 	}
 }
