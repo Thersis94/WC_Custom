@@ -354,6 +354,8 @@ public class SelectLookupAction extends SBActionAdapter {
 	 * @return
 	 */
 	public List<GenericVO> getArticlesAC(ActionRequest req) {
+		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
+
 		// Build the serach terms
 		StringBuilder term = new StringBuilder(32);
 		String[] terms = StringUtil.checkVal(req.getParameter(REQ_SEARCH)).split(" ");
@@ -373,15 +375,17 @@ public class SelectLookupAction extends SBActionAdapter {
 		sql.append("to_tsvector(coalesce(first_nm, '')) || ");
 		sql.append("to_tsvector(coalesce(last_nm, '')) as document ");
 		sql.append(DBUtil.FROM_CLAUSE).append(getCustomSchema()).append("mts_document a ");
-		sql.append(DBUtil.INNER_JOIN).append("sb_action b ");
-		sql.append("on a.action_group_id = b.action_group_id ");
-		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("mts_issue i ");
-		sql.append("on a.issue_id = i.issue_id ");
-		sql.append(DBUtil.INNER_JOIN).append("document d ");
-		sql.append("on b.action_id = d.action_id ");
-		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("mts_user c ");
-		sql.append("on a.author_id = c.user_id ) as search ");
-		sql.append("where search.document @@ to_tsquery('").append(term).append("') ");
+		sql.append(DBUtil.INNER_JOIN).append("sb_action b on a.action_group_id=b.action_group_id ");
+		if (!page.isPreviewMode()) 
+			sql.append("and b.pending_sync_flg=0 ");
+		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("mts_issue i on a.issue_id=i.issue_id ");
+		if (!page.isPreviewMode()) 
+			sql.append("and (i.issue_dt < CURRENT_TIMESTAMP or i.issue_dt is null) ");
+		sql.append(DBUtil.INNER_JOIN).append("document d on b.action_id = d.action_id ");
+		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("mts_user c on a.author_id = c.user_id ");
+		if (!page.isPreviewMode()) 
+			sql.append("where (a.publish_dt < CURRENT_TIMESTAMP or a.publish_dt is null) ");
+		sql.append(") as search where search.document @@ to_tsquery('").append(term).append("') ");
 		sql.append("order by action_nm limit 10");
 		log.debug(sql.length() + "|" + sql);
 

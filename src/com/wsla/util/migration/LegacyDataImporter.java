@@ -44,6 +44,7 @@ public class LegacyDataImporter extends CommandLineUtil {
 //		//post-process refunds, this class relies on both the tickets already being loaded and the raw files
 //		importers.add(Refund.class.getName());
 //		importers.add(Replacement.class.getName());
+//		importers.add(Harvest.class.getName());
 //		importers.add(DebitMemoImporter.class.getName());
 	}
 
