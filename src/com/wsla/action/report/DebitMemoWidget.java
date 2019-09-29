@@ -4,6 +4,8 @@ package com.wsla.action.report;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.zefer.cache.d;
+
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -19,6 +21,7 @@ import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.wsla.data.ticket.CreditMemoVO;
 import com.wsla.data.ticket.DebitMemoVO;
+import com.wsla.data.ticket.UserVO;
 
 /****************************************************************************
  * <b>Title</b>: DebitMemoWidget.java
@@ -130,13 +133,13 @@ public class DebitMemoWidget extends SBActionAdapter {
 		sql.append(getCustomSchema()).append("wsla_debit_memo dm ");
 		sql.append(DBUtil.INNER_JOIN).append(" ( select debit_memo_id, ");
 		sql.append("sum(a.refund_amount_no) as total_credit_memo, ");
-		sql.append("count(*) as credit_memo_no, oem_id, retailer_id ");
+		sql.append("count(*) as credit_memo_no, oem_id, retailer_id, end_user_refund_flg ");
 		sql.append("from ").append(getCustomSchema()).append("wsla_credit_memo a ");
 		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema());
 		sql.append("wsla_ticket_ref_rep b on a.ticket_ref_rep_id = b.ticket_ref_rep_id ");
 		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema());
 		sql.append("wsla_ticket c on b.ticket_id = c.ticket_id ");
-		sql.append("group by debit_memo_id, oem_id, retailer_id ");
+		sql.append("group by debit_memo_id, oem_id, retailer_id, end_user_refund_flg ");
 		sql.append(") as cm on dm.debit_memo_id = cm.debit_memo_id ");
 		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema());
 		sql.append("wsla_provider p on cm.oem_id = p.provider_id ");
@@ -145,7 +148,12 @@ public class DebitMemoWidget extends SBActionAdapter {
 		sql.append(getCustomSchema()).append("wsla_provider a ");
 		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema());
 		sql.append("wsla_provider_location b on a.provider_id = b.provider_id ");
-		sql.append(") as r on cm.retailer_id = r.location_id where 1=1 ");
+		//as in some cases the retail name is a top level provider or a provider location we have to do a union here to get both levels of 
+		// location to join on
+		sql.append(DBUtil.UNION);
+		sql.append(DBUtil.SELECT_CLAUSE).append("provider_id as location_id, provider_nm as retailer_nm  ");
+		sql.append(DBUtil.FROM_CLAUSE).append(getCustomSchema()).append("wsla_provider ");
+		sql.append(") as r on retail_id = r.location_id where 1=1 ");
 		
 		// Add the oem Filter
 		if (! StringUtil.isEmpty(oemId)) {
@@ -195,10 +203,49 @@ public class DebitMemoWidget extends SBActionAdapter {
 		}
 		
 		sql.append(bst.getSQLOrderBy("create_dt", "desc"));
-		log.info(sql.length() + "|" + sql);
+		log.info( sql.length() + "|" + sql);
 		
 		DBProcessor db = new DBProcessor(getDBConnection());
-		return db.executeSQLWithCount(sql.toString(), params, new DebitMemoVO(), bst);
+		GridDataVO<DebitMemoVO> data = db.executeSQLWithCount(sql.toString(), params, new DebitMemoVO(), bst);
+		
+		loadUserNames(data.getRowData());
+		
+		return data;
+	}
+
+	/**
+	 * @param rowData
+	 */
+	private void loadUserNames(List<DebitMemoVO> rowData) {
+		
+		for(DebitMemoVO dbm : rowData) {
+			if (! dbm.getCreditMemos().isEmpty() && 1 == dbm.getCreditMemos().get(0).getEndUserRefundFlag()) {
+				log.debug("found a debit memo that needs a users name go get it");
+				CreditMemoVO targetCeditMemo = dbm.getCreditMemos().get(0);
+				
+				List<Object> vals = new ArrayList<>();
+				StringBuilder sql = new StringBuilder(100);
+				
+				sql.append(DBUtil.SELECT_CLAUSE).append("u.user_id, u.first_nm, u.last_nm ").append(DBUtil.FROM_CLAUSE).append(getCustomSchema()).append("wsla_credit_memo cm ");
+				
+				sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("wsla_ticket_ref_rep rr on cm.ticket_ref_rep_id = rr.ticket_ref_rep_id ");
+				sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("wsla_ticket t on rr.ticket_id = t.ticket_id ");
+				sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("wsla_ticket_assignment ta on t.ticket_id = ta.ticket_id and ta.assg_type_cd = 'CALLER' ");
+				sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("wsla_user u on ta.user_id = u.user_id ");
+				sql.append(DBUtil.WHERE_CLAUSE).append("debit_memo_id = ? ");
+				vals.add(targetCeditMemo.getDebitMemoId());
+
+				DBProcessor db = new DBProcessor(getDBConnection());
+				db.setGenerateExecutedSQL(log.isDebugEnabled());
+				List<UserVO> user = db.executeSelect(sql.toString(), vals, new UserVO());
+				if(user != null && ! user.isEmpty() ) {
+					log.debug("setting user to " + user.get(0));
+					dbm.setUser(user.get(0));
+				}
+				
+			}
+		}
+		
 	}
 }
 
