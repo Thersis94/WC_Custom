@@ -130,6 +130,7 @@ public class DebitMemoUserImporter extends AbsImporter {
 		memo.setTransferAmount(cms.getRefundCost());
 		memo.setOem(getProviderById(memo.getOemId()));
 		memo.setTotalCreditMemoAmount(cms.getRefundCost());
+		memo.setTransferAmount(0);
 		
 		List<CreditMemoVO> credMemo = getCreditMemos("credit_" + cms.getTicketId());
 		if (credMemo.isEmpty()) return;
@@ -151,6 +152,7 @@ public class DebitMemoUserImporter extends AbsImporter {
 		ret.setProviderName(cm.getUserName());
 		memo.setRetailer(ret);
 		memo.setRetailerName(cm.getUserName());
+		memo.setUserId(cm.getUserId());
 		
 		// Create the PDF
 		createPDF(memo);

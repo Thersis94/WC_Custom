@@ -137,7 +137,7 @@ public class DebitMemoWidget extends SBActionAdapter {
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(getCustomSchema());
 		sql.append("wsla_user u on dm.user_id = u.user_id ");
 		
-		sql.append("where 1=1 ");
+		sql.append("where debit_memo_id != 'LEGACY_DEBIT_MEMO' ");
 		// Add the oem Filter
 		if (! StringUtil.isEmpty(oemId)) {
 			params.add(oemId);

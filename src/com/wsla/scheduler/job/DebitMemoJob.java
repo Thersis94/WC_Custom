@@ -227,10 +227,9 @@ public class DebitMemoJob extends AbstractSMTJob {
 		FileLoader fl = new FileLoader(attributes);
 		fl.setPath(fs.getFullPath());
 		fl.setFileName(fs.getStorageFileName());
-
+		log.debug("File Name: " + fs.getStorageFileName());
 		try {
-			byte[] data = createPDF(memo);
-			fl.setData(data);
+			fl.setData(createPDF(memo));
 			fl.writeFiles();
 		} catch(Exception e) {
 			throw new FileWriterException(e);
@@ -252,16 +251,19 @@ public class DebitMemoJob extends AbstractSMTJob {
 		if (memo.getUser() != null && ! StringUtil.isEmpty(memo.getUser().getUserId())) {
 			oldRetailname = memo.getRetailer().getProviderName();
 			memo.getRetailer().setProviderName(memo.getUser().getFirstName() + " " + memo.getUser().getLastName());   
+			log.debug("retail name on pdf " + memo.getRetailer().getProviderName());
+			
 		}
 		
 		try {
 			Reader reader = new InputStreamReader(getClass().getResourceAsStream("debit_memo.ftl"));
 			PDFGenerator pdf = new PDFGenerator(reader, memo, resourceBundle);
+			
 			byte[] doc = pdf.generate();
 			
 			if (memo.getUser() != null && ! StringUtil.isEmpty(memo.getUser().getUserId())) {
 				memo.getRetailer().setProviderName(oldRetailname);  
-				log.info("end user refund detected adjusting pdf name back to " + memo.getRetailer().getProviderName());
+				log.debug("end user refund detected adjusting pdf name back to " + memo.getRetailer().getProviderName());
 			}
 			
 			return doc;
@@ -376,6 +378,8 @@ public class DebitMemoJob extends AbstractSMTJob {
 		
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("wsla_ticket_ref_rep b on a.ticket_ref_rep_id = b.ticket_ref_rep_id ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("wsla_ticket c on b.ticket_id = c.ticket_id ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("wsla_ticket_assignment ta on c.ticket_id = ta.ticket_id and ta.assg_type_cd = 'CALLER' ");
+		
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("wsla_product_serial e on c.product_serial_id = e.product_serial_id ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("wsla_product_master f on e.product_id = f.product_id ");
 		
@@ -385,6 +389,14 @@ public class DebitMemoJob extends AbstractSMTJob {
 		
 		sql.append("where debit_memo_id is null and approval_dt is not null ");
 		sql.append("and oem_id = ? and (d.provider_id = ? or w.refund_provider_id =  ? ) and (a.customer_assisted_cd is null or a.customer_assisted_cd = '') ");
+		
+		if ( ! StringUtil.isEmpty(memo.getUserId())) {
+			sql.append("and end_user_refund_flg = 1 and ta.user_id = ? ");
+			vals.add(memo.getUserId());
+		} else {
+			sql.append("and (end_user_refund_flg = 0 or end_user_refund_flg = null ) ");
+		}
+		
 		log.debug(sql.length() + "|" + sql + "|" + vals);
 
 		// Get the memos
