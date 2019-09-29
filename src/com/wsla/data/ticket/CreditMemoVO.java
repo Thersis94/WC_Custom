@@ -52,6 +52,7 @@ public class CreditMemoVO extends BeanDataVO {
 	private Date createDate;
 	private Date updateDate;
 	private Date authorizationDate;
+	private int endUserRefundFlag;
 	
 	// Sub-beans
 	private TicketDataVO asset = new TicketDataVO();
@@ -271,6 +272,21 @@ public class CreditMemoVO extends BeanDataVO {
 	@Column(name="customer_assisted_cd")
 	public String getCustomerAssistedCode() {
 		return customerAssistedCode;
+	}
+
+	/**
+	 * @return
+	 */
+	@Column(name="end_user_refund_flg")
+	public int getEndUserRefundFlag() {
+		return endUserRefundFlag;
+	}
+
+	/**
+	 * @param endUserRefundFlag
+	 */
+	public void setEndUserRefundFlag(int endUserRefundFlag) {
+		this.endUserRefundFlag = endUserRefundFlag;
 	}
 
 	/**

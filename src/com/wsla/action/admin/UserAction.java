@@ -77,7 +77,7 @@ public class UserAction extends BasePortalAction {
 		vals.add(PUBLIC_SITE_ID);
 		
 		StringBuilder sql = new StringBuilder(150);
-		sql.append(DBUtil.SELECT_CLAUSE).append("pro.provider_nm, pro.provider_id, pl.*, u.*, r.role_nm, r.role_id from ").append(getCustomSchema()).append("wsla_user u ");
+		sql.append(DBUtil.SELECT_CLAUSE).append("pr.profile_role_id, uxr.provider_user_xr_id, pro.provider_nm, pro.provider_id, pl.*, u.*, r.role_nm, r.role_id from ").append(getCustomSchema()).append("wsla_user u ");
 		sql.append(DBUtil.INNER_JOIN).append("profile p on u.profile_id = p.profile_id ");
 		sql.append(DBUtil.INNER_JOIN).append("profile_role pr on u.profile_id = pr.profile_id ");
 		sql.append(DBUtil.INNER_JOIN).append("role r on pr.role_id = r.role_id ");
@@ -97,7 +97,8 @@ public class UserAction extends BasePortalAction {
 			sql.append("and pro.provider_id = ? ");
 			vals.add(providerId);
 		}
-
+		
+		log.debug(sql);
 		DBProcessor db = new DBProcessor(getDBConnection());
 		db.setGenerateExecutedSQL(log.isDebugEnabled());
 		List<ProviderUserVO> users = db.executeSelect(sql.toString(), vals, new ProviderUserVO());

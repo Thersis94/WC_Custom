@@ -33,6 +33,7 @@ public class DebitMemoFileVO {
 	private Date userRefundDate;
 	private Date purchaseDate;
 	private Date oemAuthDate;
+	private double refundCost;
 	
 	/**
 	 * Retailer name to ID map
@@ -224,6 +225,21 @@ public class DebitMemoFileVO {
 	 */
 	public void setRetailerId(String retailerId) {
 		this.retailerId = retailerId;
+	}
+
+	/**
+	 * @return the refundCost
+	 */
+	public double getRefundCost() {
+		return refundCost;
+	}
+
+	/**
+	 * @param refundCost the refundCost to set
+	 */
+	@Importable(name="REFUND COST")
+	public void setRefundCost(double refundCost) {
+		this.refundCost = refundCost;
 	}
 
 }
