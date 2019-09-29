@@ -19,6 +19,7 @@ import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.wsla.data.ticket.CreditMemoVO;
 import com.wsla.data.ticket.DebitMemoVO;
+import com.wsla.data.ticket.UserVO;
 
 /****************************************************************************
  * <b>Title</b>: DebitMemoWidget.java
