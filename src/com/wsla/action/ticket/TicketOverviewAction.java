@@ -333,7 +333,7 @@ public class TicketOverviewAction extends BasePortalAction {
 		BaseTransactionAction bta = new BaseTransactionAction(getDBConnection(), getAttributes());
 		
 		// Update the ticket originator from the user
-		updateOriginator(user.getUserId(), ticket.getTicketId());
+		updateOriginator(adminUser.getUserId(), ticket.getTicketId());
 
 		// Change the status
 		TicketLedgerVO ledger = bta.changeStatus(ticket.getTicketId(), adminUser.getUserId(), ticket.getStatusCode(), LedgerSummary.CALL_RECVD.summary, null);

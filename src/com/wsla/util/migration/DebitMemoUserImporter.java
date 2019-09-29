@@ -3,6 +3,8 @@ package com.wsla.util.migration;
 // JDK 1.8.x
 import java.sql.Connection;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -44,7 +46,6 @@ public class DebitMemoUserImporter extends AbsImporter {
 	// Members
 	private List<DebitMemoFileVO> data;
 	private Map<String, List<DebitMemoFileVO>> entries = new HashMap<>();
-	private Map<String, Map<String, List<DebitMemoFileVO>>> groups = new HashMap<>();
 	private Map<String, ProviderVO> providers = new HashMap<>(50);
 
 	private Map<String, Object> jobAttributes = new HashMap<>();
@@ -56,17 +57,14 @@ public class DebitMemoUserImporter extends AbsImporter {
 	 */
 	@Override
 	void run() throws Exception {
-		data = readFile(props.getProperty("debitMemoFile"), DebitMemoFileVO.class, SHEET_1);
-
+		data = readFile(props.getProperty("debitMemoUserFile"), DebitMemoFileVO.class, SHEET_1);
+		
 		//create a reusable job and load the resource bundle (once)
 		job = new DebitMemoJob(dbConn, jobAttributes);
 		job.getResourceBundleData("es", "MX", "WSLA_BUNDLE");
-
+		
 		// Asign the credit memos to the month grouping
 		monthlyGroup();
-
-		// Groups the elements within a month into a retailer/oem pair
-		processDebitMemoGroup();
 
 		// Loop each element and store the data
 		storeData();
@@ -79,6 +77,8 @@ public class DebitMemoUserImporter extends AbsImporter {
 		// Group the credit memos by month for processing 
 		for (DebitMemoFileVO vo : data) {
 			String key = Convert.formatDate(vo.getOemAuthDate(), Convert.DATE_SHORT_PATTERN);
+			if (StringUtil.isEmpty(key)) continue;
+			
 			if (entries.containsKey(key)) {
 				entries.get(key).add(vo);
 			} else {
@@ -91,43 +91,20 @@ public class DebitMemoUserImporter extends AbsImporter {
 		log.info("Num Months: " + entries.size());
 	}
 
-	/**
-	 * For each month, it puts the CMs in oem/retailer group
-	 */
-	private void processDebitMemoGroup() {
-		for (Map.Entry<String, List<DebitMemoFileVO>> items : entries.entrySet()) {
-			String monthYear = items.getKey();
-			List<DebitMemoFileVO> cms = items.getValue();
-			Map<String, List<DebitMemoFileVO>> cmGroup = new HashMap<>();
-
-			for (DebitMemoFileVO cm : cms) {
-				String key = cm.getOemId() + "|" + cm.getRetailerId();
-
-				if (cmGroup.containsKey(key)) {
-					cmGroup.get(key).add(cm);
-				} else {
-					List<DebitMemoFileVO> item = new ArrayList<>();
-					item.add(cm);
-					cmGroup.put(key, item); 
-				}
-			}
-
-			groups.put(monthYear, cmGroup);
-		}
-	}
-
 
 	/**
 	 * Processes the credit and debit memos and creates them in the db
 	 * @throws Exception 
 	 */
 	private void storeData() throws Exception {
-		for (Map.Entry<String, Map<String, List<DebitMemoFileVO>>> monthYear : groups.entrySet()) {
+		for (Map.Entry<String, List<DebitMemoFileVO>> monthYear : entries.entrySet()) {
 			String key = monthYear.getKey();
-
-			for (Map.Entry<String, List<DebitMemoFileVO>> oemRet : monthYear.getValue().entrySet()) {
-				String groupId = oemRet.getKey();
-				createDebitMemo(key, groupId, oemRet.getValue());
+			
+			for (DebitMemoFileVO vo : monthYear.getValue()) {
+				if ("RCA1000".equalsIgnoreCase(vo.getOemId()))
+					vo.setOemId("1ecc07d03101fe41ac107866a7995adf");
+				
+				createDebitMemo(key, vo);
 			}
 		}
 	}
@@ -141,28 +118,42 @@ public class DebitMemoUserImporter extends AbsImporter {
 	 * @return
 	 * @throws Exception 
 	 */
-	private void createDebitMemo(String monthYear, String key, List<DebitMemoFileVO> cms) throws Exception {
-		int index = key.indexOf('|');
-		String oemId = key.substring(0, index);
-		String retailId = key.substring(index + 1);
-		List<Object> vals = getCreditMemoIds(cms);
-
+	private void createDebitMemo(String monthYear, DebitMemoFileVO cms) throws Exception {
 		DebitMemoVO memo = new DebitMemoVO();
 		String slug = RandomAlphaNumeric.generateRandom(WSLAConstants.TICKET_RANDOM_CHARS);
 		memo.setDebitMemoId(uuid.getUUID());
+		memo.setUpdateDate(new Date());
 		memo.setCustomerMemoCode(slug.toUpperCase());
 		memo.setCreateDate(Convert.formatDate(Convert.DATE_SHORT_PATTERN, monthYear));
-		memo.setRetailId(retailId);
-		memo.setOemId(oemId);
-		memo.setTotalCreditMemos(cms.size());
-		memo.setCreditMemos(getCreditMemos(vals));
-
-		// Merge the db credit memo with the excel data
-		mergeCreditMemos(memo, cms);
-
+		memo.setOemId(cms.getOemId());
+		memo.setTotalCreditMemos(1);
+		memo.setTransferAmount(cms.getRefundCost());
 		memo.setOem(getProviderById(memo.getOemId()));
-		memo.setRetailer(getProviderById(memo.getRetailId()));
-
+		memo.setTotalCreditMemoAmount(cms.getRefundCost());
+		memo.setTransferAmount(0);
+		
+		List<CreditMemoVO> credMemo = getCreditMemos("credit_" + cms.getTicketId());
+		if (credMemo.isEmpty()) return;
+		CreditMemoVO cm = credMemo.get(0);
+		
+		// Merge the db credit memo with the excel data
+		cm.setDebitMemoId(memo.getDebitMemoId());
+		cm.setAuthorizationDate(cms.getOemAuthDate());
+		cm.setUpdateDate(cms.getInitialContactDate());
+		cm.setApprovedBy("Cypher");
+		cm.setApprovalDate(cms.getOemAuthDate());
+		cm.setCustomerMemoCode(RandomAlphaNumeric.generateRandom(WSLAConstants.TICKET_RANDOM_CHARS).toUpperCase());
+		cm.setRefundAmount(cms.getRefundCost());
+		cm.setEndUserRefundFlag(1);
+		cm.setCreateDate(new Date());
+		
+		memo.addCreditMemo(cm);
+		ProviderVO ret = new ProviderVO();
+		ret.setProviderName(cm.getUserName());
+		memo.setRetailer(ret);
+		memo.setRetailerName(cm.getUserName());
+		memo.setUserId(cm.getUserId());
+		
 		// Create the PDF
 		createPDF(memo);
 
@@ -186,81 +177,29 @@ public class DebitMemoUserImporter extends AbsImporter {
 		}
 	}
 
-
-	/**
-	 * Merges the database information with the Excel data 
-	 * @param memo
-	 * @param cms
-	 */
-	private void mergeCreditMemos(DebitMemoVO memo, List<DebitMemoFileVO> cms) {
-		Map<String, CreditMemoVO> dbCms = convertCMListToMap(memo.getCreditMemos());
-
-		for (DebitMemoFileVO vo : cms) {
-			CreditMemoVO cm = dbCms.get("credit_" + vo.getTicketId());
-			if (cm != null) {
-				cm.setDebitMemoId(memo.getDebitMemoId());
-				cm.setAuthorizationDate(vo.getOemAuthDate());
-				cm.setCreateDate(vo.getInitialContactDate());
-				if (! StringUtil.isEmpty(vo.getRetailerCreditMemoId())) 
-					cm.setCustomerMemoCode(vo.getRetailerCreditMemoId());
-			}
-		}
-		log.info("merged memos");
-	}
-
-
-	/**
-	 * Converts the list into a map using the 
-	 * @param cms
-	 * @return
-	 */
-	private Map<String, CreditMemoVO> convertCMListToMap(List<CreditMemoVO> cms) {
-		Map<String, CreditMemoVO> map = new HashMap<>(cms.size());
-		for (CreditMemoVO vo : cms)
-			map.put(vo.getCreditMemoId(), vo);
-
-		log.info(String.format("returning map of size=%d", map.size()));
-		return map;
-	}
-
-
 	/**
 	 * Loads all of the credit memos that will be in the debit memo
 	 * @param ids
 	 * @return
 	 */
-	private List<CreditMemoVO> getCreditMemos(List<Object> ids) {
+	private List<CreditMemoVO> getCreditMemos(String id) {
 		StringBuilder sql = new StringBuilder(400);
-		sql.append("select c.oem_id, ticket_no, d.provider_id, product_nm, a.* ");
+		sql.append("select first_nm || ' ' || last_nm as user_nm, u.user_id, c.oem_id, ticket_no, ");
+		sql.append("d.provider_id, product_nm, a.* ");
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("wsla_credit_memo a ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("wsla_ticket_ref_rep b on a.ticket_ref_rep_id = b.ticket_ref_rep_id ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("wsla_ticket c on b.ticket_id = c.ticket_id ");
+		sql.append(DBUtil.INNER_JOIN).append(schema).append("wsla_ticket_assignment ta ");
+		sql.append("on c.ticket_id = ta.ticket_id and ta.assg_type_cd = 'CALLER' ");
+		sql.append(DBUtil.INNER_JOIN).append(schema).append("wsla_user u on ta.user_id = u.user_id ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("wsla_provider_location d on c.retailer_id = d.location_id ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("wsla_product_serial e on c.product_serial_id = e.product_serial_id ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("wsla_product_master f on e.product_id = f.product_id ");
-		sql.append("where a.credit_memo_id in (").append(DBUtil.preparedStatmentQuestion(ids.size())).append(")");
-		log.debug(sql.length() + "|" + sql + "|" + ids);
+		sql.append("where a.credit_memo_id = ?");
+		log.debug(sql.length() + "|" + sql + "|" + id);
 
-		List<CreditMemoVO> memos = db.executeSelect(sql.toString(), ids, new CreditMemoVO());
-		log.info(String.format("loaded %d memos from %d IDs", memos.size(), ids.size()));
-		return memos;
+		return db.executeSelect(sql.toString(), Arrays.asList(id), new CreditMemoVO());
 	}
-
-
-	/**
-	 * Gets a list of credit memos for a given debit memo
-	 * @param dmfv
-	 * @return
-	 */
-	private List<Object> getCreditMemoIds(List<DebitMemoFileVO> dmfv) {
-		List<Object> ids = new ArrayList<>(dmfv.size());
-		for (DebitMemoFileVO vo : dmfv)
-			ids.add("credit_" + vo.getTicketId());
-
-		log.info(String.format("returning %d IDs", ids.size()));
-		return ids;
-	}
-
 
 	/**
 	 * Gets the OEM information from the database and assigns it to the memo.
@@ -271,6 +210,7 @@ public class DebitMemoUserImporter extends AbsImporter {
 	 * @throws DatabaseException
 	 */
 	private ProviderVO getProviderById(String providerId) throws Exception {
+
 		//return a cached record if we have one
 		if (providers.containsKey(providerId))
 			return providers.get(providerId);

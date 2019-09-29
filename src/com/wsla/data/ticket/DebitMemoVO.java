@@ -39,11 +39,13 @@ public class DebitMemoVO extends BeanDataVO {
 	private String customerMemoCode;
 	private String oemId;
 	private String retailId;
+	private String userId;
 	private String approvedBy;
 	private String transferNumber;
 	private String filePathUrl;
 	private String retailerName;
 	private String oemName;
+	private String userName;
 
 	// Numeric Members
 	private double transferAmount;
@@ -178,7 +180,7 @@ public class DebitMemoVO extends BeanDataVO {
 	/**
 	 * @return the totalCreditMemoAmount
 	 */
-	@Column(name="total_credit_memo", isReadOnly=true)
+	@Column(name="credit_memo_amount_no")
 	public double getTotalCreditMemoAmount() {
 		if (Double.valueOf(totalCreditMemoAmount) == 0 && !creditMemos.isEmpty()) {
 			for (CreditMemoVO cm : creditMemos) {
@@ -415,5 +417,35 @@ public class DebitMemoVO extends BeanDataVO {
 	@BeanSubElement
 	public void setUser(UserVO user) {
 		this.user = user;
+	}
+
+	/**
+	 * @return the userId
+	 */
+	@Column(name="user_id")
+	public String getUserId() {
+		return userId;
+	}
+
+	/**
+	 * @return the userName
+	 */
+	@Column(name="user_nm", isReadOnly=true)
+	public String getUserName() {
+		return userName;
+	}
+
+	/**
+	 * @param userId the userId to set
+	 */
+	public void setUserId(String userId) {
+		this.userId = userId;
+	}
+
+	/**
+	 * @param userName the userName to set
+	 */
+	public void setUserName(String userName) {
+		this.userName = userName;
 	}
 }
