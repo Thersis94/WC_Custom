@@ -222,13 +222,15 @@ public class DebitMemoJob extends AbstractSMTJob {
 		// Get the file name and path
 		FileTransferStructureImpl fs = new FileTransferStructureImpl(null, "12345678.pdf", attributes);
 		log.debug("FS: " + fs.getFullPath());
+		
 		// Create the file loader and write to the file system
 		FileLoader fl = new FileLoader(attributes);
 		fl.setPath(fs.getFullPath());
 		fl.setFileName(fs.getStorageFileName());
-		log.debug("File Name: " + fs.getStorageFileName());
+
 		try {
-			fl.setData(createPDF(memo));
+			byte[] data = createPDF(memo);
+			fl.setData(data);
 			fl.writeFiles();
 		} catch(Exception e) {
 			throw new FileWriterException(e);
@@ -247,23 +249,21 @@ public class DebitMemoJob extends AbstractSMTJob {
 	 */
 	protected byte[] createPDF(DebitMemoVO memo) throws IOException {
 		String oldRetailname ="";
-		if (! StringUtil.isEmpty(memo.getUser().getUserId())) {
-			log.debug("end user refund detected adjusting pdf name");
+		if (memo.getUser() != null && ! StringUtil.isEmpty(memo.getUser().getUserId())) {
 			oldRetailname = memo.getRetailer().getProviderName();
 			memo.getRetailer().setProviderName(memo.getUser().getFirstName() + " " + memo.getUser().getLastName());   
-			log.debug("retail name on pdf " + memo.getRetailer().getProviderName());
-			
 		}
 		
 		try {
 			Reader reader = new InputStreamReader(getClass().getResourceAsStream("debit_memo.ftl"));
 			PDFGenerator pdf = new PDFGenerator(reader, memo, resourceBundle);
-			
 			byte[] doc = pdf.generate();
-			if (! StringUtil.isEmpty(memo.getUser().getUserId())) {
+			
+			if (memo.getUser() != null && ! StringUtil.isEmpty(memo.getUser().getUserId())) {
 				memo.getRetailer().setProviderName(oldRetailname);  
-				log.debug("end user refund detected adjusting pdf name back to " + memo.getRetailer().getProviderName());
+				log.info("end user refund detected adjusting pdf name back to " + memo.getRetailer().getProviderName());
 			}
+			
 			return doc;
 		} catch (Exception e) {
 			throw new IOException(e);

@@ -61,7 +61,6 @@ public class LegacyDataImporter extends CommandLineUtil {
 		//importers.add(Refund.class.getName());
 		//importers.add(DebitMemoImporter.class.getName());
 		importers.add(DebitMemoUserImporter.class.getName());
-
 	}
 
 

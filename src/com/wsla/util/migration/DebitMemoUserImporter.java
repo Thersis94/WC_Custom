@@ -58,15 +58,13 @@ public class DebitMemoUserImporter extends AbsImporter {
 	@Override
 	void run() throws Exception {
 		data = readFile(props.getProperty("debitMemoUserFile"), DebitMemoFileVO.class, SHEET_1);
-		log.info(data.get(0).getTicketId() + "|" + data.get(0).getRefundCost());
 		
 		//create a reusable job and load the resource bundle (once)
 		job = new DebitMemoJob(dbConn, jobAttributes);
 		job.getResourceBundleData("es", "MX", "WSLA_BUNDLE");
-
+		
 		// Asign the credit memos to the month grouping
 		monthlyGroup();
-		log.info("Num Months/Years : " + entries.keySet());
 
 		// Loop each element and store the data
 		storeData();
@@ -131,13 +129,12 @@ public class DebitMemoUserImporter extends AbsImporter {
 		memo.setTotalCreditMemos(1);
 		memo.setTransferAmount(cms.getRefundCost());
 		memo.setOem(getProviderById(memo.getOemId()));
-		memo.setApprovedBy("Cypher");
 		memo.setTotalCreditMemoAmount(cms.getRefundCost());
 		
 		List<CreditMemoVO> credMemo = getCreditMemos("credit_" + cms.getTicketId());
-		//if (credMemo.isEmpty()) return;
-		//CreditMemoVO cm = credMemo.get(0);
-		CreditMemoVO cm = new CreditMemoVO();
+		if (credMemo.isEmpty()) return;
+		CreditMemoVO cm = credMemo.get(0);
+		
 		// Merge the db credit memo with the excel data
 		cm.setDebitMemoId(memo.getDebitMemoId());
 		cm.setAuthorizationDate(cms.getOemAuthDate());
@@ -149,18 +146,20 @@ public class DebitMemoUserImporter extends AbsImporter {
 		cm.setEndUserRefundFlag(1);
 		cm.setCreateDate(new Date());
 		
-		memo.setUserId(cm.getUserId());
-		memo.setUserId("WSLA_USER_1");
 		memo.addCreditMemo(cm);
+		ProviderVO ret = new ProviderVO();
+		ret.setProviderName(cm.getUserName());
+		memo.setRetailer(ret);
+		memo.setRetailerName(cm.getUserName());
 		
 		// Create the PDF
-		//createPDF(memo);
+		createPDF(memo);
 
 		// Store the debit memo
 		db.insert(memo);
 
 		// Update the credit memos
-		//writeToDB(memo.getCreditMemos(), false);
+		writeToDB(memo.getCreditMemos(), false);
 	}
 
 
@@ -183,7 +182,7 @@ public class DebitMemoUserImporter extends AbsImporter {
 	 */
 	private List<CreditMemoVO> getCreditMemos(String id) {
 		StringBuilder sql = new StringBuilder(400);
-		sql.append("select first_nm, last_nm, u.user_id, c.oem_id, ticket_no, ");
+		sql.append("select first_nm || ' ' || last_nm as user_nm, u.user_id, c.oem_id, ticket_no, ");
 		sql.append("d.provider_id, product_nm, a.* ");
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("wsla_credit_memo a ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("wsla_ticket_ref_rep b on a.ticket_ref_rep_id = b.ticket_ref_rep_id ");
@@ -197,9 +196,7 @@ public class DebitMemoUserImporter extends AbsImporter {
 		sql.append("where a.credit_memo_id = ?");
 		log.debug(sql.length() + "|" + sql + "|" + id);
 
-		List<CreditMemoVO> memos = db.executeSelect(sql.toString(), Arrays.asList(id), new CreditMemoVO());
-		
-		return memos;
+		return db.executeSelect(sql.toString(), Arrays.asList(id), new CreditMemoVO());
 	}
 
 	/**
