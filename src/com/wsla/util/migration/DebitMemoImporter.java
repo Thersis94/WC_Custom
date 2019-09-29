@@ -193,7 +193,7 @@ public class DebitMemoImporter extends AbsImporter {
 	 */
 	private void mergeCreditMemos(DebitMemoVO memo, List<DebitMemoFileVO> cms) {
 		Map<String, CreditMemoVO> dbCms = convertCMListToMap(memo.getCreditMemos());
-
+		double total = 0;
 		for (DebitMemoFileVO vo : cms) {
 			CreditMemoVO cm = dbCms.get("credit_" + vo.getTicketId());
 			if (cm != null) {
@@ -202,8 +202,12 @@ public class DebitMemoImporter extends AbsImporter {
 				cm.setCreateDate(vo.getInitialContactDate());
 				if (! StringUtil.isEmpty(vo.getRetailerCreditMemoId())) 
 					cm.setCustomerMemoCode(vo.getRetailerCreditMemoId());
+				
+				total += cm.getRefundAmount();
 			}
 		}
+		
+		memo.setTotalCreditMemoAmount(total);
 		log.info("merged memos");
 	}
 
