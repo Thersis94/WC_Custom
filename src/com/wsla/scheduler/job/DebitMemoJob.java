@@ -155,7 +155,7 @@ public class DebitMemoJob extends AbstractSMTJob {
 	 */
 	public String processDebitMemos(String schema) {
 		List<DebitMemoVO> memos = getGroupData(schema);
-		log.debug("memo size "  + memos.size());
+		log.info("memo size "  + memos.size());
 
 		StringBuilder messages = new StringBuilder(100);
 		log.debug(memos);
@@ -176,9 +176,9 @@ public class DebitMemoJob extends AbstractSMTJob {
 				memo.setDebitMemoId(new UUIDGenerator().getUUID());
 				memo.setCustomerMemoCode(slug.toUpperCase());
 				memo.setCreateDate(new Date());
-				log.debug(" user data " + memo.getUser().getFirstName());
-				log.debug(" retailer data " + memo.getRetailer().getProviderName());
-				log.debug(" oem data " + memo.getOem().getProviderName());
+				log.info(" user data " + memo.getUser().getFirstName());
+				log.info(" retailer data " + memo.getRetailer().getProviderName());
+				log.info(" oem data " + memo.getOem().getProviderName());
 				// process the memo
 				processDebitMemo(memo, schema);
 
@@ -200,14 +200,14 @@ public class DebitMemoJob extends AbstractSMTJob {
 
 		// Create the actual debit memo and attach as an asset and asset
 		memo.setFilePathUrl(this.buildMemoPDF(memo));
-		log.debug("pdf generated ");
+		log.info("pdf generated ");
 		// Create a debit memo for each oem/retailer pair
 		DBProcessor db = new DBProcessor(conn, schema);
 		db.insert(memo);
 
 		// Add the debit memo id to each of the credit memos assigned to the debit memo
 		this.updateCreditMemos(schema, memo.getDebitMemoId(), memo.getCreditMemos());
-		log.debug("credit memos updated");
+		log.info("credit memos updated");
 	}
 
 	/**
@@ -248,10 +248,10 @@ public class DebitMemoJob extends AbstractSMTJob {
 	protected byte[] createPDF(DebitMemoVO memo) throws IOException {
 		String oldRetailname ="";
 		if (! StringUtil.isEmpty(memo.getUser().getUserId())) {
-			log.debug("end user refund detected adjusting pdf name");
+			log.info("end user refund detected adjusting pdf name");
 			oldRetailname = memo.getRetailer().getProviderName();
 			memo.getRetailer().setProviderName(memo.getUser().getFirstName() + " " + memo.getUser().getLastName());   
-			log.debug("retail name on pdf " + memo.getRetailer().getProviderName());
+			log.info("retail name on pdf " + memo.getRetailer().getProviderName());
 			
 		}
 		
@@ -279,7 +279,7 @@ public class DebitMemoJob extends AbstractSMTJob {
 	 * @throws SQLException
 	 */
 	public void updateCreditMemos(String schema, String debitMemoId, List<CreditMemoVO> creditMemos) 			throws SQLException {
-		log.debug("number of credit memos " + creditMemos.size());
+		log.info("number of credit memos " + creditMemos.size());
 		if (creditMemos == null || creditMemos.isEmpty()) return;
 
 		String sql =StringUtil.join(DBUtil.UPDATE_CLAUSE, schema, "wsla_credit_memo ", 
@@ -294,7 +294,7 @@ public class DebitMemoJob extends AbstractSMTJob {
 
 			// Update the credit memos
 			int[] cnt = ps.executeBatch();
-			log.debug(String.format("updated %d credit memos to set debitMemoId=%s", cnt.length, debitMemoId));
+			log.info(String.format("updated %d credit memos to set debitMemoId=%s", cnt.length, debitMemoId));
 		}
 	}
 
@@ -352,7 +352,7 @@ public class DebitMemoJob extends AbstractSMTJob {
 		sql.append("group by oem_id, retail_id, u.user_id, u.first_nm, u.last_nm ");
 		
 		sql.append("order by oem_id, retail_id ");
-		log.debug(sql.length() + "|" + sql);
+		log.info(sql.length() + "|" + sql);
 		DBProcessor db = new DBProcessor(conn, schema);
 		return db.executeSelect(sql.toString(), null, new DebitMemoVO());
 		
@@ -376,6 +376,8 @@ public class DebitMemoJob extends AbstractSMTJob {
 		
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("wsla_ticket_ref_rep b on a.ticket_ref_rep_id = b.ticket_ref_rep_id ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("wsla_ticket c on b.ticket_id = c.ticket_id ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("wsla_ticket_assignment ta on c.ticket_id = ta.ticket_id and ta.assg_type_cd = 'CALLER' ");
+		
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("wsla_product_serial e on c.product_serial_id = e.product_serial_id ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("wsla_product_master f on e.product_id = f.product_id ");
 		
@@ -385,12 +387,20 @@ public class DebitMemoJob extends AbstractSMTJob {
 		
 		sql.append("where debit_memo_id is null and approval_dt is not null ");
 		sql.append("and oem_id = ? and (d.provider_id = ? or w.refund_provider_id =  ? ) and (a.customer_assisted_cd is null or a.customer_assisted_cd = '') ");
+		
+		if ( ! StringUtil.isEmpty(memo.getUserId())) {
+			sql.append("and end_user_refund_flg = 1 and ta.user_id = ? ");
+			vals.add(memo.getUserId());
+		} else {
+			sql.append("and (end_user_refund_flg = 0 or end_user_refund_flg = null ) ");
+		}
+		
 		log.debug(sql.length() + "|" + sql + "|" + vals);
 
 		// Get the memos
 		DBProcessor db = new DBProcessor(conn, schema);
 		List<CreditMemoVO> data = db.executeSelect(sql.toString(), vals, new CreditMemoVO());
-		log.debug("number of credit memos found " + data.size());
+		log.info("number of credit memos found " + data.size());
 		
 		// Update the sum of the credit memos on the debit memo
 		double total = 0;
