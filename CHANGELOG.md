@@ -1,5 +1,29 @@
 WC_Custom Changelog (auto-generated)
 
+# [3.31.0](https://github.com/smtadmin/WC_Custom/compare/3.30.0...3.31.0) (2019-09-29)
+
+
+### Bug Fixes
+
+* **Debit Memo:** Finalized the importing of the debit memos for end users ([6b812c5](https://github.com/smtadmin/WC_Custom/commit/6b812c5))
+* **feature-wsla-i9:** fix sorting in credit and debit memo ([85b9643](https://github.com/smtadmin/WC_Custom/commit/85b9643))
+* **Importer:** Adding the debit memos for end users ([4c21eb6](https://github.com/smtadmin/WC_Custom/commit/4c21eb6))
+* **Misc Changes:** Misc changes for launch.  Fixed bug when approving CAS that was duplicating the c ([795c4fa](https://github.com/smtadmin/WC_Custom/commit/795c4fa))
+
+
+### Features
+
+* **Debit Memos:** Finished importer for user debit memos as well as mofigied the debit memo query ([c9be720](https://github.com/smtadmin/WC_Custom/commit/c9be720))
+* **Debit Memos:** Totalled the credit memos and added the amount to the debit memo.  This cleans up ([7441d29](https://github.com/smtadmin/WC_Custom/commit/7441d29))
+* **feature-wsla-i9:** update debit memo job, action to support the diffent types of debit memo proc ([fc21b0b](https://github.com/smtadmin/WC_Custom/commit/fc21b0b))
+* **Importer:** Working throuogh the importer ([b7d7e30](https://github.com/smtadmin/WC_Custom/commit/b7d7e30))
+* **Iomporter:** changes to the importer ([7fa9e39](https://github.com/smtadmin/WC_Custom/commit/7fa9e39))
+
+
+### Performance Improvements
+
+* **feature-wsla-i9:** update ([c9de893](https://github.com/smtadmin/WC_Custom/commit/c9de893))
+
 # [3.30.0](https://github.com/smtadmin/WC_Custom/compare/3.29.2...3.30.0) (2019-09-27)
 
 
