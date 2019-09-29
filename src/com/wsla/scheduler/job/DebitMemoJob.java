@@ -391,6 +391,11 @@ public class DebitMemoJob extends AbstractSMTJob {
 		DBProcessor db = new DBProcessor(conn, schema);
 		List<CreditMemoVO> data = db.executeSelect(sql.toString(), vals, new CreditMemoVO());
 		log.debug("number of credit memos found " + data.size());
+		
+		// Update the sum of the credit memos on the debit memo
+		double total = 0;
+		for (CreditMemoVO cm : data) total += cm.getRefundAmount();
+		memo.setTotalCreditMemoAmount(total);
 		memo.setCreditMemos(data);
 	}
 
