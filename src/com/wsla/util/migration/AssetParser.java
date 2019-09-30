@@ -19,6 +19,7 @@ import com.siliconmtn.util.MapUtil;
 import com.siliconmtn.util.StringUtil;
 import com.wsla.data.ticket.ApprovalCode;
 import com.wsla.data.ticket.TicketCommentVO;
+import com.wsla.data.ticket.TicketCommentVO.ActivityType;
 import com.wsla.data.ticket.TicketDataVO;
 import com.wsla.data.ticket.TicketLedgerVO;
 import com.wsla.util.migration.vo.AssetPathVO;
@@ -251,6 +252,7 @@ public class AssetParser extends AbsImporter {
 				comment.setPriorityTicketFlag(vo.isAlert() ? 1 : 0);
 				comment.setComment(vo.getComment());
 				comment.setUserId(SOHeader.LEGACY_USER_ID);
+				comment.setActivityType(ActivityType.COMMENT.name());
 				comments.add(comment);
 			}
 		}
@@ -272,7 +274,7 @@ public class AssetParser extends AbsImporter {
 	 * @return
 	 */
 	private String transposeFileUrl(String filePath) {
-		return filePath.replaceAll("\\\\", "/").replaceAll("E:/swattach/", "/wsla-swattach/").replace(' ','+');
+		return filePath.replaceAll("\\\\", "/").replaceAll("E:/swattach/", "/wsla-swattach/").replace(" ","%20");
 	}
 
 

@@ -62,7 +62,7 @@ public class Harvest extends AbsImporter {
 		//turn the list of data into a unique list of tickets
 		Map<String, ExtTicketVO> tickets= new HashMap<>(data.size());
 		for (SOHDRFileVO dataVo : data) {
-			//010 are replacements and all we care about
+			//035 are harvests and all we care about
 			if ("035".equals(dataVo.getSoType())) {
 				ExtTicketVO vo = transposeTicketData(dataVo, new ExtTicketVO());
 				tickets.put(vo.getTicketId(), vo);
