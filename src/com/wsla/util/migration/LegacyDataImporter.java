@@ -25,7 +25,7 @@ public class LegacyDataImporter extends CommandLineUtil {
 
 	private static final List<String> importers = new ArrayList<>();
 	protected final String batchNm = RandomAlphaNumeric.generateRandom(10);
-	
+
 	/*
 	 * the time zone of Mexico City - which is what we'll presume all incoming dates/times to be.
 	 * We'll offset (increment) these to UTC prior to saving/using them for accuracy.
@@ -34,19 +34,18 @@ public class LegacyDataImporter extends CommandLineUtil {
 
 	//define the ordered list of importers to run.  This will vary through development but all will run at once for staging/prod.
 	static {
-
 //		importers.add(SOHeader.class.getName());
 //		importers.add(SOExtendedData.class.getName());
 //		importers.add(SOComments.class.getName());
-		importers.add(SOLineItems.class.getName());
-		importers.add(AssetParser.class.getName());
-//dxv5bqj61h
-//		//post-process refunds, this class relies on both the tickets already being loaded and the raw files
-		importers.add(Refund.class.getName());
-		importers.add(Replacement.class.getName());
-		importers.add(Harvest.class.getName());
+//		importers.add(SOLineItems.class.getName());
+//		importers.add(AssetParser.class.getName());
+
+		//post-process refunds, this class relies on both the tickets already being loaded and the raw files
+//		importers.add(Refund.class.getName());
+//		importers.add(Replacement.class.getName());
+//		importers.add(Harvest.class.getName());
 //		importers.add(DebitMemoImporter.class.getName());
-//		importers.add(DebitMemoUserImporter.class.getName());
+		importers.add(DebitMemoUserImporter.class.getName());
 	}
 
 

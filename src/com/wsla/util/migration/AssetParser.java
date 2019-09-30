@@ -274,7 +274,7 @@ public class AssetParser extends AbsImporter {
 	 * @return
 	 */
 	private String transposeFileUrl(String filePath) {
-		return filePath.replaceAll("\\\\", "/").replaceAll("E:/swattach/", "/wsla-swattach/").replace(' ','+');
+		return filePath.replaceAll("\\\\", "/").replaceAll("E:/swattach/", "/wsla-swattach/").replace(" ","%20");
 	}
 
 

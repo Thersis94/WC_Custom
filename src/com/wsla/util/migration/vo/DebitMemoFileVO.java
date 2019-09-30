@@ -42,7 +42,7 @@ public class DebitMemoFileVO {
 	static {
 		retailMap.put("FAMSA", "3ec22037fdbcf78dac1002845ee33bb6");
 		retailMap.put("HOME DEPOT", "20_HOMDEP");
-		retailMap.put("CHEDRAHUI", "3db71d56fdb0180aac1002845011c289");
+		retailMap.put("CHEDRAHUI", "a38ededc4480a3afac100290da3effa8");
 		retailMap.put("MAYORAMSA", "RETAILER_MAYORAMSA");
 	}
 
