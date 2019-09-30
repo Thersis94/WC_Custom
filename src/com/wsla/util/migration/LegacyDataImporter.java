@@ -38,14 +38,15 @@ public class LegacyDataImporter extends CommandLineUtil {
 //		importers.add(SOHeader.class.getName());
 //		importers.add(SOExtendedData.class.getName());
 //		importers.add(SOComments.class.getName());
-//		importers.add(SOLineItems.class.getName());
-//		importers.add(AssetParser.class.getName());
-//
+		importers.add(SOLineItems.class.getName());
+		importers.add(AssetParser.class.getName());
+//dxv5bqj61h
 //		//post-process refunds, this class relies on both the tickets already being loaded and the raw files
-//		importers.add(Refund.class.getName());
-//		importers.add(Replacement.class.getName());
-//		importers.add(Harvest.class.getName());
+		importers.add(Refund.class.getName());
+		importers.add(Replacement.class.getName());
+		importers.add(Harvest.class.getName());
 //		importers.add(DebitMemoImporter.class.getName());
+//		importers.add(DebitMemoUserImporter.class.getName());
 	}
 
 
@@ -73,6 +74,7 @@ public class LegacyDataImporter extends CommandLineUtil {
 	 */
 	@Override
 	public void run() {
+		log.info("starting batch import " + batchNm);
 		//loop through the importers we were asked to run
 		for (String className : importers) {
 			try {

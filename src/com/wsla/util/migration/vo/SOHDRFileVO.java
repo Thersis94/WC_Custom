@@ -303,4 +303,76 @@ public class SOHDRFileVO {
 	public void setCustCountry(String custCountry) {
 		this.custCountry = custCountry;
 	}
+
+	/**
+	 * Return one of Steve's mappings for the final status on open tickets.
+	 * We acknowledge here that ledger entries are data-driven and may not always align with 
+	 * what the ticket says the status should be.  Still, this value takes precendence as
+	 * the overall ticket status.
+	 * @return
+	 */
+	public StatusCode getOpenTicketStatus() {
+		switch (StringUtil.checkVal(getUserArea1()).toUpperCase()) {
+			case "CAS-AGENDA VISI":
+			case "CAS-REC EN TDA":
+			case "SRV-TRN SIN CAS":
+				return StatusCode.PENDING_PICKUP;
+			case "CAS-ASIGNA OS":
+			case "CONS-CON PEND":
+			case "CONS-PEND CONCL":
+			case "CONS-PEND EVID":
+			case "CONS-PEND POP":
+			case "CONS-PROD PEND":
+			case "TDA-PEND EVID":
+				return StatusCode.USER_DATA_INCOMPLETE;
+			case "CAS-DIAGNO PEND":
+			case "CAS-EVID COMP":
+			case "CAS-PEND EVID":
+				return StatusCode.CAS_IN_DIAG;
+			case "CAS-OBS OPERAT":
+			case "CAS-PEND REPAR":
+				return StatusCode.CAS_IN_REPAIR;
+			case "CAS-PEND DEF":
+			case "FAB-AUTH REC":
+				return StatusCode.DEFECTIVE_PENDING;
+			case "CAS-PEND ENTR":
+			case "SRV-TRN REP CAS":
+				return StatusCode.DELIVERY_SCHEDULED;
+			case "CC-CONFIG":
+				return StatusCode.CC_CONFIG;
+			case "CC-CREA FOR REE":
+				return StatusCode.RAR_OEM_NOTIFIED;
+			case "CC-PARTE SOL":
+				return StatusCode.CAS_PARTS_ORDERED;
+			case "CC-PEND GUIA":
+			case "SRV-PARTE ENV":
+				return StatusCode.PARTS_SHIPPED_CAS;
+			case "CONS-REC PROD":
+				return StatusCode.DELIVERY_COMPLETE;
+			case "CONS-RET TDA":
+				return StatusCode.DEFECTIVE_RCVD;
+			case "FAB-AUTH CANIB":
+				return StatusCode.HARVEST_APPROVED;
+			case "FAB-REEMB AUTH":
+			case "TDA-PEN REMB UF":
+			case "UF-PEND DATOS":
+			case "FAB-PEND DEP UF":
+				return StatusCode.REFUND_APPROVED;
+			case "FAB-REEMP AUTH":
+				return StatusCode.REPLACEMENT_CONFIRMED;
+			case "FAB-REFAC PEND":
+				return StatusCode.PARTS_OUT_STOCK;
+			case "GER-PEND CERRAR":
+				return StatusCode.CAS_REPAIR_COMPLETE;
+			case "REC-MENSAJERIA":
+				return StatusCode.PROBLEM_RESOLVED;
+			case "UF-ACEPTA REEMP":
+				return StatusCode.RPLC_DELIVEY_RCVD;
+			case "UF-PEND AUT FAB":
+			case "FAB-AUTH PEND":
+				return StatusCode.REFUND_REQUEST;
+			default:
+				return StatusCode.USER_DATA_INCOMPLETE;
+		}
+	}
 }

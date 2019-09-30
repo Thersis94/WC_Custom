@@ -360,6 +360,10 @@ public class Refund extends AbsImporter {
 			credit.setCreditMemoId("credit_" + tkt.getTicketId());
 			credit.setTicketId(tkt.getTicketId());
 			credit.setCreateDate(stepTime(tkt.getClosedDate(), -30));
+			if (credit.getCreateDate() == null) //ticket isn't closed yet
+				credit.setCreateDate(stepTime(tkt.getUpdateDate(), 0));
+			if (credit.getCreateDate() == null) //ticket isn't updated either?
+				credit.setCreateDate(stepTime(tkt.getCreateDate(), 0));
 			credit.setRefundAmount(0);
 			credit.setRefundReplacementId(refReps.getOrDefault(tkt.getTicketId(), new RefundReplacementVO()).getRefundReplacementId());
 			credit.setCustomerMemoCode(RandomAlphaNumeric.generateRandom(WSLAConstants.TICKET_RANDOM_CHARS).toUpperCase());
