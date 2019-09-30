@@ -78,11 +78,11 @@ public class CreditMemoTransaction extends BaseTransactionAction {
 		cmvo.setApprovalDate(new Date());
 		cmvo.setUpdateDate(new Date());
 		
-		List<String> fields = Arrays.asList("asset_id", "refund_amount_no", "customer_assisted_cd" , "approved_by_txt", "bank_nm", "account_no", "transfer_cd", "approval_dt", "customer_memo_cd", "authorization_dt", "credit_memo_id");
+		List<String> fields = Arrays.asList("end_user_refund_flg", "asset_id", "refund_amount_no", "customer_assisted_cd" , "approved_by_txt", "bank_nm", "account_no", "transfer_cd", "approval_dt", "customer_memo_cd", "authorization_dt", "credit_memo_id");
 		
 		StringBuilder sql = new StringBuilder(93);
 		sql.append(DBUtil.UPDATE_CLAUSE).append(getCustomSchema()).append("wsla_credit_memo ");
-		sql.append("set asset_id = ?, refund_amount_no = ?,customer_assisted_cd = ?, approved_by_txt = ?, bank_nm = ?, account_no = ?, transfer_cd = ?, approval_dt = ?, customer_memo_cd = ?, authorization_dt = ?");
+		sql.append("set end_user_refund_flg = ?, asset_id = ?, refund_amount_no = ?,customer_assisted_cd = ?, approved_by_txt = ?, bank_nm = ?, account_no = ?, transfer_cd = ?, approval_dt = ?, customer_memo_cd = ?, authorization_dt = ?");
 		sql.append(DBUtil.WHERE_CLAUSE).append("credit_memo_id = ? ");
 		
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
@@ -100,11 +100,11 @@ public class CreditMemoTransaction extends BaseTransactionAction {
 	 */
 	public void saveBankInfo(CreditMemoVO cmvo) {
 
-		List<String> fields = Arrays.asList("bank_nm", "account_no", "transfer_cd", "credit_memo_id");
+		List<String> fields = Arrays.asList("bank_nm", "account_no", "transfer_cd", "end_user_refund_flg", "credit_memo_id");
 		
 		StringBuilder sql = new StringBuilder(93);
 		sql.append(DBUtil.UPDATE_CLAUSE).append(getCustomSchema()).append("wsla_credit_memo ");
-		sql.append("set bank_nm = ?, account_no = ?, transfer_cd = ? ");
+		sql.append("set bank_nm = ?, account_no = ?, transfer_cd = ?, end_user_refund_flg = ? ");
 		sql.append(DBUtil.WHERE_CLAUSE).append("credit_memo_id = ? ");
 		
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());

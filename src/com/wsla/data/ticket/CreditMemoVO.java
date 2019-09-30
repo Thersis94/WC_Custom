@@ -52,16 +52,20 @@ public class CreditMemoVO extends BeanDataVO {
 	private Date createDate;
 	private Date updateDate;
 	private Date authorizationDate;
+	private int endUserRefundFlag;
 	
 	// Sub-beans
 	private TicketDataVO asset = new TicketDataVO();
 	private DebitMemoVO debitMemo = new DebitMemoVO();
+	private UserVO user = new UserVO();
 	
 	// Read-Only Members
 	private String ticketIdText;
 	private String filePathUrl;
 	private String productName;
+	private String userName;
 	private String ticketId;
+	private String userId;
 
 	/**
 	 * Standing of the ticket in relation to how its progressing through the workflow
@@ -274,6 +278,21 @@ public class CreditMemoVO extends BeanDataVO {
 	}
 
 	/**
+	 * @return
+	 */
+	@Column(name="end_user_refund_flg")
+	public int getEndUserRefundFlag() {
+		return endUserRefundFlag;
+	}
+
+	/**
+	 * @param endUserRefundFlag
+	 */
+	public void setEndUserRefundFlag(int endUserRefundFlag) {
+		this.endUserRefundFlag = endUserRefundFlag;
+	}
+
+	/**
 	 * @param customerAssistedCode
 	 */
 	public void setCustomerAssistedCode(String customerAssistedCode) {
@@ -456,6 +475,51 @@ public class CreditMemoVO extends BeanDataVO {
 	 */
 	public void setDebitMemoCode(String debitMemoCode) {
 		this.debitMemoCode = debitMemoCode;
+	}
+
+	/**
+	 * @return the user
+	 */
+	@BeanSubElement
+	public UserVO getUser() {
+		return user;
+	}
+
+	/**
+	 * @return the userId
+	 */
+	@Column(name="user_id", isReadOnly=true)
+	public String getUserId() {
+		return userId;
+	}
+
+	/**
+	 * @param user the user to set
+	 */
+	public void setUser(UserVO user) {
+		this.user = user;
+	}
+
+	/**
+	 * @param userId the userId to set
+	 */
+	public void setUserId(String userId) {
+		this.userId = userId;
+	}
+
+	/**
+	 * @return the userName
+	 */
+	@Column(name="user_nm", isReadOnly=true)
+	public String getUserName() {
+		return userName;
+	}
+
+	/**
+	 * @param userName the userName to set
+	 */
+	public void setUserName(String userName) {
+		this.userName = userName;
 	}
 
 }

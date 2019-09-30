@@ -95,6 +95,8 @@ public class TicketVO extends BeanDataVO {
 	private String oemId;
 	private String userId;
 	private String statusName;
+	private String casName;
+	private String casLocation;
 	private boolean ticketLocked;
 	private long statusAge;
 
@@ -881,5 +883,42 @@ public class TicketVO extends BeanDataVO {
 	 */
 	public void setStatusAge(long statusAge) {
 		this.statusAge = statusAge;
+	}
+
+	/**
+	 * @return the casName
+	 */
+	@Column(name="cas_nm", isReadOnly=true)
+	public String getCasName() {
+		return casName;
+	}
+
+	/**
+	 * @return the casLocation
+	 */
+	@Column(name="cas_loc_nm", isReadOnly=true)
+	public String getCasLocation() {
+		return casLocation;
+	}
+
+	/**
+	 * @param casName the casName to set
+	 */
+	public void setCasName(String casName) {
+		this.casName = casName;
+	}
+
+	/**
+	 * @param casLocation the casLocation to set
+	 */
+	public void setCasLocation(String casLocation) {
+		this.casLocation = casLocation;
+	}
+
+	/**
+	 * @param ticketLocked the ticketLocked to set
+	 */
+	public void setTicketLocked(boolean ticketLocked) {
+		this.ticketLocked = ticketLocked;
 	}
 }

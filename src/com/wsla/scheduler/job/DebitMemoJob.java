@@ -91,7 +91,7 @@ public class DebitMemoJob extends AbstractSMTJob {
 
 		// Assign the needed attributes
 		job.attributes = new HashMap<>();
-		job.attributes.put(Constants.PATH_TO_BINARY, "/home/etewa/Code/git/java/WebCrescendo/binary");
+		job.attributes.put(Constants.PATH_TO_BINARY, "/home/ryan/git/WebCrescendo/binary");
 		job.attributes.put(Constants.CUSTOM_DB_SCHEMA, "custom.");
 		job.attributes.put(Constants.INCLUDE_DIRECTORY, "/WEB-INF/include/");
 		job.attributes.put("fileManagerType", "2");
@@ -99,7 +99,7 @@ public class DebitMemoJob extends AbstractSMTJob {
 		// Get a db connection
 		DatabaseConnection dbc = new DatabaseConnection();
 		dbc.setDriverClass("org.postgresql.Driver");
-		dbc.setUrl("jdbc:postgresql://sonic:5432/webcrescendo_dev032019_sb?defaultRowFetchSize=25&amp;prepareThreshold=3");
+		dbc.setUrl("jdbc:postgresql://sonic:5432/webcrescnedo_dev08282019_sb?defaultRowFetchSize=25&amp;prepareThreshold=3");
 		dbc.setUserName("ryan_user_sb");
 		dbc.setPassword("sqll0gin");
 		job.conn = dbc.getConnection();
@@ -155,9 +155,12 @@ public class DebitMemoJob extends AbstractSMTJob {
 	 */
 	public String processDebitMemos(String schema) {
 		List<DebitMemoVO> memos = getGroupData(schema);
+		log.debug("memo size "  + memos.size());
+
 		StringBuilder messages = new StringBuilder(100);
 		log.debug(memos);
 		for (DebitMemoVO memo : memos) {
+			
 			try {
 				// get the credit memos
 				this.getCreditMemos(schema, memo);
@@ -173,7 +176,9 @@ public class DebitMemoJob extends AbstractSMTJob {
 				memo.setDebitMemoId(new UUIDGenerator().getUUID());
 				memo.setCustomerMemoCode(slug.toUpperCase());
 				memo.setCreateDate(new Date());
-
+				log.debug(" user data " + memo.getUser().getFirstName());
+				log.debug(" retailer data " + memo.getRetailer().getProviderName());
+				log.debug(" oem data " + memo.getOem().getProviderName());
 				// process the memo
 				processDebitMemo(memo, schema);
 
@@ -195,13 +200,14 @@ public class DebitMemoJob extends AbstractSMTJob {
 
 		// Create the actual debit memo and attach as an asset and asset
 		memo.setFilePathUrl(this.buildMemoPDF(memo));
-
+		log.debug("pdf generated ");
 		// Create a debit memo for each oem/retailer pair
 		DBProcessor db = new DBProcessor(conn, schema);
 		db.insert(memo);
 
 		// Add the debit memo id to each of the credit memos assigned to the debit memo
 		this.updateCreditMemos(schema, memo.getDebitMemoId(), memo.getCreditMemos());
+		log.debug("credit memos updated");
 	}
 
 	/**
@@ -216,6 +222,7 @@ public class DebitMemoJob extends AbstractSMTJob {
 		// Get the file name and path
 		FileTransferStructureImpl fs = new FileTransferStructureImpl(null, "12345678.pdf", attributes);
 		log.debug("FS: " + fs.getFullPath());
+		
 		// Create the file loader and write to the file system
 		FileLoader fl = new FileLoader(attributes);
 		fl.setPath(fs.getFullPath());
@@ -240,13 +247,30 @@ public class DebitMemoJob extends AbstractSMTJob {
 	 * @throws InvalidDataException 
 	 */
 	protected byte[] createPDF(DebitMemoVO memo) throws IOException {
+		String oldRetailname ="";
+		if (memo.getUser() != null && ! StringUtil.isEmpty(memo.getUser().getUserId())) {
+			oldRetailname = memo.getRetailer().getProviderName();
+			memo.getRetailer().setProviderName(memo.getUser().getFirstName() + " " + memo.getUser().getLastName());   
+			log.debug("retail name on pdf " + memo.getRetailer().getProviderName());
+			
+		}
+		
 		try {
 			Reader reader = new InputStreamReader(getClass().getResourceAsStream("debit_memo.ftl"));
 			PDFGenerator pdf = new PDFGenerator(reader, memo, resourceBundle);
-			return pdf.generate();
+			
+			byte[] doc = pdf.generate();
+			
+			if (memo.getUser() != null && ! StringUtil.isEmpty(memo.getUser().getUserId())) {
+				memo.getRetailer().setProviderName(oldRetailname);  
+				log.debug("end user refund detected adjusting pdf name back to " + memo.getRetailer().getProviderName());
+			}
+			
+			return doc;
 		} catch (Exception e) {
 			throw new IOException(e);
 		}
+		
 	}
 
 	/**
@@ -256,13 +280,12 @@ public class DebitMemoJob extends AbstractSMTJob {
 	 * @param creditMemos
 	 * @throws SQLException
 	 */
-	public void updateCreditMemos(String schema, String debitMemoId, List<CreditMemoVO> creditMemos) 
-			throws SQLException {
+	public void updateCreditMemos(String schema, String debitMemoId, List<CreditMemoVO> creditMemos) 			throws SQLException {
+		log.debug("number of credit memos " + creditMemos.size());
 		if (creditMemos == null || creditMemos.isEmpty()) return;
 
 		String sql =StringUtil.join(DBUtil.UPDATE_CLAUSE, schema, "wsla_credit_memo ", 
 				"set debit_memo_id=? where credit_memo_id=?");
-		log.debug(sql);
 
 		try (PreparedStatement ps = conn.prepareStatement(sql)) {
 			for (CreditMemoVO memo : creditMemos) {
@@ -282,9 +305,15 @@ public class DebitMemoJob extends AbstractSMTJob {
 	 * @return
 	 */
 	private List<DebitMemoVO> getGroupData(String schema) {
-		StringBuilder sql = new StringBuilder(512);
+		StringBuilder sql = new StringBuilder(2644);
+		/*
+		 * The top query of this union selects the standard credit memo to retailer relations ships thing hitachi owes walmart
+		 * the second query of this union selects the credit memos where the warranty assigns a provider to cover the refund.  for example RCA says WSLA owns walmart
+		 * the third query of this union will select credit memos where the oem owes the end user think hitachi ows john doe
+		 * 
+		 */
 		sql.append("select replace(newid(), '-', '') as debit_memo_id, c.oem_id, ");
-		sql.append("d.provider_id as retail_id, count(*) as , customer_assisted_cd  ");
+		sql.append("d.provider_id as retail_id, count(*) as credit_memo_no, null as user_id, null as first_nm, null as last_nm ");
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("wsla_credit_memo a ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("wsla_ticket_ref_rep b on a.ticket_ref_rep_id = b.ticket_ref_rep_id ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("wsla_ticket c on b.ticket_id = c.ticket_id ");
@@ -293,10 +322,12 @@ public class DebitMemoJob extends AbstractSMTJob {
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("wsla_warranty w on e.warranty_id = w.warranty_id ");
 		sql.append("where debit_memo_id is null and approval_dt is not null ");
 		sql.append("and (w.refund_provider_id is null or w.refund_provider_id = '') and (a.customer_assisted_cd is null or a.customer_assisted_cd = '') ");
-		sql.append("group by oem_id, retail_id ");
+		sql.append("and (a.end_user_refund_flg is null or a.end_user_refund_flg = 0) ");
+		sql.append("group by oem_id, retail_id, user_id, first_nm, last_nm ");
+		
 		sql.append(DBUtil.UNION);
 		sql.append("select replace(newid(), '-', '') as debit_memo_id, c.oem_id, ");
-		sql.append("d.provider_id as retail_id, count(*) as credit_memo_no ");
+		sql.append("d.provider_id as retail_id, count(*) as credit_memo_no, null as user_id, null as first_nm, null as last_nm ");
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("wsla_credit_memo a ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("wsla_ticket_ref_rep b on a.ticket_ref_rep_id = b.ticket_ref_rep_id ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("wsla_ticket c on b.ticket_id = c.ticket_id ");
@@ -304,12 +335,29 @@ public class DebitMemoJob extends AbstractSMTJob {
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("wsla_warranty w on e.warranty_id = w.warranty_id ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("wsla_provider d on w.refund_provider_id = d.provider_id ");
 		sql.append("where debit_memo_id is null and approval_dt is not null and (a.customer_assisted_cd is null or a.customer_assisted_cd = '') ");
-		sql.append("group by oem_id, retail_id ");
+		sql.append("and (a.end_user_refund_flg is null or a.end_user_refund_flg = 0) ");
+		sql.append("group by oem_id, retail_id, user_id, first_nm, last_nm ");
+		
+		sql.append(DBUtil.UNION);
+		sql.append("select replace(newid(), '-', '') as debit_memo_id, c.oem_id, ");
+		sql.append("d.provider_id as retail_id, count(*) as credit_memo_no, u.user_id, u.first_nm, u.last_nm  ");
+		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("wsla_credit_memo a ");
+		sql.append(DBUtil.INNER_JOIN).append(schema).append("wsla_ticket_ref_rep b on a.ticket_ref_rep_id = b.ticket_ref_rep_id ");
+		sql.append(DBUtil.INNER_JOIN).append(schema).append("wsla_ticket c on b.ticket_id = c.ticket_id ");
+		sql.append(DBUtil.INNER_JOIN).append(schema).append("wsla_ticket_assignment ta on c.ticket_id = ta.ticket_id and ta.assg_type_cd = 'CALLER' ");
+		sql.append(DBUtil.INNER_JOIN).append(schema).append("wsla_user u on ta.user_id  = u.user_id ");
+		sql.append(DBUtil.INNER_JOIN).append(schema).append("wsla_provider_location d on c.retailer_id = d.location_id ");
+		sql.append(DBUtil.INNER_JOIN).append(schema).append("wsla_product_warranty e on c.product_warranty_id = e.product_warranty_id ");
+		sql.append(DBUtil.INNER_JOIN).append(schema).append("wsla_warranty w on e.warranty_id = w.warranty_id ");
+		sql.append("where debit_memo_id is null and approval_dt is not null and (a.customer_assisted_cd is null or a.customer_assisted_cd = '') ");
+		sql.append("and (a.end_user_refund_flg = 1) ");
+		sql.append("group by oem_id, retail_id, u.user_id, u.first_nm, u.last_nm ");
+		
 		sql.append("order by oem_id, retail_id ");
 		log.debug(sql.length() + "|" + sql);
-
 		DBProcessor db = new DBProcessor(conn, schema);
 		return db.executeSelect(sql.toString(), null, new DebitMemoVO());
+		
 	}
 
 	/**
@@ -322,22 +370,45 @@ public class DebitMemoJob extends AbstractSMTJob {
 		List<Object> vals = new ArrayList<>();
 		vals.add(memo.getOemId());
 		vals.add(memo.getRetailId());
+		vals.add(memo.getRetailId());
 
 		StringBuilder sql = new StringBuilder(400);
-		sql.append("select c.oem_id, ticket_no, d.provider_id, product_nm, a.* ");
+		sql.append("select c.oem_id, ticket_no, coalesce(nullif(w.refund_provider_id,''),d.provider_id) as provider_id, product_nm, a.* ");
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("wsla_credit_memo a ");
+		
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("wsla_ticket_ref_rep b on a.ticket_ref_rep_id = b.ticket_ref_rep_id ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("wsla_ticket c on b.ticket_id = c.ticket_id ");
-		sql.append(DBUtil.INNER_JOIN).append(schema).append("wsla_provider_location d on c.retailer_id = d.location_id ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("wsla_ticket_assignment ta on c.ticket_id = ta.ticket_id and ta.assg_type_cd = 'CALLER' ");
+		
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("wsla_product_serial e on c.product_serial_id = e.product_serial_id ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("wsla_product_master f on e.product_id = f.product_id ");
+		
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("wsla_provider_location d on c.retailer_id = d.location_id ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("wsla_product_warranty pw on e.product_serial_id = pw.product_serial_id ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("wsla_warranty w on pw.warranty_id = w.warranty_id ");
+		
 		sql.append("where debit_memo_id is null and approval_dt is not null ");
-		sql.append("and oem_id = ? and d.provider_id = ?  and (a.customer_assisted_cd is null or a.customer_assisted_cd = '') ");
-		log.info(sql.length() + "|" + sql + "|" + vals);
+		sql.append("and oem_id = ? and (d.provider_id = ? or w.refund_provider_id =  ? ) and (a.customer_assisted_cd is null or a.customer_assisted_cd = '') ");
+		
+		if ( ! StringUtil.isEmpty(memo.getUserId())) {
+			sql.append("and end_user_refund_flg = 1 and ta.user_id = ? ");
+			vals.add(memo.getUserId());
+		} else {
+			sql.append("and (end_user_refund_flg = 0 or end_user_refund_flg = null ) ");
+		}
+		
+		log.debug(sql.length() + "|" + sql + "|" + vals);
 
 		// Get the memos
 		DBProcessor db = new DBProcessor(conn, schema);
-		memo.setCreditMemos(db.executeSelect(sql.toString(), vals, new CreditMemoVO()));
+		List<CreditMemoVO> data = db.executeSelect(sql.toString(), vals, new CreditMemoVO());
+		log.debug("number of credit memos found " + data.size());
+		
+		// Update the sum of the credit memos on the debit memo
+		double total = 0;
+		for (CreditMemoVO cm : data) total += cm.getRefundAmount();
+		memo.setTotalCreditMemoAmount(total);
+		memo.setCreditMemos(data);
 	}
 
 	/**
