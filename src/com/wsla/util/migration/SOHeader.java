@@ -133,7 +133,7 @@ public class SOHeader extends AbsImporter {
 		//turn the list of data into a unique list of tickets
 		Map<String, ExtTicketVO> tickets= new HashMap<>(data.size());
 		for (SOHDRFileVO dataVo : data) {
-			if (StringUtil.isEmpty(dataVo.getSoNumber()) || dataVo.getSoNumber().matches("(?i)^WSL0(.*)$")) {
+			if (!isImportable(dataVo.getSoNumber())) {
 				continue; //discard refund/replace/harvest and other edge-cases (internal tickets)
 			} else if (ticketMap.containsKey(dataVo.getSoNumber())) {
 				throw new RuntimeException("ticket " + dataVo.getSoNumber() + " already exists, delete it first");

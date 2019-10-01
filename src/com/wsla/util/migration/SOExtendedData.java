@@ -130,6 +130,8 @@ public class SOExtendedData extends AbsImporter {
 			data.addAll(readFile(f, SOXDDFileVO.class, SHEET_1));
 		log.info(String.format("loaded %d records from %d XDD files", data.size(), files.length));
 
+		pruneData();
+
 		defectMap = SOHeader.loadDefectCodes(db, schema);
 
 		//transpose soNumbers into ticketIds
@@ -147,11 +149,22 @@ public class SOExtendedData extends AbsImporter {
 
 		//affiliate the Retailers to the tickets
 		addRetailerAssignments();
-
-		//TODO process harvested tickets based on the PRODUCTION DISPOSITION column.
-		//if not "N/A" (there are a handful of values) these TVs were harvested, destroyed, or otherwise reworked.
-		//need those workflows - this is the entrypoint.
 	}
+
+
+	/**
+	 * 
+	 */
+	private void pruneData() {
+		List<SOXDDFileVO> newData = new ArrayList<>(data.size());
+		for (SOXDDFileVO vo : data) {
+			if (isImportable(vo.getSoNumber()))
+				newData.add(vo);
+		}
+		log.info(String.format("pruned data from %d to %d tickets", data.size(), newData.size()));
+		data = newData;
+	}
+
 
 	/**
 	 * Loop through the tickets/rows and update the ticket data for each using 

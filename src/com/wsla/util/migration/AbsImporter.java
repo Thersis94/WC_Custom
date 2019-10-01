@@ -7,15 +7,19 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
+import java.util.StringTokenizer;
 
 import org.apache.log4j.Logger;
 
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
 import com.siliconmtn.util.databean.FilePartDataBean;
 import com.siliconmtn.util.parser.AnnotationExcelParser;
@@ -56,6 +60,7 @@ public abstract class AbsImporter {
 	protected String schema; //custom.
 	protected DBProcessor db;
 	protected UUIDGenerator uuid;
+	private Set<String> ticketIds = new HashSet<>();
 
 	AbsImporter() {
 		super();
@@ -69,6 +74,7 @@ public abstract class AbsImporter {
 	 * @param props
 	 * @param args
 	 */
+	@SuppressWarnings("unchecked")
 	protected void setAttributes(Connection conn, Properties props, String[] args) {
 		this.dbConn = conn;
 		this.props = props;
@@ -79,6 +85,11 @@ public abstract class AbsImporter {
 		schema = props.getProperty("customDbSchema", "custom.");
 		db = new DBProcessor(dbConn, schema);
 		db.setGenerateExecutedSQL(log.isDebugEnabled());
+
+		//see if we should limit qualifying tickets by ID
+		StringTokenizer st = new StringTokenizer(StringUtil.checkVal(props.get("ticketIds")), ",");
+		while (st.hasMoreTokens())
+			ticketIds.add(st.nextToken().trim());
 	}
 
 
@@ -106,6 +117,24 @@ public abstract class AbsImporter {
 	 * @throws Exception
 	 */
 	abstract void save() throws Exception;
+
+
+	/**
+	 * provide all of the downstream importers a consistent way of knowing 
+	 * which tickets to import, or which match rules to apply.
+	 * @param ticketId
+	 * @return
+	 */
+	protected boolean isImportable(String ticketId) {
+		if (StringUtil.isEmpty(ticketId)) return false;
+
+		//if we have ids, this one must be on the list
+		if (!ticketIds.isEmpty())
+			return ticketIds.contains(ticketId);
+
+		//if we don't have IDs, this one must NOT match our exclusion regex
+		return !ticketId.matches("(?i)^WSL0(.*)$");
+	}
 
 
 	/**
