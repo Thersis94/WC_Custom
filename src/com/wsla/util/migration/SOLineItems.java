@@ -19,7 +19,6 @@ import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.util.EnumUtil;
 import com.siliconmtn.util.MapUtil;
 import com.siliconmtn.util.StringUtil;
-import com.wsla.data.ticket.CreditMemoVO;
 import com.wsla.data.ticket.PartVO;
 import com.wsla.data.ticket.ShipmentVO;
 import com.wsla.data.ticket.ShipmentVO.CarrierType;
@@ -64,7 +63,7 @@ public class SOLineItems extends AbsImporter {
 		loadCasLocations();
 		loadProductIds();
 		loadActivities();
-		
+
 		//prompt for the batch code of the tickets we're adding activities to:
 		log.fatal("\n\nPaste the batch code for the tickets we're adding activities to and press enter:\n");
 		batchCode = new BufferedReader(new InputStreamReader(System.in)).readLine();
@@ -84,11 +83,10 @@ public class SOLineItems extends AbsImporter {
 	protected void save() throws Exception {
 		Map<String, List<PartVO>> tktParts = new HashMap<>(data.size());
 		List<TicketCommentVO> activities = new ArrayList<>(data.size());
-		List<CreditMemoVO> credits = new ArrayList<>(data.size());
 
 		//split the data into the 3 categories
 		for (SOLNIFileVO vo : data) {
-			if (vo.getSoNumber().matches("(?i)^WSL0(.*)$")) continue;
+			if (!isImportable(vo.getSoNumber())) continue;
 
 			if (vo.isInventory()) {
 				PartVO part = transposeInventoryData(vo, new PartVO());
@@ -105,22 +103,13 @@ public class SOLineItems extends AbsImporter {
 				//don't save comments if we don't have the ticket
 				if (!StringUtil.isEmpty(cmt.getTicketId()))
 					activities.add(cmt);
-
-			} else if (vo.isCreditMemo()) {
-				credits.add(transposeCreditData(vo, new CreditMemoVO()));
 			}
 		}
 		log.info(String.format("found %d tickets with parts", tktParts.size()));
 		log.info(String.format("found %d service line items (activities)", activities.size()));
-		log.info(String.format("found %d inventory credits (harvested parts)", credits.size()));
 
-		//no parts, no shipments
-		if (!isOpenTktRun)
-			saveParts(tktParts);
-
+		saveParts(tktParts);
 		saveActivities(activities);
-
-		//writeToDB(credits);
 	}
 
 
@@ -372,21 +361,6 @@ public class SOLineItems extends AbsImporter {
 			log.error("activityType not listed " + dataVo.getProductId() + " using OTHER instead");
 			vo.setActivityType("OTHER");
 		}
-		return vo;
-	}
-
-
-	/**
-	 * Credits:
-	 * Transpose and enhance the data we get from the import file into what the new schema needs
-	 * @param dataVo
-	 * @param creditVO
-	 * @return
-	 **/
-	private CreditMemoVO transposeCreditData(SOLNIFileVO dataVo, CreditMemoVO vo) {
-		//TODO - talk to Camire about how these go in
-		vo.setTicketId(ticketIds.get(dataVo.getSoNumber())); //transposed
-		vo.setCreateDate(dataVo.getReceivedDate());
 		return vo;
 	}
 

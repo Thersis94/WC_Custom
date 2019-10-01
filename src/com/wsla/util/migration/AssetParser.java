@@ -216,7 +216,9 @@ public class AssetParser extends AbsImporter {
 		TicketLedgerVO ledger;
 
 		for (AssetPathVO vo : assets) {
-			if (!ticketIds.containsKey(vo.getTicketId())) {
+			if (!isImportable(vo.getTicketId())) {
+				continue;
+			} else if (!ticketIds.containsKey(vo.getTicketId())) {
 				//we found attributes for a ticket not in Cypher - typically this is ignorable but lets start with a warning
 				log.warn(String.format("Found asset for non-existent ticket %s - ignoring asset", vo.getTicketId()));
 				continue;

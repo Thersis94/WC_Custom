@@ -26,6 +26,7 @@ public class LegacyDataImporter extends CommandLineUtil {
 	private static final List<String> importers = new ArrayList<>();
 	protected final String batchNm = RandomAlphaNumeric.generateRandom(10);
 
+
 	/*
 	 * the time zone of Mexico City - which is what we'll presume all incoming dates/times to be.
 	 * We'll offset (increment) these to UTC prior to saving/using them for accuracy.
@@ -45,7 +46,10 @@ public class LegacyDataImporter extends CommandLineUtil {
 //		importers.add(Replacement.class.getName());
 //		importers.add(Harvest.class.getName());
 //		importers.add(DebitMemoImporter.class.getName());
-		importers.add(DebitMemoUserImporter.class.getName());
+//		importers.add(DebitMemoUserImporter.class.getName());
+		
+		//phase 2 importers - these run solo on per-cases basis
+		importers.add(SOLineItemComments.class.getName());
 	}
 
 
