@@ -110,14 +110,15 @@ public class TicketListAction extends SimpleActionAdapter {
 		List<String> params = new ArrayList<>();
 		
 		// Build the sql for the main query
-		StringBuilder sql = new StringBuilder(768);
+		StringBuilder sql = new StringBuilder(1600);
 		sql.append(DBUtil.SELECT_CLAUSE).append("a.ticket_id, a.historical_flg, ticket_no, provider_nm, ");
-		sql.append("product_nm, status_nm, a.status_cd, e.first_nm, e.last_nm, location_nm, ");
+		sql.append("product_nm, status_nm, a.status_cd, e.first_nm, e.last_nm, g.location_nm, ");
 		sql.append("a.create_dt, e.email_address_txt, locked_by_id, a.product_serial_id, ");
-		sql.append("serial_no_txt, oem_id, locked_dt, ");
-		sql.append("h.first_nm || ' ' || h.last_nm as locked_nm ");
+		sql.append("serial_no_txt, oem_id, locked_dt, h.first_nm || ' ' || h.last_nm as locked_nm, ");
+		sql.append("pl.location_nm as cas_nm, pl.address_txt || ', ' || pl.zip_cd || ' ' || pl.country_cd as cas_loc_nm ");
+		
 		// Build the select for the count query
-		StringBuilder cSql = new StringBuilder(768);
+		StringBuilder cSql = new StringBuilder(1600);
 		cSql.append(DBUtil.SELECT_CLAUSE).append("cast(count(*) as int) ");
 
 		// Get the base query and append to the count and display select
@@ -327,8 +328,11 @@ public class TicketListAction extends SimpleActionAdapter {
 		base.append("on a.retailer_id = g.location_id ");
 		base.append(DBUtil.LEFT_OUTER_JOIN).append(getCustomSchema()).append("wsla_user h ");
 		base.append("on a.locked_by_id = h.user_id ");
+		base.append("left outer join custom.wsla_ticket_assignment ta on a.ticket_id = ta.ticket_id and ta.assg_type_cd = 'CAS' ");
+		base.append("left outer join custom.wsla_provider_location pl on ta.location_id = pl.location_id ");
 		base.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("wsla_ticket_ledger i ");
 		base.append("on a.ticket_id = i.ticket_id and i.status_cd = 'OPENED' ");
+		
 		
 		// Join if searching only for tickets that need a comment reply or have an open credit memo
 		if ("NEEDS_REPLY".equals(status)) {
@@ -342,6 +346,14 @@ public class TicketListAction extends SimpleActionAdapter {
 			base.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("wsla_credit_memo cm ");
 			base.append("on rr.ticket_ref_rep_id = cm.ticket_ref_rep_id ");
 			base.append("where cm.approval_dt is null) trr on a.ticket_id = trr.ticket_id ");
+		} else if ("WSLA_CAS".equals(status)) {
+			base.append(DBUtil.INNER_JOIN).append("(select ticket_id ");
+			base.append(DBUtil.FROM_CLAUSE).append(getCustomSchema()).append("wsla_ticket_assignment ta ");
+			base.append("where assg_type_cd = 'CAS' and location_id in ( ");
+			base.append("select location_id from ").append(getCustomSchema()).append("wsla_provider_location ");
+			base.append("where provider_id = 'WSLA_ID')) tat on a.ticket_id = tat.ticket_id ");
+		} else if ("PROFECO".equals(status)) {
+			base.append("and profeco_status_cd in ('IN_PROFECO','PROFECO_COMPLETE') ");
 		}
 		
 		// Add a filter to make sure users only see the tickets they are supposed to.

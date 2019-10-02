@@ -2,6 +2,7 @@ package com.mts.security;
 
 // JDK 1.8.x
 import java.sql.ResultSet;
+import java.util.Arrays;
 import java.util.Date;
 
 // MTS Libs
@@ -13,7 +14,6 @@ import com.siliconmtn.data.parser.BeanDataVO;
 import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
-import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 
 /****************************************************************************
@@ -39,8 +39,9 @@ public class IPSecurityVO extends BeanDataVO {
 	// Members
 	private String ipSecurityId;
 	private String ipBase;
-	private int ipStart;
-	private int ipEnd;
+	private String ipBaseEnd;
+	private int[] ipStartRange;
+	private int[] ipEndRange;
 	private String userId;
 	private String companyName;
 	private Date createDate;
@@ -68,6 +69,25 @@ public class IPSecurityVO extends BeanDataVO {
 	 */
 	public IPSecurityVO(ResultSet rs) {
 		super(rs);
+		initRanges();
+	}
+	
+	/**
+	 * Converts the ip ranges into an int array of individual numbers
+	 */
+	private void initRanges() {
+		
+		if (! StringUtil.isEmpty(ipBase)) {
+			ipStartRange = Arrays.stream(ipBase.split("\\."))
+					.mapToInt(Integer::parseInt)
+					.toArray();
+		}
+		
+		if (! StringUtil.isEmpty(ipBase)) {
+			ipEndRange = Arrays.stream(ipBaseEnd.split("\\."))
+					.mapToInt(Integer::parseInt)
+					.toArray();
+		}
 	}
 
 	/**
@@ -76,11 +96,15 @@ public class IPSecurityVO extends BeanDataVO {
 	 * @return
 	 */
 	public boolean insideIPRange(String ip) {
-		if (StringUtil.isEmpty(ip)) return false;
-
-		String base = ip.substring(0, ip.lastIndexOf('.'));
-		int host = Convert.formatInteger(ip.substring(ip.lastIndexOf('.') + 1));
-		return (base.equalsIgnoreCase(ipBase) && host >= ipStart && host <= ipEnd);
+		// Convert the ip address to an int array
+		int[] ipRange = Arrays.stream(ip.split("\\."))
+				.mapToInt(Integer::parseInt)
+				.toArray();
+		if (ipStartRange == null || ipEndRange == null) initRanges();
+		
+		return (ipRange[2] >= ipStartRange[2] && ipRange[2] <= ipEndRange[2] &&
+			ipRange[3] >= ipStartRange[3] && ipRange[3] <= ipEndRange[3]
+		);
 	}
 
 	/**
@@ -89,22 +113,6 @@ public class IPSecurityVO extends BeanDataVO {
 	@Column(name="ip_security_id", isPrimaryKey=true)
 	public String getIpSecurityId() {
 		return ipSecurityId;
-	}
-
-	/**
-	 * @return the ipStart
-	 */
-	@Column(name="ip_start_no")
-	public int getIpStart() {
-		return ipStart;
-	}
-
-	/**
-	 * @return the ipEnd
-	 */
-	@Column(name="ip_end_no")
-	public int getIpEnd() {
-		return ipEnd;
 	}
 
 	/**
@@ -134,7 +142,7 @@ public class IPSecurityVO extends BeanDataVO {
 	/**
 	 * @return the updateDate
 	 */
-	@Column(name="update_dt", isUpdateOnly=true, isAutoGen=true)
+	@Column(name="udpate_dt", isUpdateOnly=true, isAutoGen=true)
 	public Date getUpdateDate() {
 		return updateDate;
 	}
@@ -152,21 +160,7 @@ public class IPSecurityVO extends BeanDataVO {
 	public void setIpSecurityId(String ipSecurityId) {
 		this.ipSecurityId = ipSecurityId;
 	}
-
-	/**
-	 * @param ipStart the ipStart to set
-	 */
-	public void setIpStart(int ipStart) {
-		this.ipStart = ipStart;
-	}
-
-	/**
-	 * @param ipEnd the ipEnd to set
-	 */
-	public void setIpEnd(int ipEnd) {
-		this.ipEnd = ipEnd;
-	}
-
+	
 	/**
 	 * @param userId the userId to set
 	 */
@@ -216,6 +210,21 @@ public class IPSecurityVO extends BeanDataVO {
 	 */
 	public void setIpBase(String ipBase) {
 		this.ipBase = ipBase;
+	}
+
+	/**
+	 * @return the ipBaseEnd
+	 */
+	@Column(name="ip_base_end_txt")
+	public String getIpBaseEnd() {
+		return ipBaseEnd;
+	}
+
+	/**
+	 * @param ipBaseEnd the ipBaseEnd to set
+	 */
+	public void setIpBaseEnd(String ipBaseEnd) {
+		this.ipBaseEnd = ipBaseEnd;
 	}
 
 }

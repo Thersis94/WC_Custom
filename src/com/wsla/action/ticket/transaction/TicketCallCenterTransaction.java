@@ -27,17 +27,17 @@ import com.wsla.data.ticket.UserVO;
  * @since Mar 21, 2019
  * @updates:
  ****************************************************************************/
-public class ticketCallCenterTransaction extends BaseTransactionAction  {
+public class TicketCallCenterTransaction extends BaseTransactionAction  {
 	public static final String AJAX_KEY = "callCenter";
 	public static final String ATTR_REPAIR_CODE = "attr_unitRepairCode";
 	/**
 	 * 
 	 */
-	public ticketCallCenterTransaction() {
+	public TicketCallCenterTransaction() {
 		super();
 	}
 	
-	public ticketCallCenterTransaction(SMTDBConnection dbConn, Map<String, Object> attributes) {
+	public TicketCallCenterTransaction(SMTDBConnection dbConn, Map<String, Object> attributes) {
 		this();
 		this.dbConn = dbConn;
 		this.attributes = attributes;
@@ -93,7 +93,7 @@ public class ticketCallCenterTransaction extends BaseTransactionAction  {
 		if(hasRepairCode) {
 			try {
 				//save the attr value 
-				tdt.saveDataAttribute(ticket.getTicketId(), attribute, attributeValue, true);
+				tdt.saveDataAttribute(ticket.getTicketId(), attribute, attributeValue, null, true);
 				//change it quickly to problem solved status
 				changeStatus(ticket.getTicketId(), user.getUserId(), StatusCode.PROBLEM_RESOLVED, null, null);
 				//close the ticket

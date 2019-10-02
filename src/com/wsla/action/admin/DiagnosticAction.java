@@ -126,6 +126,7 @@ public class DiagnosticAction extends SBActionAdapter {
 		}
 	}
 	
+
 	/**
 	 * On an insert the defect code is inserted into the resource bundle with a key id
 	 * that matches the defect code
@@ -184,7 +185,7 @@ public class DiagnosticAction extends SBActionAdapter {
 	public  GridDataVO<DiagnosticVO> getDiagnostics(int svcCtr, int cas, boolean hasCasFlag, boolean hasCallCenterFlag, String categoryCode, BSTableControlVO bst) {
 		
 		StringBuilder sql = new StringBuilder(128);
-		sql.append("select b.category_cd, diagnostic_cd, a.product_category_id, ");
+		sql.append("select b.category_cd, diagnostic_cd, a.product_category_id, a.order_no, ");
 		sql.append("a.svc_ctr_flg, cas_flg, ");
 		sql.append("case when value_txt is null then desc_txt else value_txt end as desc_txt ");
 		sql.append(DBUtil.FROM_CLAUSE).append(getCustomSchema()).append("wsla_diagnostic a ");
@@ -225,7 +226,7 @@ public class DiagnosticAction extends SBActionAdapter {
 			params.add(bst.getLikeSearch().toLowerCase());
 		}
 		
-		sql.append(bst.getSQLOrderBy("diagnostic_cd",  "asc"));
+		sql.append(bst.getSQLOrderBy("order_no, diagnostic_cd",  "asc"));
 		log.debug(sql);
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		GridDataVO<DiagnosticVO> data = db.executeSQLWithCount(sql.toString(), params, new DiagnosticVO(), bst.getLimit(), bst.getOffset());

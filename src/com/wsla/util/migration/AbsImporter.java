@@ -7,15 +7,20 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
+import java.util.StringTokenizer;
 
 import org.apache.log4j.Logger;
 
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.StringUtil;
+import com.siliconmtn.util.UUIDGenerator;
 import com.siliconmtn.util.databean.FilePartDataBean;
 import com.siliconmtn.util.parser.AnnotationExcelParser;
 
@@ -43,13 +48,24 @@ public abstract class AbsImporter {
 	protected static final int SHEET_4 = 3;
 	protected static final int SHEET_5 = 4;
 
+	/*
+	 * batch name is unique to each time we run the importer.  It helps us earmark the ones we've 
+	 * added/changed during execution so we don't harm exisitng records.
+	 * This column is meant to be purged from the DB when all is said and done (late 2019). 
+	 */
+	protected String batchNm;
 	protected boolean purgeTablesFirst = false;
+	protected boolean isOpenTktRun;
+	protected boolean isClosedTktRun;
 	protected String schema; //custom.
 	protected DBProcessor db;
+	protected UUIDGenerator uuid;
+	private Set<String> ticketIds = new HashSet<>();
 
 	AbsImporter() {
 		super();
 		log = Logger.getLogger(getClass());
+		uuid = new UUIDGenerator();
 	}
 
 	/**
@@ -58,14 +74,22 @@ public abstract class AbsImporter {
 	 * @param props
 	 * @param args
 	 */
+	@SuppressWarnings("unchecked")
 	protected void setAttributes(Connection conn, Properties props, String[] args) {
 		this.dbConn = conn;
 		this.props = props;
 		this.args = args;
 		purgeTablesFirst = Convert.formatBoolean(props.getProperty("purgeTablesFirst", "false"));
+		isOpenTktRun = Convert.formatBoolean(props.getProperty("isOpenTktRun", "false"));
+		isClosedTktRun = Convert.formatBoolean(props.getProperty("isClosedTktRun", "true"));
 		schema = props.getProperty("customDbSchema", "custom.");
 		db = new DBProcessor(dbConn, schema);
 		db.setGenerateExecutedSQL(log.isDebugEnabled());
+
+		//see if we should limit qualifying tickets by ID
+		StringTokenizer st = new StringTokenizer(StringUtil.checkVal(props.get("ticketIds")), ",");
+		while (st.hasMoreTokens())
+			ticketIds.add(st.nextToken().trim());
 	}
 
 
@@ -93,6 +117,24 @@ public abstract class AbsImporter {
 	 * @throws Exception
 	 */
 	abstract void save() throws Exception;
+
+
+	/**
+	 * provide all of the downstream importers a consistent way of knowing 
+	 * which tickets to import, or which match rules to apply.
+	 * @param ticketId
+	 * @return
+	 */
+	protected boolean isImportable(String ticketId) {
+		if (StringUtil.isEmpty(ticketId)) return false;
+
+		//if we have ids, this one must be on the list
+		if (!ticketIds.isEmpty())
+			return ticketIds.contains(ticketId);
+
+		//if we don't have IDs, this one must NOT match our exclusion regex
+		return !ticketId.matches("(?i)^WSL0(.*)$");
+	}
 
 
 	/**
@@ -153,20 +195,26 @@ public abstract class AbsImporter {
 		return (List<T>) entries;
 	}
 
+	/**
+	 * Writes to the db in a batch.  Insert override is defaulted to true
+	 * @param data
+	 * @return
+	 * @throws Exception
+	 */
+	protected int writeToDB(List<?> data) throws Exception {
+		return writeToDB(data, true);
+	}
 
 	/**
 	 * write the presumed-annotated list of beans to the database using DBProcessor
-	 * @param products
+	 * @param data
+	 * @param forceInsert
 	 * @throws Exception 
 	 */
-	protected int writeToDB(List<?> data) throws Exception {
-		try {
-			int[] cnt = db.executeBatch(data, true);
-			log.debug(String.format("saved %d rows to the database", cnt.length));
-			return cnt.length;
-		} catch (Exception e) {
-			throw e;
-		}
+	protected int writeToDB(List<?> data, boolean forceInsert) throws Exception {
+		int[] cnt = db.executeBatch(data, forceInsert);
+		log.debug(String.format("saved %d rows to the database", cnt.length));
+		return cnt.length;
 	}
 
 
@@ -196,6 +244,20 @@ public abstract class AbsImporter {
 			return passedFilePtr.listFiles((d, name) -> name.matches(pattern));
 		} else {
 			return new File[] { passedFilePtr };
+		}
+	}
+
+
+	/**
+	 * Put the thread to sleep.  We do this between writes and reads, to give 
+	 * the DB time to commit.
+	 * @param i
+	 */
+	protected void sleepThread(int durationMillis) {
+		try {
+			Thread.sleep(durationMillis);
+		} catch (Exception e ) {
+			log.fatal("could not sleep thread", e);
 		}
 	}
 }

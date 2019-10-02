@@ -25,6 +25,7 @@ import com.wsla.action.ticket.transaction.ProviderLocationTransaction;
 import com.wsla.action.ticket.transaction.RefundReplacementTransaction;
 import com.wsla.action.ticket.transaction.TicketAssetTransaction;
 import com.wsla.action.ticket.transaction.TicketAssignmentTransaction;
+import com.wsla.action.ticket.transaction.TicketCallCenterReviewTransaction;
 import com.wsla.action.ticket.transaction.TicketCloneTransaction;
 import com.wsla.action.ticket.transaction.TicketCommentTransaction;
 import com.wsla.action.ticket.transaction.TicketDataTransaction;
@@ -33,7 +34,7 @@ import com.wsla.action.ticket.transaction.TicketPartsTransaction;
 import com.wsla.action.ticket.transaction.TicketRepairTransaction;
 import com.wsla.action.ticket.transaction.TicketUtilityTransaction;
 import com.wsla.action.ticket.transaction.UserTransaction;
-import com.wsla.action.ticket.transaction.ticketCallCenterTransaction;
+import com.wsla.action.ticket.transaction.TicketCallCenterTransaction;
 import com.wsla.action.ticket.transaction.TicketScheduleTransaction;
 import com.wsla.action.ticket.transaction.TicketSearchTransaction;
 import com.wsla.action.ticket.transaction.TicketTransaction;
@@ -94,13 +95,14 @@ public class TicketTransactionAction extends FacadeActionAdapter {
 		actionMap.put(TicketUtilityTransaction.AJAX_KEY, TicketUtilityTransaction.class);
 		actionMap.put(TicketPDFCreator.AJAX_KEY, TicketPDFCreator.class);
 		actionMap.put(CreditMemoPDFCreator.AJAX_KEY, CreditMemoPDFCreator.class);
-		actionMap.put(ticketCallCenterTransaction.AJAX_KEY, ticketCallCenterTransaction.class);
+		actionMap.put(TicketCallCenterTransaction.AJAX_KEY, TicketCallCenterTransaction.class);
 		actionMap.put(TicketTransaction.AJAX_KEY, TicketTransaction.class);
 		actionMap.put(TicketPartsTransaction.AJAX_KEY, TicketPartsTransaction.class);
 		actionMap.put(TicketRepairTransaction.AJAX_KEY, TicketRepairTransaction.class);
 		actionMap.put(ProductSerialTransaction.AJAX_KEY, ProductSerialTransaction.class);
 		actionMap.put(TicketSearchTransaction.AJAX_KEY, TicketSearchTransaction.class);
 		actionMap.put(RefundReplacementTransaction.AJAX_KEY, RefundReplacementTransaction.class);
+		actionMap.put(TicketCallCenterReviewTransaction.AJAX_KEY, TicketCallCenterReviewTransaction.class);
 	}
 
 	/*

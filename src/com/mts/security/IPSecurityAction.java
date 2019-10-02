@@ -4,6 +4,7 @@ package com.mts.security;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -15,7 +16,6 @@ import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
-import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 
 // WC Libs
@@ -43,7 +43,7 @@ public class IPSecurityAction extends SBActionAdapter {
 	 * Ajax Controller key for this action
 	 */
 	public static final String AJAX_KEY = "ip-sec";
-
+	
 	/**
 	 * 
 	 */
@@ -57,7 +57,7 @@ public class IPSecurityAction extends SBActionAdapter {
 	public IPSecurityAction(ActionInitVO actionInit) {
 		super(actionInit);
 	}
-
+	
 	/**
 	 * 
 	 * @param dbConn
@@ -68,7 +68,7 @@ public class IPSecurityAction extends SBActionAdapter {
 		setDBConnection(new SMTDBConnection(dbConn));
 		setAttributes(attributes);
 	}
-
+	
 	/*
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.action.ActionRequest)
@@ -76,47 +76,53 @@ public class IPSecurityAction extends SBActionAdapter {
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		SBUserRole role = (SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA);
-
+	
 		if (req.getBooleanParameter("ipCheck")) {
 			setModuleData(checkIpAddress(req.getParameter("ipAddress")));
 		} else if (role != null && "100".equals(role.getRoleId())) {
 			setModuleData(getListRanges());
 		}
 	}
-
+	
 	/**
 	 * Checks to see if the user's ip address is assigned in the Ip Security table
 	 * @param ipAddress
 	 * @return
 	 */
 	public boolean checkIpAddress(String ipAddress) {
+		log.debug(ipAddress);
 		if (StringUtil.isEmpty(ipAddress)) return false;
-
-		boolean auth = false;
-		int index = ipAddress.lastIndexOf('.');
-		String base = ipAddress.substring(0, index);
-		int range = Convert.formatInteger(ipAddress.substring(index + 1));
-
+		
+		// Convert the ips to numbers in the case of a leading zero
+		int[] ip = Arrays.stream(ipAddress.split("\\."))
+				.mapToInt(Integer::parseInt)
+				.toArray();
+		
+		// Build the ip back with the first 2 numbers as the base
+		String ipBase = ip[0] + "." + ip[1] + ".%";
+		
 		StringBuilder sql = new StringBuilder(128);
-		sql.append("select ip_security_id from ").append(getCustomSchema());
-		sql.append("mts_ip_security where ip_base_txt = ? ");
-		sql.append("and ? between ip_start_no and ip_end_no ");
-		log.debug(sql.length() + "|" + sql + "|" + base + "|" + range);
-
+		sql.append("select * from ").append(getCustomSchema());
+		sql.append("mts_ip_security where ip_base_txt like ? ");
+		log.debug(sql.length() + "|" + sql + "|" + ipBase);
+		
+		// Search the DB for matches for each element.  Return true when matched
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			ps.setString(1, base);
-			ps.setInt(2, range);
-
+			ps.setString(1, ipBase);
+			
 			try (ResultSet rs = ps.executeQuery()) {
-				if (rs.next()) auth = true;
+				while (rs.next()) {
+					IPSecurityVO vo = new IPSecurityVO(rs);
+					if (vo.insideIPRange(ipAddress)) return true;
+				}
 			}
 		} catch (Exception e) {
 			log.error("Unable to retrieve ip address check", e);
 		}
-
-		return auth;
+		
+		return false;
 	}
-
+	
 	/**
 	 * Gets the security list of companies by IP address range
 	 * @return
@@ -129,11 +135,11 @@ public class IPSecurityAction extends SBActionAdapter {
 		sql.append("mts_user b on a.user_id = b.user_id ");
 		sql.append("order by company_nm, ip_base_txt ");
 		log.debug(sql.length() + "|" + sql);
-
-		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		
+		DBProcessor db = new DBProcessor(getDBConnection());
 		return db.executeSelect(sql.toString(), null, new IPSecurityVO());
 	}
-
+	
 	/**
 	 * Gets the profile id of the user for the matching ip address 
 	 * @param ip request IP address
@@ -144,7 +150,7 @@ public class IPSecurityAction extends SBActionAdapter {
 		for (IPSecurityVO ipvo : ips) {
 			if (ipvo.insideIPRange(ip)) return ipvo.getUser().getProfileId();
 		}
-
+		
 		return null;
 	}
 
@@ -155,7 +161,7 @@ public class IPSecurityAction extends SBActionAdapter {
 	@Override
 	public void build(ActionRequest req) throws ActionException {
 		IPSecurityVO ip = new IPSecurityVO(req);
-
+		
 		try {
 			if (req.hasParameter("delete")) deleteIPSecurity(ip);
 			else saveIPSecurity(ip);
@@ -166,26 +172,27 @@ public class IPSecurityAction extends SBActionAdapter {
 			setModuleData(ip, 0, e.getLocalizedMessage());
 		}
 	}
-
+	
 	/**
 	 * 
 	 * @param ip
 	 * @throws InvalidDataException
 	 * @throws DatabaseException
 	 */
-	public void saveIPSecurity(IPSecurityVO ip) throws Exception {
+	public void saveIPSecurity(IPSecurityVO ip) throws InvalidDataException, DatabaseException {
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		db.save(ip);
 	}
-
+	
 	/**
 	 * 
 	 * @param ip
 	 * @throws InvalidDataException
 	 * @throws DatabaseException
 	 */
-	public void deleteIPSecurity(IPSecurityVO ip) throws Exception {
+	public void deleteIPSecurity(IPSecurityVO ip) throws InvalidDataException, DatabaseException {
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		db.delete(ip);
 	}
 }
+

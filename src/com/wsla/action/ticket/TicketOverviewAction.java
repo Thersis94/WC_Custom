@@ -33,9 +33,11 @@ import com.smt.sitebuilder.common.constants.Constants;
 
 // WSLA Libs
 import com.wsla.action.BasePortalAction;
+import com.wsla.action.admin.WarrantyAction;
 import com.wsla.action.ticket.transaction.TicketAssetTransaction;
 import com.wsla.common.WSLAConstants;
 import com.wsla.data.product.ProductSerialNumberVO;
+import com.wsla.data.product.WarrantyVO;
 import com.wsla.data.ticket.DiagnosticRunVO;
 import com.wsla.data.ticket.DiagnosticTicketVO;
 import com.wsla.data.ticket.LedgerSummary;
@@ -100,6 +102,16 @@ public class TicketOverviewAction extends BasePortalAction {
 		super(actionInit);
 	}
 
+	/**
+	 * @param dbConnection
+	 * @param attributes
+	 */
+	public TicketOverviewAction(SMTDBConnection dbConnection, Map<String, Object> attributes) {
+		super();
+		this.dbConn = dbConnection;
+		this.attributes = attributes;
+	}
+
 	/*
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#list(com.siliconmtn.action.ActionRequest)
@@ -122,14 +134,7 @@ public class TicketOverviewAction extends BasePortalAction {
 				UserDataVO profile = (UserDataVO)req.getSession().getAttribute(Constants.USER_DATA);
 				UserVO user = (UserVO)profile.getUserExtendedInfo();
 
-				if (owner == ProductOwner.RETAILER && ticket.getStatusCode() != StatusCode.CLOSED) {
-					tat.addLedger(ticket.getTicketId(), user.getUserId(), ticket.getStatusCode(), LedgerSummary.RETAIL_OWNED_ASSET_NOT_REQUIRED.summary, null);
-					tat.finalizeApproval(req, true, true);
-				}
-				
-				if(req.hasParameter("attr_unitRepairCode")) {
-					tat.addLedger(ticket.getTicketId(), user.getUserId(), ticket.getStatusCode(), LedgerSummary.RESOLVED_DURING_CALL.summary, null);
-				}
+				postSaveStatusCheck(req, owner, ticket, tat, user);
 
 			}
 			
@@ -141,6 +146,28 @@ public class TicketOverviewAction extends BasePortalAction {
 		}
 	}
 	
+	/**
+	 * checks state of the ticket for status or ledger changes
+	 * @param ticket 
+	 * @param owner 
+	 * @param req 
+	 * @param tat 
+	 * @param user 
+	 * @throws DatabaseException 
+	 * 
+	 */
+	public void postSaveStatusCheck(ActionRequest req, ProductOwner owner, TicketVO ticket, TicketAssetTransaction tat, UserVO user) throws DatabaseException {
+		if (owner == ProductOwner.RETAILER && ticket.getStatusCode() != StatusCode.CLOSED) {
+			tat.addLedger(ticket.getTicketId(), user.getUserId(), ticket.getStatusCode(), LedgerSummary.RETAIL_OWNED_ASSET_NOT_REQUIRED.summary, null);
+			tat.finalizeApproval(req, true, true);
+		}
+		
+		if(req.hasParameter("attr_unitRepairCode")) {
+			tat.addLedger(ticket.getTicketId(), user.getUserId(), ticket.getStatusCode(), LedgerSummary.RESOLVED_DURING_CALL.summary, null);
+		}
+		
+	}
+
 	/**
 	 * Second pass at saving the ticket.  First pass saves the base info.  
 	 * This save gets the extended information as well
@@ -159,16 +186,10 @@ public class TicketOverviewAction extends BasePortalAction {
 		// Check the productSerial and add it if it is missing
 		if (StringUtil.isEmpty(req.getParameter("productSerialId"))) 
 			this.addProductSerialNumber(req, ticket);
-
-		// If the user resolved the ticket during diagnostics, close the ticket
 		BaseTransactionAction bta = new BaseTransactionAction(getDBConnection(), getAttributes());
-		if (req.getIntegerParameter("attr_issueResolved", 0) == 1) {
-			bta.changeStatus(ticket.getTicketId(), user.getUserId(), StatusCode.PROBLEM_RESOLVED, null, null);
-			ticket.setStatusCode(StatusCode.CLOSED);
-		} else if (req.getBooleanParameter("warrantyExpiredFlag") && !req.getBooleanParameter("attr_userFunded")) {
-			bta.changeStatus(ticket.getTicketId(), user.getUserId(), StatusCode.EXPIRED_WARRANTY, null, null);
-			ticket.setStatusCode(StatusCode.CLOSED);
-		}
+		
+		checkTicketStatusOnSave(ticket,user, req, bta);	
+		
 		// Save the ticket core data
 		this.saveCoreTicket(ticket);
 
@@ -188,10 +209,63 @@ public class TicketOverviewAction extends BasePortalAction {
 		String callerAssignmentId = req.getParameter("ticketAssignmentId");
 		String ownsTv = req.getParameter("attr_ownsProduct");
 		updateAllAssignments(ticket, callerAssignmentId, ownsTv, caller);
+		
+		updateZeroCostBillableActivities(ticket);
 
 		return ticket;
 	}
 	
+	/**
+	 * when opening a ticket the product warranty relationship doesn't exist yet, 
+	 * @param ticket
+	 * @throws SQLException 
+	 */
+	private void updateZeroCostBillableActivities(TicketVO ticket) throws SQLException {
+		
+		WarrantyAction wa = new WarrantyAction(getAttributes(),getDBConnection());
+		WarrantyVO warranty = wa.getWarrantyByTicketId(ticket.getTicketId());
+		
+		StringBuilder sql = new StringBuilder(40);
+		sql.append(DBUtil.UPDATE_CLAUSE).append(getCustomSchema()).append("wsla_ticket_ledger ");
+		sql.append("set billable_amt_no = wb.invoice_amount_no ");
+		sql.append(DBUtil.FROM_CLAUSE).append(getCustomSchema()).append("wsla_warranty_billable_xr wb  ");
+		sql.append(DBUtil.WHERE_CLAUSE).append(getCustomSchema()).append("wsla_ticket_ledger.billable_activity_cd = wb.billable_activity_cd and ticket_id = ? and (billable_amt_no = 0 or billable_amt_no is null)  ");
+		sql.append("and ").append(getCustomSchema()).append("wsla_ticket_ledger.billable_activity_cd is not null and wb.warranty_id = ? ");
+
+		log.debug("sql " + sql + "|" + ticket.getTicketId() + "|" + warranty.getWarrantyId());
+		
+		try(PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, ticket.getTicketId());
+			ps.setString(2, warranty.getWarrantyId());
+			ps.executeUpdate();
+		}
+		
+	}
+
+	/**
+	 * checks attribute values for status chagnes
+	 * @param ticket
+	 * @param req 
+	 * @param user 
+	 * @param bta 
+	 * @throws DatabaseException 
+	 */
+	public void checkTicketStatusOnSave(TicketVO ticket, UserVO user, ActionRequest req, BaseTransactionAction bta) throws DatabaseException {
+
+		// If the user resolved the ticket during diagnostics, close the ticket
+		if (req.getIntegerParameter("attr_issueResolved", 0) == 1) {
+			if(bta != null )bta.changeStatus(ticket.getTicketId(), user.getUserId(), StatusCode.PROBLEM_RESOLVED, null, null);
+			ticket.setStatusCode(StatusCode.CLOSED);
+		} else if (req.getBooleanParameter("warrantyExpiredFlag") && !req.getBooleanParameter("attr_userFunded")) {
+			if(bta != null )bta.changeStatus(ticket.getTicketId(), user.getUserId(), StatusCode.EXPIRED_WARRANTY, null, null);
+			ticket.setStatusCode(StatusCode.CLOSED);
+		} else if (req.getIntegerParameter("attr_cc_config_flag", 0) == 1) {
+			if(bta != null )bta.changeStatus(ticket.getTicketId(), user.getUserId(), StatusCode.CC_CONFIG, null, null);
+			ticket.setStatusCode(StatusCode.CC_CONFIG);
+		}
+		
+	}
+
 	/**
 	 * When a serial number can't be located, this method adds a new serial
 	 * number as invalidated and updates the product serial id on the ticket and 
@@ -259,7 +333,7 @@ public class TicketOverviewAction extends BasePortalAction {
 		BaseTransactionAction bta = new BaseTransactionAction(getDBConnection(), getAttributes());
 		
 		// Update the ticket originator from the user
-		updateOriginator(user.getUserId(), ticket.getTicketId());
+		updateOriginator(adminUser.getUserId(), ticket.getTicketId());
 
 		// Change the status
 		TicketLedgerVO ledger = bta.changeStatus(ticket.getTicketId(), adminUser.getUserId(), ticket.getStatusCode(), LedgerSummary.CALL_RECVD.summary, null);

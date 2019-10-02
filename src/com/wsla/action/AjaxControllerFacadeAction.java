@@ -36,6 +36,7 @@ import com.wsla.action.ticket.TicketEditAction;
 import com.wsla.action.ticket.TicketLedgerAction;
 import com.wsla.action.ticket.TicketListAction;
 import com.wsla.action.ticket.TicketOverviewAction;
+import com.wsla.action.ticket.transaction.TicketCallCenterReviewTransaction;
 import com.wsla.data.provider.ProviderPhoneAction;
 import com.wsla.action.admin.ProviderLocationUserAction;
 import com.wsla.action.admin.RefundVerificationAction;
@@ -125,6 +126,7 @@ public class AjaxControllerFacadeAction extends FacadeActionAdapter {
 		actionMap.put("logistics", LogisticsAction.class);
 		actionMap.put("logisticsParts", LogisticsPartsAction.class);
 		actionMap.put(RefundVerificationAction.AJAX_KEY, RefundVerificationAction.class);
+		actionMap.put(TicketCallCenterReviewTransaction.AJAX_KEY, TicketCallCenterReviewTransaction.class);
 		actionMap.put(UserAction.AJAX_KEY, UserAction.class);
 		
 		//these are actually ticket actions - should be called through the ticket controller

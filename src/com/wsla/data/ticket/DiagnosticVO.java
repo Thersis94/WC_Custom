@@ -37,6 +37,7 @@ public class DiagnosticVO extends BeanDataVO {
 	private String description;
 	private int serviceCenterFlag;
 	private int casFlag;
+	private int orderNumber;
 	private Date createDate;
 	private Date updateDate;
 	
@@ -125,6 +126,19 @@ public class DiagnosticVO extends BeanDataVO {
 	@Column(name="category_cd", isReadOnly=true)
 	public String getCategoryCode() {
 		return categoryCode;
+	}
+
+	/**
+	 * 
+	 * @return
+	 */
+	@Column(name="order_no")
+	public int getOrderNumber() {
+		return orderNumber;
+	}
+
+	public void setOrderNumber(int orderNumber) {
+		this.orderNumber = orderNumber;
 	}
 
 	/**

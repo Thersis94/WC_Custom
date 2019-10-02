@@ -203,7 +203,8 @@ public class ProviderAction extends BatchImport {
 	public GridDataVO<ProviderVO> getProviders(String providerId, String providerType, String reviewFlag, BSTableControlVO bst) {
 		String schema = getCustomSchema();
 		StringBuilder sql = new StringBuilder(72);
-		sql.append(DBUtil.SELECT_CLAUSE).append("CAST(COALESCE (a.count, 0) as integer) as review_location_no, p.* ").append(DBUtil.FROM_CLAUSE).append(schema).append("wsla_provider p ");
+		sql.append(DBUtil.SELECT_CLAUSE).append("CAST(COALESCE (a.count, 0) as integer) as review_location_no, p.* ");
+		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("wsla_provider p ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append("( select count(*) as count, provider_id from ").append(getCustomSchema());
 		sql.append("wsla_provider_location ").append(DBUtil.WHERE_CLAUSE).append("review_flg = 0 group by provider_id ) as a on p.provider_id = a.provider_id ");
 		sql.append(DBUtil.WHERE_1_CLAUSE);
@@ -217,7 +218,8 @@ public class ProviderAction extends BatchImport {
 
 		// Filter by search criteria
 		if (bst.hasSearch()) {
-			sql.append("and lower(provider_nm) like ? ");
+			sql.append("and (lower(provider_nm) like ? or lower(p.provider_id) like ?) ");
+			params.add(bst.getLikeSearch().toLowerCase());
 			params.add(bst.getLikeSearch().toLowerCase());
 		}
 

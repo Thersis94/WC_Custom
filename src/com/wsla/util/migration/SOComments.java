@@ -37,11 +37,13 @@ public class SOComments extends AbsImporter {
 	 */
 	@Override
 	void run() throws Exception {
-		File[] files = super.listFilesMatching(props.getProperty("soCommentFile"), "ZZ-OSCMT(.*)");
+		File[] files = super.listFilesMatching(props.getProperty("soCommentFile"), "(.*)OSCMT(.*)");
 
 		for (File f : files)
 			data.addAll(readFile(f, SOCMTFileVO.class, SHEET_1));
 		log.info(String.format("loaded %d records from %d comment files", data.size(), files.length));
+
+		pruneData();
 
 		//transpose soNumbers into ticketIds
 		loadTicketIds();
@@ -50,6 +52,20 @@ public class SOComments extends AbsImporter {
 		//save the data
 		save();
 		saveTicketDesc();
+	}
+
+
+	/**
+	 * 
+	 */
+	private void pruneData() {
+		List<SOCMTFileVO> newData = new ArrayList<>(data.size());
+		for (SOCMTFileVO vo : data) {
+			if (isImportable(vo.getSoNumber()))
+				newData.add(vo);
+		}
+		log.info(String.format("pruned data from %d to %d tickets", data.size(), newData.size()));
+		data = newData;
 	}
 
 	/**
@@ -64,8 +80,6 @@ public class SOComments extends AbsImporter {
 
 		//loop the tickets, add each one's comment to the larger batch
 		for (SOCMTFileVO row : data) {
-			//List<TicketCommentVO> cmts = row.getComments(2)
-			//log.debug(String.format("found %d comments in ticket %s", cmts.size(), row.getSoNumber()))
 			TicketCommentVO cmt = row.getCobinedComment();
 			if (cmt != null)
 				batch.add(cmt);

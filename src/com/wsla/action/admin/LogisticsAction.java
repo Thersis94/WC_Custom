@@ -57,6 +57,7 @@ import com.wsla.data.ticket.ShipmentVO.ShipmentType;
 import com.wsla.data.ticket.StatusCode;
 import com.wsla.data.ticket.TicketVO;
 import com.wsla.data.ticket.TicketAssignmentVO.TypeCode;
+import com.wsla.data.ticket.TicketVO.Standing;
 import com.wsla.data.ticket.UserVO;
 
 // Freemarker Imports
@@ -138,9 +139,10 @@ public class LogisticsAction extends SBActionAdapter {
 		} else {
 			UserVO user = (UserVO) getAdminUser(req).getUserExtendedInfo();
 			String roleId = ((SBUserRole)req.getSession().getAttribute(Constants.ROLE_DATA)).getRoleId();
+			String typeFilter = req.getParameter("typeFilter");
 			UserSqlFilter userFilter = new UserSqlFilter(user, roleId, getCustomSchema());
 
-			setModuleData(getData(toLocnId, sts, userFilter, new BSTableControlVO(req, ShipmentVO.class)));
+			setModuleData(getData(toLocnId, typeFilter, sts, userFilter, new BSTableControlVO(req, ShipmentVO.class)));
 		}
 
 
@@ -173,7 +175,11 @@ public class LogisticsAction extends SBActionAdapter {
 		
 		// Get the ticket
 		TicketEditAction tea = new TicketEditAction(getDBConnection(), getAttributes());
-		TicketVO ticket = tea.getCompleteTicket(shmpt.getTicketId());
+		TicketVO ticket = new TicketVO();
+		if(!StringUtil.isEmpty(shmpt.getTicketId())) {
+			ticket = tea.getCompleteTicket(shmpt.getTicketId());
+		}
+		
 		
 		String templateDir = rp + attributes.get(Constants.INCLUDE_DIRECTORY) + "templates/";
 		String path = templateDir + "packing_list.ftl";
@@ -227,7 +233,7 @@ public class LogisticsAction extends SBActionAdapter {
 		ProviderLocationVO location = pla.getProviderLocation(locationId);
 		
 		// If there is no location returned, this is a user
-		if (StringUtil.isEmpty(location.getLocationName())) {
+		if (location != null && StringUtil.isEmpty(location.getLocationName())) {
 			BasePortalAction bpa = new BasePortalAction(getDBConnection(), getAttributes());
 			try {
 				UserVO user = bpa.getUser(locationId);
@@ -333,15 +339,56 @@ public class LogisticsAction extends SBActionAdapter {
 				
 				// Change the service order status when shipping the service order parts or unit
 				if (req.hasParameter(REQ_TICKET_ID) && ShipmentStatus.SHIPPED.equals(vo.getStatus())) {
+					String ticketId = req.getParameter(REQ_TICKET_ID);
 					UserVO user = (UserVO) getAdminUser(req).getUserExtendedInfo();
 					BaseTransactionAction bta = new BaseTransactionAction(getDBConnection(), getAttributes());
 					StatusCode status = getShippedStatusChange(vo.getShipmentType());
-					bta.changeStatus(req.getParameter(REQ_TICKET_ID), user.getUserId(), status, LedgerSummary.SHIPMENT_CREATED.summary, null);
+					
+					//add a ledger entry to record shipping costs in the time-line.
+					bta.addLedger(ticketId, user.getUserId(), status, LedgerSummary.SHIPMENT_COST.summary, null, vo.getCost());
+					
+					bta.changeStatus(ticketId, user.getUserId(), status, LedgerSummary.SHIPMENT_CREATED.summary, null);
+				}
+				
+				if(req.hasParameter(REQ_TICKET_ID) && ShipmentStatus.BACKORDERED.equals(vo.getStatus())) {
+					log.debug("backordered change ticket to delayed");
+					updateTicketStandings(req.getParameter(REQ_TICKET_ID), Standing.DELAYED);
 				}
 			}
 
 		} catch (Exception e) {
 			log.error("could not save shipment", e);
+		}
+	}
+	
+	/**
+	 * called to change the standing of a ticket
+	 * @param ticketId
+	 * @param standingCode
+	 * @throws SQLException
+	 * @throws InvalidDataException
+	 */
+	private void updateTicketStandings(String ticketId, Standing standingCode) throws SQLException, InvalidDataException {
+		if (StringUtil.isEmpty(ticketId)) throw new InvalidDataException("blank Ticket Id");
+		
+		String schema = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
+		
+		// Build the sql
+		StringBuilder sql = new StringBuilder(100);
+		sql.append(DBUtil.UPDATE_CLAUSE).append(schema).append("wsla_ticket ");
+		sql.append("set standing_cd = ?, update_dt = ? ");
+		sql.append(DBUtil.WHERE_CLAUSE).append("ticket_id = ?");
+		
+		// Update the records
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+				ps.setString(1, standingCode.name());
+				ps.setDate(2, Convert.formatSQLDate(new Date()));
+				ps.setString(3, ticketId);
+			
+				int cnt = ps.executeUpdate();
+				log.debug(String.format("updated %d service order(s) with ticket id of  %s", cnt, ticketId));
+		}catch(SQLException sqle) {
+			log.error("could not change the ticket standing", sqle);
 		}
 	}
 
@@ -394,19 +441,23 @@ public class LogisticsAction extends SBActionAdapter {
 	 * @param bst vo to populate data into
 	 * @return
 	 */
-	public GridDataVO<ShipmentVO> getData(String toLocationId, ShipmentStatus status, UserSqlFilter userFilter, BSTableControlVO bst) {
+	public GridDataVO<ShipmentVO> getData(String toLocationId, String typeFilter, ShipmentStatus status, UserSqlFilter userFilter, BSTableControlVO bst) {
 		String schema = getCustomSchema();
 		List<Object> params = new ArrayList<>();
 		StringBuilder sql = new StringBuilder(200);
 		sql.append("select s.*, t.ticket_no, srclcn.*, destlcn.*, ");
 		sql.append("coalesce(srclcn.location_nm, srcusr.first_nm || ' ' || srcusr.last_nm) as from_location_nm, ");
-		sql.append("coalesce(destlcn.location_nm, destusr.first_nm || ' ' || destusr.last_nm) as to_location_nm ");
+		sql.append("coalesce(destlcn.location_nm, destusr.first_nm || ' ' || destusr.last_nm) as to_location_nm, ");
+		sql.append("coalesce(p.total_parts, 0) as parts_num ");
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("wsla_shipment s ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("wsla_provider_location srclcn on s.from_location_id=srclcn.location_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("wsla_provider_location destlcn on s.to_location_id=destlcn.location_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("wsla_user srcusr on s.from_location_id=srcusr.user_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("wsla_user destusr on s.to_location_id=destusr.user_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("wsla_ticket t on s.ticket_id=t.ticket_id ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append("( select shipment_id, count(*) as total_parts from ");
+		sql.append(schema).append("wsla_part group by shipment_id) as p on s.shipment_id = p.shipment_id ");
+		
 		sql.append(userFilter.getTicketFilter("t", params));
 		sql.append("where (s.status_cd != ? or (s.status_cd=? and coalesce(s.shipment_dt, s.update_dt, s.create_dt) > CURRENT_DATE-31)) "); //only show ingested items for 30 days past receipt
 		params.add(ShipmentStatus.RECEIVED.toString());
@@ -437,6 +488,11 @@ public class LogisticsAction extends SBActionAdapter {
 		if (status != null) {
 			sql.append("and s.status_cd=? ");
 			params.add(status);
+		}
+		
+		if (! StringUtil.isEmpty(typeFilter)) {
+			String typeVal = "ALL_SO".equals(typeFilter) ? "not" : "";
+			sql.append("and s.ticket_id is ").append(typeVal).append(" null ");
 		}
 		
 		sql.append(bst.getSQLOrderBy("s.create_dt", "desc"));

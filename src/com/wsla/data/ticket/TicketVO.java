@@ -61,6 +61,13 @@ public class TicketVO extends BeanDataVO {
 	public enum UnitLocation {
 		CALLER, OEM, RETAILER, COURIER, WSLA, DECOMMISSIONED, CAS;
 	}
+	
+	/**
+	 * Definition of the profeco status
+	 */
+	public enum ProfecoStatus {
+		NO_PROFECO, IN_PROFECO, PROFECO_COMPLETE;
+	}
 		
 	// String Member Variables
 	private String ticketId;
@@ -89,13 +96,17 @@ public class TicketVO extends BeanDataVO {
 	// Enum Members
 	private Standing standingCode = Standing.GOOD;
 	private UnitLocation unitLocation;
+	private ProfecoStatus profecoStatus;
 
 	// Helper Variables
 	private String retailerId;
 	private String oemId;
 	private String userId;
 	private String statusName;
+	private String casName;
+	private String casLocation;
 	private boolean ticketLocked;
+	private long statusAge;
 
 	// Bean Sub-Element
 	private List<TicketDataVO> ticketData = new ArrayList<>(32);
@@ -156,7 +167,7 @@ public class TicketVO extends BeanDataVO {
 			}
 		}
 	}
-
+	
 	/**
 	 * Assigns any request parameters with the appropriate attribute prefix
 	 * to the ticket attribute collection.  Note, on new ticket create, the ticketId 
@@ -517,6 +528,14 @@ public class TicketVO extends BeanDataVO {
 	}
 
 	/**
+	 * @return the profecoStatus
+	 */
+	@Column(name="profeco_status_cd")
+	public ProfecoStatus getProfecoStatus() {
+		return profecoStatus;
+	}
+
+	/**
 	 * @param ticketId the ticketId to set
 	 */
 	public void setTicketId(String ticketId) {
@@ -865,5 +884,64 @@ public class TicketVO extends BeanDataVO {
 	 */
 	public void setPhoneNumber(String phoneNumber) {
 		this.phoneNumber = phoneNumber;
+	}
+
+	/**
+	 * @return the statusAge
+	 */
+	@Column(name="status_age_no", isReadOnly=true)
+	public long getStatusAge() {
+		return statusAge;
+	}
+
+	/**
+	 * @param statusAge the statusAge to set
+	 */
+	public void setStatusAge(long statusAge) {
+		this.statusAge = statusAge;
+	}
+
+	/**
+	 * @return the casName
+	 */
+	@Column(name="cas_nm", isReadOnly=true)
+	public String getCasName() {
+		return casName;
+	}
+
+	/**
+	 * @return the casLocation
+	 */
+	@Column(name="cas_loc_nm", isReadOnly=true)
+	public String getCasLocation() {
+		return casLocation;
+	}
+
+	/**
+	 * @param casName the casName to set
+	 */
+	public void setCasName(String casName) {
+		this.casName = casName;
+	}
+
+	/**
+	 * @param casLocation the casLocation to set
+	 */
+	public void setCasLocation(String casLocation) {
+		this.casLocation = casLocation;
+	}
+
+	/**
+	 * @param ticketLocked the ticketLocked to set
+	 */
+	public void setTicketLocked(boolean ticketLocked) {
+		this.ticketLocked = ticketLocked;
+	}
+
+	/**
+	 * @param profecoStatus the profecoStatus to set
+	 */
+	public void setProfecoStatus(ProfecoStatus profecoStatus) {
+		this.profecoStatus = profecoStatus;
 	}
 }

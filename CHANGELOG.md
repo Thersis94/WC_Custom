@@ -1,5 +1,139 @@
 WC_Custom Changelog (auto-generated)
 
+# [3.32.0](https://github.com/smtadmin/WC_Custom/compare/3.31.0...3.32.0) (2019-10-02)
+
+
+### Bug Fixes
+
+* **WSLA-Migration:** Profeco import setup.  Activity Comments. ([6560f09](https://github.com/smtadmin/WC_Custom/commit/6560f09))
+
+
+### Features
+
+* **Misc:** Misc new items for the WSLA launch ([f4fe257](https://github.com/smtadmin/WC_Custom/commit/f4fe257))
+
+# [3.31.0](https://github.com/smtadmin/WC_Custom/compare/3.30.0...3.31.0) (2019-09-29)
+
+
+### Bug Fixes
+
+* **Debit Memo:** Finalized the importing of the debit memos for end users ([6b812c5](https://github.com/smtadmin/WC_Custom/commit/6b812c5))
+* **feature-wsla-i9:** fix sorting in credit and debit memo ([85b9643](https://github.com/smtadmin/WC_Custom/commit/85b9643))
+* **Importer:** Adding the debit memos for end users ([4c21eb6](https://github.com/smtadmin/WC_Custom/commit/4c21eb6))
+* **Misc Changes:** Misc changes for launch.  Fixed bug when approving CAS that was duplicating the c ([795c4fa](https://github.com/smtadmin/WC_Custom/commit/795c4fa))
+
+
+### Features
+
+* **Debit Memos:** Finished importer for user debit memos as well as mofigied the debit memo query ([c9be720](https://github.com/smtadmin/WC_Custom/commit/c9be720))
+* **Debit Memos:** Totalled the credit memos and added the amount to the debit memo.  This cleans up ([7441d29](https://github.com/smtadmin/WC_Custom/commit/7441d29))
+* **feature-wsla-i9:** update debit memo job, action to support the diffent types of debit memo proc ([fc21b0b](https://github.com/smtadmin/WC_Custom/commit/fc21b0b))
+* **Importer:** Working throuogh the importer ([b7d7e30](https://github.com/smtadmin/WC_Custom/commit/b7d7e30))
+* **Iomporter:** changes to the importer ([7fa9e39](https://github.com/smtadmin/WC_Custom/commit/7fa9e39))
+
+
+### Performance Improvements
+
+* **feature-wsla-i9:** update ([c9de893](https://github.com/smtadmin/WC_Custom/commit/c9de893))
+
+# [3.30.0](https://github.com/smtadmin/WC_Custom/compare/3.29.2...3.30.0) (2019-09-27)
+
+
+### Bug Fixes
+
+* **feature-wsla-i9:** fix bug where billable amounts were not appearing on time line ([e278aee](https://github.com/smtadmin/WC_Custom/commit/e278aee))
+* **feature-wsla-i9:** fix flow so end users do not get changed for uploading their own photos but ca ([419b046](https://github.com/smtadmin/WC_Custom/commit/419b046))
+* **feature-wsla-i9:** fix for packing slip pdf ([e630449](https://github.com/smtadmin/WC_Custom/commit/e630449))
+* **feature-wsla-i9:** fix keep disposed location of a disposed tv ([9f7327e](https://github.com/smtadmin/WC_Custom/commit/9f7327e))
+* **feature-wsla-i9:** Fix on final save for a new ticket check to see what billable activities have ([cbca817](https://github.com/smtadmin/WC_Custom/commit/cbca817))
+* **feature-wsla-i9:** if unit is destroyed leave it destroyed. ([7c45d48](https://github.com/smtadmin/WC_Custom/commit/7c45d48))
+* **feature-wsla-i9:** when a set is decommisioned make sure the sn can no longer be used ([1a876ee](https://github.com/smtadmin/WC_Custom/commit/1a876ee))
+* **MTS-i22 Site Search:** Exclude unpublished articles from site-search results ([8598b95](https://github.com/smtadmin/WC_Custom/commit/8598b95))
+* **WSLA-Migration:** Complete Harvest workflow ([8c86cdc](https://github.com/smtadmin/WC_Custom/commit/8c86cdc))
+* **WSLA-Migration:** Finish Replacement workflow.  Run importer through all legacy data ([65ed6bc](https://github.com/smtadmin/WC_Custom/commit/65ed6bc))
+
+
+### Features
+
+* **Display:** When displaying the product in a selectpicker, concatenate the product name and sku ([3f96be1](https://github.com/smtadmin/WC_Custom/commit/3f96be1))
+* **feature-wsla-i9:** Add diagnostics to cloned ticket, fix data bug ([61ef925](https://github.com/smtadmin/WC_Custom/commit/61ef925))
+* **feature-wsla-i9:** add feature to mark if a customer(retailer) owns the refund process ([184ef71](https://github.com/smtadmin/WC_Custom/commit/184ef71))
+* **feature-wsla-i9:** change from cost to invoice ([8068f96](https://github.com/smtadmin/WC_Custom/commit/8068f96))
+* **Importer:** Added a Debit Memo Importer ([a8dc3b1](https://github.com/smtadmin/WC_Custom/commit/a8dc3b1))
+* **Return Refused:** Added capability for when a user refuses to have the unit returned. ([4a30a82](https://github.com/smtadmin/WC_Custom/commit/4a30a82))
+* **Survey:** Added the results of a survey to the lookup action ([5d0f70a](https://github.com/smtadmin/WC_Custom/commit/5d0f70a))
+* **Survey Wrapper:** Added a custom post processr for the form creation.  Tied ticket number to the ([f35169a](https://github.com/smtadmin/WC_Custom/commit/f35169a))
+* **Survey Wrapper:** Created a custom post-processor for the survey/forms to connect the form submi ([1974457](https://github.com/smtadmin/WC_Custom/commit/1974457))
+* **WSLA I50:** Added the standing code changes when a user refuses the return of the unit ([2b095c8](https://github.com/smtadmin/WC_Custom/commit/2b095c8))
+* **WSLA i54 and i55:** Added management for the product validation when added by call center. Added ([5b39ed7](https://github.com/smtadmin/WC_Custom/commit/5b39ed7))
+
+## [3.29.2](https://github.com/smtadmin/WC_Custom/compare/3.29.1...3.29.2) (2019-09-24)
+
+
+### Bug Fixes
+
+* **MTS-i22:** Enforce Issue and Article publish dates to public users ([67da862](https://github.com/smtadmin/WC_Custom/commit/67da862))
+* **Sc-1505:** Add ability to load a limited version of an external page via local iframe. ([750f7a6](https://github.com/smtadmin/WC_Custom/commit/750f7a6))
+* **Sc-1505:** Add comments and split out retrieve into multiple methods. ([6a63d93](https://github.com/smtadmin/WC_Custom/commit/6a63d93))
+* **Sc-1505:** Fix issues with requiring cookies enabled. ([e5d52bf](https://github.com/smtadmin/WC_Custom/commit/e5d52bf))
+* **WSLA Migration:** Complete Asset Parser.  Phase 1 - open tickets importing (code complete) ([ec59550](https://github.com/smtadmin/WC_Custom/commit/ec59550))
+
+## [3.29.1](https://github.com/smtadmin/WC_Custom/compare/3.29.0...3.29.1) (2019-09-17)
+
+
+### Bug Fixes
+
+* **SC-1614:** Fixed unchecked NPE that could occur in Feeds. ([c7832d2](https://github.com/smtadmin/WC_Custom/commit/c7832d2))
+
+# [3.29.0](https://github.com/smtadmin/WC_Custom/compare/3.28.0...3.29.0) (2019-09-13)
+
+
+### Bug Fixes
+
+* **Email Comments:** discard e-mails without a job id in the reference ([287e5cc](https://github.com/smtadmin/WC_Custom/commit/287e5cc))
+* **feature-wsla-i6:** remove unneeded cde ([8d0c05c](https://github.com/smtadmin/WC_Custom/commit/8d0c05c))
+* **Sc-1487:** Ensure preview selections are passed along with redirects. ([91656f6](https://github.com/smtadmin/WC_Custom/commit/91656f6))
+* **Sc-1596:** Add product id to the product explorer report. ([bec8499](https://github.com/smtadmin/WC_Custom/commit/bec8499))
+* **Sc-1604:** Add ability to set max documents to index at once via the maxDocsIndex property in con ([10e289a](https://github.com/smtadmin/WC_Custom/commit/10e289a))
+* **WSLA-I25:** add additional rules for processing the Standing Code job ([0a0ce24](https://github.com/smtadmin/WC_Custom/commit/0a0ce24))
+* **WSLA-I25:** create nightly job to update ticket standings ([78b9dd3](https://github.com/smtadmin/WC_Custom/commit/78b9dd3))
+* **WSLA-I25:** update service orders to critical in a batch query ([ed4c8f9](https://github.com/smtadmin/WC_Custom/commit/ed4c8f9))
+
+
+### Features
+
+* **Billable and cost:** Modified the billable activities to support a cost and invoice default.  Mo ([a62b1ed](https://github.com/smtadmin/WC_Custom/commit/a62b1ed))
+* **Defaults:** Added default values for cost and invoice amount when a warranty is created ([46d6b35](https://github.com/smtadmin/WC_Custom/commit/46d6b35))
+* **feature-wsla-i6:** add new status for call center review ([f10e706](https://github.com/smtadmin/WC_Custom/commit/f10e706))
+* **feature-wsla-i6:** minor bug fix and drag drop now filters ([2488bb1](https://github.com/smtadmin/WC_Custom/commit/2488bb1))
+* **Filtering:** Added the ability to filter the shipments by weather or not they are assigned to a ([8512547](https://github.com/smtadmin/WC_Custom/commit/8512547))
+
+# [3.28.0](https://github.com/smtadmin/WC_Custom/compare/3.27.0...3.28.0) (2019-09-11)
+
+
+### Bug Fixes
+
+* **DSEMEA-62:** Correct equality test to use primitive values rather than object footprint ([19cc2d5](https://github.com/smtadmin/WC_Custom/commit/19cc2d5))
+* **DSEMEA-62:** Finish expiresAt implementation to Showpad API ([72383dd](https://github.com/smtadmin/WC_Custom/commit/72383dd))
+
+
+### Features
+
+* **DSEMEA-62:** Add Expiration Date to Showpad/Mediabin processing ([7889c31](https://github.com/smtadmin/WC_Custom/commit/7889c31))
+
+# [3.27.0](https://github.com/smtadmin/WC_Custom/compare/3.26.0...3.27.0) (2019-09-09)
+
+
+### Bug Fixes
+
+* **MTS-i16:** Default ordering to lastLogin, descending ([5d6099a](https://github.com/smtadmin/WC_Custom/commit/5d6099a))
+* **MTS-i23:** Fix issue with nullable fKey.  Fix optional user fields not saving/displaying ([88b52ab](https://github.com/smtadmin/WC_Custom/commit/88b52ab))
+
+
+### Features
+
+* **IP Security:** Modified the IP Security stuff to allow ip ranges to include class B and class C ([a6e2881](https://github.com/smtadmin/WC_Custom/commit/a6e2881))
+
 # [3.26.0](https://github.com/smtadmin/WC_Custom/compare/3.25.0...3.26.0) (2019-09-05)
 
 

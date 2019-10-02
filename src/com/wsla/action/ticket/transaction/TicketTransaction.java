@@ -82,35 +82,13 @@ public class TicketTransaction extends BaseTransactionAction {
 	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
-		if(req.hasParameter("publicUserForm")) {
-			TicketVO ticket = new TicketVO(req);
-			try {
-				StatusCode sc;
-				LedgerSummary ls;
-				
-				if(!req.getBooleanParameter("warrantyValidFlag")) {
-					saveInvalidSerialToTicket(req, ticket);
-					sc = StatusCode.UNLISTED_SERIAL_NO;
-					ls = LedgerSummary.INVALID_SERIAL_SAVED;
-				}else {
-					saveValidSerialToTicket(ticket);
-					sc = StatusCode.USER_CALL_DATA_INCOMPLETE;
-					ls = LedgerSummary.VALID_SERIAL_SAVED;
-				}
+		TicketVO ticket = new TicketVO(req);
+		UserVO user = (UserVO) getAdminUser(req).getUserExtendedInfo();
 		
-				changeStatus(ticket.getTicketId(), ticket.getUserId(), sc, ls.summary, null);
-			
-			} catch (DatabaseException e) {
-				log.error("could not save product serial status ",e);
-				putModuleData(null,0,false, e.getLocalizedMessage(), true);
-			}
-			
-			return;
-		}
+		// Process public user form
+		if(req.hasParameter("publicUserForm")) publicUserForm(req, ticket);
 		
 		try {
-			UserVO user = (UserVO) getAdminUser(req).getUserExtendedInfo();
-			TicketVO ticket = new TicketVO(req);
 			
 			if (req.hasParameter("existing")) {
 				closeForExistingTicket(ticket.getTicketId(), user.getUserId(), false);
@@ -121,12 +99,56 @@ public class TicketTransaction extends BaseTransactionAction {
 			} else if(req.hasParameter("dispose") && req.hasParameter("closing")) {
 				closeForExistingTicket(ticket.getTicketId(), user.getUserId(), true);
 				putModuleData("SUCCESS");
+			} else if (req.hasParameter("perfecoStatus")) {
+				changePerfecoStatus(ticket);
 			}
 			
-		} catch (DatabaseException e) {
+		} catch (DatabaseException | InvalidDataException e) {
 			log.error("Unable to save ticket micro transaction", e);
 			putModuleData("", 0, false, e.getLocalizedMessage(), true);
 		}
+	}
+	
+	/**
+	 * Changes the perfeco status of the ticket
+	 * @param ticket
+	 * @throws InvalidDataException
+	 * @throws DatabaseException
+	 */
+	private void changePerfecoStatus(TicketVO ticket) throws InvalidDataException, DatabaseException {
+		
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		db.update(ticket, Arrays.asList("ticket_id", "profeco_status_cd"));
+	}
+	
+	/**
+	 * 
+	 * @param req
+	 * @param ticket
+	 */
+	private void publicUserForm(ActionRequest req, TicketVO ticket) {
+		try {
+			StatusCode sc;
+			LedgerSummary ls;
+			
+			if(!req.getBooleanParameter("warrantyValidFlag")) {
+				saveInvalidSerialToTicket(req, ticket);
+				sc = StatusCode.UNLISTED_SERIAL_NO;
+				ls = LedgerSummary.INVALID_SERIAL_SAVED;
+			}else {
+				saveValidSerialToTicket(ticket);
+				sc = StatusCode.USER_CALL_DATA_INCOMPLETE;
+				ls = LedgerSummary.VALID_SERIAL_SAVED;
+			}
+	
+			changeStatus(ticket.getTicketId(), ticket.getUserId(), sc, ls.summary, null);
+		
+		} catch (DatabaseException e) {
+			log.error("could not save product serial status ",e);
+			putModuleData(null,0,false, e.getLocalizedMessage(), true);
+		}
+		
+		return;
 	}
 	
 	/**
@@ -220,6 +242,23 @@ public class TicketTransaction extends BaseTransactionAction {
 		}
 		
 		return ticket;
+	}
+	
+	/**
+	 * Changes the standing of a ticket
+	 * @param ticketId
+	 * @param standingCode
+	 * @throws InvalidDataException
+	 * @throws DatabaseException
+	 */
+	public void assignStanding(String ticketId, TicketVO.Standing standingCode) 
+	throws InvalidDataException, DatabaseException {
+		
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		TicketVO ticket = new TicketVO();
+		ticket.setTicketId(ticketId);
+		ticket.setStandingCode(standingCode);
+		db.update(ticket, Arrays.asList("standing_cd", "ticket_id"));
 	}
 }
 

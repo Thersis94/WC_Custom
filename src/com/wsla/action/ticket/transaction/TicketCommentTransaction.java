@@ -11,9 +11,15 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
+import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 // WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
+import com.wsla.action.admin.BillableActivityAction;
+import com.wsla.action.admin.WarrantyAction;
+import com.wsla.action.admin.WarrantyBillableAction;
+import com.wsla.data.product.WarrantyBillableVO;
+import com.wsla.data.product.WarrantyVO;
 import com.wsla.data.ticket.LedgerSummary;
 import com.wsla.data.ticket.TicketCommentVO;
 import com.wsla.data.ticket.TicketCommentVO.ActivityType;
@@ -66,6 +72,11 @@ public class TicketCommentTransaction extends SBActionAdapter {
 		
 		try {
 			TicketCommentVO tcvo = new TicketCommentVO(req);
+			
+			if(req.hasParameter("billableActivityCode") && BillableActivityAction.MISC_ACT_CODE.equals(StringUtil.checkVal(req.getParameter("activityType")))) {
+				tcvo.setActivityType(req.getParameter("billableActivityCode"));
+			}
+			
 			addTicketComment(tcvo, ledger);
 			
 			if (req.getBooleanParameter("endUserReply") && ! StringUtil.isEmpty(tcvo.getParentId())) {
@@ -107,6 +118,22 @@ public class TicketCommentTransaction extends SBActionAdapter {
 
 		// Add a ledger entry if it isnt a comment		
 		if (ledger != null && (!ActivityType.isActivityType(comment.getActivityType()) || ! ActivityType.COMMENT.equals(ActivityType.valueOf(comment.getActivityType())))) {
+			
+			WarrantyAction wa = new WarrantyAction(getAttributes(),getDBConnection());
+			WarrantyVO warranty = wa.getWarrantyByTicketId(ledger.getTicketId());
+			
+			WarrantyBillableAction wba = new WarrantyBillableAction(getAttributes(),getDBConnection());
+			WarrantyBillableVO bavo = wba.getBillableActivity(warranty.getWarrantyId(), comment.getActivityType());
+			
+			//if the billable amount is set by the req object keep it in place as it might be the misc activity amount
+			if(ledger.getBillableAmtNo() == 0 && bavo.getInvoiceAmount() != 0) {
+				ledger.setBillableAmtNo(Convert.formatDouble(bavo.getInvoiceAmount()));
+			}
+			//if the code isnt set by the req object set it from our query return
+			if(ledger.getBillableActivityCode() == null || ledger.getBillableActivityCode().isEmpty()) {
+				ledger.setBillableActivityCode(bavo.getBillableActivityCode());
+			}
+			
 			ledger.setSummary(LedgerSummary.ACTIVITY_ADDED.summary + ": " + comment.getComment());
 			log.debug(ledger);
 			db.save(ledger);
