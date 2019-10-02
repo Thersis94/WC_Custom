@@ -1,5 +1,17 @@
 WC_Custom Changelog (auto-generated)
 
+# [3.32.0](https://github.com/smtadmin/WC_Custom/compare/3.31.0...3.32.0) (2019-10-02)
+
+
+### Bug Fixes
+
+* **WSLA-Migration:** Profeco import setup.  Activity Comments. ([6560f09](https://github.com/smtadmin/WC_Custom/commit/6560f09))
+
+
+### Features
+
+* **Misc:** Misc new items for the WSLA launch ([f4fe257](https://github.com/smtadmin/WC_Custom/commit/f4fe257))
+
 # [3.31.0](https://github.com/smtadmin/WC_Custom/compare/3.30.0...3.31.0) (2019-09-29)
 
 
