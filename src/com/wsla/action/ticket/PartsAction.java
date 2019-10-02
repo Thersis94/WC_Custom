@@ -123,8 +123,8 @@ public class PartsAction extends SBActionAdapter {
 		//always fetch all rows, the UI is not paginated here:
 		bst.setLimit(10000);
 		String schema = getCustomSchema();
-		StringBuilder sql = new StringBuilder(200);
-		sql.append("select p.*, pm.product_nm, lim.actual_qnty_no, s.status_cd ");
+		StringBuilder sql = new StringBuilder(684);
+		sql.append("select p.*, pm.product_nm, pm.cust_product_id, lim.actual_qnty_no, s.status_cd ");
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("wsla_part p ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("wsla_product_master pm on p.product_id=pm.product_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("wsla_ticket_assignment ta on p.ticket_id=ta.ticket_id and ta.assg_type_cd='CAS' ");
@@ -134,7 +134,7 @@ public class PartsAction extends SBActionAdapter {
 		sql.append("where p.ticket_id = ? and (s.shipment_type_cd = ? or s.shipment_type_cd is null) and (s.status_cd != ? or s.status_cd is null) ");
 
 		sql.append(bst.getSQLOrderBy("pm.product_nm",  "asc"));
-		log.debug(sql);
+		log.info(sql.length() + "|" + sql + "|" + ticketId + "|" + ShipmentType.PARTS_REQUEST.name() + "|" + ShipmentStatus.CANCELED.name());
 
 		DBProcessor db = new DBProcessor(getDBConnection(), schema);
 		List<Object> params = Arrays.asList(ticketId, ShipmentType.PARTS_REQUEST.name(), ShipmentStatus.CANCELED.name());

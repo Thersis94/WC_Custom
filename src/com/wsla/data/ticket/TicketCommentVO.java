@@ -63,6 +63,7 @@ public class TicketCommentVO extends BeanDataVO {
 	private int priorityTicketFlag;
 	private int endUserFlag;
 	private int wslaReplyFlag;
+	private int userShareFlag;
 	private Date createDate;
 	
 	// Bean Sub-elements
@@ -159,6 +160,14 @@ public class TicketCommentVO extends BeanDataVO {
 	@Column(name="create_dt", isInsertOnly=true, isAutoGen=true)
 	public Date getCreateDate() {
 		return createDate;
+	}
+
+	/**
+	 * @return the userShareFlag
+	 */
+	@Column(name="user_share_flg")
+	public int getUserShareFlag() {
+		return userShareFlag;
 	}
 
 	/**
@@ -274,6 +283,13 @@ public class TicketCommentVO extends BeanDataVO {
 	 */
 	public void setWslaReplyFlag(int wslaReplyFlag) {
 		this.wslaReplyFlag = wslaReplyFlag;
+	}
+
+	/**
+	 * @param userShareFlag the userShareFlag to set
+	 */
+	public void setUserShareFlag(int userShareFlag) {
+		this.userShareFlag = userShareFlag;
 	}
 
 }
