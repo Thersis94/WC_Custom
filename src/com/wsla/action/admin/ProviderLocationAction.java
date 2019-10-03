@@ -287,9 +287,9 @@ public class ProviderLocationAction extends BatchImport {
 
 		// Filter by search criteria
 		if (bst.hasSearch()) {
-			sql.append("and (lcn.location_nm like ? or lcn.store_no like ?) ");
-			params.add(bst.getLikeSearch());
-			params.add(bst.getLikeSearch());
+			sql.append("and (lower(lcn.location_nm) like ? or lower(lcn.store_no) like ?) ");
+			params.add(bst.getLikeSearch().toLowerCase());
+			params.add(bst.getLikeSearch().toLowerCase());
 		}
 		//filter by OEM
 		if (!StringUtil.isEmpty(providerId)) {
@@ -298,7 +298,7 @@ public class ProviderLocationAction extends BatchImport {
 		}
 
 		sql.append(bst.getSQLOrderBy(orderBy,  "asc"));
-		log.debug(sql);
+		log.debug(sql + "|"+params);
 
 		DBProcessor db = new DBProcessor(getDBConnection(), schema);
 		return db.executeSQLWithCount(sql.toString(), params, new ProviderLocationVO(), bst.getLimit(), bst.getOffset());

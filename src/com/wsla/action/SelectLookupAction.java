@@ -838,7 +838,8 @@ public class SelectLookupAction extends SBActionAdapter {
 	 */
 	public List<GenericVO> getTickets(ActionRequest req) {
 		TicketListAction tla = new TicketListAction(getAttributes(), getDBConnection());
-		return tla.getTickets(EnumUtil.safeValueOf(StatusCode.class, req.getParameter("statusCode")));
+		String search = StringUtil.checkVal(req.getParameter("search"));
+		return tla.getTickets(EnumUtil.safeValueOf(StatusCode.class, req.getParameter("statusCode")), search );
 	}
 
 
