@@ -50,6 +50,7 @@ public class FinancialDashVO extends SBModuleVO {
 	private int currentYear;
 	private boolean behindLatest;
 	private boolean showEmpty;
+	private boolean simulatedQuarter;
 
 	/**
 	 * The month offset from the current date, for the financial dashboard to display as current
@@ -113,7 +114,12 @@ public class FinancialDashVO extends SBModuleVO {
 
 	public FinancialDashVO(ActionRequest req, SmarttrakTree sections) {
 		this();
-		setData(req, sections);
+		setData(req, sections, DashType.COMMON);
+	}
+
+	public FinancialDashVO(ActionRequest req, SmarttrakTree sections, DashType dashType) {
+		this();
+		setData(req, sections, dashType);
 	}
 
 	/**
@@ -164,6 +170,20 @@ public class FinancialDashVO extends SBModuleVO {
 
 		return true;
 	}
+	
+	
+
+	/**
+	 * Set data using request object and defaulting to non admin dash type.
+	 * @param req
+	 * @param sections
+	 * @param dashType
+	 */
+	public void setData(ActionRequest req, SmarttrakTree sections) {
+		setData(req, sections, DashType.COMMON);
+	}
+	
+	
 	/**
 	 * Processes the request's options needed for generating the
 	 * requested table, chart, or report. Sets defaults where needed.
@@ -171,7 +191,7 @@ public class FinancialDashVO extends SBModuleVO {
 	 * @param req
 	 * @param sections
 	 */
-	public void setData(ActionRequest req, SmarttrakTree sections) {
+	public void setData(ActionRequest req, SmarttrakTree sections, DashType dashType) {
 		// Get the paramters off the request, set defaults where required
 		String dispType = StringUtil.checkVal(req.getParameter("displayType"), FinancialDashColumnSet.DEFAULT_DISPLAY_TYPE);
 		String tblType = StringUtil.checkVal(req.getParameter("tableType"), FinancialDashVO.DEFAULT_TABLE_TYPE);
@@ -181,8 +201,8 @@ public class FinancialDashVO extends SBModuleVO {
 		String scenId = StringUtil.checkVal(req.getParameter("scenarioId"));
 		String compId = StringUtil.checkVal(req.getParameter("companyId"));
 		showEmpty = Convert.formatBoolean(req.getParameter("showEmpty"));
-
 		if (0 == getCurrentYear()) setCurrentQtrYear();
+		
 		Integer calYr = Convert.formatInteger(req.getParameter("calendarYear"), getCurrentYear());
 
 		// Set the parameters
@@ -198,7 +218,13 @@ public class FinancialDashVO extends SBModuleVO {
 
 		// Get the year/quarter of what was most recently published for the section being viewed
 		SectionVO section = (SectionVO) sections.getRootNode().getUserObject();
-		setPublishedQtr(section.getFdPubQtr());
+		int displayQtr = Convert.formatInteger(req.getParameter("displayQtr"));
+		if (displayQtr > 0 && DashType.ADMIN == dashType) {
+			setPublishedQtr(displayQtr);
+			setSimulatedQuarter(true);
+		} else {
+			setPublishedQtr(section.getFdPubQtr());
+		}
 		setPublishedYear(section.getFdPubYr());
 	}
 
@@ -532,5 +558,19 @@ public class FinancialDashVO extends SBModuleVO {
 
 	public void setShowEmpty(boolean showEmpty) {
 		this.showEmpty = showEmpty;
+	}
+
+	/**
+	 * @return the simulatedQuarter
+	 */
+	public boolean isSimulatedQuarter() {
+		return simulatedQuarter;
+	}
+
+	/**
+	 * @param simulatedQuarter the simulatedQuarter to set
+	 */
+	public void setSimulatedQuarter(boolean simulatedQuarter) {
+		this.simulatedQuarter = simulatedQuarter;
 	}
 }
