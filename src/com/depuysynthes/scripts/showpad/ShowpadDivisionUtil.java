@@ -200,9 +200,13 @@ public class ShowpadDivisionUtil {
 			params.put("isDownloadable", "true");
 		}
 
-		if (vo.getExpirationDt() != null)
+		if (vo.getExpirationDt() != null) {
 			params.put("expiresAt", Long.toString(vo.getExpirationDt().getTime()/1000));
-		
+		} else {
+			//important to pass null here to flush any values that may exist upstream. (we have no way of knowing)
+			params.put("expiresAt", "null");
+		}
+
 		if (vo.getDownloadTypeTxt() != null)
 			params.put("description", vo.getDownloadTypeTxt());
 
@@ -594,19 +598,21 @@ public class ShowpadDivisionUtil {
 			name.append(title).append(" - ");
 		}
 
-		//add file name - modified with business rules
-		String fileNm = vo.getFileNm();
-		if (!StringUtil.isEmpty(fileNm)) {
-			//remove the existing file extension
-			if (fileNm.lastIndexOf('.') > -1)
-				fileNm = fileNm.substring(0, fileNm.lastIndexOf('.'));
+		//append "- INTERNAL" to internal assets only
+		if (DSPrivateAssetsImporter.INTERNAL_TAG.equals(tagMgr.getSourceConstant())) {
+			name.append("INTERNAL - ");
+		}
+
+		//add tracking number
+		String trackingNo = vo.getTrackingNoTxt();
+		if (!StringUtil.isEmpty(trackingNo)) {
 			//remove all non-alphanumerics
-			fileNm = StringUtil.removeNonAlphaNumeric(fileNm);
+			trackingNo = StringUtil.removeNonAlphaNumeric(trackingNo);
 			//remove LR, low, high keywords
-			fileNm = fileNm.replaceAll("LR", "");
-			fileNm = fileNm.replaceAll("low", "");
-			fileNm = fileNm.replaceAll("high", "");
-			name.append(fileNm);
+			trackingNo = trackingNo.replaceAll("LR", "");
+			trackingNo = trackingNo.replaceAll("low", "");
+			trackingNo = trackingNo.replaceAll("high", "");
+			name.append(trackingNo);
 		}
 
 		log.debug("title: " + name);

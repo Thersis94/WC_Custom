@@ -1,5 +1,12 @@
 WC_Custom Changelog (auto-generated)
 
+## [3.32.1](https://github.com/smtadmin/WC_Custom/compare/3.32.0...3.32.1) (2019-10-02)
+
+
+### Bug Fixes
+
+* **DS-536:** Ensure expiresAt is pushed when blank, to remove upstream/existing values ([b0fbe00](https://github.com/smtadmin/WC_Custom/commit/b0fbe00))
+
 # [3.32.0](https://github.com/smtadmin/WC_Custom/compare/3.31.0...3.32.0) (2019-10-02)
 
 

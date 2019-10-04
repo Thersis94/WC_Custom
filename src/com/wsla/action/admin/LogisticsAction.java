@@ -445,7 +445,7 @@ public class LogisticsAction extends SBActionAdapter {
 		String schema = getCustomSchema();
 		List<Object> params = new ArrayList<>();
 		StringBuilder sql = new StringBuilder(200);
-		sql.append("select s.*, t.ticket_no, srclcn.*, destlcn.*, ");
+		sql.append("select s.*, t.ticket_no, srclcn.location_nm, srclcn.location_id, srclcn.provider_id, destlcn.location_nm, destlcn.location_id, destlcn.provider_id, ");
 		sql.append("coalesce(srclcn.location_nm, srcusr.first_nm || ' ' || srcusr.last_nm) as from_location_nm, ");
 		sql.append("coalesce(destlcn.location_nm, destusr.first_nm || ' ' || destusr.last_nm) as to_location_nm, ");
 		sql.append("coalesce(p.total_parts, 0) as parts_num ");
@@ -488,6 +488,8 @@ public class LogisticsAction extends SBActionAdapter {
 		if (status != null) {
 			sql.append("and s.status_cd=? ");
 			params.add(status);
+		}else {
+			sql.append("and (s.status_cd= 'SHIPPED' or s.status_cd= 'CREATED') ");
 		}
 		
 		if (! StringUtil.isEmpty(typeFilter)) {
@@ -496,7 +498,7 @@ public class LogisticsAction extends SBActionAdapter {
 		}
 		
 		sql.append(bst.getSQLOrderBy("s.create_dt", "desc"));
-		log.debug(sql);
+		log.debug(sql+"|"+params);
 
 		//after query, adjust the count to be # of unique shipments, not total SQL rows
 		DBProcessor db = new DBProcessor(getDBConnection(), schema);
