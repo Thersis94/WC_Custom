@@ -33,9 +33,9 @@ public class ExtTicketVO extends TicketVO {
 
 	@Override
 	@Column(name="originator_user_id")
-	public String getUserId() {
+	public String getOriginatorUserId() {
 		String id = super.getOriginator() != null ? super.getOriginator().getUserId() : null;
-		return  !StringUtil.isEmpty(id) ? id :  super.getUserId();
+		return  !StringUtil.isEmpty(id) ? id :  super.getOriginatorUserId();
 	}
 
 	public String getProductId() {

@@ -141,7 +141,7 @@ public class TicketTransaction extends BaseTransactionAction {
 				ls = LedgerSummary.VALID_SERIAL_SAVED;
 			}
 	
-			changeStatus(ticket.getTicketId(), ticket.getUserId(), sc, ls.summary, null);
+			changeStatus(ticket.getTicketId(), ticket.getOriginatorUserId(), sc, ls.summary, null);
 		
 		} catch (DatabaseException e) {
 			log.error("could not save product serial status ",e);
