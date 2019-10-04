@@ -179,10 +179,13 @@ public class TicketOverviewAction extends BasePortalAction {
 		log.debug("saving ticket a second time");
 		UserDataVO profile = (UserDataVO)req.getSession().getAttribute(Constants.USER_DATA);
 		UserVO user = (UserVO)profile.getUserExtendedInfo();
+		
 		TicketVO ticket = new TicketVO(req);
 		ticket.setStatusCode(StatusCode.USER_CALL_DATA_INCOMPLETE);
 		ticket.addDiagnosticRun(new DiagnosticRunVO(req));
-
+		ticket.setOriginatorUserId(user.getUserId());
+	
+		
 		// Check the productSerial and add it if it is missing
 		if (StringUtil.isEmpty(req.getParameter("productSerialId"))) 
 			this.addProductSerialNumber(req, ticket);
@@ -204,14 +207,14 @@ public class TicketOverviewAction extends BasePortalAction {
 		// Update the caller's user record and profile
 		UserVO caller = new UserVO(req);
 		updateWSLAUser(caller);
-
+		
 		// Add the assignments
 		String callerAssignmentId = req.getParameter("ticketAssignmentId");
 		String ownsTv = req.getParameter("attr_ownsProduct");
-		updateAllAssignments(ticket, callerAssignmentId, ownsTv, caller);
 		
+		updateAllAssignments(ticket, callerAssignmentId, ownsTv, caller);
 		updateZeroCostBillableActivities(ticket);
-
+		
 		return ticket;
 	}
 	
@@ -306,11 +309,16 @@ public class TicketOverviewAction extends BasePortalAction {
 	public TicketVO createTicket(ActionRequest req)  throws Exception {
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		
+		UserDataVO originProfile = (UserDataVO)req.getSession().getAttribute(Constants.USER_DATA);
+		UserVO originUser = (UserVO)originProfile.getUserExtendedInfo();
+
+		
 		// Add the core information
 		TicketVO ticket = new TicketVO(req);
 		ticket.setStatusCode(StatusCode.OPENED);
 		String slug = RandomAlphaNumeric.generateRandom(WSLAConstants.TICKET_RANDOM_CHARS);
 		ticket.setTicketIdText(slug.toUpperCase());
+		ticket.setOriginatorUserId(originUser.getUserId());
 		
 		log.debug("save incoming 800 number " + req.getStringParameter("attr_phoneNumberText")) ;
 		ticket.setPhoneNumber(StringUtil.checkVal(req.getStringParameter("attr_phoneNumberText")));
@@ -445,6 +453,7 @@ public class TicketOverviewAction extends BasePortalAction {
 	 */
 	public void updateAllAssignments(TicketVO t, String cai, String ownsProduct, UserVO user) 
 	throws InvalidDataException, DatabaseException {
+		
 		ProductOwner owner = ProductOwner.END_USER;
 		if (! StringUtil.isEmpty(ownsProduct)) owner = ProductOwner.valueOf(ownsProduct);
 		

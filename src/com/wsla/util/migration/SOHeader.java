@@ -987,7 +987,7 @@ public class SOHeader extends AbsImporter {
 			} else {
 				String userId = existingUsers.get(pkId.toLowerCase());
 				if (userId != null) {
-					tkt.setUserId(userId);
+					tkt.setOriginatorUserId(userId);
 					log.debug("existing user, skipping");
 					continue;
 				}
@@ -1016,13 +1016,13 @@ public class SOHeader extends AbsImporter {
 		for (ExtTicketVO tkt : tickets.values()) {
 			tkt.setOriginator(accts.get(tkt.getUniqueUserId()));
 			//make sure each ticket has a user
-			if (StringUtil.isEmpty(tkt.getUserId())) {
+			if (StringUtil.isEmpty(tkt.getCaller().getUserId())) {
 				log.warn("ticket has no user " + tkt.getTicketIdText());
 			} else {				
 				//add the assigned-to Owner
 				TicketAssignmentVO assg = new TicketAssignmentVO();
 				assg.setTicketId(tkt.getTicketId());
-				assg.setUserId(tkt.getUserId());
+				assg.setUserId(tkt.getCaller().getUserId());
 				assg.setTypeCode(TypeCode.CALLER);
 				assg.setOwnerFlag(1);
 				assg.setTicketAssignmentId(uuid.getUUID());
