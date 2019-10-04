@@ -101,7 +101,7 @@ public class TicketVO extends BeanDataVO {
 	// Helper Variables
 	private String retailerId;
 	private String oemId;
-	private String userId;
+	private String originatorUserId;
 	private String statusName;
 	private String casName;
 	private String casLocation;
@@ -426,8 +426,8 @@ public class TicketVO extends BeanDataVO {
 	 * @return the userId
 	 */
 	@Column(name="originator_user_id")
-	public String getUserId() {
-		return userId;
+	public String getOriginatorUserId() {
+		return originatorUserId;
 	}
 
 	/**
@@ -756,8 +756,8 @@ public class TicketVO extends BeanDataVO {
 	/**
 	 * @param userId the userId to set
 	 */
-	public void setUserId(String userId) {
-		this.userId = userId;
+	public void setOriginatorUserId(String originatorUserId) {
+		this.originatorUserId = originatorUserId;
 	}
 
 	/**

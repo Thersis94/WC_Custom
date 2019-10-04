@@ -243,7 +243,7 @@ public class StandingCodeJob extends AbstractSMTJob {
 			Integer daysToClose = statusDaysToClosed.get(ticket.getStatusCode());
 			if (daysToClose != null && ticket.getStatusAge() >= daysToClose) {
 				BaseTransactionAction bta = new BaseTransactionAction(new SMTDBConnection(conn), attributes);
-				bta.changeStatus(ticket.getTicketId(), ticket.getUserId(), StatusCode.CLOSED, LedgerSummary.TICKET_CLOSED.summary + ": Cerrado Automáticamente", null);
+				bta.changeStatus(ticket.getTicketId(), ticket.getOriginatorUserId(), StatusCode.CLOSED, LedgerSummary.TICKET_CLOSED.summary + ": Cerrado Automáticamente", null);
 				iter.remove();
 			}
 		}
