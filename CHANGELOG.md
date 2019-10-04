@@ -1,5 +1,18 @@
 WC_Custom Changelog (auto-generated)
 
+# [3.33.0](https://github.com/smtadmin/WC_Custom/compare/3.32.1...3.33.0) (2019-10-04)
+
+
+### Bug Fixes
+
+* **feature-wsla-i10:** user caller originator bug fix ([e5f6e47](https://github.com/smtadmin/WC_Custom/commit/e5f6e47))
+* **Ticket:** Added the get caller method to fix the ui ([3509520](https://github.com/smtadmin/WC_Custom/commit/3509520))
+
+
+### Features
+
+* **feature-wsla-i10:** update shipping work panel to speed up page load and limit data going betwee ([9295cee](https://github.com/smtadmin/WC_Custom/commit/9295cee))
+
 ## [3.32.1](https://github.com/smtadmin/WC_Custom/compare/3.32.0...3.32.1) (2019-10-02)
 
 
