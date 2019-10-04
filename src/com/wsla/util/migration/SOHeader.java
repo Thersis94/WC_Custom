@@ -66,6 +66,8 @@ public class SOHeader extends AbsImporter {
 	public static final String LEGACY_PARTS_LOCN = "WSLA_020"; //WSLA Bodega External "external warehouse" - default parts location for shipments to CAS
 
 	private List<SOHDRFileVO> data = new ArrayList<>(50000);
+	
+	private static Map<String, String> ticketMap = new HashMap<>(10000, 1);
 
 	private static List<String> fakeSKUs = new ArrayList<>();
 
@@ -114,10 +116,8 @@ public class SOHeader extends AbsImporter {
 			data.addAll(readFile(f, SOHDRFileVO.class, SHEET_1));
 
 		defectMap = loadDefectCodes(db, schema);
+		loadTicketIds();
 		loadCasLocations();
-
-		String sql = StringUtil.join("delete from ", schema, "wsla_ticket where historical_flg=1");
-		delete(sql);
 
 		save();
 	}
@@ -133,9 +133,10 @@ public class SOHeader extends AbsImporter {
 		//turn the list of data into a unique list of tickets
 		Map<String, ExtTicketVO> tickets= new HashMap<>(data.size());
 		for (SOHDRFileVO dataVo : data) {
-			//TODO added Manuf here while Steve addresses 4 blank records - task #16
-			if (StringUtil.isEmpty(dataVo.getSoNumber()) || StringUtil.isEmpty(dataVo.getManufacturer()) || dataVo.getSoNumber().matches("(?i)^WSL0(.*)$")) {
+			if (!isImportable(dataVo.getSoNumber())) {
 				continue; //discard refund/replace/harvest and other edge-cases (internal tickets)
+			} else if (ticketMap.containsKey(dataVo.getSoNumber())) {
+				throw new RuntimeException("ticket " + dataVo.getSoNumber() + " already exists, delete it first");
 			}
 
 			ExtTicketVO vo = transposeTicketData(dataVo, new ExtTicketVO());
@@ -261,7 +262,7 @@ public class SOHeader extends AbsImporter {
 
 				//scenario 2: have serial# but no cas
 			} else if (StringUtil.isEmpty(tkt.getCasLocationId())) {
-				startCal.add(Calendar.MINUTE, 5); // relatively - 8:55pm
+				startCal.add(Calendar.MINUTE, 5); // relatively - 0:05am
 				vo = new TicketLedgerVO();
 				vo.setLedgerEntryId(uuid.getUUID());
 				vo.setTicketId(tkt.getTicketId());
@@ -273,31 +274,20 @@ public class SOHeader extends AbsImporter {
 				entries.add(vo);
 				finalTicketStatus = vo.getStatusCode();
 
-				//scenario 3: have serial# and have cas
+				//scenario 3: rely on legacy value from Soutware
 			} else {
-				startCal.add(Calendar.HOUR, 20);
+				startCal.add(Calendar.HOUR, 20); //relatively - 8:00pm
 				startCal.add(Calendar.MINUTE, 0);
 				vo = new TicketLedgerVO();
 				vo.setLedgerEntryId(uuid.getUUID());
 				vo.setTicketId(tkt.getTicketId());
-				vo.setStatusCode(StatusCode.USER_DATA_COMPLETE);
-				vo.setSummary(StatusCode.USER_DATA_COMPLETE.codeName);
+				vo.setStatusCode(tkt.getStatusCode());
+				vo.setSummary(tkt.getStatusCode().codeName);
 				vo.setCreateDate(startCal.getTime());
 				vo.setBillableAmtNo(0);
 				vo.setDispositionBy(LEGACY_USER_ID);
 				entries.add(vo);
-
-				startCal.add(Calendar.MINUTE, 5); // relatively - 8:55pm
-				vo = new TicketLedgerVO();
-				vo.setLedgerEntryId(uuid.getUUID());
-				vo.setTicketId(tkt.getTicketId());
-				vo.setStatusCode(StatusCode.CAS_ASSIGNED);
-				vo.setSummary(StatusCode.CAS_ASSIGNED.codeName);
-				vo.setCreateDate(startCal.getTime());
-				vo.setBillableAmtNo(0);
-				vo.setDispositionBy(LEGACY_USER_ID);
-				entries.add(vo);
-				finalTicketStatus = StatusCode.USER_DATA_COMPLETE;
+				finalTicketStatus = vo.getStatusCode();
 			}
 
 			//ticket closed?
@@ -626,7 +616,7 @@ public class SOHeader extends AbsImporter {
 				log.error(String.format("ticket %s has a blank value for OEM", vo.getTicketId()));
 			} else {
 				missing.add(vo.getOemId());
-				log.debug("ticket missing oem: " + vo);
+				//log.debug("ticket missing oem: " + vo)
 			}
 		}
 
@@ -642,7 +632,7 @@ public class SOHeader extends AbsImporter {
 				vo.setReviewFlag(1);
 				try {
 					db.insert(vo);
-				} catch (Exception e) { 
+				} catch (Exception e) {
 					log.error("could not create OEM " + s, e);
 				}
 			}
@@ -1136,8 +1126,8 @@ public class SOHeader extends AbsImporter {
 			vo.setStatusCode(StatusCode.MISSING_SERIAL_NO);
 		} else if (StringUtil.isEmpty(vo.getCasLocationId())) { //have serial but no cas
 			vo.setStatusCode(StatusCode.USER_CALL_DATA_INCOMPLETE);
-		} else { //have serial, have cas
-			vo.setStatusCode(StatusCode.USER_DATA_COMPLETE);
+		} else { //have serial, have cas...take the mapped status from Southware
+			vo.setStatusCode(dataVo.getOpenTicketStatus());
 		}
 
 		if ("40".equals(dataVo.getUserArea2()))
@@ -1307,5 +1297,15 @@ public class SOHeader extends AbsImporter {
 		casLocations.put("RDA100", "bfc773e0271cd2ebac10021bf3309f5e");
 		casLocations.put("CTM100", "af14a83e271ec15aac10021b54474781");
 		log.debug("loaded " + casLocations.size() + " CAS locations");
+	}
+
+
+	/**
+	 * load up the ticketIds from the database to cross-reference the soNumbers
+	 */
+	private void loadTicketIds() {
+		String sql = StringUtil.join("select ticket_no as key, ticket_id as value from ", schema, "wsla_ticket");
+		MapUtil.asMap(ticketMap, db.executeSelect(sql, null, new GenericVO()));
+		log.info("loaded " + ticketMap.size() + " ticketIds from database");
 	}
 }

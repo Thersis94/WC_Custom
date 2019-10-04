@@ -48,6 +48,8 @@ public class DebitMemoImporter extends AbsImporter {
 
 	private Map<String, Object> jobAttributes = new HashMap<>();
 	private DebitMemoJob job;
+	private int creditCnt = 0;
+	private int debitCnt = 0;
 
 
 	/* (non-Javadoc)
@@ -69,6 +71,9 @@ public class DebitMemoImporter extends AbsImporter {
 
 		// Loop each element and store the data
 		storeData();
+
+		log.info("saved " + debitCnt + " debit memos");
+		log.info("saved " + creditCnt + " credit memos");
 	}
 
 	/**
@@ -167,9 +172,10 @@ public class DebitMemoImporter extends AbsImporter {
 
 		// Store the debit memo
 		db.insert(memo);
+		++debitCnt;
 
 		// Update the credit memos
-		writeToDB(memo.getCreditMemos(), false);
+		creditCnt += writeToDB(memo.getCreditMemos(), false);
 	}
 
 

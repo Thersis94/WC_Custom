@@ -19,6 +19,7 @@ import com.siliconmtn.util.MapUtil;
 import com.siliconmtn.util.StringUtil;
 import com.wsla.data.ticket.ApprovalCode;
 import com.wsla.data.ticket.TicketCommentVO;
+import com.wsla.data.ticket.TicketCommentVO.ActivityType;
 import com.wsla.data.ticket.TicketDataVO;
 import com.wsla.data.ticket.TicketLedgerVO;
 import com.wsla.util.migration.vo.AssetPathVO;
@@ -215,7 +216,9 @@ public class AssetParser extends AbsImporter {
 		TicketLedgerVO ledger;
 
 		for (AssetPathVO vo : assets) {
-			if (!ticketIds.containsKey(vo.getTicketId())) {
+			if (!isImportable(vo.getTicketId())) {
+				continue;
+			} else if (!ticketIds.containsKey(vo.getTicketId())) {
 				//we found attributes for a ticket not in Cypher - typically this is ignorable but lets start with a warning
 				log.warn(String.format("Found asset for non-existent ticket %s - ignoring asset", vo.getTicketId()));
 				continue;
@@ -251,6 +254,7 @@ public class AssetParser extends AbsImporter {
 				comment.setPriorityTicketFlag(vo.isAlert() ? 1 : 0);
 				comment.setComment(vo.getComment());
 				comment.setUserId(SOHeader.LEGACY_USER_ID);
+				comment.setActivityType(ActivityType.COMMENT.name());
 				comments.add(comment);
 			}
 		}
@@ -272,7 +276,7 @@ public class AssetParser extends AbsImporter {
 	 * @return
 	 */
 	private String transposeFileUrl(String filePath) {
-		return filePath.replaceAll("\\\\", "/").replaceAll("E:/swattach/", "/wsla-swattach/").replace(' ','+');
+		return filePath.replaceAll("\\\\", "/").replaceAll("E:/swattach/", "/wsla-swattach/").replace(" ","%20");
 	}
 
 

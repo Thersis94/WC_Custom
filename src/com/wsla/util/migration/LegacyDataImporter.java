@@ -25,7 +25,8 @@ public class LegacyDataImporter extends CommandLineUtil {
 
 	private static final List<String> importers = new ArrayList<>();
 	protected final String batchNm = RandomAlphaNumeric.generateRandom(10);
-	
+
+
 	/*
 	 * the time zone of Mexico City - which is what we'll presume all incoming dates/times to be.
 	 * We'll offset (increment) these to UTC prior to saving/using them for accuracy.
@@ -34,23 +35,6 @@ public class LegacyDataImporter extends CommandLineUtil {
 
 	//define the ordered list of importers to run.  This will vary through development but all will run at once for staging/prod.
 	static {
-//		importers.add(OEMProvider.class.getName());
-		//TODO likely need to stub-in OEM locations? ("return to manuf" use case)
-//		importers.add(Product.class.getName()); //deps: OEMProvider
-//		importers.add(Category.class.getName()); //deps: Product
-//		importers.add(CASProvider.class.getName());
-//		importers.add(CASLocation.class.getName()); //deps: CASProvider
-//		importers.add(ProductSerial.class.getName()); //deps: Product
-//		importers.add(ProductSet.class.getName()); //deps: ProductSerial
-//		importers.add(RetailProvider.class.getName());
-
-		//TODO RetailLocation - all the Wal-Marts, Home Depots, etc.
-		//importers.add(RetailLocation.class.getName()); //walmarts in MX
-
-//		importers.add(WSLAInventoryLocation.class.getName()); //deps: RetailProvider, CASLocation
-//		importers.add(WSLAStaff.class.getName()); //WSLA Staff, WSLA's default provider location
-//		importers.add(LocationInventory.class.getName()); //deps: InventoryLocation, Product
-
 //		importers.add(SOHeader.class.getName());
 //		importers.add(SOExtendedData.class.getName());
 //		importers.add(SOComments.class.getName());
@@ -58,9 +42,14 @@ public class LegacyDataImporter extends CommandLineUtil {
 //		importers.add(AssetParser.class.getName());
 
 		//post-process refunds, this class relies on both the tickets already being loaded and the raw files
-		//importers.add(Refund.class.getName());
-		importers.add(DebitMemoImporter.class.getName());
-		//importers.add(DebitMemoUserImporter.class.getName());
+//		importers.add(Refund.class.getName());
+//		importers.add(Replacement.class.getName());
+//		importers.add(Harvest.class.getName());
+//		importers.add(DebitMemoImporter.class.getName());
+//		importers.add(DebitMemoUserImporter.class.getName());
+		
+		//phase 2 importers - these run solo on per-cases basis
+		importers.add(SOLineItemComments.class.getName());
 	}
 
 
@@ -88,6 +77,7 @@ public class LegacyDataImporter extends CommandLineUtil {
 	 */
 	@Override
 	public void run() {
+		log.info("starting batch import " + batchNm);
 		//loop through the importers we were asked to run
 		for (String className : importers) {
 			try {

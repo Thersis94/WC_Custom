@@ -61,6 +61,13 @@ public class TicketVO extends BeanDataVO {
 	public enum UnitLocation {
 		CALLER, OEM, RETAILER, COURIER, WSLA, DECOMMISSIONED, CAS;
 	}
+	
+	/**
+	 * Definition of the profeco status
+	 */
+	public enum ProfecoStatus {
+		NO_PROFECO, IN_PROFECO, PROFECO_COMPLETE;
+	}
 		
 	// String Member Variables
 	private String ticketId;
@@ -89,6 +96,7 @@ public class TicketVO extends BeanDataVO {
 	// Enum Members
 	private Standing standingCode = Standing.GOOD;
 	private UnitLocation unitLocation;
+	private ProfecoStatus profecoStatus;
 
 	// Helper Variables
 	private String retailerId;
@@ -520,6 +528,14 @@ public class TicketVO extends BeanDataVO {
 	}
 
 	/**
+	 * @return the profecoStatus
+	 */
+	@Column(name="profeco_status_cd")
+	public ProfecoStatus getProfecoStatus() {
+		return profecoStatus;
+	}
+
+	/**
 	 * @param ticketId the ticketId to set
 	 */
 	public void setTicketId(String ticketId) {
@@ -920,5 +936,12 @@ public class TicketVO extends BeanDataVO {
 	 */
 	public void setTicketLocked(boolean ticketLocked) {
 		this.ticketLocked = ticketLocked;
+	}
+
+	/**
+	 * @param profecoStatus the profecoStatus to set
+	 */
+	public void setProfecoStatus(ProfecoStatus profecoStatus) {
+		this.profecoStatus = profecoStatus;
 	}
 }

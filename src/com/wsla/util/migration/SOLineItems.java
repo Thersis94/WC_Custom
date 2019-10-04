@@ -1,6 +1,8 @@
 package com.wsla.util.migration;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.InputStreamReader;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -17,7 +19,6 @@ import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.util.EnumUtil;
 import com.siliconmtn.util.MapUtil;
 import com.siliconmtn.util.StringUtil;
-import com.wsla.data.ticket.CreditMemoVO;
 import com.wsla.data.ticket.PartVO;
 import com.wsla.data.ticket.ShipmentVO;
 import com.wsla.data.ticket.ShipmentVO.CarrierType;
@@ -45,68 +46,14 @@ public class SOLineItems extends AbsImporter {
 	private Map<String, String> ticketIds = new HashMap<>(5000);
 	private Map<String, String> activityMap = new HashMap<>(100);
 	private Map<String, String> casLocations = new HashMap<>(4000);
-	private static Map<String, String> productIds = new HashMap<>(10000);
-
-	static {
-		//from Steve
-		productIds.put("100118", "2e70c47c8c959cd7ac100290caca15b1");
-		productIds.put("100266","52d50221v1eaf571ac1002908d17145a");
-		productIds.put("631013M4511","9465754396f33d507f00010183e7d920");
-		productIds.put("845CX508T160616","5530d75396f33d497f0001017573c0d8");
-		productIds.put("845CX508T17072","699887c7fdac4c47ac1002907ba7a760");
-		productIds.put("890CVS3393PB851","124f08119707d13b7f0001018224773f");
-		productIds.put("890JRX3393BHB5","9236dfdd96f33d477f0001017796f4b5");
-		productIds.put("P752831V60A018L","ffec24beb081483aac1002907ac435e5");
-		productIds.put("ST215B011","e7648100b08202f2ac10029083dd7859");
-		productIds.put("TPMT55105PB818","841d7ca9b0837d1cac10029072104401");
-		productIds.put("V400HJ6PE1","b9c1890ab08566a6ac1002901844e517");
-		//wave 2
-		productIds.put("100250", "c34d9ff61bda1432ac1002904d17469e");
-		productIds.put("100267", "de77ef651bdb12f9ac10029011d56dbf");
-		productIds.put("100268", "7be493d11bdc1678ac1002907dbc9200");
-		productIds.put("100272", "c7326e0b1bdd222bac100290931f2967");
-		productIds.put("10L538138022", "47d245e11bde8dc6ac100290de1ed3f8");
-		productIds.put("306011DP7583100", "33d74b93e4985f95ac1002396caabbe7");
-		productIds.put("30604008CXWMQ21", "b2a1673196f33d437f000101eaa0f310");
-		productIds.put("306050C026YLDXK", "8f2c551d96f33d427f00010187983dee");
-		productIds.put("306070KEY40170", "af8b66f296f33d4a7f000101be82f900");
-		productIds.put("306080IR03228A", "2dbfeb5996f33d497f0001017e7d2ad2");
-		productIds.put("55180Z00002", "54a64c111be2ff59ac100290d8992e59");
-		productIds.put("631008M0352002", "2734ea039729e47c7f00010125cff6a5");
-		productIds.put("70532Z2L5PCASY0", "a24535a596f33d437f00010143b5fbc3");
-		productIds.put("845CX508T160159", "d1e337a896f33d467f000101be008007");
-		productIds.put("890CVT3553PC825", "92fb07c796f33d527f0001011a1ee4f1");
-		productIds.put("890CVWB58051GB4", "c1619bee1be82485ac100290f69fa197");
-		productIds.put("890CVWB58055", "cc88ed4dfdb11a6bac100290db87eb60");
-		productIds.put("890CVWBS80550", "cc88ed4dfdb11a6bac100290db87eb60"); //I think the S here was suppose to be a 5 (line above) - someone misread it
-		productIds.put("890CVWBS80550H", "cc88ed4dfdb11a6bac100290db87eb60");
-		productIds.put("890CVWB5805532", "9e205a9296f33d3f7f000101218dd0f5");
-		productIds.put("890CVWB5805542", "5dc0343e1bebdac6ac100290ed0a763e");
-		productIds.put("890CVWB580555", "5c2306d196f33d487f0001011a043e71");
-		productIds.put("890JRA3393BHU32", "87a192299707d13c7f0001018760a680");
-		productIds.put("890JRX3393BHB50", "9236dfdd96f33d477f0001017796f4b5");
-		productIds.put("CVS3393PB8551", "5ca00b479729e47a7f000101b29d6af9");
-		productIds.put("CX550DLEDM", "fa5959f01bf07808ac10029082f5d038");
-		productIds.put("JR3393BH850-3H1", "7b278be51bf3bdffac1002907ffb6176");
-		productIds.put("P752831V60", "a04850f596f33d447f00010113b2974a");
-		productIds.put("P752831V60A021L", "e0cdc89d1bf5fb64ac100290bbdd6640");
-		productIds.put("ST6308RTU-AP132", "557fc3811bf6f712ac100290ec019ef1");
-		productIds.put("TT5461B0325C1", "9bd6760f1bf81f32ac100290ccf61644");
-		productIds.put("Z00073CHOT", "4b529a751bf95827ac1002906066ef2a");
-		productIds.put("Z00088XCN", "b2feebdf1bf9d23cac10029078b45af5");
-		productIds.put("Z00107ST4K", "ebb5b0ee1bfa7a84ac10029016cf0398");
-		productIds.put("Z00110AUO", "a02ef94d1bfadc82ac10029050b19ec0");
-	}
+	private Map<String, String> productIds = new HashMap<>(10000);
+	private String batchCode;
 
 	/* (non-Javadoc)
 	 * @see com.wsla.util.migration.AbstractImporter#run()
 	 */
 	@Override
 	void run() throws Exception {
-		//use this to cross-ref the DB for missing products (copy SQL inserts from production)
-		//for (String s : productIds.values())
-		//System.out.println("('" + s + "'),");
-
 		File[] files = listFilesMatching(props.getProperty("soLineItemsFile"), "(.*)SOLNI(.*)");
 
 		for (File f : files)
@@ -116,6 +63,10 @@ public class SOLineItems extends AbsImporter {
 		loadCasLocations();
 		loadProductIds();
 		loadActivities();
+
+		//prompt for the batch code of the tickets we're adding activities to:
+		log.fatal("\n\nPaste the batch code for the tickets we're adding activities to and press enter:\n");
+		batchCode = new BufferedReader(new InputStreamReader(System.in)).readLine();
 
 		//Note we don't have a delete here; deleting the tickets will cascade into the tables affecting LineItems
 
@@ -132,11 +83,10 @@ public class SOLineItems extends AbsImporter {
 	protected void save() throws Exception {
 		Map<String, List<PartVO>> tktParts = new HashMap<>(data.size());
 		List<TicketCommentVO> activities = new ArrayList<>(data.size());
-		List<CreditMemoVO> credits = new ArrayList<>(data.size());
 
 		//split the data into the 3 categories
 		for (SOLNIFileVO vo : data) {
-			if (vo.getSoNumber().matches("(?i)^WSL0(.*)$")) continue;
+			if (!isImportable(vo.getSoNumber())) continue;
 
 			if (vo.isInventory()) {
 				PartVO part = transposeInventoryData(vo, new PartVO());
@@ -153,22 +103,13 @@ public class SOLineItems extends AbsImporter {
 				//don't save comments if we don't have the ticket
 				if (!StringUtil.isEmpty(cmt.getTicketId()))
 					activities.add(cmt);
-
-			} else if (vo.isCreditMemo()) {
-				credits.add(transposeCreditData(vo, new CreditMemoVO()));
 			}
 		}
 		log.info(String.format("found %d tickets with parts", tktParts.size()));
 		log.info(String.format("found %d service line items (activities)", activities.size()));
-		log.info(String.format("found %d inventory credits (harvested parts)", credits.size()));
 
-		//no parts, no shipments
-		if (!isOpenTktRun)
-			saveParts(tktParts);
-
+		saveParts(tktParts);
 		saveActivities(activities);
-
-		//writeToDB(credits);
 	}
 
 
@@ -303,7 +244,7 @@ public class SOLineItems extends AbsImporter {
 		sql.append("select replace(newid(),'-',''), '").append(SOHeader.LEGACY_USER_ID).append("',t.ticket_id, tc.comment_txt, tc.create_dt, ");
 		sql.append("coalesce(wb.invoice_amount_no, 0), ba.billable_activity_cd ");
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("wsla_ticket_comment tc ");
-		sql.append(DBUtil.INNER_JOIN).append(schema).append("wsla_ticket t on tc.ticket_id=t.ticket_id ").append("and t.batch_txt=").append(StringUtil.checkVal(batchNm, true));
+		sql.append(DBUtil.INNER_JOIN).append(schema).append("wsla_ticket t on tc.ticket_id=t.ticket_id ").append("and t.batch_txt=").append(StringUtil.checkVal(batchCode, true));
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("wsla_product_warranty pw on t.product_warranty_id=pw.product_warranty_id ");
 		//LOJ here because we want to create a timeline entry for all activities - not just those with billable amts attached
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("wsla_billable_activity ba on tc.activity_type_cd=ba.billable_activity_cd ");
@@ -343,12 +284,11 @@ public class SOLineItems extends AbsImporter {
 
 		//report missing inventory to the console
 		if (!missingProducts.isEmpty()) {
-			log.info(String.format("removed %d records because of missing products", removeCnt));
+			log.info(String.format("removed %d records because of missing parts", removeCnt));
 			for (String s : missingProducts) {
 				System.err.println(s);
 			}
-			//TODO reinstate this for production runs, once Steve gives us all the missing products
-			//throw new RuntimeException("missing above products, can't proceed");
+			throw new RuntimeException("missing above parts, can't proceed");
 		}
 		log.info("all inventory is accounted for!");
 	}
@@ -380,7 +320,7 @@ public class SOLineItems extends AbsImporter {
 			log.debug("trying " + id + " from " + dataVo.getProductId());
 			vo.setProductId(productIds.get(id));
 		}
-		vo.setCustomerProductId(id); //capture the original (w/o harvesting flags) so we can report missing products
+		vo.setCustomerProductId(dataVo.getProductId()); //capture the original so we can report missing products
 		vo.setTicketId(ticketIds.get(dataVo.getSoNumber())); //transposed
 		vo.setQuantity(dataVo.getQntyNeeded());
 		vo.setQuantityReceived(dataVo.getQntyCommitted());
@@ -426,21 +366,6 @@ public class SOLineItems extends AbsImporter {
 
 
 	/**
-	 * Credits:
-	 * Transpose and enhance the data we get from the import file into what the new schema needs
-	 * @param dataVo
-	 * @param creditVO
-	 * @return
-	 **/
-	private CreditMemoVO transposeCreditData(SOLNIFileVO dataVo, CreditMemoVO vo) {
-		//TODO - talk to Camire about how these go in
-		vo.setTicketId(ticketIds.get(dataVo.getSoNumber())); //transposed
-		vo.setCreateDate(dataVo.getReceivedDate());
-		return vo;
-	}
-
-
-	/**
 	 * Populate the Map<Ticket#, TicketId> from the database to marry the soNumbers in the Excel
 	 */
 	private void loadTicketIds() {
@@ -468,8 +393,10 @@ public class SOLineItems extends AbsImporter {
 	 * The Order By here prioritizes best matches over desparation matches (desc_txt)
 	 * @return 
 	 */
-	public Map<String, String> loadProductIds() {
-		String sql = StringUtil.join("select 3, cust_product_id as key, ",
+	private void loadProductIds() {
+		String sql = StringUtil.join("select 4, product_id as key, ",
+				"product_id as value from ", schema, "wsla_product_master ", 
+				DBUtil.UNION_ALL,"select 3, cust_product_id as key, ",
 				"product_id as value from ", schema, "wsla_product_master where length(cust_product_id)>0 ", 
 				DBUtil.UNION_ALL,"select 2, sec_cust_product_id as key, product_id as value from ", 
 				schema, "wsla_product_master where length(sec_cust_product_id)>0 ", 
@@ -478,7 +405,6 @@ public class SOLineItems extends AbsImporter {
 
 		MapUtil.asMap(productIds, db.executeSelect(sql, null, new GenericVO()));
 		log.debug(String.format("loaded %d productIds", productIds.size()));
-		return productIds;
 	}
 
 

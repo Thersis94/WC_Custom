@@ -153,6 +153,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		keyMap.put("standing", new GenericVO("getStanding", Boolean.TRUE));
 		keyMap.put("acShipLocation", new GenericVO("getAcShippingLocation", Boolean.TRUE));
 		keyMap.put("surveyResults", new GenericVO("getSurveyResults", Boolean.TRUE));
+		keyMap.put("profeco", new GenericVO("getProfecoList", Boolean.TRUE));
 	}
 
 	/**
@@ -1060,5 +1061,17 @@ public class SelectLookupAction extends SBActionAdapter {
 		
 		DBProcessor db = new DBProcessor(getDBConnection());
 		return db.executeSelect(sql.toString(), Arrays.asList(fsi), new GenericVO());
+	}
+	
+	/**
+	 * Gets the profeco list based upon the ticket profeco status
+	 * @param req - Need "fsi" req parameter
+	 * @return
+	 */
+	public List<GenericVO> getProfecoList(ActionRequest req) {
+		List<GenericVO> data = new ArrayList<>();
+		
+		
+		return data;
 	}
 }

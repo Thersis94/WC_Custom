@@ -203,8 +203,10 @@ public class TicketEditAction extends SBActionAdapter {
 		if (endUserFilter) {
 			for (Node n : rootNode.getChildren()) {
 				TicketCommentVO tc = (TicketCommentVO)n.getUserObject();
-
-				if (tc.getEndUserFlag() != 1 && StringUtil.isEmpty(tc.getParentId())) remNodes.add(n);
+				
+				if (tc.getEndUserFlag() != 1 && StringUtil.isEmpty(tc.getParentId())) {
+					if (tc.getUserShareFlag() < 1) remNodes.add(n);
+				}
 			}
 
 			for (Node n : remNodes) {
