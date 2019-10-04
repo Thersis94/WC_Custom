@@ -203,6 +203,19 @@ public class TicketVO extends BeanDataVO {
 
 		return new TicketAssignmentVO();
 	}
+	
+	/**
+	 * Helper method to return the assigned CALLER
+	 * @return
+	 */
+	public UserVO getCaller() {
+
+		for (TicketAssignmentVO ta : assignments) {
+			if (TicketAssignmentVO.TypeCode.CALLER.equals(ta.getTypeCode())) return ta.getUser();
+		}
+
+		return new UserVO();
+	}
 
 	/**
 	 * Returns the difference between 2 dates
