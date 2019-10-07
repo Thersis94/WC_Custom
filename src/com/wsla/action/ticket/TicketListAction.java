@@ -163,7 +163,7 @@ public class TicketListAction extends SimpleActionAdapter {
 		// Add the limit and offset for the display query
 		sql.append(bst.getSQLOrderBy("create_dt", "desc"));
 		sql.append(" limit ").append(bst.getLimit()).append(" offset ").append(bst.getOffset());
-		log.debug(sql.length() + "|" + sql + "| " + params);
+		log.info(sql.length() + "|" + sql + "| " + params);
 
 		// Build the grid object and assign the number of rows total
 		GridDataVO<TicketVO> grid = new GridDataVO<>();
@@ -352,8 +352,6 @@ public class TicketListAction extends SimpleActionAdapter {
 			base.append("where assg_type_cd = 'CAS' and location_id in ( ");
 			base.append("select location_id from ").append(getCustomSchema()).append("wsla_provider_location ");
 			base.append("where provider_id = 'WSLA_ID')) tat on a.ticket_id = tat.ticket_id ");
-		} else if ("PROFECO".equals(status)) {
-			base.append("and profeco_status_cd in ('IN_PROFECO','PROFECO_COMPLETE') ");
 		}
 		
 		// Add a filter to make sure users only see the tickets they are supposed to.
