@@ -49,7 +49,9 @@ public class LegacyDataImporter extends CommandLineUtil {
 //		importers.add(DebitMemoUserImporter.class.getName());
 		
 		//phase 2 importers - these run solo on per-cases basis
-		importers.add(SOLineItemComments.class.getName());
+//		importers.add(SOLineItemComments.class.getName());
+//		importers.add(ProfecoTickets.class.getName());
+//		importers.add(Originator.class.getName());
 	}
 
 
