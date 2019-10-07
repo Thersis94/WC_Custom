@@ -257,9 +257,9 @@ public class UpdatesEditionDataLoader extends SimpleActionAdapter {
 		sql.append("and announcement_type > 0 ");
 		sql.append("order by announcement_type, type_cd, up.publish_dt_sort desc, ");
 		if (orderSort) {
-			sql.append("coalesce(up.order_no,0) asc, coalesce(up.publish_dt, up.create_dt) desc ");
+			sql.append("coalesce(up.order_no,0) desc, coalesce(up.publish_dt, up.create_dt) desc ");
 		} else {
-			sql.append("coalesce(up.publish_dt, up.create_dt) desc, coalesce(up.order_no,0) asc ");
+			sql.append("coalesce(up.publish_dt, up.create_dt) desc, coalesce(up.order_no,0) desc ");
 		}
 		return sql.toString();
 	}
