@@ -194,7 +194,7 @@ public class ProductMasterAction extends BatchImport {
 		}
 
 		sql.append(bst.getSQLOrderBy("pm.product_nm",  "asc"));
-		log.info(sql + "|" + params);
+		log.debug(sql + "|" + params);
 
 		DBProcessor db = new DBProcessor(getDBConnection(), schema);
 		return db.executeSQLWithCount(sql.toString(), params, new ProductVO(), bst.getLimit(), bst.getOffset());

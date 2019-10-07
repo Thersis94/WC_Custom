@@ -70,7 +70,7 @@ public class SurveyWrapperAction extends SimpleActionAdapter {
 		try {
 			// Add a ledger entry and survey link
 			TicketDataTransaction tdt = new TicketDataTransaction(getDBConnection(), getAttributes());
-			TicketLedgerVO ledger = tdt.addLedger(ticket.getTicketId(), ticket.getUserId(), null, LedgerSummary.SURVEY_SUBMITTED.summary, null);
+			TicketLedgerVO ledger = tdt.addLedger(ticket.getTicketId(), ticket.getOriginatorUserId(), null, LedgerSummary.SURVEY_SUBMITTED.summary, null);
 			tdt.saveTicketData(null, ledger.getLedgerEntryId(), ticket.getTicketId(), "attr_surveyId", surveyId, null);
 		} catch (Exception e) {
 			log.error("Unable to link survey to ticket");

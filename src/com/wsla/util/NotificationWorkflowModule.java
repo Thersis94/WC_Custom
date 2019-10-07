@@ -104,7 +104,7 @@ public class NotificationWorkflowModule extends AbstractWorkflowModule {
 		
 		// If the role is an end customer, send one email to the originator user on the ticket.
 		if (notification.getRoles().contains(WSLA_END_CUSTOMER) && !StringUtil.isEmpty(ticket.getTicketIdText())) {
-			UserVO user = bpa.getUser(ticket.getUserId());
+			UserVO user = bpa.getUser(ticket.getCaller().getUserId());
 			if (StringUtil.checkVal(user.getLocale(), "es_MX").equals(notification.getLocale())) {
 				users.add(user);
 			}

@@ -368,26 +368,52 @@ public class TicketListAction extends SimpleActionAdapter {
 		return base;
 	}
 
+	/**
+	 * added this layer for backwards compatibility
+	 * @param status
+	 * @return
+	 */
+	public  List<GenericVO> getTickets(StatusCode status) {
+		return getTickets(status, null);
+	}
 
 	/**
 	 * Return a <K,V> list of tickets, at the specific status level.  Called from SelectLookupAction for Logistics UI.
 	 * @param req
 	 * @return
 	 */
-	public List<GenericVO> getTickets(StatusCode status) {
-		List<Object> params = null;
+	public List<GenericVO> getTickets(StatusCode status, String search) {
+
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		List<Object> params = new ArrayList<>();
 		StringBuilder sql = new StringBuilder(200);
+		
 		sql.append("select distinct ticket_id as key, ticket_no as value from ");
 		sql.append(getCustomSchema()).append("wsla_ticket ");
+		sql.append(DBUtil.WHERE_1_CLAUSE);
 		if (status != null) {
-			sql.append("where status_cd=?");
-			params = Arrays.asList(status.toString());
+			sql.append("and status_cd=? ");
+			params.add(status.toString());
 		}
+		
+		if (search != null) {
+			sql.append("and lower(ticket_id) like ? or lower(ticket_no) like ? ");
+			params.add("%"+search.toLowerCase()+"%");
+			params.add("%"+search.toLowerCase()+"%");
+		}
+		
 		sql.append("order by ticket_no");
 		log.debug(sql);
+		
+		if (search != null) {
+			sql.append(" limit 10 ");
+		}
 
 		// Execute and return
-		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
-		return db.executeSelect(sql.toString(), params, new GenericVO());
+		List<GenericVO> data = db.executeSelect(sql.toString(), params, new GenericVO());
+		
+		if(data != null && ! data.isEmpty())log.debug("number of tickets found " + data.size());
+		
+		return data;
 	}
 }

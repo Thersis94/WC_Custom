@@ -134,7 +134,7 @@ public class PartsAction extends SBActionAdapter {
 		sql.append("where p.ticket_id = ? and (s.shipment_type_cd = ? or s.shipment_type_cd is null) and (s.status_cd != ? or s.status_cd is null) ");
 
 		sql.append(bst.getSQLOrderBy("pm.product_nm",  "asc"));
-		log.info(sql.length() + "|" + sql + "|" + ticketId + "|" + ShipmentType.PARTS_REQUEST.name() + "|" + ShipmentStatus.CANCELED.name());
+		log.debug(sql.length() + "|" + sql + "|" + ticketId + "|" + ShipmentType.PARTS_REQUEST.name() + "|" + ShipmentStatus.CANCELED.name());
 
 		DBProcessor db = new DBProcessor(getDBConnection(), schema);
 		List<Object> params = Arrays.asList(ticketId, ShipmentType.PARTS_REQUEST.name(), ShipmentStatus.CANCELED.name());
