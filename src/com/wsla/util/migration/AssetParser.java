@@ -128,7 +128,7 @@ public class AssetParser extends AbsImporter {
 		boolean isFile = false;
 
 		for (String line : ticket) {
-			log.debug("inspecting: " + line);
+			//log.debug("inspecting: " + line)
 
 			if (isSkuLine(line)) { //this will always match the first line in the list, and never again
 				ticketId = line.split("\\s+")[0].trim();
@@ -141,7 +141,7 @@ public class AssetParser extends AbsImporter {
 				vo.setTicketId(ticketId);
 				vo.isAlert(line.matches("(?i).*ALERT.*"));
 				vo.setCreateDate(Convert.formatDate("ddMMMyy HH:mm", getDate(line)));
-				vo.setAttributeCode(getAttributeCode(line));
+				vo.setAttributeCode(getAttributeCode(line, ticketId));
 
 				//reset the buffer & file indicator
 				textBuffer.setLength(0);
@@ -171,7 +171,10 @@ public class AssetParser extends AbsImporter {
 	 * @param line
 	 * @return
 	 */
-	private String getAttributeCode(String line) {
+	private String getAttributeCode(String line, String ticketId) {
+		//profeco tickets
+		if (ticketId.matches("WSL0(.*)")) return "attr_profecoDocument";
+		
 		if (line.matches("(?i).*ADJUNTAR ([FOTOS|BER]).*")) {
 			return "attr_unitImage";
 		} else if (line.matches("(?i).*ADJUNTAR POP.*")) {
@@ -202,7 +205,7 @@ public class AssetParser extends AbsImporter {
 		} else {
 			vo.setComment(textBuffer.toString().trim());						
 		}
-		log.debug(String.format("\r%s", vo.toString()));
+		//log.debug(String.format("\r%s", vo.toString()))
 		assets.add(vo);
 	}
 
