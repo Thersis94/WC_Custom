@@ -101,7 +101,23 @@ public class Originator extends AbsImporter {
 
 		log.info(String.format("loaded %d records from %d XDD files", data.size(), files.length));
 
+		pruneData();
+
 		save();
+	}
+
+
+	/**
+	 * 
+	 */
+	private void pruneData() {
+		List<SOXDDFileVO> newData = new ArrayList<>(data.size());
+		for (SOXDDFileVO vo : data) {
+			if (isImportable(vo.getSoNumber()))
+				newData.add(vo);
+		}
+		log.info(String.format("pruned Originator scope from %d to %d tickets", data.size(), newData.size()));
+		data = newData;
 	}
 
 
