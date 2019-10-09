@@ -137,6 +137,7 @@ public class TicketCommentTransaction extends SBActionAdapter {
 			ledger.setSummary(LedgerSummary.ACTIVITY_ADDED.summary + ": " + comment.getComment());
 			log.debug(ledger);
 			db.save(ledger);
+			comment.setLedgerEntryId(ledger.getLedgerEntryId());
 		}
 		
 		// Add the activity / comment to the DB

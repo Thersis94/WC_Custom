@@ -73,6 +73,7 @@ import com.wsla.data.ticket.StatusCode;
 import com.wsla.data.ticket.StatusCodeVO;
 import com.wsla.data.ticket.TicketAssignmentVO;
 import com.wsla.data.ticket.TicketAssignmentVO.TypeCode;
+import com.wsla.data.ticket.TicketCommentVO.CommunicationRole;
 import com.wsla.data.ticket.TicketScheduleVO;
 import com.wsla.data.ticket.TicketVO.Standing;
 import com.wsla.data.ticket.UserVO;
@@ -154,6 +155,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		keyMap.put("acShipLocation", new GenericVO("getAcShippingLocation", Boolean.TRUE));
 		keyMap.put("surveyResults", new GenericVO("getSurveyResults", Boolean.TRUE));
 		keyMap.put("profeco", new GenericVO("getProfecoList", Boolean.TRUE));
+		keyMap.put("commRole", new GenericVO("getCommRole", Boolean.TRUE));
 	}
 
 	/**
@@ -1064,14 +1066,23 @@ public class SelectLookupAction extends SBActionAdapter {
 	}
 	
 	/**
-	 * Gets the profeco list based upon the ticket profeco status
-	 * @param req - Need "fsi" req parameter
+	 * Get comm role
+	 * @param req
 	 * @return
 	 */
-	public List<GenericVO> getProfecoList(ActionRequest req) {
+	public List<GenericVO> getCommRole(ActionRequest req) {
 		List<GenericVO> data = new ArrayList<>();
+		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
+		UserVO user = (UserVO) getAdminUser(req).getUserExtendedInfo();
+		ResourceBundle rb = WCResourceBundle.getBundle(site.getResourceBundleClass(),user.getUserLocale());
 		
+		for (CommunicationRole cr : CommunicationRole.values()) {
+			data.add(new GenericVO(cr.name(), rb.getString(cr.getCommRoleId())));
+		}
 		
+		Collections.sort(data);
 		return data;
 	}
+	
+	
 }

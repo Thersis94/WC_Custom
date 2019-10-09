@@ -189,7 +189,28 @@ public class BaseTransactionAction extends SBActionAdapter {
 	 * @throws DatabaseException
 	 */
 	public TicketLedgerVO addLedger(String ticketId, String userId, StatusCode status, String summary, UnitLocation location) throws DatabaseException {
-		return addLedger(ticketId, userId, status, summary, location, null);
+		return addLedger(ticketId, userId, status, summary, location, new WarrantyBillableVO());
+	}
+	
+	/**
+	 * Adds a ledger entry for the given ticket. Determination is made as to
+	 * which billable code to use here based on the status.
+	 * 
+	 * Overloaded to take a different amount than what is specified on the billable code.
+	 * 
+	 * @param ticketId
+	 * @param userId
+	 * @param status
+	 * @param summary
+	 * @param location
+	 * @param billableAmt
+	 * @return
+	 * @throws DatabaseException
+	 */
+	public TicketLedgerVO addLedger(String ticketId, String userId, StatusCode status, String summary, UnitLocation location, Double billableAmt) throws DatabaseException {
+		WarrantyBillableVO billableData = new WarrantyBillableVO();
+		billableData.setInvoiceAmount(billableAmt);
+		return addLedger(ticketId, userId, status, summary, location, billableData);
 	}
 
 	/**
@@ -207,25 +228,29 @@ public class BaseTransactionAction extends SBActionAdapter {
 	 * @return
 	 * @throws DatabaseException
 	 */
-	public TicketLedgerVO addLedger(String ticketId, String userId, StatusCode status, String summary, UnitLocation location, Double billableAmt) throws DatabaseException {
+	public TicketLedgerVO addLedger(String ticketId, String userId, StatusCode status, String summary, UnitLocation location, WarrantyBillableVO billableData) throws DatabaseException {
 		// Create a new ledger record
+		if (billableData == null) billableData = new WarrantyBillableVO();
 		TicketLedgerVO ledger = new TicketLedgerVO();
 		ledger.setDispositionBy(userId);
 		ledger.setTicketId(ticketId);
 		ledger.setStatusCode(status);
 		ledger.setSummary(summary);
 		ledger.setUnitLocation(location);
-		ledger.setBillableAmtNo(Convert.formatDouble(billableAmt));
+		ledger.setBillableAmtNo(Convert.formatDouble(billableData.getInvoiceAmount()));
+		ledger.setBillableActivityCode(billableData.getBillableActivityCode());
 		
 		// Get status billable data to be added to the ledger
 		if (status != null) {
 			try {
-				WarrantyBillableVO billableData = getBillableData(ticketId, status);
+				if (StringUtil.isEmpty(billableData.getBillableActivityCode())) 
+					billableData = getBillableData(ticketId, status);
+				
 				ledger.setBillableActivityCode(billableData.getBillableActivityCode());
 				
 				// If we aren't overriding the default amount with a passed in value,
 				// then just use the default amount.
-				if (billableAmt == null) {
+				if (billableData.getInvoiceAmount() > 0) {
 					ledger.setBillableAmtNo(billableData.getInvoiceAmount());
 				}
 			} catch (SQLException e) {
