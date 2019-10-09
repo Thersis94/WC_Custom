@@ -21,6 +21,7 @@ import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.orm.GridDataVO;
 import com.siliconmtn.db.pool.SMTDBConnection;
+import com.siliconmtn.security.saml.SAMLV2Constants;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.MapUtil;
 import com.siliconmtn.util.StringUtil;
@@ -189,13 +190,16 @@ public class SSOProviderAction extends SimpleActionAdapter {
 	 * @throws ActionException 
 	 */
 	private void saveLoginModule(ActionRequest req, boolean isDelete) throws ActionException {
-		String[] fields = new String[] { "spEntityId","providerUrlAlias","endpointUri","publicKey","parserClass"};
+		final String NAMEID_POLICY = "nameIdPolicy";
+		String[] fields = new String[] { "spEntityId","providerUrlAlias","endpointUri","publicKey","parserClass", NAMEID_POLICY};
 
 		req.setParameter(SiteAction.SITE_ID, MTSConstants.SUBSCRIBER_SITE_ID); //parent site
 		req.setParameter("orderNo", "5");
 		req.setParameter("classNm", MTSConstants.SAML_LOGIN_MODULE_CLASSPATH);
 		req.setParameter("loginModuleId", MTSConstants.SAML_LOGIN_MODULE_ID);
 		req.setParameter("endpointUri", "/process");
+		//set a default, since its a hidden form field.
+		req.setParameter(NAMEID_POLICY, StringUtil.checkVal(req.getParameter(NAMEID_POLICY), SAMLV2Constants.NAMEID_FORMAT_TRANSIENT));
 
 		//the module isn't active until all required fields are complete
 		String qualNm = StringUtil.checkVal(req.getParameter("qualifierPattern"));
