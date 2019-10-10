@@ -1,5 +1,18 @@
 WC_Custom Changelog (auto-generated)
 
+## [3.33.1](https://github.com/smtadmin/WC_Custom/compare/3.33.0...3.33.1) (2019-10-10)
+
+
+### Bug Fixes
+
+* **Sc-1560:** Ensure that suffixes are not lost when setting thousands seperators. ([5fe207c](https://github.com/smtadmin/WC_Custom/commit/5fe207c))
+* **Sc-230:** Change to use super methods. ([98f585a](https://github.com/smtadmin/WC_Custom/commit/98f585a))
+* **Sc-230:** Fix null pointer exception ([3a8e17c](https://github.com/smtadmin/WC_Custom/commit/3a8e17c))
+* **Sc-230:** Move defautl tree session caching out of actions. ([79b2985](https://github.com/smtadmin/WC_Custom/commit/79b2985))
+* **Sc-230:** Shift caching to system and tree from session to request. ([e23c201](https://github.com/smtadmin/WC_Custom/commit/e23c201))
+* **Sc-670:** Ensure that non-text number fields contain thousands seperators. ([7b429fe](https://github.com/smtadmin/WC_Custom/commit/7b429fe))
+* **SSO:** Add capture of nameIdPolicy when saving SSO config ([7697deb](https://github.com/smtadmin/WC_Custom/commit/7697deb))
+
 # [3.33.0](https://github.com/smtadmin/WC_Custom/compare/3.32.1...3.33.0) (2019-10-04)
 
 
