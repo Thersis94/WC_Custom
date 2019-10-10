@@ -3,6 +3,7 @@ package com.biomed.smarttrak.action;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -154,12 +155,10 @@ public class SmarttrakRegistrationAction extends SimpleActionAdapter {
 		loadRegistration().build(req);
 
 		//Process their Markets Selections.
-		if(req.hasParameter(SKIPPED_MARKETS)) {
-			List<String> skippedMarkets = Arrays.asList(req.getParameterValues(SKIPPED_MARKETS));
-			UserVO user = (UserVO) req.getSession().getAttribute(Constants.USER_DATA);
+		List<String> skippedMarkets = req.hasParameter(SKIPPED_MARKETS) ? Arrays.asList(req.getParameterValues(SKIPPED_MARKETS)) : new ArrayList<>();
+		UserVO user = (UserVO) req.getSession().getAttribute(Constants.USER_DATA);
 	
-			processSkipMarketPreferences(user, skippedMarkets);
-		}
+		processSkipMarketPreferences(user, skippedMarkets);
 	}
 
 	/**
