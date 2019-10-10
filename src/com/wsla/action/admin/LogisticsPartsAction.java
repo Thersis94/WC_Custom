@@ -171,7 +171,7 @@ public class LogisticsPartsAction extends SBActionAdapter {
 	 * @throws ActionException
 	 */
 	private void secureShipmentReceipt(UserVO user, String roleId, ShipmentVO shipment) throws ActionException {
-		if (!user.getLocationId().equals(shipment.getToLocationId()) && !WSLARole.ADMIN.getRoleId().equals(roleId))
+		if (!user.getLocationId().equals(shipment.getToLocationId()) && !(WSLARole.ADMIN.getRoleId().equals(roleId)||WSLARole.WSLA_CUSTOMER_SVC.getRoleId().equals(roleId) ))
 			throw new ActionException("this user can not receive the shipment");
 	}
 	
