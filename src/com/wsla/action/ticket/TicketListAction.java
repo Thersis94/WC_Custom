@@ -163,7 +163,7 @@ public class TicketListAction extends SimpleActionAdapter {
 		// Add the limit and offset for the display query
 		sql.append(bst.getSQLOrderBy("create_dt", "desc"));
 		sql.append(" limit ").append(bst.getLimit()).append(" offset ").append(bst.getOffset());
-		log.info(sql.length() + "|" + sql + "| " + params);
+		log.debug(sql.length() + "|" + sql + "| " + params);
 
 		// Build the grid object and assign the number of rows total
 		GridDataVO<TicketVO> grid = new GridDataVO<>();

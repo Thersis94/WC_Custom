@@ -85,7 +85,6 @@ public class TicketCommentVO extends BeanDataVO {
 	private int wslaReplyFlag;
 	private int userShareFlag;
 	private Date createDate;
-	private CommunicationRole communicationRole; 
 	private String ledgerEntryId;
 	
 	// Bean Sub-elements
@@ -312,21 +311,6 @@ public class TicketCommentVO extends BeanDataVO {
 	 */
 	public void setUserShareFlag(int userShareFlag) {
 		this.userShareFlag = userShareFlag;
-	}
-
-	/**
-	 * @return the communicationRole
-	 */
-	@Column(name="comm_role_cd")
-	public CommunicationRole getCommunicationRole() {
-		return communicationRole;
-	}
-
-	/**
-	 * @param communicationRole the communicationRole to set
-	 */
-	public void setCommunicationRole(CommunicationRole communicationRole) {
-		this.communicationRole = communicationRole;
 	}
 
 	/**
