@@ -96,7 +96,7 @@ public class TicketVO extends BeanDataVO {
 	// Enum Members
 	private Standing standingCode = Standing.GOOD;
 	private UnitLocation unitLocation;
-	private ProfecoStatus profecoStatus;
+	private ProfecoStatus profecoStatus = ProfecoStatus.NO_PROFECO;
 
 	// Helper Variables
 	private String retailerId;
@@ -545,6 +545,7 @@ public class TicketVO extends BeanDataVO {
 	 */
 	@Column(name="profeco_status_cd")
 	public ProfecoStatus getProfecoStatus() {
+		if (profecoStatus == null) return ProfecoStatus.NO_PROFECO;
 		return profecoStatus;
 	}
 
