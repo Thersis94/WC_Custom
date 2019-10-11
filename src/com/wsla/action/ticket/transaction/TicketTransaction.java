@@ -25,6 +25,7 @@ import com.wsla.data.ticket.StatusCode;
 // WSLA Libs
 import com.wsla.data.ticket.TicketVO;
 import com.wsla.data.ticket.UserVO;
+import com.wsla.data.ticket.TicketVO.ProfecoStatus;
 
 /****************************************************************************
  * <b>Title</b>: TicketTransaction.java
@@ -83,6 +84,9 @@ public class TicketTransaction extends BaseTransactionAction {
 	@Override
 	public void build(ActionRequest req) throws ActionException {
 		TicketVO ticket = new TicketVO(req);
+		if (req.hasParameter("profecoStatus")) 
+			ticket.setProfecoStatus(ProfecoStatus.valueOf(req.getParameter("profecoStatus")));
+		
 		UserVO user = (UserVO) getAdminUser(req).getUserExtendedInfo();
 		
 		// Process public user form
