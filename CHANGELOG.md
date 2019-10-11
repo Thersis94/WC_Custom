@@ -1,5 +1,21 @@
 WC_Custom Changelog (auto-generated)
 
+# [3.34.0](https://github.com/smtadmin/WC_Custom/compare/3.33.1...3.34.0) (2019-10-11)
+
+
+### Bug Fixes
+
+* **Profeco:** Status change on the profeco is not being recognized. ([0121eab](https://github.com/smtadmin/WC_Custom/commit/0121eab))
+* **Status:** Updated the profeco status to return a default value of NO_PROFECO instead of n ull or ([1c475d3](https://github.com/smtadmin/WC_Custom/commit/1c475d3))
+
+
+### Features
+
+* **Communicant:** Added child communicant values for the incoming/outgoing email and phone communic ([c43dd59](https://github.com/smtadmin/WC_Custom/commit/c43dd59))
+* **feature-wsla-i87:** open logistics movement to customer ser. role ([95ad079](https://github.com/smtadmin/WC_Custom/commit/95ad079))
+* **Profeco:** Added the profeco work panel ([0064f6f](https://github.com/smtadmin/WC_Custom/commit/0064f6f))
+* **WSLA-I86:** Added the ability to store the comm role for an activity ([779caab](https://github.com/smtadmin/WC_Custom/commit/779caab))
+
 ## [3.33.1](https://github.com/smtadmin/WC_Custom/compare/3.33.0...3.33.1) (2019-10-10)
 
 
