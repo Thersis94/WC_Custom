@@ -27,6 +27,7 @@ import com.wsla.action.admin.ProductMasterAction;
 import com.wsla.action.admin.ProductSerialAction;
 import com.wsla.action.admin.ProductSetAction;
 import com.wsla.action.admin.ProductWarrantyAction;
+import com.wsla.action.admin.ProfecoAction;
 import com.wsla.action.admin.ProviderAction;
 import com.wsla.action.admin.ProviderLocationAction;
 import com.wsla.action.ticket.PartsAction;
@@ -128,6 +129,7 @@ public class AjaxControllerFacadeAction extends FacadeActionAdapter {
 		actionMap.put(RefundVerificationAction.AJAX_KEY, RefundVerificationAction.class);
 		actionMap.put(TicketCallCenterReviewTransaction.AJAX_KEY, TicketCallCenterReviewTransaction.class);
 		actionMap.put(UserAction.AJAX_KEY, UserAction.class);
+		actionMap.put(ProfecoAction.AJAX_KEY, ProfecoAction.class);
 		
 		//these are actually ticket actions - should be called through the ticket controller
 		actionMap.put("parts", PartsAction.class);

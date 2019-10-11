@@ -47,6 +47,26 @@ public class TicketCommentVO extends BeanDataVO {
 		}
 	}
 
+	
+	/**
+	 * Options for the Role of the person you're communicating to
+	 */
+	public enum CommunicationRole {
+		CAS("CAS", "role.WSLA_SERVICE_CENTER"), COURIER("COURIER", "unitLocationType.COURIER"), 
+		END_USER("END_USER", "role.WSLA_END_CUSTOMER"), 
+		OEM("OEM", "role.WSLA_OEM"), RETAILER("RETAILER", "role.WSLA_RETAILER"), 
+		OTHER("OTHER", "common.other");
+		
+		private String commName;
+		private String commRoleId;
+		private CommunicationRole(String commName, String commRoleId) { 
+			this.commName = commName;
+			this.commRoleId = commRoleId;
+		}
+		public String getCommName() { return commName; }
+		public String getCommRoleId() { return commRoleId; }
+	}
+	
 	/**
 	 * 
 	 */
@@ -65,6 +85,7 @@ public class TicketCommentVO extends BeanDataVO {
 	private int wslaReplyFlag;
 	private int userShareFlag;
 	private Date createDate;
+	private String ledgerEntryId;
 	
 	// Bean Sub-elements
 	private UserVO user;
@@ -290,6 +311,21 @@ public class TicketCommentVO extends BeanDataVO {
 	 */
 	public void setUserShareFlag(int userShareFlag) {
 		this.userShareFlag = userShareFlag;
+	}
+
+	/**
+	 * @return the ledgerEntryId
+	 */
+	@Column(name="ledger_entry_id")
+	public String getLedgerEntryId() {
+		return ledgerEntryId;
+	}
+
+	/**
+	 * @param ledgerEntryId the ledgerEntryId to set
+	 */
+	public void setLedgerEntryId(String ledgerEntryId) {
+		this.ledgerEntryId = ledgerEntryId;
 	}
 
 }

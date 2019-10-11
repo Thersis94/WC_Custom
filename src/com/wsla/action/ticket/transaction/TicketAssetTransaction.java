@@ -168,14 +168,14 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 		} else {
 			WarrantyBillableVO billable = getAddAssetBillableAmount(td.getTicketId());
 			SBUserRole role = (SBUserRole)req.getSession().getAttribute(Constants.ROLE_DATA);
-
+			
 			if(null == role || StringUtil.isEmpty(role.getRoleId()) || "0".equals(role.getRoleId()) ) {
 				log.debug("public user detected dont charge for upload");
 				billable.setInvoiceAmount(0);
 			}
 			
 			log.debug("cost " + billable.getInvoiceAmount() );
-			ledger = addLedger(td.getTicketId(), user.getUserId(), null, LedgerSummary.ASSET_LOADED.summary, null, billable.getInvoiceAmount());
+			ledger = addLedger(td.getTicketId(), user.getUserId(), null, LedgerSummary.ASSET_LOADED.summary, null, billable);
 			TicketVO ticket = new TicketEditAction(getDBConnection(), getAttributes()).getBaseTicket(td.getTicketId());
 			status = ticket.getStatusCode();
 		}
