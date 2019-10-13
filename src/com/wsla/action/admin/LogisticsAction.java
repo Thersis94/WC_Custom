@@ -106,6 +106,7 @@ public class LogisticsAction extends SBActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
+		//tolocation id will not search for both to and from locations
 		String toLocnId = req.getParameter("toLocationId");
 		ShipmentStatus sts = EnumUtil.safeValueOf(ShipmentStatus.class, req.getParameter("status"));
 		
@@ -481,7 +482,8 @@ public class LogisticsAction extends SBActionAdapter {
 		}
 
 		if (!StringUtil.isEmpty(toLocationId)) {
-			sql.append("and s.to_location_id=? ");
+			sql.append("and (s.to_location_id= ? or s.from_location_id =  ? ) ");
+			params.add(toLocationId);
 			params.add(toLocationId);
 		}
 

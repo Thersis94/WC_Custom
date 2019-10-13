@@ -108,6 +108,7 @@ public class InventoryAction extends SBActionAdapter {
 			if (req.hasParameter("isDelete")) {
 				db.delete(vo);
 			} else {
+				log.debug("########### vo "+ vo );
 				String roleId = ((SBUserRole) req.getSession().getAttribute(Constants.ROLE_DATA)).getRoleId();
 				UserVO user = (UserVO) getAdminUser(req).getUserExtendedInfo();
 				saveInventoryRecord(vo, roleId, user);
@@ -184,7 +185,7 @@ public class InventoryAction extends SBActionAdapter {
 		List<Object> params = new ArrayList<>();
 		StringBuilder sql = new StringBuilder(200);
 		sql.append("select lim.item_master_Id, lim.actual_qnty_no, lim.desired_qnty_no, pm.product_nm, ");
-		sql.append("pm.product_id, pm.cust_product_id, pm.sec_cust_product_id, lcn.location_id, lcn.location_nm, p.provider_nm ");
+		sql.append("pm.product_id, pm.cust_product_id, pm.sec_cust_product_id, lim.location_txt, lcn.location_id, lcn.location_nm, p.provider_nm ");
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("wsla_location_item_master lim ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("wsla_product_master pm on lim.product_id=pm.product_id ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("wsla_provider_location lcn on lim.location_id=lcn.location_id ");
@@ -195,7 +196,8 @@ public class InventoryAction extends SBActionAdapter {
 		//fuzzy keyword search
 		String term = bst.getLikeSearch().toLowerCase();
 		if (!StringUtil.isEmpty(term)) {
-			sql.append("and (lower(p.provider_nm) like ? or lower(lcn.location_nm) like ? or lower(pm.product_nm) like ?) ");
+			sql.append("and (lower(p.provider_nm) like ? or lower(lcn.location_nm) like ? or lower(pm.product_nm) like ? or lower(pm.cust_product_id) like ? ) ");
+			params.add(term);
 			params.add(term);
 			params.add(term);
 			params.add(term);

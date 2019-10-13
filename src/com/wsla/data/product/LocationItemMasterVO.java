@@ -33,6 +33,7 @@ public class LocationItemMasterVO extends ProductVO {
 	private String locationId;
 	private int quantityOnHand;
 	private int parValue;
+	private String locationText;
 
 	// Bean Sub-Elements
 	ProviderLocationVO location;
@@ -104,6 +105,18 @@ public class LocationItemMasterVO extends ProductVO {
 	 */
 	public ProviderLocationVO getLocation() {
 		return location;
+	}
+
+	/**
+	 * @return
+	 */
+	@Column(name="location_txt")
+	public String getLocationText() {
+		return locationText;
+	}
+
+	public void setLocationText(String locationText) {
+		this.locationText = locationText;
 	}
 
 	/**
