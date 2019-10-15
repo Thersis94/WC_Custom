@@ -102,8 +102,9 @@ public class ScheduleAdminAction extends SBActionAdapter {
 		UserSqlFilter userFilter = new UserSqlFilter(user, roleId, getCustomSchema());
 		
 		String locationId = req.getParameter("locationId");
-		BSTableControlVO bst = new BSTableControlVO(req);
-		GridDataVO<TicketScheduleVO> resData = getSchedules( locationId, userFilter, dates.get(START_DATE), dates.get(END_DATE), bst );
+		String ft = req.getParameter("eventFilterType");
+		BSTableControlVO bst = new BSTableControlVO(req, TicketScheduleVO.class);
+		GridDataVO<TicketScheduleVO> resData = getSchedules( locationId, userFilter, dates.get(START_DATE), dates.get(END_DATE), bst, ft);
 		Map<String, Object> resMap = new HashMap<>();
 		
 		resMap.put("attributes", dates);
@@ -151,7 +152,7 @@ public class ScheduleAdminAction extends SBActionAdapter {
 	 * @param providerId
 	 * @return
 	 */
-	public GridDataVO<TicketScheduleVO> getSchedules( String locationId, UserSqlFilter userFilter, Date startDate, Date endDate, BSTableControlVO bst ) {
+	public GridDataVO<TicketScheduleVO> getSchedules( String locationId, UserSqlFilter userFilter, Date startDate, Date endDate, BSTableControlVO bst, String ft ) {
 		
 		StringBuilder sql = new StringBuilder(780);
 		sql.append("select t.ticket_no,  ts.ticket_schedule_id, complete_dt, schedule_dt, transfer_type_cd, record_type_cd, ");
@@ -173,17 +174,28 @@ public class ScheduleAdminAction extends SBActionAdapter {
 		base.append(userFilter.getTicketFilter("t", params));
 		base.append(DBUtil.WHERE_1_CLAUSE);
 		
+		// Add the filter for the pending vs complete
+		if (StringUtil.isEmpty(ft) || "PENDING".equals(ft)) base.append(" and complete_dt is null ");
+		else if ("COMPLETE".equals(ft)) base.append(" and complete_dt is not null ");
+		
+		// Add the filter for the 
+		if (bst.hasSearch()) {
+			base.append(" and (lower(ticket_no) like ?) ");
+			params.add(bst.getLikeSearch().toLowerCase());
+		}
+		
 		if (!StringUtil.isEmpty(locationId)) base.append(" and cta.location_id = ? ");
 		if(startDate != null && endDate != null) base.append(" and schedule_dt between ? and ? ");
 		
 		StringBuilder nav = new StringBuilder(64);
-		nav.append("order by schedule_dt, ticket_no ");
-		nav.append("limit ? offset ? ");
-
+		nav.append(bst.getSQLOrderBy("schedule_dt", "ASC"));
+		nav.append(" limit ? offset ? ");
+		
 		int count = 1;
 		GridDataVO<TicketScheduleVO> data  = new GridDataVO<>();
 		sql.append(base);
 		sql.append(nav);
+		log.debug(sql);
 		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			for (Object param : params) {
