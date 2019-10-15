@@ -45,10 +45,11 @@ public class AssetParser extends AbsImporter {
 
 	private Map<String, String> ticketIds = new HashMap<>(30000, 1);
 
-	private List<AssetPathVO> assets = new ArrayList<>(30000);
+	protected List<AssetPathVO> assets = new ArrayList<>(30000);
 	private List<TicketLedgerVO> ledgers = new ArrayList<>(10000);
 	private List<TicketDataVO> attributes = new ArrayList<>(10000);
 	private List<TicketCommentVO> comments = new ArrayList<>(10000);
+	protected String fileName;
 
 	public AssetParser() {
 		super();
@@ -58,11 +59,12 @@ public class AssetParser extends AbsImporter {
 	 * @see com.wsla.util.migration.AbsImporter#run()
 	 */
 	@Override
-	void run() throws Exception {
+	protected void run() throws Exception {
 		File[] files = listFilesMatching(props.getProperty("assetFile"), "(.*)NOTES(.*)");
 		loadTicketIds();
 
 		for (File f : files) {
+			fileName = f.getAbsolutePath();
 			List<String> fileLines;
 			try (Stream<String> stream = Files.lines(Paths.get(f.getAbsolutePath()), Charsets.ISO_8859_1)) {
 				fileLines = stream.collect(Collectors.toList());
@@ -141,7 +143,7 @@ public class AssetParser extends AbsImporter {
 				vo.setTicketId(ticketId);
 				vo.isAlert(line.matches("(?i).*ALERT.*"));
 				vo.setCreateDate(Convert.formatDate("ddMMMyy HH:mm", getDate(line)));
-				vo.setAttributeCode(getAttributeCode(line, ticketId));
+				vo.setAttributeCode(getAttributeCode(line));
 
 				//reset the buffer & file indicator
 				textBuffer.setLength(0);
@@ -171,10 +173,7 @@ public class AssetParser extends AbsImporter {
 	 * @param line
 	 * @return
 	 */
-	private String getAttributeCode(String line, String ticketId) {
-		//profeco tickets
-		if (ticketId.matches("WSL0(.*)")) return "attr_profecoDocument";
-		
+	private String getAttributeCode(String line) {
 		if (line.matches("(?i).*ADJUNTAR ([FOTOS|BER]).*")) {
 			return "attr_unitImage";
 		} else if (line.matches("(?i).*ADJUNTAR POP.*")) {
@@ -213,7 +212,7 @@ public class AssetParser extends AbsImporter {
 	/**
 	 * Sort the assets into ticket attributes and comments
 	 */
-	private void sortData() {
+	protected void sortData() {
 		TicketDataVO attr;
 		TicketCommentVO comment;
 		TicketLedgerVO ledger;
@@ -287,7 +286,7 @@ public class AssetParser extends AbsImporter {
 	 * @see com.wsla.util.migration.AbsImporter#save()
 	 */
 	@Override
-	void save() throws Exception {
+	protected  void save() throws Exception {
 		writeToDB(ledgers);
 		writeToDB(attributes);
 		writeToDB(comments);

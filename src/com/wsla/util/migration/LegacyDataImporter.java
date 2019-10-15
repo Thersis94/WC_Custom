@@ -35,6 +35,9 @@ public class LegacyDataImporter extends CommandLineUtil {
 
 	//define the ordered list of importers to run.  This will vary through development but all will run at once for staging/prod.
 	static {
+//		importers.add(ExcelImport.class.getName());
+
+//all of these for Profeco
 //		importers.add(SOHeader.class.getName()); //HDR
 //		importers.add(SOExtendedData.class.getName()); //XDD
 //		importers.add(SOComments.class.getName()); //OSCMT
@@ -49,9 +52,11 @@ public class LegacyDataImporter extends CommandLineUtil {
 //		importers.add(DebitMemoUserImporter.class.getName());
 
 		//phase 2 importers - these run solo on per-cases basis
+//all of these for Profeco
 //		importers.add(SOLineItemComments.class.getName());
 //		importers.add(Originator.class.getName());
-		importers.add(ProfecoTickets.class.getName());
+//		importers.add(ProfecoTickets.class.getName());
+		importers.add(SOLineItemBillableCodes.class.getName());
 	}
 
 

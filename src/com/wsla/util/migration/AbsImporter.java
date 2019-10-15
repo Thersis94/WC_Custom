@@ -186,7 +186,7 @@ public abstract class AbsImporter {
 			beans = parser.parseData(fpdb.getFileData(), true);
 
 		} catch(InvalidDataException e) {
-			throw new Exception("could not parse file", e);
+			throw new Exception("could not parse file " + f.getName(), e);
 		}
 		ArrayList<Object> entries = (ArrayList<Object>) beans.get(beanClass);
 		log.info(String.format("Parsed file %s.  Loaded %d %s beans into a collection", fpdb.getFileName(), 
