@@ -35,11 +35,14 @@ public class LegacyDataImporter extends CommandLineUtil {
 
 	//define the ordered list of importers to run.  This will vary through development but all will run at once for staging/prod.
 	static {
-//		importers.add(SOHeader.class.getName());
-//		importers.add(SOExtendedData.class.getName());
-//		importers.add(SOComments.class.getName());
-//		importers.add(SOLineItems.class.getName());
-//		importers.add(AssetParser.class.getName());
+//		importers.add(ExcelImport.class.getName());
+
+//all of these for Profeco
+//		importers.add(SOHeader.class.getName()); //HDR
+//		importers.add(SOExtendedData.class.getName()); //XDD
+//		importers.add(SOComments.class.getName()); //OSCMT
+//		importers.add(SOLineItems.class.getName()); //LNI
+//		importers.add(AssetParser.class.getName()); //NOTES
 
 		//post-process refunds, this class relies on both the tickets already being loaded and the raw files
 //		importers.add(Refund.class.getName());
@@ -47,9 +50,13 @@ public class LegacyDataImporter extends CommandLineUtil {
 //		importers.add(Harvest.class.getName());
 //		importers.add(DebitMemoImporter.class.getName());
 //		importers.add(DebitMemoUserImporter.class.getName());
-		
+
 		//phase 2 importers - these run solo on per-cases basis
-		importers.add(SOLineItemComments.class.getName());
+//all of these for Profeco
+//		importers.add(SOLineItemComments.class.getName());
+//		importers.add(Originator.class.getName());
+//		importers.add(ProfecoTickets.class.getName());
+		importers.add(SOLineItemBillableCodes.class.getName());
 	}
 
 
