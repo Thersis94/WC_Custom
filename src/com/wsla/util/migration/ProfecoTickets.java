@@ -44,15 +44,16 @@ public class ProfecoTickets extends AbsImporter {
 	 * move files from the profeco tickets to the original ticket
 	 */
 	private void migrateAssets() {
-		String sql = StringUtil.join(DBUtil.UPDATE_CLAUSE, schema, "wsla_ticket_data set ticket_id=? where ",
-				"attribute_id in ('attr_serialNumberImage', 'attr_unitImage', 'attr_proofPurchase') and ticket_id=?");
+		String sql = StringUtil.join(DBUtil.UPDATE_CLAUSE, schema, "wsla_ticket_data set ticket_id=?, attribute_cd=? where ",
+				"attribute_cd in ('attr_serialNumberImage', 'attr_unitImage', 'attr_proofPurchase') and ticket_id=?");
 		log.debug(sql);
 
 		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
 			for (Map.Entry<String, String> entry : ticketIds.entrySet()) {
 				if (!StringUtil.isEmpty(entry.getValue())) {
 					ps.setString(1, entry.getValue());
-					ps.setString(2, entry.getKey());
+					ps.setString(2, "attr_profecoDocument");
+					ps.setString(3, entry.getKey());
 					ps.addBatch();
 				}
 			}
@@ -93,7 +94,7 @@ public class ProfecoTickets extends AbsImporter {
 	 * Create an 'opened' ledger entry - one for each profeco ticket.
 	 */
 	private void createOpenLedgers() {
-		String sql = StringUtil.join(DBUtil.INSERT_CLAUSE, schema, "wlsa_ticket_ledger ",
+		String sql = StringUtil.join(DBUtil.INSERT_CLAUSE, schema, "wsla_ticket_ledger ",
 				"(ledger_entry_id, disposition_by_id, ticket_id, status_cd, summary_txt, create_dt, billable_amt_no, unit_location_cd, billable_activity_cd) ",
 				"select replace(newid(),'-',''), disposition_by_id, ticket_id, null, 'Profeco Started', create_dt, billable_amt_no, unit_location_cd, billable_activity_cd ",
 				DBUtil.FROM_CLAUSE, schema, "wsla_ticket_ledger where ticket_id=? and status_cd='OPENED' limit 1"); //limit 1 - just incase there are dups in the DB!
@@ -121,10 +122,10 @@ public class ProfecoTickets extends AbsImporter {
 	 * The record is tied to the original ticket, however.
 	 */
 	private void createCloseLedgers() {
-		String sql = StringUtil.join(DBUtil.INSERT_CLAUSE, schema, "wlsa_ticket_ledger ",
+		String sql = StringUtil.join(DBUtil.INSERT_CLAUSE, schema, "wsla_ticket_ledger ",
 				"(ledger_entry_id, disposition_by_id, ticket_id, status_cd, summary_txt, create_dt, billable_amt_no, unit_location_cd, billable_activity_cd) ",
 				"select replace(newid(),'-',''), disposition_by_id, ?, null, 'Profeco Closed', create_dt, billable_amt_no, unit_location_cd, billable_activity_cd ",
-				DBUtil.FROM_CLAUSE, schema, "wsla_ticket_ledger where ticket_id=? and status_cd='CLOSED' limit 1"); //limit 1 - just in case there are dups in the DB!
+				DBUtil.FROM_CLAUSE, schema, "wsla_ticket_ledger where ticket_id=? and status_cd='CLOSED' limit 1");
 		log.debug(sql);
 
 		// Note the way this code is written we're running a query for each ticket.
@@ -132,8 +133,8 @@ public class ProfecoTickets extends AbsImporter {
 		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
 			for (Map.Entry<String, String> entry : ticketIds.entrySet()) {
 				if (!StringUtil.isEmpty(entry.getValue())) {
-					ps.setString(1, entry.getKey());
-					ps.setString(2, entry.getValue());
+					ps.setString(1, entry.getValue());
+					ps.setString(2, entry.getKey());
 					ps.addBatch();
 				}
 			}
@@ -151,7 +152,7 @@ public class ProfecoTickets extends AbsImporter {
 	 * If the profeco ticket is closed, the original ticket gets profeco_status_cd=PROFECO_COMPLETE else it gets profeco_status_cd=IN_PROFECO
 	 */
 	private void updateTicketStatus() {
-		String sql = StringUtil.join(DBUtil.UPDATE_CLAUSE, schema, "wlsa_ticket ",
+		String sql = StringUtil.join(DBUtil.UPDATE_CLAUSE, schema, "wsla_ticket ",
 				"set profeco_status_cd=(select case when status_cd='CLOSED' then 'PROFECO_COMPLETE' else 'IN_PROFECO' end ",
 				DBUtil.FROM_CLAUSE, schema, "wsla_ticket where ticket_id=?) where ticket_id=?");
 		log.debug(sql);

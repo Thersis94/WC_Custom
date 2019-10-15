@@ -2,6 +2,8 @@ package com.wsla.util.migration.vo;
 
 import java.util.Date;
 
+import com.siliconmtn.db.orm.Column;
+import com.siliconmtn.db.orm.Table;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 
@@ -16,6 +18,7 @@ import com.siliconmtn.util.StringUtil;
  * @since Sep 12, 2019
  * <b>Changes:</b>
  ****************************************************************************/
+@Table(name="wsla_sw_asset")
 public class AssetPathVO {
 
 	private String ticketId;
@@ -24,25 +27,40 @@ public class AssetPathVO {
 	private String filePath;
 	private String attributeCode;
 	private boolean alert; //flags priority comments
+	private String fileName;
 
 	public AssetPathVO() {
 		super();
 	}
 
+	@Column(name="so_number")
 	public String getTicketId() {
 		return ticketId;
 	}
 
+	@Column(name="date_created")
 	public Date getCreateDate() {
 		return createDate;
 	}
 
+	@Column(name="comment")
 	public String getComment() {
 		return comment;
 	}
 
+	@Column(name="file_path")
 	public String getFilePath() {
 		return filePath;
+	}
+
+	@Column(name="is_alert")
+	public int getAlert() {
+		return isAlert() ? 1 : 0;
+	}
+
+	@Column(name="file_name")
+	public String getFileName() {
+		return fileName;
 	}
 
 	public void setTicketId(String ticketId) {
@@ -66,6 +84,7 @@ public class AssetPathVO {
 		this.filePath = filePath;
 	}
 
+	@Column(name="attribute_code")
 	public String getAttributeCode() {
 		return attributeCode;
 	}
@@ -80,6 +99,10 @@ public class AssetPathVO {
 
 	public boolean isAlert() {
 		return this.alert;
+	}
+
+	public void setFileName(String nm) {
+		this.fileName = nm;
 	}
 
 	@Override
