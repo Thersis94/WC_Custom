@@ -99,6 +99,8 @@ public class MarketAction extends SimpleActionAdapter {
 			if (StringUtil.isEmpty(vo.getMarketName())){
 				PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
 				sbUtil.manualRedirect(req,page.getFullPath());
+			} else if(!Status.P.toString().equals(vo.getStatusNo())) {
+				req.setParameter("showError", "true");
 			} else {
 				//verify user has access to this market
 				SecurityController.getInstance(req).isUserAuthorized(vo, req);
@@ -155,7 +157,10 @@ public class MarketAction extends SimpleActionAdapter {
 		try {
 			SmarttrakRoleVO role = (SmarttrakRoleVO)req.getSession().getAttribute(Constants.ROLE_DATA);
 			db.getByPrimaryKey(market);
-			if (!allowAll && !Status.P.toString().equals(market.getStatusNo())) return new MarketVO();
+
+			if(!allowAll && !Status.P.name().equals(market.getStatusNo())) {
+				return market;
+			}
 			addAttributes(market, role.getRoleLevel());
 			addSections(market);
 			if (loadGraphs) {

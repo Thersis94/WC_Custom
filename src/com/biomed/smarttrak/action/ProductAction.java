@@ -85,6 +85,8 @@ public class ProductAction extends SimpleActionAdapter {
 			if (StringUtil.isEmpty(vo.getProductId())) {
 				PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
 				sbUtil.manualRedirect(req,page.getFullPath());
+			} else if(!Status.P.name().equals(vo.getStatusNo())) {
+				req.setParameter("showError", "true");
 			} else {
 				//verify user has access to this market
 				SecurityController.getInstance(req).isUserAuthorized(vo, req);
@@ -107,16 +109,18 @@ public class ProductAction extends SimpleActionAdapter {
 		sql.append("LEFT JOIN ").append(customDb).append("BIOMEDGPS_COMPANY c ");
 		sql.append("ON c.COMPANY_ID = p.COMPANY_ID ");
 		sql.append("WHERE PRODUCT_ID = ? ");
-		if (!allowAll) sql.append(" and p.status_no = ? ");
 
 		List<Object> params = new ArrayList<>();
 		params.add(productId);
-		if (!allowAll) params.add(Status.P.toString());
+
 		DBProcessor db = new DBProcessor(dbConn);
 		List<Object> results = db.executeSelect(sql.toString(), params, new ProductVO());
 		if (results.isEmpty()) return new ProductVO();
 		product = (ProductVO) results.get(0);
 
+		if (!allowAll && !Status.P.name().equals(product.getStatusNo())) {
+			return product;
+		}
 		// Get specifics on product details
 		addAttributes(product, roleLevel);
 		addSections(product);
