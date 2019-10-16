@@ -88,12 +88,12 @@ public class CompanyAction extends SimpleActionAdapter {
 			if (role == null)
 				SecurityController.throwAndRedirect(req);
 			CompanyVO vo = retrieveCompany(req.getParameter("reqParam_1"), role, false);
-			log.debug(vo.getCompanyId());
+
 			// If a company has 0 products it should not be shown or no companyId, it shouldn't be shown.
 			if (StringUtil.isEmpty(vo.getCompanyId())) {
 				PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
 				sbUtil.manualRedirect(req,page.getFullPath());
-			} else if(!"P".equals(vo.getStatusNo())) {
+			} else if(!"P".equals(vo.getStatusNo()) || vo.getProducts().isEmpty()) {
 				req.setParameter("showError", "true");
 			} else {
 				SecurityController.getInstance(req).isUserAuthorized(vo, req);
