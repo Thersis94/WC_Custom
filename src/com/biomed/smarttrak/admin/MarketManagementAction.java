@@ -1153,8 +1153,8 @@ public class MarketManagementAction extends ManagementAction {
 		try {
 			for (String id : gridIds) {
 				String newId = copyGrid(id);
-				updateGridInfo(newId, id, marketId);
-				updateGridYear(newId, archiveYear);
+				updateGridXr(newId, id, marketId);
+				updateGridInfo(newId, archiveYear);
 			}
 		} catch(Exception e) {
 			log.error("Copy Grid and Charts Failed", e);
@@ -1230,7 +1230,7 @@ public class MarketManagementAction extends ManagementAction {
 	 * @param marketId
 	 * @throws SQLException
 	 */
-	private void updateGridInfo(String newId, String oldId, String marketId) throws SQLException {
+	private void updateGridXr(String newId, String oldId, String marketId) throws SQLException {
 		StringBuilder sql = new StringBuilder(100);
 		sql.append("update ").append(customDbSchema).append("biomedgps_market_attribute_xr ");
 		sql.append("set value_1_txt = ? where market_id = ? and value_1_txt = ? ");
@@ -1251,10 +1251,10 @@ public class MarketManagementAction extends ManagementAction {
 	 * @param yearNo
 	 * @throws SQLException
 	 */
-	private void updateGridYear(String gridId, int yearNo) throws SQLException {
+	private void updateGridInfo(String gridId, int yearNo) throws SQLException {
 		StringBuilder sql = new StringBuilder(75);
 		sql.append("update ").append(customDbSchema).append("biomedgps_grid ");
-		sql.append("set year_no = ? where grid_id = ? ");
+		sql.append("set year_no = ?, grid_group_id = grid_id where grid_id = ? ");
 		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setInt(1, yearNo);
