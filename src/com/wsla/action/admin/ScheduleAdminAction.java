@@ -230,7 +230,7 @@ public class ScheduleAdminAction extends SBActionAdapter {
 					data.getRowData().add(tso);
 				}
 				
-				SQLTotalVO total = new SQLTotalVO(getTotalRows(base, locationId, params, startDate, endDate, bst));
+				SQLTotalVO total = new SQLTotalVO(getTotalRows(base, locationId, params, startDate, endDate));
 				data.setSqlTotal(total);
 			}
 		} catch (Exception e) {
@@ -250,7 +250,7 @@ public class ScheduleAdminAction extends SBActionAdapter {
 	 * @param bst
 	 * @return
 	 */
-	private int getTotalRows(StringBuilder base, String locationId, List<Object> params, Date startDate, Date endDate, BSTableControlVO bst) {
+	private int getTotalRows(StringBuilder base, String locationId, List<Object> params, Date startDate, Date endDate) {
 		int count = 1;
 		StringBuilder sql = new StringBuilder(base.length() + 16);
 		sql.append("select count(*) ").append(base);
