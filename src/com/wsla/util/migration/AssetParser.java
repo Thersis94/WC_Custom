@@ -45,10 +45,11 @@ public class AssetParser extends AbsImporter {
 
 	private Map<String, String> ticketIds = new HashMap<>(30000, 1);
 
-	private List<AssetPathVO> assets = new ArrayList<>(30000);
+	protected List<AssetPathVO> assets = new ArrayList<>(30000);
 	private List<TicketLedgerVO> ledgers = new ArrayList<>(10000);
 	private List<TicketDataVO> attributes = new ArrayList<>(10000);
 	private List<TicketCommentVO> comments = new ArrayList<>(10000);
+	protected String fileName;
 
 	public AssetParser() {
 		super();
@@ -58,11 +59,12 @@ public class AssetParser extends AbsImporter {
 	 * @see com.wsla.util.migration.AbsImporter#run()
 	 */
 	@Override
-	void run() throws Exception {
+	protected void run() throws Exception {
 		File[] files = listFilesMatching(props.getProperty("assetFile"), "(.*)NOTES(.*)");
 		loadTicketIds();
 
 		for (File f : files) {
+			fileName = f.getAbsolutePath();
 			List<String> fileLines;
 			try (Stream<String> stream = Files.lines(Paths.get(f.getAbsolutePath()), Charsets.ISO_8859_1)) {
 				fileLines = stream.collect(Collectors.toList());
@@ -128,7 +130,7 @@ public class AssetParser extends AbsImporter {
 		boolean isFile = false;
 
 		for (String line : ticket) {
-			log.debug("inspecting: " + line);
+			//log.debug("inspecting: " + line)
 
 			if (isSkuLine(line)) { //this will always match the first line in the list, and never again
 				ticketId = line.split("\\s+")[0].trim();
@@ -202,7 +204,7 @@ public class AssetParser extends AbsImporter {
 		} else {
 			vo.setComment(textBuffer.toString().trim());						
 		}
-		log.debug(String.format("\r%s", vo.toString()));
+		//log.debug(String.format("\r%s", vo.toString()))
 		assets.add(vo);
 	}
 
@@ -210,7 +212,7 @@ public class AssetParser extends AbsImporter {
 	/**
 	 * Sort the assets into ticket attributes and comments
 	 */
-	private void sortData() {
+	protected void sortData() {
 		TicketDataVO attr;
 		TicketCommentVO comment;
 		TicketLedgerVO ledger;
@@ -284,7 +286,7 @@ public class AssetParser extends AbsImporter {
 	 * @see com.wsla.util.migration.AbsImporter#save()
 	 */
 	@Override
-	void save() throws Exception {
+	protected  void save() throws Exception {
 		writeToDB(ledgers);
 		writeToDB(attributes);
 		writeToDB(comments);
