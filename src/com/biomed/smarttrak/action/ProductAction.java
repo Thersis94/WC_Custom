@@ -83,10 +83,10 @@ public class ProductAction extends SimpleActionAdapter {
 			ProductVO vo = retrieveProduct(req.getParameter("reqParam_1"), role.getRoleLevel(), false);
 
 			if (StringUtil.isEmpty(vo.getProductId())) {
-				PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
-				sbUtil.manualRedirect(req,page.getFullPath());
+				sbUtil.manualRedirect(req,(String)getAttribute(Constants.PROCESS_SERVLET));
 			} else if(!Status.P.name().equals(vo.getStatusNo())) {
-				req.setParameter("showError", "true");
+				ModuleVO mod = super.getModuleVO();
+				mod.setErrorCondition(true);
 			} else {
 				//verify user has access to this market
 				SecurityController.getInstance(req).isUserAuthorized(vo, req);

@@ -91,10 +91,11 @@ public class CompanyAction extends SimpleActionAdapter {
 
 			// If a company has 0 products it should not be shown or no companyId, it shouldn't be shown.
 			if (StringUtil.isEmpty(vo.getCompanyId())) {
-				PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
-				sbUtil.manualRedirect(req,page.getFullPath());
+				//In this case we want to send to an Error Page.
+				sbUtil.manualRedirect(req,(String)getAttribute(Constants.PROCESS_SERVLET));
 			} else if(!"P".equals(vo.getStatusNo()) || vo.getProducts().isEmpty()) {
-				req.setParameter("showError", "true");
+				ModuleVO mod = super.getModuleVO();
+				mod.setErrorCondition(true);
 			} else {
 				SecurityController.getInstance(req).isUserAuthorized(vo, req);
 				PageVO page = (PageVO)req.getAttribute(Constants.PAGE_DATA);

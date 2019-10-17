@@ -97,10 +97,10 @@ public class MarketAction extends SimpleActionAdapter {
 			MarketVO vo = retrieveFromDB(req.getParameter(SolrAction.REQ_PARAM_1), req, true, false);
 
 			if (StringUtil.isEmpty(vo.getMarketName())){
-				PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
-				sbUtil.manualRedirect(req,page.getFullPath());
+				sbUtil.manualRedirect(req,(String)getAttribute(Constants.PROCESS_SERVLET));
 			} else if(!Status.P.toString().equals(vo.getStatusNo())) {
-				req.setParameter("showError", "true");
+				ModuleVO mod = super.getModuleVO();
+				mod.setErrorCondition(true);
 			} else {
 				//verify user has access to this market
 				SecurityController.getInstance(req).isUserAuthorized(vo, req);
