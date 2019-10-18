@@ -318,7 +318,7 @@ public class LinkChecker extends CommandLineUtil {
 				linksFailed.add(vo);
 			}
 
-			if(vo.getIgnoreflg() == 1) {
+			if(vo.getIgnoreFlg() == 1) {
 				ignored++;
 			}
 			/*
@@ -628,7 +628,7 @@ public class LinkChecker extends CommandLineUtil {
 				ps.setTimestamp(8, Convert.formatTimestamp(vo.getLastChecked()));
 				ps.setInt(9, vo.getOutcome());
 				ps.setString(10, vo.getContentId());
-				ps.setInt(11, vo.getIgnoreflg());
+				ps.setInt(11, vo.getIgnoreFlg());
 				ps.addBatch();
 			}
 			ps.executeBatch();

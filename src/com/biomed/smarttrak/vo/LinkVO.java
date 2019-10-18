@@ -245,7 +245,7 @@ public class LinkVO {
 	/**
 	 * @return
 	 */
-	public int getIgnoreflg() {
+	public int getIgnoreFlg() {
 		return this.ignoreFlg;
 	}
 
