@@ -91,6 +91,7 @@ public class LinkChecker extends CommandLineUtil {
 	List<String> getDomainsReport; //temp object for domains we'll report in the log, at the end.
 	boolean onlyBroken;
 	String mockUserAgent;
+	int maxAttempts;
 
 	//email reporting metrics
 	long startTime;
@@ -98,7 +99,7 @@ public class LinkChecker extends CommandLineUtil {
 	int extTested;
 	int intTested;
 	int skipped;
-	int maxAttempts;
+	int ignored;
 	List<LinkVO> linksFailed;
 
 	/**
@@ -313,10 +314,13 @@ public class LinkChecker extends CommandLineUtil {
 
 			//if it failed, add it to the report email - 200=success, 3xx=redirects (okay)
 			//429 is not a failure necessarily, it's a request rate limit.
-			if (vo.getIgnoreflg() != 1 && vo.getOutcome() != 429 && vo.getOutcome() > 403) {
+			if (vo.getOutcome() != 429 && vo.getOutcome() > 403) {
 				linksFailed.add(vo);
 			}
 
+			if(vo.getIgnoreflg() == 1) {
+				ignored++;
+			}
 			/*
 			 * Save Records each time we hit the BUFFER_LIMIT in temp Records
 			 * then flush temp.
@@ -639,13 +643,14 @@ public class LinkChecker extends CommandLineUtil {
 	 */
 	protected void sendEmail() {
 		final String br = "<br/>";
-		StringBuilder msg = new StringBuilder(1000);
+		StringBuilder msg = new StringBuilder(1000 + 250 * linksFailed.size());
 		msg.append("<h3>SmartTRAK Link Checker &mdash; ").append(Convert.formatDate(new Date(), Convert.DATE_SLASH_PATTERN)).append("</h3>\n");
 		msg.append("<h4>Embedded URLs Found: ").append(fmtNo(found)).append(br);
 		msg.append("Skipped (Tested Recently): ").append(fmtNo(skipped)).append(br);
 		msg.append("Internal URLs Tested: ").append(fmtNo(intTested)).append(br);
 		msg.append("External URLs Tested: ").append(fmtNo(extTested)).append(br);
 		msg.append("Broken Links Found: ").append(linksFailed.size()).append(br);
+		msg.append("Broken Links Ignored: ").append(ignored).append(br);
 		//exec time
 		long secs = System.currentTimeMillis()-startTime;
 		if (secs > 60000) {
