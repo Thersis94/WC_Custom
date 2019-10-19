@@ -352,20 +352,19 @@ public class LinkChecker extends CommandLineUtil {
 
 		if (MARKETS.equals(urlSection)) {
 			vo.setOutcome(validMarketIds.contains(targetObjectId) ? 200 : 404);
-			vo.setIgnoreFlg(1);
 		} else if (COMPANIES.equals(urlSection)) {
 			vo.setOutcome(validCompanyIds.contains(targetObjectId) ? 200 : 404);
-			vo.setIgnoreFlg(1);
 		} else if (PRODUCTS.equals(urlSection)) {
 			vo.setOutcome(validProductIds.contains(targetObjectId) ? 200 : 404);
-			vo.setIgnoreFlg(1);
 		} else if (ANALYSIS.equals(urlSection) || "archives".equals(urlSection)) {
 			vo.setOutcome(validInsightIds.contains(targetObjectId) ? 200 : 404);
-			vo.setIgnoreFlg(1);
 		} else if (urlSection.matches("/manage\\?(.*)")) {
 			vo.setOutcome(404); //links should never go to the /manage tool
 		} else {
 			inspectLocalUrl(vo, relaUrl);
+		}
+		if(vo.getOutcome() != 200) {
+			vo.setIgnoreFlg(1);
 		}
 		log.debug(vo.getOutcome() == 200 ? "success!" : targetObjectId + " in '" + urlSection + "' not found");
 	}
