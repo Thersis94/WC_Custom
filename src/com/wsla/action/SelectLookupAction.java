@@ -940,13 +940,14 @@ public class SelectLookupAction extends SBActionAdapter {
 	 */
 	public List<GenericVO> getBillableCodes(ActionRequest req) {
 		String btc = req.getParameter("billableTypeCode");
+		String bac = req.getParameter("billableActivityCode");
 		boolean isMisc = req.getBooleanParameter("isMiscActivites");
 		BSTableControlVO bst = new BSTableControlVO(req, BillableActivityVO.class);
 		bst.setLimit(1000);
-
+		
 		// Get the codes
 		BillableActivityAction ba = new BillableActivityAction(dbConn, attributes);
-		GridDataVO<BillableActivityVO> codes = ba.getCodes(btc, isMisc, bst);
+		GridDataVO<BillableActivityVO> codes = ba.getCodes(btc, isMisc, bac, bst);
 		List<GenericVO> data = new ArrayList<>();
 
 		// Loop the codes and convert to Generic
@@ -1061,17 +1062,5 @@ public class SelectLookupAction extends SBActionAdapter {
 		
 		DBProcessor db = new DBProcessor(getDBConnection());
 		return db.executeSelect(sql.toString(), Arrays.asList(fsi), new GenericVO());
-	}
-	
-	/**
-	 * Gets the profeco list based upon the ticket profeco status
-	 * @param req - Need "fsi" req parameter
-	 * @return
-	 */
-	public List<GenericVO> getProfecoList(ActionRequest req) {
-		List<GenericVO> data = new ArrayList<>();
-		
-		
-		return data;
 	}
 }

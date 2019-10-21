@@ -76,6 +76,7 @@ public class SectionHierarchyAction extends AbstractTreeAction {
 		DBProcessor dbp = new DBProcessor(dbConn, (String)attributes.get(Constants.CUSTOM_DB_SCHEMA));
 		try {
 			dbp.delete(new SectionVO(req));
+			super.clearCacheByKey(CONTENT_HIERARCHY_CACHE_KEY);
 
 		} catch (InvalidDataException | DatabaseException e) {
 			log.error(e);
@@ -88,6 +89,7 @@ public class SectionHierarchyAction extends AbstractTreeAction {
 	@Override
 	public void build(ActionRequest req) throws ActionException {
 		updateSectionVO(req.getParameter("actionPerform"), new SectionVO(req));
+		super.clearCacheByKey(CONTENT_HIERARCHY_CACHE_KEY);
 	}
 
 	/* (non-Javadoc)
@@ -211,6 +213,7 @@ public class SectionHierarchyAction extends AbstractTreeAction {
 	@Override
 	public void update(ActionRequest req) throws ActionException {
 		super.update(req);
+		super.clearCacheByKey(CONTENT_HIERARCHY_CACHE_KEY);
 
 		// Redirect after the update
 		sbUtil.adminRedirect(req, attributes.get(Constants.ACTION_SUCCESS_KEY), (String)getAttribute(AdminConstants.ADMIN_TOOL_PATH));
@@ -257,6 +260,7 @@ public class SectionHierarchyAction extends AbstractTreeAction {
 		// Update the values
 		try {
 			dbp.executeSqlUpdate(sql, section, fields);
+			super.clearCacheByKey(CONTENT_HIERARCHY_CACHE_KEY);
 		} catch(Exception e) {
 			log.error(e);
 		}

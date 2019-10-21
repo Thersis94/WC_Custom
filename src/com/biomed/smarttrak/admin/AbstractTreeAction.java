@@ -13,9 +13,11 @@ import java.util.Map;
 import com.biomed.smarttrak.util.SmarttrakTree;
 import com.biomed.smarttrak.vo.SectionVO;
 import com.siliconmtn.action.ActionInitVO;
+import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.Node;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SBActionAdapter;
+import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
@@ -108,6 +110,26 @@ public abstract class AbstractTreeAction extends SBActionAdapter {
 		Collections.sort(sections, new SectionComparator());
 		log.debug("sections: " + sections.size());
 		return sections;
+	}
+	
+	
+	/**
+	 * Load the full tree (from cache or DB) and place it on the request object
+	 * @param req
+	 */
+	public void loadFullTree(ActionRequest req) {
+		ModuleVO m = super.readFromCache(SectionHierarchyAction.CONTENT_HIERARCHY_CACHE_KEY);
+		
+		if (m == null) {
+			SmarttrakTree t = loadDefaultTree();
+			t.buildNodePaths();
+			List<Node>sections = t.preorderList();
+			m = new ModuleVO();
+			m.setPageModuleId(SectionHierarchyAction.CONTENT_HIERARCHY_CACHE_KEY);
+			m.setActionData(sections);
+			super.writeToCache(m);
+		}
+		req.setAttribute("hierarchyTree", m.getActionData());
 	}
 
 	/**

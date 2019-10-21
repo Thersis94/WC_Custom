@@ -31,6 +31,7 @@ public class LinkVO {
 	private String originalUrl;
 	private int reviewFlag;
 	private int numChecks;
+	private int numAttempts;
 
 	public LinkVO(String section, String id, String html, String contentId) {
 		this.setSection(section);
@@ -227,5 +228,16 @@ public class LinkVO {
 	 */
 	public void setNumChecks(int numChecks) {
 		this.numChecks = numChecks;
+	}
+
+	/**
+	 * @return
+	 */
+	public int getNumAttempts() {
+		return numAttempts;
+	}
+
+	public void setNumAttempts(int numAttempts) {
+		this.numAttempts = numAttempts;
 	}
 }

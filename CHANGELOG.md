@@ -1,5 +1,49 @@
 WC_Custom Changelog (auto-generated)
 
+# [3.35.0](https://github.com/smtadmin/WC_Custom/compare/3.34.0...3.35.0) (2019-10-17)
+
+
+### Bug Fixes
+
+* **WSLA-Migration:** Add archive package with varied POJOs to archive the raw XLS data extracted fro ([bc6b120](https://github.com/smtadmin/WC_Custom/commit/bc6b120))
+* **WSLA-Migration:** Profeco importer ([eac71ec](https://github.com/smtadmin/WC_Custom/commit/eac71ec))
+* **WSLA-Migration:** Progress on Profeco tickets.  Correct ticket Originators ([c72187b](https://github.com/smtadmin/WC_Custom/commit/c72187b))
+
+
+### Features
+
+* **Events:** Added filtering to the events page ([57095cc](https://github.com/smtadmin/WC_Custom/commit/57095cc))
+* **Performance:** Converted events to be a servcer side pagination to improve performance ([da74de5](https://github.com/smtadmin/WC_Custom/commit/da74de5))
+
+# [3.34.0](https://github.com/smtadmin/WC_Custom/compare/3.33.1...3.34.0) (2019-10-11)
+
+
+### Bug Fixes
+
+* **Profeco:** Status change on the profeco is not being recognized. ([0121eab](https://github.com/smtadmin/WC_Custom/commit/0121eab))
+* **Status:** Updated the profeco status to return a default value of NO_PROFECO instead of n ull or ([1c475d3](https://github.com/smtadmin/WC_Custom/commit/1c475d3))
+
+
+### Features
+
+* **Communicant:** Added child communicant values for the incoming/outgoing email and phone communic ([c43dd59](https://github.com/smtadmin/WC_Custom/commit/c43dd59))
+* **feature-wsla-i87:** open logistics movement to customer ser. role ([95ad079](https://github.com/smtadmin/WC_Custom/commit/95ad079))
+* **Profeco:** Added the profeco work panel ([0064f6f](https://github.com/smtadmin/WC_Custom/commit/0064f6f))
+* **WSLA-I86:** Added the ability to store the comm role for an activity ([779caab](https://github.com/smtadmin/WC_Custom/commit/779caab))
+
+## [3.33.1](https://github.com/smtadmin/WC_Custom/compare/3.33.0...3.33.1) (2019-10-10)
+
+
+### Bug Fixes
+
+* **Sc-1560:** Ensure that suffixes are not lost when setting thousands seperators. ([5fe207c](https://github.com/smtadmin/WC_Custom/commit/5fe207c))
+* **Sc-230:** Change to use super methods. ([98f585a](https://github.com/smtadmin/WC_Custom/commit/98f585a))
+* **Sc-230:** Fix null pointer exception ([3a8e17c](https://github.com/smtadmin/WC_Custom/commit/3a8e17c))
+* **Sc-230:** Move defautl tree session caching out of actions. ([79b2985](https://github.com/smtadmin/WC_Custom/commit/79b2985))
+* **Sc-230:** Shift caching to system and tree from session to request. ([e23c201](https://github.com/smtadmin/WC_Custom/commit/e23c201))
+* **Sc-670:** Ensure that non-text number fields contain thousands seperators. ([7b429fe](https://github.com/smtadmin/WC_Custom/commit/7b429fe))
+* **SSO:** Add capture of nameIdPolicy when saving SSO config ([7697deb](https://github.com/smtadmin/WC_Custom/commit/7697deb))
+
 # [3.33.0](https://github.com/smtadmin/WC_Custom/compare/3.32.1...3.33.0) (2019-10-04)
 
 
