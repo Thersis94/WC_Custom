@@ -909,7 +909,7 @@ public class SelectLookupAction extends SBActionAdapter {
 
 		List<GenericVO> products = new ArrayList<>(data.getRowData().size());
 		for (LocationItemMasterVO lim : data.getRowData()) {
-			products.add(new GenericVO(lim.getProductId(), lim.getProductName()+": ( "+lim.getCustomerProductId()+" )"));
+			products.add(new GenericVO(lim.getProductId(), lim.getProductName()));
 		}
 
 
