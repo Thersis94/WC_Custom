@@ -29,6 +29,7 @@ public class PartVO extends ProductVO {
 	private String ticketId;
 	private String shipmentId;
 	private int quantity;
+	private int warehouseQuantity;
 	private int quantityReceived;
 	private int usedQuantityNo;
 	private int destEstQuantity;
@@ -124,6 +125,21 @@ public class PartVO extends ProductVO {
 	@Column(name="submit_approval_flg")
 	public int getSubmitApprovalFlag() {
 		return submitApprovalFlag;
+	}
+
+	/**
+	 * @return
+	 */
+	@Column(name="warehouse_qnty_no", isReadOnly=true)
+	public int getWarehouseQuantity() {
+		return warehouseQuantity;
+	}
+
+	/**
+	 * @param warehouseQuantity
+	 */
+	public void setWarehouseQuantity(int warehouseQuantity) {
+		this.warehouseQuantity = warehouseQuantity;
 	}
 
 	public void setPartId(String partId) {
