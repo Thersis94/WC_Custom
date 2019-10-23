@@ -1,5 +1,20 @@
 WC_Custom Changelog (auto-generated)
 
+# [3.35.0](https://github.com/smtadmin/WC_Custom/compare/3.34.0...3.35.0) (2019-10-17)
+
+
+### Bug Fixes
+
+* **WSLA-Migration:** Add archive package with varied POJOs to archive the raw XLS data extracted fro ([bc6b120](https://github.com/smtadmin/WC_Custom/commit/bc6b120))
+* **WSLA-Migration:** Profeco importer ([eac71ec](https://github.com/smtadmin/WC_Custom/commit/eac71ec))
+* **WSLA-Migration:** Progress on Profeco tickets.  Correct ticket Originators ([c72187b](https://github.com/smtadmin/WC_Custom/commit/c72187b))
+
+
+### Features
+
+* **Events:** Added filtering to the events page ([57095cc](https://github.com/smtadmin/WC_Custom/commit/57095cc))
+* **Performance:** Converted events to be a servcer side pagination to improve performance ([da74de5](https://github.com/smtadmin/WC_Custom/commit/da74de5))
+
 # [3.34.0](https://github.com/smtadmin/WC_Custom/compare/3.33.1...3.34.0) (2019-10-11)
 
 
