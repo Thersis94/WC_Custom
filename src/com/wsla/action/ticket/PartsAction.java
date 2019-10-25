@@ -132,14 +132,13 @@ public class PartsAction extends SBActionAdapter {
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("wsla_provider_location pl on ta.location_id=pl.location_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("wsla_shipment s on p.shipment_id=s.shipment_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("wsla_location_item_master lim on pl.location_id=lim.location_id and p.product_id=lim.product_id ");
-		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("wsla_location_item_master wlim on p.product_id=wlim.product_id ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("wsla_location_item_master wlim on p.product_id=wlim.product_id  and wlim.location_id = ? ");
 		sql.append("where p.ticket_id = ? and (s.shipment_type_cd = ? or s.shipment_type_cd is null) and (s.status_cd != ? or s.status_cd is null) ");
-		sql.append("and wlim.location_id = ? ");
 		sql.append(bst.getSQLOrderBy("pm.product_nm",  "asc"));
 		log.debug(sql.length() + "|" + sql + "|" + ticketId + "|" + ShipmentType.PARTS_REQUEST.name() + "|" + ShipmentStatus.CANCELED.name());
 
 		DBProcessor db = new DBProcessor(getDBConnection(), schema);
-		List<Object> params = Arrays.asList(ticketId, ShipmentType.PARTS_REQUEST.name(), ShipmentStatus.CANCELED.name(), WSLAConstants.MAIN_WAREHOUSE_ID);
+		List<Object> params = Arrays.asList(WSLAConstants.MAIN_WAREHOUSE_ID, ticketId, ShipmentType.PARTS_REQUEST.name(), ShipmentStatus.CANCELED.name());
 		return db.executeSQLWithCount(sql.toString(), params, new PartVO(), bst);
 	}
 }
