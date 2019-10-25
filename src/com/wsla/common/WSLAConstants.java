@@ -18,7 +18,12 @@ public class WSLAConstants {
 	 * All ticket data attributes will be prefixed with this value
 	 */
 	public static final String ATTRIBUTE_PREFIX = "attr_";
-
+	
+	/**
+	 * the id for the main warehouse for parts, shipping and inv
+	 */
+	public static final String MAIN_WAREHOUSE_ID = "WSLA_020";
+			
 	/**
 	 * Number of random chars for the ticket text 
 	 */
