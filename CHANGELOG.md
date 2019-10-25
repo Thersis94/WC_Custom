@@ -1,5 +1,12 @@
 WC_Custom Changelog (auto-generated)
 
+# [3.37.0](https://github.com/smtadmin/WC_Custom/compare/3.36.1...3.37.0) (2019-10-25)
+
+
+### Features
+
+* **feature-wlsa-i96:** add warehouse quantity to the parts tab ([154b98b](https://github.com/smtadmin/WC_Custom/commit/154b98b))
+
 ## [3.36.1](https://github.com/smtadmin/WC_Custom/compare/3.36.0...3.36.1) (2019-10-25)
 
 
