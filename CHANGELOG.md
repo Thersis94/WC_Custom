@@ -1,5 +1,12 @@
 WC_Custom Changelog (auto-generated)
 
+## [3.36.1](https://github.com/smtadmin/WC_Custom/compare/3.36.0...3.36.1) (2019-10-25)
+
+
+### Bug Fixes
+
+* **RezDox-326:** Use DB View to calculate project valuation ([d72c4ea](https://github.com/smtadmin/WC_Custom/commit/d72c4ea))
+
 # [3.36.0](https://github.com/smtadmin/WC_Custom/compare/3.35.0...3.36.0) (2019-10-24)
 
 
