@@ -161,7 +161,7 @@ public class DashboardAction extends SimpleActionAdapter {
 	 * @param bus
 	 * @param schema
 	 */
-	protected void getBusinessAttributes(BusinessVO bus, String schema, String memberId) {
+	protected void getBusinessAttributes(BusinessVO bus, String schema) {
 		String bId = bus.getBusinessId();
 		StringBuilder sql = new StringBuilder(1144);
 		sql.append("select 'all_reviews_avg' as attribute_id, 'all_reviews_avg' as slug_txt, avg(rating_no)::text as value_txt ");
@@ -222,7 +222,7 @@ public class DashboardAction extends SimpleActionAdapter {
 		DBProcessor db = new DBProcessor(getDBConnection());
 		List<BusinessVO> businesses = db.executeSelect(sql.toString(), Arrays.asList(memberId), new BusinessVO());
 		for(BusinessVO business : businesses) 
-			getBusinessAttributes(business, schema, memberId);
+			getBusinessAttributes(business, schema);
 
 		return businesses;
 	}
@@ -283,7 +283,8 @@ public class DashboardAction extends SimpleActionAdapter {
 	 */
 	protected List<ResidenceVO> getResidenceInfo(String memberId, String schema) {
 		StringBuilder sql = new StringBuilder(768);
-		sql.append("select c.*, d.*, coalesce(p.project_total, 0) as projects_total, coalesce(i.inventory_total, 0) as inventory_total ");
+		sql.append("select c.*, d.*, coalesce(p.project_total, 0) as projects_total, coalesce(p.project_valuation, 0) as projects_valuation, ");
+		sql.append("coalesce(i.inventory_total, 0) as inventory_total ");
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("rezdox_residence_member_xr b ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("rezdox_residence c on b.residence_id = c.residence_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("rezdox_residence_attribute d ");
@@ -292,9 +293,9 @@ public class DashboardAction extends SimpleActionAdapter {
 		sql.append("'RESIDENCE_TRANSIT_SCORE', 'RESIDENCE_SUN_NUMBER') ");
 		//join projects for IMPROVEMENT projects total
 		sql.append(DBUtil.LEFT_OUTER_JOIN);
-		sql.append("(select a.residence_id, sum(project_cost+material_cost) as project_total ");
+		sql.append("(select a.residence_id, sum(project_cost+material_cost) as project_total, sum(b.project_valuation) as project_valuation ");
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("rezdox_residence_member_xr a ");
-		sql.append(DBUtil.INNER_JOIN).append(schema).append("rezdox_project_cost_view b on a.residence_id=b.residence_id ");
+		sql.append(DBUtil.INNER_JOIN).append(schema).append(PROJECT_COST_VIEW).append(" b on a.residence_id=b.residence_id ");
 		sql.append("and b.is_improvement=1 and b.residence_view_flg=1 ");
 		sql.append("where a.member_id=? and a.status_flg=1 ");
 		sql.append("group by a.residence_id ");

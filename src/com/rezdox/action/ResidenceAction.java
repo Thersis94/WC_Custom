@@ -214,7 +214,6 @@ public class ResidenceAction extends SBActionAdapter {
 		String residenceId = req.getParameter(RESIDENCE_ID);
 
 		List<Object> params = new ArrayList<>();
-		params.add(RezDoxUtils.IMPROVEMENTS_VALUE_COEF);
 		params.add(RezDoxUtils.getMemberId(req));
 
 		// Using pivot table on the attributes to get additional data for display
@@ -222,7 +221,7 @@ public class ResidenceAction extends SBActionAdapter {
 		sql.append("select r.residence_id, residence_nm, address_txt, address2_txt, city_nm, ");
 		sql.append("state_cd, zip_cd, country_cd, profile_pic_pth, coalesce(r.update_dt, r.create_dt) as update_dt, ");
 		sql.append("privacy_flg, for_sale_dt, last_sold_dt, beds_no, baths_no, coalesce(f_sqft_no, 0) as sqft_no, ");
-		sql.append("zestimate_no, sum(pc.project_cost+pc.material_cost)*? as projects_total, m.status_flg ");
+		sql.append("zestimate_no, sum(pc.project_valuation) as projects_total, m.status_flg ");
 		sql.append("from ").append(schema).append("rezdox_residence r inner join ");
 		sql.append(schema).append("rezdox_residence_member_xr m on r.residence_id = m.residence_id and m.status_flg > 0 "); //1=mine, 2=shared w/me
 		sql.append("left join (SELECT * FROM crosstab('SELECT residence_id, slug_txt, value_txt FROM ").append(schema).append("rezdox_residence_attribute ORDER BY 1', ");
