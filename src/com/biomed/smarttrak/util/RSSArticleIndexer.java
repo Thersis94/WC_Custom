@@ -105,9 +105,7 @@ public class RSSArticleIndexer extends SMTAbstractIndex {
 				while(!ids.isEmpty()) {
 					tempIds = processData(ids);
 					i += tempIds.size();
-					log.info(String.format("Processing %d articles from Feed Group %s.", i, g.getFeedGroupId()));
 					util.addDocuments(getDocuments(g.getFeedGroupId(), tempIds));
-					log.info(String.format("Memory Usage %dMb of %dMb free", r.freeMemory()/1024/1024, r.totalMemory()/1024/1024));
 					ids.keySet().removeAll(tempIds);
 				}
 				gIter.remove();

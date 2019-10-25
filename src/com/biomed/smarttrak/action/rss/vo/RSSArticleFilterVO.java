@@ -56,7 +56,6 @@ public class RSSArticleFilterVO extends SolrDocumentVO implements AutoPopulateIn
 		super(RSSArticleIndexer.INDEX_TYPE);
 		addOrganization(AdminControllerAction.BIOMED_ORG_ID);
 		addRole(SecurityController.PUBLIC_ROLE_LEVEL);
-		setContentType(RSSArticleIndexer.INDEX_TYPE);
 	}
 
 	public RSSArticleFilterVO(ActionRequest req) {
@@ -187,7 +186,7 @@ public class RSSArticleFilterVO extends SolrDocumentVO implements AutoPopulateIn
 	 */
 	public void setFilterTitleTxt(String filterTitleTxt) {
 		this.filterTitleTxt = filterTitleTxt;
-		this.setTitle(filterTitleTxt);
+		appendContents(filterTitleTxt);
 	}
 
 	/**
@@ -209,7 +208,7 @@ public class RSSArticleFilterVO extends SolrDocumentVO implements AutoPopulateIn
 
 	public void setCreateDt(Date createDt) {
 		this.createDt = createDt;
-		this.setPublishDate(createDt);
+		this.setUpdateDt(createDt);
 	}
 
 	public void setCompleteFlg(int completeFlg) {
