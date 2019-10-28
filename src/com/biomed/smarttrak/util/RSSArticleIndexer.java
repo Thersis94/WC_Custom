@@ -87,7 +87,6 @@ public class RSSArticleIndexer extends SMTAbstractIndex {
 		// This server was given to this method and it is not this method's
 		// job or right to close it.
 		SolrActionUtil util = new SolrActionUtil(server);
-		Runtime r = Runtime.getRuntime();
 
  		try {
 			RSSGroupAction ga = new RSSGroupAction();
@@ -99,12 +98,11 @@ public class RSSArticleIndexer extends SMTAbstractIndex {
 			RSSFeedGroupVO g;
 			while(gIter.hasNext()) {
 				g = gIter.next();
-				int i = 0;
+
 				//Get Id Iterator
 				ids = loadFilteredArticleIds(g.getFeedGroupId());
 				while(!ids.isEmpty()) {
 					tempIds = processData(ids);
-					i += tempIds.size();
 					util.addDocuments(getDocuments(g.getFeedGroupId(), tempIds));
 					ids.keySet().removeAll(tempIds);
 				}
