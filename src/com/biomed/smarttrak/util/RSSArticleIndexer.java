@@ -63,13 +63,13 @@ public class RSSArticleIndexer extends SMTAbstractIndex {
 	private final String buildSql() {
 		String schema = (String)getAttributes().get(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(250);
-		sql.append(DBUtil.SELECT_CLAUSE).append("rss_article_filter_id, a.data_size ");
+		sql.append(DBUtil.SELECT_CLAUSE).append("rss_article_filter_id, a.bytes_no ");
 		sql.append(DBUtil.FROM_CLAUSE).append(schema);
 		sql.append("biomedgps_rss_filtered_article brfa ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("biomedgps_rss_article a ");
 		sql.append("on brfa.rss_article_id = a.rss_article_id ");
 		sql.append(DBUtil.WHERE_CLAUSE).append("feed_group_id = ? ");
-		sql.append(DBUtil.ORDER_BY).append("a.data_size asc");
+		sql.append(DBUtil.ORDER_BY).append("a.bytes_no asc");
 		return sql.toString();
 	}
 
@@ -146,7 +146,7 @@ public class RSSArticleIndexer extends SMTAbstractIndex {
 			ps.setString(1, feedGroupId);
 			ResultSet rs = ps.executeQuery();
 			while(rs.next() ) {
-				ids.put(rs.getString("rss_article_filter_id"), rs.getInt("data_size"));
+				ids.put(rs.getString("rss_article_filter_id"), rs.getInt("bytes_no"));
 			}
 		} catch (SQLException e) {
 			log.error("Error Processing Code", e);

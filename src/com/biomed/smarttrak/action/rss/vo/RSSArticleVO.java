@@ -46,7 +46,7 @@ public class RSSArticleVO extends BeanDataVO implements Serializable {
 	private ArticleSourceType articleSourceType;
 	private Date publishDt;
 	private Date createDt;
-	private int dataSize;
+	private int bytesNo;
 
 	public RSSArticleVO() {
 		super();
@@ -88,7 +88,7 @@ public class RSSArticleVO extends BeanDataVO implements Serializable {
 	 * Calculate the Approximate Data Size of the Record.
 	 */
 	public void calcDataSize() {
-		this.dataSize = StringUtil.checkVal(titleTxt).length() + StringUtil.checkVal(fullArticleTxt, articleTxt).length();
+		this.bytesNo = StringUtil.checkVal(titleTxt).length() + StringUtil.checkVal(fullArticleTxt, articleTxt).length();
 	}
 
 	/**
@@ -293,12 +293,12 @@ public class RSSArticleVO extends BeanDataVO implements Serializable {
 		this.affiliation = affiliation;
 	}
 
-	@Column(name="data_size")
-	public int getDataSize() {
-		return this.dataSize;
+	@Column(name="bytes_no")
+	public int getBytesNo() {
+		return this.bytesNo;
 	}
 
-	public void setDataSize(int dataSize) {
-		this.dataSize = dataSize;
+	public void setBytesNo(int bytesNo) {
+		this.bytesNo = bytesNo;
 	}
 }
