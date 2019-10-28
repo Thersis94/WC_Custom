@@ -1,5 +1,33 @@
 WC_Custom Changelog (auto-generated)
 
+# [3.37.0](https://github.com/smtadmin/WC_Custom/compare/3.36.1...3.37.0) (2019-10-25)
+
+
+### Features
+
+* **feature-wlsa-i96:** add warehouse quantity to the parts tab ([154b98b](https://github.com/smtadmin/WC_Custom/commit/154b98b))
+
+## [3.36.1](https://github.com/smtadmin/WC_Custom/compare/3.36.0...3.36.1) (2019-10-25)
+
+
+### Bug Fixes
+
+* **RezDox-326:** Use DB View to calculate project valuation ([d72c4ea](https://github.com/smtadmin/WC_Custom/commit/d72c4ea))
+
+# [3.36.0](https://github.com/smtadmin/WC_Custom/compare/3.35.0...3.36.0) (2019-10-24)
+
+
+### Bug Fixes
+
+* **feature-wsla-i95:** fixed a bug where dates didnt progress in a logical pattern ([0e8da38](https://github.com/smtadmin/WC_Custom/commit/0e8da38))
+* **ST-62:** Add fd snapshot table. ([2da0a00](https://github.com/smtadmin/WC_Custom/commit/2da0a00))
+
+
+### Features
+
+* **feature-wsla-i87:** add customer product id to select search ([07ca0e1](https://github.com/smtadmin/WC_Custom/commit/07ca0e1))
+* clean up ([151688e](https://github.com/smtadmin/WC_Custom/commit/151688e))
+
 # [3.35.0](https://github.com/smtadmin/WC_Custom/compare/3.34.0...3.35.0) (2019-10-17)
 
 
