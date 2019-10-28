@@ -66,6 +66,12 @@ public class TicketSearchAction extends SBActionAdapter {
 	 */
 	public List<GenericVO> getTickets(String search) {
 		if (StringUtil.isEmpty(search)) return new ArrayList<GenericVO>();
+		StringBuilder term = new StringBuilder(32);
+		String[] terms = StringUtil.checkVal(search).split(" ");
+		for (int i=0; i < terms.length; i++) {
+			if (i > 0) term.append(" & ");
+			term.append(terms[i]).append(":*");
+		}
 		
 		// Build the sql
 		StringBuilder sql = new StringBuilder(576);
@@ -78,9 +84,9 @@ public class TicketSearchAction extends SBActionAdapter {
 		sql.append("wsla_user c on b.user_id = c.user_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(getCustomSchema());
 		sql.append("wsla_product_serial d on a.product_serial_id = d.product_serial_id ");
-		sql.append("where ts_rank_cd(document_txt, to_tsquery('").append(search).append(":*')) > 0 ");
+		sql.append("where ts_rank_cd(document_txt, to_tsquery('").append(term).append("')) > 0 ");
 		sql.append("limit 10");
-		log.debug(sql.length() + "|" + sql + "|" + search);
+		log.debug(sql.length() + "|" + sql + "|" + term);
 		
 		// Execute and return the data
 		DBProcessor db = new DBProcessor(getDBConnection());
