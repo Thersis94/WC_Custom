@@ -394,7 +394,7 @@ public class DebitMemoJob extends AbstractSMTJob {
 			sql.append("and end_user_refund_flg = 1 and ta.user_id = ? ");
 			vals.add(memo.getUserId());
 		} else {
-			sql.append("and (end_user_refund_flg = 0 or end_user_refund_flg = null ) ");
+			sql.append("and (end_user_refund_flg = 0 or end_user_refund_flg is null ) ");
 		}
 		
 		log.debug(sql.length() + "|" + sql + "|" + vals);
