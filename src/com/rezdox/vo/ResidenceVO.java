@@ -6,7 +6,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.rezdox.action.RezDoxUtils;
 // SMTBaseLibs
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.BeanSubElement;
@@ -41,6 +40,7 @@ public class ResidenceVO extends GeocodeLocation implements Serializable {
 	private Date createDate;
 	private Date updateDate;
 	private double projectsTotal;
+	private double projectsValuation;
 	private double inventoryTotal;
 	private int statusFlag; //comes from the member_xr - used to denote a shared residence
 
@@ -301,7 +301,7 @@ public class ResidenceVO extends GeocodeLocation implements Serializable {
 	}
 
 	/**
-	 * @return the projectsTotal
+	 * @return the projectsTotal (raw total - no coefficient applied)
 	 */
 	@Column(name="projects_total", isReadOnly=true)
 	public double getProjectsTotal() {
@@ -328,7 +328,7 @@ public class ResidenceVO extends GeocodeLocation implements Serializable {
 	 * @return
 	 */
 	public double getRealMarketValueDashboard() {
-		return Convert.formatDouble(getZestimateNo()) + (RezDoxUtils.IMPROVEMENTS_VALUE_COEF*getProjectsTotal());
+		return Convert.formatDouble(getZestimateNo()) + getProjectsValuation();
 	}
 
 	@Column(name="inventory_total", isReadOnly=true)
@@ -351,5 +351,14 @@ public class ResidenceVO extends GeocodeLocation implements Serializable {
 
 	public boolean isShared() {
 		return 2 == statusFlag;
+	}
+
+	@Column(name="projects_valuation", isReadOnly=true)
+	public double getProjectsValuation() {
+		return projectsValuation;
+	}
+
+	public void setProjectsValuation(double projectsValuation) {
+		this.projectsValuation = projectsValuation;
 	}
 }
