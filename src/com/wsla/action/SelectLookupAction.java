@@ -577,13 +577,14 @@ public class SelectLookupAction extends SBActionAdapter {
 		String ticketId = req.getParameter(TicketEditAction.TICKET_ID);
 		if (!StringUtil.isEmpty(ticketId)) {
 			sql.append(DBUtil.UNION);
-			sql.append(DBUtil.SELECT_CLAUSE).append("user_id as key, first_nm || ' ' || last_nm ");
-			sql.append("|| ' - ' || coalesce(city_nm, '') || ', ' || coalesce(state_cd, '') as value");
+			sql.append(DBUtil.SELECT_CLAUSE).append("ta.user_id as key, first_nm || ' ' || last_nm ");
+			sql.append("|| ' - ' || coalesce(city_nm, '') || ', ' || coalesce(state_cd, '') as value ");
 			sql.append(DBUtil.FROM_CLAUSE).append(schema).append("wsla_ticket t");
-			sql.append(DBUtil.INNER_JOIN).append(schema).append("wsla_user u on t.originator_user_id = u.user_id");
-			sql.append(DBUtil.INNER_JOIN).append("profile_address pa on u.profile_id = pa.profile_id");
-			sql.append(DBUtil.WHERE_CLAUSE).append("(lower(first_nm || ' ' || last_nm) like ? or lower(city_nm) like ?)");
-			sql.append("and ticket_id = ? ");
+			sql.append(DBUtil.INNER_JOIN).append(schema).append("wsla_ticket_assignment ta on t.ticket_id = ta.ticket_id and ta.assg_type_cd = 'CALLER' ");
+			sql.append(DBUtil.INNER_JOIN).append(schema).append("wsla_user u on ta.user_id = u.user_id ");
+			sql.append(DBUtil.LEFT_OUTER_JOIN).append("profile_address pa on u.profile_id = pa.profile_id ");
+			sql.append(DBUtil.WHERE_CLAUSE).append("(lower(first_nm || ' ' || last_nm) like ? or lower(city_nm) like ?) ");
+			sql.append("and t.ticket_id = ? ");
 			vals.add(term);
 			vals.add(term);
 			vals.add(ticketId);

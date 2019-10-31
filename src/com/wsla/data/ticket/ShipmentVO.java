@@ -38,9 +38,9 @@ public class ShipmentVO extends BeanDataVO {
 
 	private String shipmentId;
 	private String shippedById; //is-a userId, the person who created the shipment
-	private String fromLocationId; //is-a providerLocationId
-	private String toLocationId; //is-a providerLocationId
-	private String ticketId;
+	private String fromLocationId; //is-a providerLocationId or a user id this was intentionally opened up to allowe shipping to and from the end user
+	private String toLocationId; //is-a providerLocationId or a user id
+	private String ticketId; 
 	private ShipmentStatus status;
 	private CarrierType carrierType;
 	private ShipmentType shipmentType;
