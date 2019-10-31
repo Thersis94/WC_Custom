@@ -68,7 +68,7 @@ public class RoleModule extends DBRoleModule {
 		RPUserVO rpUser = (RPUserVO) user.getUserExtendedInfo();
 
 		// Check if the user's dealers have active payments to use the Mobile Restaurateur
-		if (RPRole.MEMBER.getRoleId().equals(role.getRoleId())) {
+		if (RPRole.MEMBER.getRoleId().equals(role.getRoleId()) && rpUser != null) {
 			validatePayments(user.getProfileId(), rpUser);
 		}
 
