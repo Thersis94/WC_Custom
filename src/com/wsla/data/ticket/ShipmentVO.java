@@ -50,6 +50,7 @@ public class ShipmentVO extends BeanDataVO {
 	private double cost;
 	private Date shipmentDate;
 	private Date arrivalDate;
+	private String shippingInvoiceTypeCode;
 	private Date createDate;
 	private Date updateDate;
 	
@@ -75,6 +76,15 @@ public class ShipmentVO extends BeanDataVO {
 	
 	public enum ShipmentType {
 		INVENTORY, PARTS_REQUEST, UNIT_MOVEMENT, REPLACEMENT_UNIT
+	}
+	
+	public enum ShipmentInvoiceType {
+		ENV_ENTODO("ENV-ENTODO"), ENV_INCAS("ENV-INCAS"), ENV_INPROD("ENV-INPROD"), 
+		ENV_OUTCAS("ENV-OUTCAS"), ENV_OUTPRD("ENV-OUTPRD"), ENV_SATODO("ENV-SATODO");
+		private final String value;
+		ShipmentInvoiceType(String value) { this.value = value; }
+		public String getCodeValue() { return this.value; } 
+		
 	}
 
 	public ShipmentVO() {
@@ -276,6 +286,14 @@ public class ShipmentVO extends BeanDataVO {
 	 */
 	public ProviderLocationVO getFromLocation() {
 		return fromLocation;
+	}
+	@Column(name="shipment_invoice_type_cd")
+	public String getShippingInvoiceTypeCode() {
+		return shippingInvoiceTypeCode;
+	}
+
+	public void setShippingInvoiceTypeCode(String shippingInvoiceTypeCode) {
+		this.shippingInvoiceTypeCode = shippingInvoiceTypeCode;
 	}
 
 	/**

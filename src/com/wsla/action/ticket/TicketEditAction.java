@@ -421,7 +421,7 @@ public class TicketEditAction extends SBActionAdapter {
 			sql.append(" and ( b.attribute_cd = 'attr_proofPurchase' or b.attribute_cd = 'attr_serialNumberImage' ) ");
 		}
 
-		sql.append("order by b.attribute_group_cd ");
+		sql.append("order by b.attribute_group_cd, attribute_cd, create_dt  ");
 		log.debug(sql.length() + "|" + sql + "|" + ticketId);
 		List<TicketDataVO> data = new ArrayList<>();
 		try(PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {

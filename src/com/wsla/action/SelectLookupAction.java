@@ -69,6 +69,7 @@ import com.wsla.data.provider.ProviderPhoneVO;
 import com.wsla.data.provider.ProviderType;
 import com.wsla.data.ticket.BillableActivityVO;
 import com.wsla.data.ticket.BillableActivityVO.BillableTypeCode;
+import com.wsla.data.ticket.ShipmentVO;
 import com.wsla.data.ticket.StatusCode;
 import com.wsla.data.ticket.StatusCodeVO;
 import com.wsla.data.ticket.TicketAssignmentVO;
@@ -153,6 +154,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		keyMap.put("standing", new GenericVO("getStanding", Boolean.TRUE));
 		keyMap.put("acShipLocation", new GenericVO("getAcShippingLocation", Boolean.TRUE));
 		keyMap.put("surveyResults", new GenericVO("getSurveyResults", Boolean.TRUE));
+		keyMap.put("shipmentInvoiceTypes", new GenericVO("getShipmentInvoiceTypes", Boolean.TRUE));
 		keyMap.put("profeco", new GenericVO("getProfecoList", Boolean.TRUE));
 	}
 
@@ -809,6 +811,21 @@ public class SelectLookupAction extends SBActionAdapter {
 		return new ProductCategoryAction(getAttributes(), getDBConnection()).getGroupList();
 	}
 
+	
+	/**
+	 * Return a distinct list of shipment invoice codes values from an enum in the shipment vo
+	 * @return
+	 */
+	public List<GenericVO> getShipmentInvoiceTypes(ActionRequest req) {
+		ResourceBundle bundle = new BasePortalAction().getResourceBundle(req);
+
+		List<GenericVO> data = new ArrayList<>();
+		for (ShipmentVO.ShipmentInvoiceType type : ShipmentVO.ShipmentInvoiceType.values()) {
+			data.add(new GenericVO(type.getCodeValue(), bundle.getString("wsla.ticket.schedule.invoice." + type.getCodeValue())));
+		}
+		
+		return data;
+	}
 
 	/**
 	 * Return a list of ticket assignments for the given ticket
