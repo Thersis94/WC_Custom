@@ -123,6 +123,7 @@ public class GridVO extends BeanDataVO {
 	private int numberRows = 0;
 	private int numberColumns = 0;
 	private int abbreviateNumbers;
+	private int usageNo;
 	private String legacyId;
 	private String legacyName;
 	
@@ -1094,6 +1095,20 @@ public class GridVO extends BeanDataVO {
 
 	public void setAbbreviateNumbers(int abbreviateNumbers) {
 		this.abbreviateNumbers = abbreviateNumbers;
+	}
+
+	/**
+	 * @return the usageNo
+	 */
+	public int getUsageNo() {
+		return usageNo;
+	}
+
+	/**
+	 * @param usageNo the usageNo to set
+	 */
+	public void setUsageNo(int usageNo) {
+		this.usageNo = usageNo;
 	}
 
 	@Column(name="legacy_id", isReadOnly=true)

@@ -12,6 +12,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
 import com.biomed.smarttrak.action.GridDisplayAction;
@@ -818,5 +819,51 @@ public class GridChartAction extends SBActionAdapter {
 		}
 
 		return new ArrayList<>(data.values());
+	}
+
+	private void determineUsage(Map<String, GridVO> data) throws SQLException {
+		
+		StringBuilder sql = new StringBuilder(750);
+
+		sql.append("select g.grid_id, count(xr.market_attribute_id) from ").append(getCustomSchema()).append("biomedgps_grid g ");
+		sql.append("left join ").append(getCustomSchema()).append("biomedgps_market_attribute_xr xr on xr.status_no = 'P'and (g.grid_id = xr.value_1_txt or xr.value_txt like '%data-graph=\"' + g.grid_id + '\"%') ");
+		sql.append("where g.grid_id in (");
+		DBUtil.preparedStatmentQuestion(data.size(), sql);
+		sql.append(") group by g.grid_id ");
+		sql.append("union ");
+		sql.append("select g.grid_id, count(xr.company_attribute_id) from ").append(getCustomSchema()).append("biomedgps_grid g ");
+		sql.append("left join ").append(getCustomSchema()).append("biomedgps_company_attribute_xr xr on xr.status_no = 'P'and (xr.value_txt like '%data-graph=\"' + g.grid_id + '\"%') ");
+		sql.append("where g.grid_id in (");
+		DBUtil.preparedStatmentQuestion(data.size(), sql);
+		sql.append(") group by g.grid_id ");
+		sql.append("union ");
+		sql.append("select g.grid_id, count(xr.product_attribute_id) from ").append(getCustomSchema()).append("biomedgps_grid g ");
+		sql.append("left join ").append(getCustomSchema()).append("biomedgps_product_attribute_xr xr on xr.status_no = 'P'and (xr.value_txt like '%data-graph=\"' + g.grid_id + '\"%') ");
+		sql.append("where g.grid_id in (");
+		DBUtil.preparedStatmentQuestion(data.size(), sql);
+		sql.append(") group by g.grid_id ");
+		sql.append("union ");
+		sql.append("select g.grid_id, count(i.insight_id) from ").append(getCustomSchema()).append("biomedgps_grid g ");
+		sql.append("left join ").append(getCustomSchema()).append("biomedgps_insight i on i.status_cd = 'P' and (i.content_txt like '%data-graph=\"' + g.grid_id + '\"%' ");
+		sql.append("or side_content_txt like  '%data-graph=\"' + g.grid_id + '\"%' or abstract_txt like  '%data-graph=\"' + g.grid_id + '\"%') ");
+		sql.append("where g.grid_id in (");
+		DBUtil.preparedStatmentQuestion(data.size(), sql);
+		sql.append(") group by g.grid_id ");
+		log.debug(sql);
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			int i = 1;
+			for (int c = 0; c < 4; c++) {
+				for (Entry<String, GridVO> e : data.entrySet()) {
+					ps.setString(i++, e.getKey());
+				}
+			}
+			
+			ResultSet rs = ps.executeQuery();
+			while (rs.next()) {
+				GridVO g = data.get(rs.getString(1));
+				log.debug(g.getTitle()+"|"+g.getUsageNo());
+				g.setUsageNo(g.getUsageNo() + rs.getInt(2));
+			}
+		}
 	}
 }
