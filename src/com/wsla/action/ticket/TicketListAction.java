@@ -234,7 +234,7 @@ public class TicketListAction extends SimpleActionAdapter {
 				questions = 1;
 			}
 			return "and a.status_cd in ( " + DBUtil.preparedStatmentQuestion(questions) + ") ";
-		} else if (!StringUtil.isEmpty(status) && !"ALL".equals(status)) {
+		} else if (!StringUtil.isEmpty(status) && !"ALL".equals(status) && !"CM_OPEN".equals(status)) {
 			return "and a.status_cd != 'CLOSED' ";
 		} 
 
