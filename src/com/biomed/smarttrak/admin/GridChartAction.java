@@ -18,6 +18,7 @@ import java.util.Set;
 import com.biomed.smarttrak.action.GridDisplayAction;
 import com.biomed.smarttrak.admin.report.GridClipboardReport;
 import com.biomed.smarttrak.admin.vo.GridDetailVO;
+import com.biomed.smarttrak.admin.vo.GridUsageVO;
 import com.biomed.smarttrak.admin.vo.GridVO;
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
@@ -284,7 +285,10 @@ public class GridChartAction extends SBActionAdapter {
 				promoteGridCharts(req);
 			} else if(req.hasParameter("tableData")) {
 				buildGridExcel(req);
-			}else {
+			} else if (Convert.formatBoolean(req.getParameter("determineUsage"))) {
+				determineUsage(g);
+				super.putModuleData(g);
+			} else {
 				saveGrid(req);
 			}
 		} catch(Exception e) {
@@ -821,48 +825,54 @@ public class GridChartAction extends SBActionAdapter {
 		return new ArrayList<>(data.values());
 	}
 
-	private void determineUsage(Map<String, GridVO> data) throws SQLException {
+	private void determineUsage(GridVO g) throws SQLException {
 		
 		StringBuilder sql = new StringBuilder(750);
 
-		sql.append("select g.grid_id, count(xr.market_attribute_id) from ").append(getCustomSchema()).append("biomedgps_grid g ");
-		sql.append("left join ").append(getCustomSchema()).append("biomedgps_market_attribute_xr xr on xr.status_no = 'P'and (g.grid_id = xr.value_1_txt or xr.value_txt like '%data-graph=\"' + g.grid_id + '\"%') ");
-		sql.append("where g.grid_id in (");
-		DBUtil.preparedStatmentQuestion(data.size(), sql);
-		sql.append(") group by g.grid_id ");
+		sql.append("select xr.market_attribute_id as xr_id, case when g.grid_id = xr.value_1_txt then 'Grid Chart' else xr.title_txt end as xr_nm, m.market_nm as item_nm, m.market_id as item_id, 'MARKET' as type from ").append(getCustomSchema()).append("biomedgps_grid g ");
+		sql.append("left join ").append(getCustomSchema()).append("biomedgps_market_attribute_xr xr on g.grid_id = xr.value_1_txt or (xr.status_no = 'P' and  xr.value_txt like '%data-graph=\"' + g.grid_id + '\"%') ");
+		sql.append("left join ").append(getCustomSchema()).append("biomedgps_market m on m.market_id = xr.market_id ");
+		sql.append("where g.grid_id = ? ");
 		sql.append("union ");
-		sql.append("select g.grid_id, count(xr.company_attribute_id) from ").append(getCustomSchema()).append("biomedgps_grid g ");
+		sql.append("select xr.company_attribute_id as xr_id, xr.title_txt as xr_nm, c.company_nm as item_nm, c.company_id as item_id, 'COMPANY' as type from ").append(getCustomSchema()).append("biomedgps_grid g ");
 		sql.append("left join ").append(getCustomSchema()).append("biomedgps_company_attribute_xr xr on xr.status_no = 'P'and (xr.value_txt like '%data-graph=\"' + g.grid_id + '\"%') ");
-		sql.append("where g.grid_id in (");
-		DBUtil.preparedStatmentQuestion(data.size(), sql);
-		sql.append(") group by g.grid_id ");
+		sql.append("left join ").append(getCustomSchema()).append("biomedgps_company c on c.company_id = xr.company_id ");
+		sql.append("where g.grid_id = ? ");
 		sql.append("union ");
-		sql.append("select g.grid_id, count(xr.product_attribute_id) from ").append(getCustomSchema()).append("biomedgps_grid g ");
+		sql.append("select xr.product_attribute_id as xr_id, xr.title_txt as xr_nm, p.product_nm as item_nm, p.product_id as item_id, 'PRODUCT' as type from ").append(getCustomSchema()).append("biomedgps_grid g ");
 		sql.append("left join ").append(getCustomSchema()).append("biomedgps_product_attribute_xr xr on xr.status_no = 'P'and (xr.value_txt like '%data-graph=\"' + g.grid_id + '\"%') ");
-		sql.append("where g.grid_id in (");
-		DBUtil.preparedStatmentQuestion(data.size(), sql);
-		sql.append(") group by g.grid_id ");
+		sql.append("left join ").append(getCustomSchema()).append("biomedgps_product p on p.product_id = xr.product_id ");
+		sql.append("where g.grid_id = ? ");
 		sql.append("union ");
-		sql.append("select g.grid_id, count(i.insight_id) from ").append(getCustomSchema()).append("biomedgps_grid g ");
-		sql.append("left join ").append(getCustomSchema()).append("biomedgps_insight i on i.status_cd = 'P' and (i.content_txt like '%data-graph=\"' + g.grid_id + '\"%' ");
-		sql.append("or side_content_txt like  '%data-graph=\"' + g.grid_id + '\"%' or abstract_txt like  '%data-graph=\"' + g.grid_id + '\"%') ");
-		sql.append("where g.grid_id in (");
-		DBUtil.preparedStatmentQuestion(data.size(), sql);
-		sql.append(") group by g.grid_id ");
+		sql.append("select 'article' as xr_id, 'Article Body' as xr_nm, i.title_txt as item_nm, i.insight_id as item_id, 'INSIGHT' as type from ").append(getCustomSchema()).append("biomedgps_grid g ");
+		sql.append("left join ").append(getCustomSchema()).append("biomedgps_insight i on i.status_cd = 'P' and i.content_txt like '%data-graph=\"' + g.grid_id + '\"%' ");
+		sql.append("where g.grid_id = ? ");
+		sql.append("union ");
+		sql.append("select 'side' as xr_id, 'Side Content' as xr_nm, i.title_txt as item_nm, i.insight_id as item_id, 'INSIGHT' as type from ").append(getCustomSchema()).append("biomedgps_grid g ");
+		sql.append("left join ").append(getCustomSchema()).append("biomedgps_insight i on i.status_cd = 'P' and i.side_content_txt like  '%data-graph=\"' + g.grid_id + '\"%' ");
+		sql.append("where g.grid_id = ? ");
+		sql.append("union ");
+		sql.append("select 'abstract' as xr_id, 'Abstract Text' as xr_nm, i.title_txt as item_nm, i.insight_id as item_id, 'INSIGHT' as type from ").append(getCustomSchema()).append("biomedgps_grid g ");
+		sql.append("left join ").append(getCustomSchema()).append("biomedgps_insight i on i.status_cd = 'P' and abstract_txt like  '%data-graph=\"' + g.grid_id + '\"%' ");
+		sql.append("where g.grid_id = ? ");
 		log.debug(sql);
+		
+		DBProcessor db = new DBProcessor(dbConn);
+		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			int i = 1;
-			for (int c = 0; c < 4; c++) {
-				for (Entry<String, GridVO> e : data.entrySet()) {
-					ps.setString(i++, e.getKey());
-				}
-			}
+			ps.setString(1, g.getGridId());
+			ps.setString(2, g.getGridId());
+			ps.setString(3, g.getGridId());
+			ps.setString(4, g.getGridId());
+			ps.setString(5, g.getGridId());
+			ps.setString(6, g.getGridId());
 			
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
-				GridVO g = data.get(rs.getString(1));
-				log.debug(g.getTitle()+"|"+g.getUsageNo());
-				g.setUsageNo(g.getUsageNo() + rs.getInt(2));
+				GridUsageVO use = new GridUsageVO();
+				db.executePopulate(use, rs);
+				if (!StringUtil.isEmpty(use.getItemId()))
+					g.addUsage(use);
 			}
 		}
 	}

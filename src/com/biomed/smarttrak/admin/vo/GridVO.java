@@ -123,7 +123,7 @@ public class GridVO extends BeanDataVO {
 	private int numberRows = 0;
 	private int numberColumns = 0;
 	private int abbreviateNumbers;
-	private int usageNo;
+	private List<GridUsageVO> usage;
 	private String legacyId;
 	private String legacyName;
 	
@@ -149,6 +149,7 @@ public class GridVO extends BeanDataVO {
 		seriesTxtFlg = new int[10];
 		details = new ArrayList<>(10);
 		deletedRows = new ArrayList<>(10);
+		usage = new ArrayList<>();
 	}
 	
 	/**
@@ -1098,17 +1099,21 @@ public class GridVO extends BeanDataVO {
 	}
 
 	/**
-	 * @return the usageNo
+	 * @return the usage
 	 */
-	public int getUsageNo() {
-		return usageNo;
+	public List<GridUsageVO> getUsage() {
+		return usage;
 	}
 
 	/**
-	 * @param usageNo the usageNo to set
+	 * @param usage the usage to set
 	 */
-	public void setUsageNo(int usageNo) {
-		this.usageNo = usageNo;
+	public void setUsage(List<GridUsageVO> usage) {
+		this.usage = usage;
+	}
+	
+	public void addUsage(GridUsageVO use) {
+		usage.add(use);
 	}
 
 	@Column(name="legacy_id", isReadOnly=true)
