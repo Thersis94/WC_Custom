@@ -35,6 +35,8 @@ public class ProfecoTickets extends AbsImporter {
 		migrateActivities();
 		createOpenLedgers();
 		createCloseLedgers();
+		createOpenDateAttr();
+		createCloseDateAttr();
 		updateTicketStatus();
 		deleteProfecoTickets();
 	}
@@ -117,6 +119,32 @@ public class ProfecoTickets extends AbsImporter {
 
 
 	/**
+	 * Create an 'opened' ticket_data entry - one for each profeco ticket.
+	 */
+	private void createOpenDateAttr() {
+		String sql = StringUtil.join(DBUtil.INSERT_CLAUSE, schema, "wsla_ticket_data ",
+				"(data_entry_id, ticket_id, attribute_cd, value_txt, create_dt) ",
+				"select replace(newid(),'-',''), ticket_id, 'attr_profecoStartDate', to_char(create_dt, 'YYYY-MM-DD'), create_dt ",
+				DBUtil.FROM_CLAUSE, schema, "wsla_ticket_ledger where ticket_id=? and status_cd='OPENED' limit 1"); //limit 1 - just incase there are dups in the DB!
+		log.debug(sql);
+
+		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
+			for (Map.Entry<String, String> entry : ticketIds.entrySet()) {
+				if (!StringUtil.isEmpty(entry.getValue())) {
+					ps.setString(1, entry.getValue());
+					ps.addBatch();
+				}
+			}
+			int[] cnt = ps.executeBatch();
+			log.info(String.format("created %d open-date data entries for %d profeco tickets", cnt.length, ticketIds.size()));
+
+		} catch (SQLException sqle) {
+			log.error("could not create open-date data entries", sqle);
+		}
+	}
+
+
+	/**
 	 * Create an 'closed' ledger entry for each CLOSED ticket.  Note this is based off
 	 * whether the profeco ticket was closed, not whether the original ticket was closed.
 	 * The record is tied to the original ticket, however.
@@ -143,6 +171,33 @@ public class ProfecoTickets extends AbsImporter {
 
 		} catch (SQLException sqle) {
 			log.error("could not create close ledger entries", sqle);
+		}
+	}
+
+
+	/**
+	 * Create an 'opened' ticket_data entry - one for each profeco ticket.
+	 */
+	private void createCloseDateAttr() {
+		String sql = StringUtil.join(DBUtil.INSERT_CLAUSE, schema, "wsla_ticket_data ",
+				"(data_entry_id, ticket_id, attribute_cd, value_txt, create_dt) ",
+				"select replace(newid(),'-',''), ?, 'attr_profecoResolutionDate', to_char(create_dt, 'YYYY-MM-DD'), create_dt ",
+				DBUtil.FROM_CLAUSE, schema, "wsla_ticket_ledger where ticket_id=? and status_cd='CLOSED' limit 1"); //limit 1 - just incase there are dups in the DB!
+		log.debug(sql);
+
+		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
+			for (Map.Entry<String, String> entry : ticketIds.entrySet()) {
+				if (!StringUtil.isEmpty(entry.getValue())) {
+					ps.setString(1, entry.getValue());
+					ps.setString(2, entry.getKey());
+					ps.addBatch();
+				}
+			}
+			int[] cnt = ps.executeBatch();
+			log.info(String.format("created %d close-date data entries for %d profeco tickets", cnt.length, ticketIds.size()));
+
+		} catch (SQLException sqle) {
+			log.error("could not create close-date data entries", sqle);
 		}
 	}
 
