@@ -284,7 +284,34 @@ public class DiagnosticTransaction extends BaseTransactionAction {
 		
 		// Save the ticket data record
 		td.setLedgerEntryId(ledger.getLedgerEntryId());
+		
+		//check for an existing ticket data with the same code and get the 
+		//    primary id so it updates rather then inserts on save
+		checkForExistingAttr(td);
+		
 		dbp.save(td);
+	}
+
+	/**
+	 * this method looks for an attribute with the same code and the same ticket id
+	 * and sets the primary key on the ticket data vo sent into the method
+	 * @param td
+	 */
+	private void checkForExistingAttr(TicketDataVO tdOrig) {
+		DBProcessor dbp = new DBProcessor(getDBConnection(), getCustomSchema());
+		StringBuilder sql = new StringBuilder(120);
+		ArrayList<Object> vals = new ArrayList<>();
+		
+		sql.append(DBUtil.SELECT_FROM_STAR).append(getCustomSchema()).append("wsla_ticket_data ");
+		sql.append(DBUtil.WHERE_CLAUSE).append("ticket_id = ? and attribute_cd = ? ");
+		vals.add(tdOrig.getTicketId());
+		vals.add(tdOrig.getAttributeCode());
+		
+		List<TicketDataVO> data = dbp.executeSelect(sql.toString(), vals, new TicketDataVO());
+		
+		if(data != null && ! data.isEmpty()) {
+			tdOrig.setDataEntryId(data.get(0).getDataEntryId());
+		}
 	}
 }
 
