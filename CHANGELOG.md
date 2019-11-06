@@ -1,5 +1,23 @@
 WC_Custom Changelog (auto-generated)
 
+# [3.38.0](https://github.com/smtadmin/WC_Custom/compare/3.37.0...3.38.0) (2019-11-06)
+
+
+### Bug Fixes
+
+* **feature-wsla-i97:** debit memo job fix ([b09e34d](https://github.com/smtadmin/WC_Custom/commit/b09e34d))
+* **feature-wsla-i97:** fix for stuck tickets, and added shipment invoice code ([a8e0be4](https://github.com/smtadmin/WC_Custom/commit/a8e0be4))
+* **feature-wsla-i97:** fix logistics so you can ship to or from an end user ([3ec71a0](https://github.com/smtadmin/WC_Custom/commit/3ec71a0))
+* **RP-I12:** clean up various bugs and minor enhancements ([ba32ab3](https://github.com/smtadmin/WC_Custom/commit/ba32ab3))
+* **Search:** Found issue when searching for multiple paramters ([3bd30b3](https://github.com/smtadmin/WC_Custom/commit/3bd30b3))
+
+
+### Features
+
+* **feature-wsla-i97:** feature add check to make sure there is only ever one attr_dispositionCode i ([7f67eda](https://github.com/smtadmin/WC_Custom/commit/7f67eda))
+* **Performance:** Updated queries to improve performance on critical queries ([ce53e95](https://github.com/smtadmin/WC_Custom/commit/ce53e95))
+* **Small Requests:** Implemented small changes for the WSLA request list ([d8ad8eb](https://github.com/smtadmin/WC_Custom/commit/d8ad8eb))
+
 # [3.37.0](https://github.com/smtadmin/WC_Custom/compare/3.36.1...3.37.0) (2019-10-25)
 
 
