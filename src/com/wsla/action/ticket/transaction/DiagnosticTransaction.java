@@ -302,7 +302,7 @@ public class DiagnosticTransaction extends BaseTransactionAction {
 		StringBuilder sql = new StringBuilder(120);
 		ArrayList<Object> vals = new ArrayList<>();
 		
-		sql.append(DBUtil.SELECT_FROM_STAR).append(getCustomSchema()).append("wsla_ticket_data ");
+		sql.append(DBUtil.SELECT_CLAUSE).append(" data_entry_id ").append(DBUtil.FROM_CLAUSE).append(getCustomSchema()).append("wsla_ticket_data ");
 		sql.append(DBUtil.WHERE_CLAUSE).append("ticket_id = ? and attribute_cd = ? ");
 		vals.add(tdOrig.getTicketId());
 		vals.add(tdOrig.getAttributeCode());
