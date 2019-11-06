@@ -90,7 +90,7 @@ public class ArticleByCategoryAction extends SimpleActionAdapter {
 		sql.append("where d.approval_flg=1 and widget_meta_data_id=? "); 
 		if (!isPagePreview) {
 			sql.append(" and (c.publish_dt < CURRENT_TIMESTAMP or c.publish_dt is null) and (d.issue_dt < CURRENT_TIMESTAMP or d.issue_dt is null) ");
-			sql.append("and c.create_dt > current_date-730 "); //only show articles newer than 2yrs old - MTS-i36
+			sql.append("and c.publish_dt > current_date-730 "); //only show articles newer than 2yrs old - MTS-i36
 		}
 		if (!StringUtil.isEmpty(pubId)) {
 			sql.append("and publication_id = ? ");
