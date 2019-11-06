@@ -2,6 +2,17 @@ package com.biomed.smarttrak.admin.vo;
 
 import com.siliconmtn.db.orm.Column;
 
+/********************************************************************
+ * <b>Title: </b>GridUsageVO.java<br/>
+ * <b>Description: </b>Stores usage data for grids <br/>
+ * <b>Copyright: </b>Copyright (c) 2019<br/>
+ * <b>Company: </b>Silicon Mountain Technologies
+ * @author Eric Damschroder
+ * @since Nov 6, 2019
+ * Last Updated:
+ * 	
+ *******************************************************************/
+
 public class GridUsageVO {
 	
 	private String itemId;
