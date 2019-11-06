@@ -12,7 +12,6 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 import com.biomed.smarttrak.action.GridDisplayAction;
@@ -825,6 +824,12 @@ public class GridChartAction extends SBActionAdapter {
 		return new ArrayList<>(data.values());
 	}
 
+	
+	/**
+	 * Look up usage for this grid in all areas that a chart can appear
+	 * @param g
+	 * @throws SQLException
+	 */
 	private void determineUsage(GridVO g) throws SQLException {
 		
 		StringBuilder sql = new StringBuilder(750);
@@ -832,29 +837,29 @@ public class GridChartAction extends SBActionAdapter {
 		sql.append("select xr.market_attribute_id as xr_id, case when g.grid_id = xr.value_1_txt then 'Grid Chart' else xr.title_txt end as xr_nm, m.market_nm as item_nm, m.market_id as item_id, 'MARKET' as type from ").append(getCustomSchema()).append("biomedgps_grid g ");
 		sql.append("left join ").append(getCustomSchema()).append("biomedgps_market_attribute_xr xr on g.grid_id = xr.value_1_txt or (xr.status_no = 'P' and  xr.value_txt like '%data-graph=\"' + g.grid_id + '\"%') ");
 		sql.append("left join ").append(getCustomSchema()).append("biomedgps_market m on m.market_id = xr.market_id ");
-		sql.append("where g.grid_id = ? ");
+		sql.append("where g.grid_id = ? and m.status_no = 'P' ");
 		sql.append("union ");
 		sql.append("select xr.company_attribute_id as xr_id, xr.title_txt as xr_nm, c.company_nm as item_nm, c.company_id as item_id, 'COMPANY' as type from ").append(getCustomSchema()).append("biomedgps_grid g ");
 		sql.append("left join ").append(getCustomSchema()).append("biomedgps_company_attribute_xr xr on xr.status_no = 'P'and (xr.value_txt like '%data-graph=\"' + g.grid_id + '\"%') ");
 		sql.append("left join ").append(getCustomSchema()).append("biomedgps_company c on c.company_id = xr.company_id ");
-		sql.append("where g.grid_id = ? ");
+		sql.append("where g.grid_id = ? and c.status_no = 'P' ");
 		sql.append("union ");
 		sql.append("select xr.product_attribute_id as xr_id, xr.title_txt as xr_nm, p.product_nm as item_nm, p.product_id as item_id, 'PRODUCT' as type from ").append(getCustomSchema()).append("biomedgps_grid g ");
 		sql.append("left join ").append(getCustomSchema()).append("biomedgps_product_attribute_xr xr on xr.status_no = 'P'and (xr.value_txt like '%data-graph=\"' + g.grid_id + '\"%') ");
 		sql.append("left join ").append(getCustomSchema()).append("biomedgps_product p on p.product_id = xr.product_id ");
-		sql.append("where g.grid_id = ? ");
+		sql.append("where g.grid_id = ? and p.status_no = 'P' ");
 		sql.append("union ");
 		sql.append("select 'article' as xr_id, 'Article Body' as xr_nm, i.title_txt as item_nm, i.insight_id as item_id, 'INSIGHT' as type from ").append(getCustomSchema()).append("biomedgps_grid g ");
 		sql.append("left join ").append(getCustomSchema()).append("biomedgps_insight i on i.status_cd = 'P' and i.content_txt like '%data-graph=\"' + g.grid_id + '\"%' ");
-		sql.append("where g.grid_id = ? ");
+		sql.append("where g.grid_id = ? and i.status_cd = 'P' ");
 		sql.append("union ");
 		sql.append("select 'side' as xr_id, 'Side Content' as xr_nm, i.title_txt as item_nm, i.insight_id as item_id, 'INSIGHT' as type from ").append(getCustomSchema()).append("biomedgps_grid g ");
 		sql.append("left join ").append(getCustomSchema()).append("biomedgps_insight i on i.status_cd = 'P' and i.side_content_txt like  '%data-graph=\"' + g.grid_id + '\"%' ");
-		sql.append("where g.grid_id = ? ");
+		sql.append("where g.grid_id = ? and i.status_cd = 'P' ");
 		sql.append("union ");
 		sql.append("select 'abstract' as xr_id, 'Abstract Text' as xr_nm, i.title_txt as item_nm, i.insight_id as item_id, 'INSIGHT' as type from ").append(getCustomSchema()).append("biomedgps_grid g ");
 		sql.append("left join ").append(getCustomSchema()).append("biomedgps_insight i on i.status_cd = 'P' and abstract_txt like  '%data-graph=\"' + g.grid_id + '\"%' ");
-		sql.append("where g.grid_id = ? ");
+		sql.append("where g.grid_id = ? and i.status_cd = 'P' ");
 		log.debug(sql);
 		
 		DBProcessor db = new DBProcessor(dbConn);
