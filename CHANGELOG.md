@@ -1,5 +1,17 @@
 WC_Custom Changelog (auto-generated)
 
+## [3.38.1](https://github.com/smtadmin/WC_Custom/compare/3.38.0...3.38.1) (2019-11-07)
+
+
+### Bug Fixes
+
+* **feature-wsla-i97:** fix warehouse when shipping products for repair ([9f4e4f1](https://github.com/smtadmin/WC_Custom/commit/9f4e4f1))
+* **MTS-i36:** Carousels should only randomly load content from the past 2yrs ([aa5b57e](https://github.com/smtadmin/WC_Custom/commit/aa5b57e))
+* **MTS-i36:** Use publish date rather than create date ([41945d0](https://github.com/smtadmin/WC_Custom/commit/41945d0))
+* **MTS-i39:** Incorperate publish date when counting articles visible to the user ([e93424f](https://github.com/smtadmin/WC_Custom/commit/e93424f))
+* **Sc-1506:** Add ability to create annual archives for markets. ([e252256](https://github.com/smtadmin/WC_Custom/commit/e252256))
+* **Sc-1506:** Fix issues with duplicated grids and historical grids. ([526e48f](https://github.com/smtadmin/WC_Custom/commit/526e48f))
+
 # [3.38.0](https://github.com/smtadmin/WC_Custom/compare/3.37.0...3.38.0) (2019-11-06)
 
 
