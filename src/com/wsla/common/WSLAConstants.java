@@ -89,7 +89,7 @@ public class WSLAConstants {
 	 * comes to expose 'source' as a selectable option - which is a phase-2 upgrade.
 	 * TODO change this to the actual WSLA warehouse according to the scripted data import
 	 */
-	public static final String DEFAULT_SHIPPING_SRC = "b89e4d5a3e2c439f879a25aee66bedde";
+	public static final String DEFAULT_SHIPPING_SRC = "WSLA_020";
 
 	/**
 	 * The provider ID for the WSLA CAS
