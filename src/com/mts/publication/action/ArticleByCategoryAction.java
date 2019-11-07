@@ -88,8 +88,10 @@ public class ArticleByCategoryAction extends SimpleActionAdapter {
 		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("mts_document c on b.action_group_id = c.document_id ");
 		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("mts_issue d on c.issue_id = d.issue_id ");
 		sql.append("where d.approval_flg=1 and widget_meta_data_id=? "); 
-		if (!isPagePreview)
+		if (!isPagePreview) {
 			sql.append(" and (c.publish_dt < CURRENT_TIMESTAMP or c.publish_dt is null) and (d.issue_dt < CURRENT_TIMESTAMP or d.issue_dt is null) ");
+			sql.append("and c.publish_dt > current_date-730 "); //only show articles newer than 2yrs old - MTS-i36
+		}
 		if (!StringUtil.isEmpty(pubId)) {
 			sql.append("and publication_id = ? ");
 			vals.add(pubId);
