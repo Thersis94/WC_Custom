@@ -716,11 +716,12 @@ public class GridChartAction extends SBActionAdapter {
 		String search = StringUtil.checkVal(req.getParameter("search")).toUpperCase();
 
 		StringBuilder sql = new StringBuilder(250);
-		sql.append("select count(*) from ").append(schema).append("biomedgps_grid ");
+		sql.append("select count(*) over () from ").append(schema).append("biomedgps_grid ");
 		sql.append(DBUtil.WHERE_1_CLAUSE);
 		if (search.length() > 0) sql.append("and (upper(title_nm) like ? or upper(subtitle_nm) like ?) ");
 		if(!req.getBooleanParameter("showArchives"))
 			sql.append("and archive_flg = 'false' ");
+		sql.append("group by grid_group_id");
 
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			if (search.length() > 0) {
