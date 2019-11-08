@@ -372,7 +372,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		sql.append("to_tsvector(action_nm) || "); 
 		sql.append("to_tsvector(coalesce(action_desc, '')) || ");
 		sql.append("to_tsvector(coalesce(first_nm, '')) || ");
-		sql.append("to_tsvector(coalesce(last_nm, '')) as document ");
+		sql.append("to_tsvector(coalesce(last_nm, '')) as document, coalesce(a.publish_dt,a.update_dt, a.create_dt) as dt ");
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("mts_document a ");
 		sql.append(DBUtil.INNER_JOIN).append("sb_action b on a.action_group_id=b.action_group_id ");
 		if (!page.isPreviewMode()) 
@@ -384,9 +384,9 @@ public class SelectLookupAction extends SBActionAdapter {
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("mts_user c on a.author_id = c.user_id ");
 		if (!page.isPreviewMode()) 
 			sql.append("where (a.publish_dt < CURRENT_TIMESTAMP or a.publish_dt is null) ");
-		sql.append("order by coalesce(a.update_dt, a.create_dt) desc) as search ");
+		sql.append(") as search ");
 		sql.append("where search.document @@ to_tsquery('").append(term).append("') ");
-		sql.append("limit 10");
+		sql.append("order by dt desc limit 10");
 		log.debug(sql.length() + "|" + sql);
 
 		DBProcessor db = new DBProcessor(getDBConnection(), schema);
