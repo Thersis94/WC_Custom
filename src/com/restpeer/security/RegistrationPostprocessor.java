@@ -74,7 +74,7 @@ public class RegistrationPostprocessor extends SBActionAdapter {
 		createDealerLocation(req);
 		createUser(req);
 		
-		req.setParameter(Constants.REDIRECT_URL, RPConstants.PORTAL_PATH);
+		req.setParameter(Constants.REDIRECT_URL, RPConstants.KITCHEN_MEMBER_PATH);
 	}
 
 	/**
