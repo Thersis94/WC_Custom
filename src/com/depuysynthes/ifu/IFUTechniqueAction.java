@@ -90,8 +90,9 @@ public class IFUTechniqueAction extends SBActionAdapter {
 	 */
 	private String buildSingleGuideSql() {
 		String customDb = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
-		StringBuilder sql = new StringBuilder(200);
-		sql.append("SELECT *, dit.DPY_SYN_MEDIABIN_ID as tg_mediabin_id, dit.URL_TXT as tg_url FROM ");
+		StringBuilder sql = new StringBuilder(500);
+		sql.append("SELECT *, dit.DPY_SYN_MEDIABIN_ID as tg_mediabin_id, dit.URL_TXT as tg_url, ");
+		sql.append("dsm.dpy_syn_mediabin_id as mediabin_present FROM ");
 		sql.append(customDb).append("DEPUY_IFU_TG dit ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(customDb).append("DEPUY_IFU_TG_XR ditx on ");
 		sql.append("dit.DEPUY_IFU_TG_ID = ditx.DEPUY_IFU_TG_ID ");
