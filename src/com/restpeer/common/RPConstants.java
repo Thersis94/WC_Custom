@@ -90,8 +90,10 @@ public class RPConstants {
 	 */
 	public static final String PORTAL_PATH = "/portal";
 	public static final String CART_PATH = PORTAL_PATH + "/cart";
-	public static final String KITCHEN_SIGNUP_PATH = "/kitchen";
-	public static final String MOBILE_REST_SIGNUP_PATH = "/mobile_rest";
+	public static final String KITCHEN_SIGNUP_PATH = "/kitcheneventsignup";
+	public static final String MOBILE_REST_SIGNUP_PATH = "/guest";
+	public static final String KITCHEN_MEMBER_PATH = PORTAL_PATH + "/kitchen";
+	public static final String MOBILE_REST_MEMBER_PATH = PORTAL_PATH + "/mobile_rest";
 
 	private RPConstants() {
 		//don't need a constructor - static class
