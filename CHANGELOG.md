@@ -1,5 +1,21 @@
 WC_Custom Changelog (auto-generated)
 
+# [3.39.0](https://github.com/smtadmin/WC_Custom/compare/3.38.1...3.39.0) (2019-11-12)
+
+
+### Bug Fixes
+
+* **MTS-i35:** Change ordering to most recent first ([54aa1ae](https://github.com/smtadmin/WC_Custom/commit/54aa1ae))
+* **MTS-i35:** Change query to use publish date ([0c8befe](https://github.com/smtadmin/WC_Custom/commit/0c8befe))
+* **Sc-1321:** Ensure loading all charts does not miss row detail data. ([770ec85](https://github.com/smtadmin/WC_Custom/commit/770ec85))
+* **Sc-1603:** Tweak growth rate calculations. ([465285d](https://github.com/smtadmin/WC_Custom/commit/465285d))
+* **ST-25:** Add published quarter simulation and fix minor issues with growth calculations. ([7ff91b0](https://github.com/smtadmin/WC_Custom/commit/7ff91b0))
+
+
+### Features
+
+* **DSEMEA-63:** Add Asset URL on front-end.  Cleanup code to align with UI ([f4f3ca2](https://github.com/smtadmin/WC_Custom/commit/f4f3ca2))
+
 ## [3.38.1](https://github.com/smtadmin/WC_Custom/compare/3.38.0...3.38.1) (2019-11-07)
 
 
