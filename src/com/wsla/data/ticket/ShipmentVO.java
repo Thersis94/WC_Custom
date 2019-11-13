@@ -51,8 +51,10 @@ public class ShipmentVO extends BeanDataVO {
 	private Date shipmentDate;
 	private Date arrivalDate;
 	private String shippingInvoiceTypeCode;
+	private int inventoryIgnoreFlag;
 	private Date createDate;
 	private Date updateDate;
+	
 	
 	// Bean sub-elements
 	private ProviderLocationVO fromLocation;
@@ -280,13 +282,22 @@ public class ShipmentVO extends BeanDataVO {
 	public void setTicketId(String ticketId) {
 		this.ticketId = ticketId;
 	}
-
+	
+	public void setInventoryIgnoreFlag(int inventoryIgnoreFlag) {
+		this.inventoryIgnoreFlag = inventoryIgnoreFlag;
+	}
 	/**
 	 * @return the fromLocation
 	 */
 	public ProviderLocationVO getFromLocation() {
 		return fromLocation;
 	}
+	
+	@Column(name="inventory_ignore_flg")
+	public int getInventoryIgnoreFlag() {
+		return inventoryIgnoreFlag;
+	}
+
 	@Column(name="shipment_invoice_type_cd")
 	public String getShippingInvoiceTypeCode() {
 		return shippingInvoiceTypeCode;
