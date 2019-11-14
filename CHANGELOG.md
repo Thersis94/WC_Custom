@@ -1,5 +1,14 @@
 WC_Custom Changelog (auto-generated)
 
+## [3.39.1](https://github.com/smtadmin/WC_Custom/compare/3.39.0...3.39.1) (2019-11-14)
+
+
+### Bug Fixes
+
+* **RP-I12:** final path changes per customer ([911be6c](https://github.com/smtadmin/WC_Custom/commit/911be6c))
+* **RP-I12:** set user phone to the work phone number type ([9cd50ae](https://github.com/smtadmin/WC_Custom/commit/9cd50ae))
+* **RP-I12:** update paths per customer ([8403b66](https://github.com/smtadmin/WC_Custom/commit/8403b66))
+
 # [3.39.0](https://github.com/smtadmin/WC_Custom/compare/3.38.1...3.39.0) (2019-11-12)
 
 
