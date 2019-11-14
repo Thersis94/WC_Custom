@@ -729,7 +729,6 @@ public class GridChartAction extends SBActionAdapter {
 				ps.setString(2, "%" + search + "%");
 			}
 
-			log.debug(ps);
 			ResultSet rs = ps.executeQuery();
 			if (rs.next())
 				count = rs.getInt(1);
