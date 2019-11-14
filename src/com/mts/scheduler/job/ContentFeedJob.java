@@ -21,7 +21,6 @@ import org.quartz.JobExecutionException;
 
 // GSON 2.3
 import com.google.gson.Gson;
-
 // SMT Base libs
 import com.siliconmtn.db.DatabaseConnection;
 import com.siliconmtn.db.orm.DBProcessor;
@@ -30,7 +29,6 @@ import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.html.tool.HTMLFeedParser;
 import com.siliconmtn.http.filter.fileupload.Constants;
 import com.siliconmtn.util.Convert;
-
 // WC Libs
 import com.smt.sitebuilder.scheduler.AbstractSMTJob;
 
@@ -54,19 +52,19 @@ import ch.ethz.ssh2.SFTPv3FileHandle;
  ****************************************************************************/
 
 public class ContentFeedJob extends AbstractSMTJob {
-	
+
 	// Members
 	private Map<String, Object> attributes = new HashMap<>();
 	private boolean isManualJob = false;
-	
+
 	/**
 	 * 
 	 */
 	public ContentFeedJob() {
 		super();
 	}
-	
-	
+
+
 	public static void main(String[] args) throws Exception {
 		// Set job Information
 		ContentFeedJob cfj = new ContentFeedJob();
@@ -80,11 +78,11 @@ public class ContentFeedJob extends AbstractSMTJob {
 		cfj.attributes.put(Constants.CUSTOM_DB_SCHEMA, "custom.");
 		cfj.isManualJob = true;
 		cfj.setDBConnection();
-		
+
 		// Run the job
 		cfj.processDocuments();
 	}
-	
+
 	/**
 	 * get job database connection
 	 * @throws DatabaseException
@@ -106,11 +104,11 @@ public class ContentFeedJob extends AbstractSMTJob {
 	@Override
 	public void execute(JobExecutionContext ctx) throws JobExecutionException {
 		super.execute(ctx);
-		
+
 		attributes = ctx.getMergedJobDataMap().getWrappedMap();
 		String message = "Success";
 		boolean success = true;
-		
+
 		// Process the data feed
 		try {
 			processDocuments();
@@ -118,13 +116,11 @@ public class ContentFeedJob extends AbstractSMTJob {
 			message = "Fail: " + e.getLocalizedMessage();
 			success = false;
 		}
-		
+
 		// Close out the database and the transaction log
-		try {
-			this.finalizeJob(success, message);
-		} catch (Exception e) { /** nothing to do here **/ }
+		finalizeJob(success, message);
 	}
-	
+
 	/**
 	 * Runs the workflow for sending the documents
 	 * @throws IOException 
@@ -144,18 +140,18 @@ public class ContentFeedJob extends AbstractSMTJob {
 		String pattern = "yyyyMMdd";
 		SimpleDateFormat sdf =new SimpleDateFormat(pattern);
 		fileLoc += sdf.format(d) + ".json";
-		
+
 		// Get the docs published in the past day.  Exit of no articles found
 		ContentFeedVO docs = getArticles(feedTitle, feedDesc, baseUrl);
 		if (docs.getItems().isEmpty()) return;
-		
+
 		String json = convertArticlesJson(docs);
-		
+
 		// Save document
 		if (isManualJob) saveFile(json, fileLoc);
 		else saveFile(json, fileLoc, host, user, pwd);
 	}
-	
+
 	/** 
 	 * saves the file to the file system 
 	 * @param json
@@ -169,7 +165,7 @@ public class ContentFeedJob extends AbstractSMTJob {
 			bw.flush();
 		}
 	}
-	
+
 	/**
 	 * Write the file to the file system
 	 * @param json
@@ -177,19 +173,19 @@ public class ContentFeedJob extends AbstractSMTJob {
 	 * @throws IOException
 	 */
 	protected void saveFile(String json, String fileLoc, String host, String user, String pwd) 
-	throws IOException {
+			throws IOException {
 		// Connect to the server and authenticate
 		Connection sftpConn = new Connection(host);
-		
+
 		try {
 			sftpConn.connect(null, 3000, 0);
 			boolean isAuth = sftpConn.authenticateWithPassword(user, pwd);
 			if (! isAuth) throw new IOException("Authentication Failed");
-		
+
 		} catch (Exception e) {
 			throw new IOException("Connection / Authentication Failed");
 		}
-		
+
 		// Write the file to the server
 		ByteArrayInputStream bais = new ByteArrayInputStream(json.getBytes());
 		SFTPv3Client sftp = new SFTPv3Client(sftpConn);
@@ -201,11 +197,11 @@ public class ContentFeedJob extends AbstractSMTJob {
 			sftp.write(handle, offset, buffer, 0, i);
 			offset += i;
 		}
-		
+
 		sftp.closeFile(handle);
 		sftp.close();
 	}
-	
+
 	/**
 	 * 
 	 * @return
@@ -224,19 +220,20 @@ public class ContentFeedJob extends AbstractSMTJob {
 		sql.append("mts_user u on a.author_id = u.user_id ");
 		sql.append("where publish_dt between ? and ? and publication_id = 'MEDTECH-STRATEGIST' ");
 		sql.append("order by publish_dt ");
-		
+
 		List<Object> vals = new ArrayList<>();
 		if (isManualJob) {
 			vals.add(Convert.formatStartDate((String)attributes.get("START_DT")));
 			vals.add(Convert.formatEndDate((String)attributes.get("END_DT")));
 		} else {
+			Date startDt = Convert.formatStartDate((String)attributes.get("START_DT")); //this can be set in the admintool for a manual re-run, to catch up missed days.
 			Date yesterday = Convert.formatDate(new Date(), Calendar.DAY_OF_YEAR, -1);
-			vals.add(Convert.formatStartDate(yesterday));
+			vals.add(Convert.formatStartDate(startDt != null ? startDt : yesterday));
 			vals.add(Convert.formatEndDate(yesterday));
 		}
-		
+
 		log.debug(sql.length() + "|" + sql + "|" + vals);
-		
+
 		// Create the wrapper bean
 		ContentFeedVO feed = new ContentFeedVO();
 		feed.setTitle(title);
@@ -244,17 +241,16 @@ public class ContentFeedJob extends AbstractSMTJob {
 		feed.setLink(baseUrl);
 		feed.setLastBuildDate(new Date());
 		feed.setLocale("en-US");
-		
+
 		// Get the articles and update the links
 		DBProcessor db = new DBProcessor(conn);		
 		feed.setItems(db.executeSelect(sql.toString(), vals, new ContentFeedItemVO()));
 		updateRelativeLinks(feed, baseUrl);
 		log.debug("Number Articles: " + feed.getItems().size());
-		
+
 		return feed;
-		
 	}
-	
+
 	/**
 	 * Updates the relative URLs/links to be fully qualified
 	 * @param feed
@@ -267,7 +263,7 @@ public class ContentFeedJob extends AbstractSMTJob {
 			item.setContent(html);
 		}
 	}
-	
+
 	/**
 	 * Convert the object to a json data object
 	 * @param docs
