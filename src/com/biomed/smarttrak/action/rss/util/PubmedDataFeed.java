@@ -314,6 +314,7 @@ public class PubmedDataFeed extends AbstractSmarttrakRSSFeed {
 		params.put("datatype", props.getProperty("pubmeddatatype"));
 		params.put("reldate", props.getProperty("pubmedsearchPeriodDays"));
 		params.put("term", terms);
+		params.put("api_key", props.get("pubmedApiKey"));
 		return params;
 	}
 
@@ -333,6 +334,7 @@ public class PubmedDataFeed extends AbstractSmarttrakRSSFeed {
 		params.put("retmode", props.getProperty("pubmedRetMode"));
 		params.put("WebEnv", vo.getWebEnv());
 		params.put("retmax", Integer.toString(vo.getRetMax()));
+		params.put("api_key", props.get("pubmedApiKey"));
 		return params;
 	}
 }
