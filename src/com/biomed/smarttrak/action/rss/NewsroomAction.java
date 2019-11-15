@@ -160,7 +160,6 @@ public class NewsroomAction extends SBActionAdapter {
 	 */
 	private List<RSSArticleVO> loadDetails(List<Object> vals, ActionRequest req) {
 		DBProcessor dbp = new DBProcessor(dbConn, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
-		dbp.setGenerateExecutedSQL(true);
 		return dbp.executeSelect(loadFilteredArticleSql(vals.size(), req, false), vals, new RSSArticleVO());
 	}
 
