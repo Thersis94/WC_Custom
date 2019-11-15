@@ -107,6 +107,7 @@ public class NewsroomAction extends SBActionAdapter {
 			ModuleVO mod = (ModuleVO) attributes.get(Constants.MODULE_DATA);
 			SolrResponseVO resp = (SolrResponseVO)mod.getActionData();
 			List<Object> params = getIdsFromDocs(resp);
+			params.add(req.getParameter(FEED_GROUP_ID));
 
 			if(!params.isEmpty()) {
 				List<RSSArticleVO> articles = loadDetails(params, req);
@@ -159,14 +160,14 @@ public class NewsroomAction extends SBActionAdapter {
 	 */
 	private List<RSSArticleVO> loadDetails(List<Object> vals, ActionRequest req) {
 		DBProcessor dbp = new DBProcessor(dbConn, (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
-		return dbp.executeSelect(loadFilteredArticleSql(vals.size(), req), vals, new RSSArticleVO());
+		return dbp.executeSelect(loadFilteredArticleSql(vals.size(), req, false), vals, new RSSArticleVO());
 	}
 
 	/**
 	 * @param size
 	 * @return
 	 */
-	private String loadFilteredArticleSql(int size, ActionRequest req) {
+	private String loadFilteredArticleSql(int size, ActionRequest req, boolean loadFromFilterId) {
 		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(800);
 		sql.append(DBUtil.SELECT_CLAUSE).append("a.rss_article_id, a.rss_entity_id, ");
@@ -179,9 +180,17 @@ public class NewsroomAction extends SBActionAdapter {
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("biomedgps_rss_article a ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("biomedgps_rss_filtered_article af ");
 		sql.append("on a.rss_article_id = af.rss_article_id ");
-		sql.append("where af.rss_article_filter_id in (");
-		DBUtil.preparedStatmentQuestion(size, sql);
-		sql.append(") order by ");
+		sql.append("where ");
+		if (loadFromFilterId) {
+			sql.append("af.rss_article_filter_id in (");
+			DBUtil.preparedStatmentQuestion(size, sql);
+			sql.append(")  ");
+		} else {
+			sql.append("af.rss_article_id in (");
+			DBUtil.preparedStatmentQuestion(size-1, sql);
+			sql.append(") and af.feed_group_id = ? ");
+		}
+		sql.append(" order by ");
 		if(req.hasParameter("fieldSort")) {
 			switch(req.getParameter("fieldSort")) {
 				case "title":
@@ -267,28 +276,19 @@ public class NewsroomAction extends SBActionAdapter {
 		String bucketId = req.getParameter(BUCKET_ID);
 
 		String statusCd = req.getParameter(STATUS_CD, ArticleStatus.N.name());
+		
+		StringBuilder comboKey = new StringBuilder();
+		comboKey.append(StringUtil.isEmpty(feedGroupId)? '*':feedGroupId).append(SearchDocumentHandler.HIERARCHY_DELIMITER);
+		comboKey.append(StringUtil.isEmpty(statusCd)? ArticleStatus.N.name():statusCd).append(SearchDocumentHandler.HIERARCHY_DELIMITER);
+		if (!StringUtil.isEmpty(bucketId)) comboKey.append(bucketId);
+		
+		fq.add("comboKey:" + comboKey.toString());
 
-		/*
-		 * If filtering by complete articles, ignore status, only look at the flag.
-		 * Otherwise if we're not looking for all, apply status.
-		 */
-		if("C".equals(statusCd)) {
-			fq.add("completeFlag_i:1");
-		} else if(!"ALL".equals(statusCd)) {
-			fq.add("articleStatus_s:" + statusCd);
-			fq.add("completeFlag_i:0");
-		}
-		if (!StringUtil.isEmpty(feedGroupId))
-			fq.add("feedGroupId_s:" + feedGroupId);
-
-		if (!StringUtil.isEmpty(bucketId)) {
-			fq.add("bucketId_s:" + bucketId);
-		}
-
+		log.debug("CombKey is " + comboKey.toString());
 		//Check for ids we want to ignore. Is managed on front end with a timer.
 		if(req.hasParameter("skipIds")) {
 			for(String skipId : req.getParameter("skipIds").split(",")) {
-				fq.add("!documentId:" + skipId);
+				fq.add("!filterId:" + skipId);
 			}
 		}
 
