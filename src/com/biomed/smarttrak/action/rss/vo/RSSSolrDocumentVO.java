@@ -13,16 +13,14 @@ import com.smt.sitebuilder.security.SecurityController;
 import com.smt.sitebuilder.util.solr.SolrDocumentVO;
 
 /****************************************************************************
- * <b>Title:</b> RSSFilterArticleVO.java
+ * <b>Title:</b> RSSSolrDocumentVO.java
  * <b>Project:</b> WC_Custom
- * <b>Description:</b> Manages the MarkedUp Article/Title Text after the FeedGroup
- * Filter is applied to the original Article Text.
- * <b>Copyright:</b> Copyright (c) 2017
+ * <b>Description:</b> Specific VO for handling rss feed data in a solr compliant fashion
+ * <b>Copyright:</b> Copyright (c) 2019
  * <b>Company:</b> Silicon Mountain Technologies
  *
- * @author Billy Larsen
- * @version 3.3.1
- * @since Oct 3, 2017
+ * @author Eric Damschroder
+ * @since Nov 15, 2019
  ****************************************************************************/
 @Table(name="biomedgps_rss_article")
 public class RSSSolrDocumentVO extends SolrDocumentVO {

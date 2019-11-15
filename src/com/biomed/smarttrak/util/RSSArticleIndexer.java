@@ -13,7 +13,6 @@ import java.util.Properties;
 import org.apache.solr.client.solrj.SolrClient;
 
 import com.biomed.smarttrak.action.rss.vo.RSSSolrDocumentVO;
-import com.siliconmtn.action.ActionException;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.http.filter.fileupload.Constants;
@@ -68,7 +67,7 @@ public class RSSArticleIndexer extends SMTAbstractIndex {
 		}
 	}
 
-	private List<String> loadArticleIds(List<String> filterIds) throws SQLException {
+	protected List<String> loadArticleIds(List<String> filterIds) throws SQLException {
 		StringBuilder sql = new StringBuilder(125);
 		String customDb = config.getProperty(Constants.CUSTOM_DB_SCHEMA);
 		sql.append("select rs.rss_article_id from ").append(customDb).append("biomedgps_rss_article rs ");
