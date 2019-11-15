@@ -7,7 +7,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
-import com.depuysynthes.action.EMEACarouselAction;
 import com.depuysynthes.scripts.MediaBinDeltaVO;
 import com.depuysynthes.scripts.MediaBinDeltaVO.State;
 import com.siliconmtn.commerce.catalog.ProductVO;
@@ -39,7 +38,7 @@ public class ShowpadProductDecorator extends ShowpadMediaBinDecorator {
 	/*
 	 * The product catalog this script is hard-coded around
 	 */
-	public static final String CATALOG_ID = EMEACarouselAction.CATALOG_ID;
+	public static final String CATALOG_ID = "DS_PRODUCTS_EMEA";
 
 	protected CatalogReconcileUtil prodUtil;
 
