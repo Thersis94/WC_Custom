@@ -17,7 +17,6 @@ import com.biomed.smarttrak.vo.LinkVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
-import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 
 // WebCrescendo
@@ -63,8 +62,9 @@ public class LinkReportAction extends SimpleActionAdapter {
 	 */
 	public List<LinkVO> retrieveData(ActionRequest req) throws ActionException {
 		SiteVO site = (SiteVO)req.getAttribute(Constants.SITE_DATA);
-		boolean reviewFlg = Convert.formatBoolean(req.getParameter("reviewFlag"));
-		return loadLinks(site, reviewFlg);
+		boolean reviewFlg = req.getBooleanParameter("reviewFlag");
+		boolean ignoreFlg = req.getBooleanParameter("ignoreFlag");
+		return loadLinks(site, reviewFlg, ignoreFlg);
 	}
 
 	@Override
@@ -103,12 +103,12 @@ public class LinkReportAction extends SimpleActionAdapter {
 	 * @return
 	 * @throws ActionException 
 	 */
-	private List<LinkVO> loadLinks(SiteVO site, boolean reviewFlag) throws ActionException {
+	private List<LinkVO> loadLinks(SiteVO site, boolean reviewFlag, boolean ignoreFlag) throws ActionException {
 		String qsPath = (String) getAttribute(Constants.QS_PATH);
 		List<LinkVO> data = new ArrayList<>(5000);
 
 		StringBuilder sql = new StringBuilder(250);
-		sql.append("select l.link_id, l.url_txt, l.status_no, l.check_dt, l.review_flg, l.content_id, ");
+		sql.append("select l.link_id, l.url_txt, l.status_no, l.check_dt, l.review_flg, l.content_id, l.ignore_flg, ");
 		sql.append("coalesce(l.company_id,l.product_id,l.insight_id,l.update_id,l.market_id) as id, ");
 		sql.append("coalesce(c.company_nm,p.product_nm,i.title_txt,u.title_txt,m.market_nm) as nm, ");
 		sql.append("case when l.company_id is not null then 'COMPANY' when l.product_id is not null then 'PRODUCT' ");
@@ -121,6 +121,7 @@ public class LinkReportAction extends SimpleActionAdapter {
 		sql.append("left join custom.biomedgps_insight i on i.insight_id = l.insight_id ");
 		sql.append("where l.status_no=404 ");
 		if(!reviewFlag) sql.append("and l.review_flg=0 ");
+		if(!ignoreFlag) sql.append("and l.ignore_flg=0 ");
 		sql.append("order by section, id");
 		log.debug(sql);
 
