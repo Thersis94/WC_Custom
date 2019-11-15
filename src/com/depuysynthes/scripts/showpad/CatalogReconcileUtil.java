@@ -10,16 +10,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.Properties;
 
 import org.apache.log4j.Logger;
 
 import com.depuysynthes.scripts.DSMediaBinImporterV2;
 import com.depuysynthes.scripts.MediaBinDeltaVO;
 import com.depuysynthes.scripts.MediaBinDeltaVO.State;
-import com.depuysynthes.solr.ProductCatalogSolrIndex;
 import com.siliconmtn.commerce.catalog.ProductAttributeContainer;
 import com.siliconmtn.commerce.catalog.ProductAttributeVO;
 import com.siliconmtn.commerce.catalog.ProductCategoryVO;
@@ -27,7 +26,6 @@ import com.siliconmtn.commerce.catalog.ProductVO;
 import com.siliconmtn.data.Node;
 import com.siliconmtn.data.Tree;
 import com.siliconmtn.db.pool.SMTDBConnection;
-import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.commerce.product.ProductCatalogAction;
 
@@ -325,11 +323,6 @@ public class CatalogReconcileUtil {
 	 * @return
 	 */
 	private Collection<String> convertFromJson(String jsonText) {
-		try {
-			return ProductCatalogSolrIndex.convertFromJSON(jsonText);
-		} catch (InvalidDataException ide) {
-			log.error("could not parse JSON stored on the Product record", ide);
-		}
 		return Collections.emptyList();
 	}
 
