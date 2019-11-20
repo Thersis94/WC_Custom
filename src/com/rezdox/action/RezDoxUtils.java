@@ -72,11 +72,6 @@ public class RezDoxUtils {
 	public static final String EARN_PATH = REWARD_PATH + "/earn";
 
 	/**
-	 * coefficient modifier for putting a dollar value on home improvements (projects)
-	 */
-	public static final double IMPROVEMENTS_VALUE_COEF = .537;
-
-	/**
 	 * Org Roles for the site
 	 */
 	public static final String REZDOX_RESIDENCE_ROLE = "REZDOX_RESIDENCE";

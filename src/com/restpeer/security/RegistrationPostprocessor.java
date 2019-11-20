@@ -1,5 +1,6 @@
 package com.restpeer.security;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import com.restpeer.action.admin.UserAction;
@@ -73,7 +74,7 @@ public class RegistrationPostprocessor extends SBActionAdapter {
 		createDealerLocation(req);
 		createUser(req);
 		
-		req.setParameter(Constants.REDIRECT_URL, RPConstants.PORTAL_PATH);
+		req.setParameter(Constants.REDIRECT_URL, RPConstants.KITCHEN_MEMBER_PATH);
 	}
 
 	/**
@@ -133,17 +134,23 @@ public class RegistrationPostprocessor extends SBActionAdapter {
 	 * @throws ActionException
 	 */
 	protected RPUserVO createUser(ActionRequest req) throws ActionException {
-		RPUserVO user = new RPUserVO();
-		user.setProfile((UserDataVO) req.getSession().getAttribute(Constants.USER_DATA));
-		user.setProfileId(user.getProfile().getProfileId());
-		user.setFirstName(user.getProfile().getFirstName());
-		user.setLastName(user.getProfile().getLastName());
-		user.setEmailAddress(user.getProfile().getEmailAddress());
-		user.setPhoneNumber(user.getProfile().getMainPhone());
+		UserDataVO profile = (UserDataVO) req.getSession().getAttribute(Constants.USER_DATA);
 		
+		RPUserVO user = new RPUserVO();
+		user.setProfileId(profile.getProfileId());
+		user.setFirstName(profile.getFirstName());
+		user.setLastName(profile.getLastName());
+		user.setEmailAddress(profile.getEmailAddress());
+		user.setPhoneNumber(profile.getMainPhone());
+		user.setMobileRestStatus(MemberType.CUSTOMER == memberType ? new HashMap<>() : null);
+		
+		// Save the RP user record
 		req.setParameter("isInsert", "true");
 		UserAction ua = new UserAction(getDBConnection(), getAttributes());
 		ua.saveCustomUser(user, req);
+
+		// Set the extended RP user info onto the user profile data
+		profile.setUserExtendedInfo(user);
 		
 		return user;
 	}

@@ -91,13 +91,32 @@ public class ScheduleAdminAction extends SBActionAdapter {
 	public void retrieve(ActionRequest req) throws ActionException {
 		log.debug("Schedule action retrieve");
 		
-		Date startDate = req.getDateParameter(START_DATE);
-		Date endDate = req.getDateParameter(END_DATE);
+		UserVO user = (UserVO) getAdminUser(req).getUserExtendedInfo();
+		
+		Date startDate = null;
+		Date endDate = null;
+		
+		//the website formats the dates with day or month first depending on the locale of the user so the date string is split and reorder to match what our code is expecting down stream.  
+		
+		if("en_US".equalsIgnoreCase(user.getLocale())) {
+			startDate = req.getDateParameter(START_DATE);
+			endDate = req.getDateParameter(END_DATE);
+		}else {
+			String[] startDateParts = req.getStringParameter(START_DATE, "").split("/");
+			String[] endDateParts = req.getStringParameter(END_DATE, "").split("/");
+			
+			if(startDateParts != null && startDateParts.length > 1 && endDateParts != null && endDateParts.length > 1 ) {
+				startDate = Convert.parseDateUnknownPattern(startDateParts[1] +"/"+ startDateParts[0] + "/"+ startDateParts[2] );
+				endDate = Convert.parseDateUnknownPattern(endDateParts[1] +"/"+ endDateParts[0] + "/"+ endDateParts[2]);
+			}
+			
+		}
+		
 		String direction = req.getParameter("direction");
 		
 		Map<String, Date> dates =  processDateChange(startDate,endDate,direction);
 
-		UserVO user = (UserVO) getAdminUser(req).getUserExtendedInfo();
+	
 		String roleId = ((SBUserRole)req.getSession().getAttribute(Constants.ROLE_DATA)).getRoleId();
 		UserSqlFilter userFilter = new UserSqlFilter(user, roleId, getCustomSchema());
 		

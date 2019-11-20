@@ -66,6 +66,12 @@ public class TicketSearchAction extends SBActionAdapter {
 	 */
 	public List<GenericVO> getTickets(String search) {
 		if (StringUtil.isEmpty(search)) return new ArrayList<GenericVO>();
+		StringBuilder term = new StringBuilder(32);
+		String[] terms = StringUtil.checkVal(search).split(" ");
+		for (int i=0; i < terms.length; i++) {
+			if (i > 0) term.append(" & ");
+			term.append(terms[i]).append(":*");
+		}
 		
 		// Build the sql
 		StringBuilder sql = new StringBuilder(576);
@@ -78,25 +84,12 @@ public class TicketSearchAction extends SBActionAdapter {
 		sql.append("wsla_user c on b.user_id = c.user_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(getCustomSchema());
 		sql.append("wsla_product_serial d on a.product_serial_id = d.product_serial_id ");
-		sql.append("where lower(first_nm) like ? or lower(last_nm) like ? ");
-		sql.append("or lower(email_address_txt) like ? or main_phone_txt like ? ");
-		sql.append("or lower(serial_no_txt) like ? or lower(ticket_no) like ? ");
-		sql.append("order by a.create_dt desc limit 10");
-		
-		// Add the search params
-		List<Object> vals = new ArrayList<>();
-		search = "%" + search.toLowerCase() + "%";
-		vals.add(search);
-		vals.add(search);
-		vals.add(search);
-		vals.add(search);
-		vals.add(search);
-		vals.add(search);
-		
-		log.debug(sql.length() + "|" + sql + "|" + vals);
+		sql.append("where ts_rank_cd(document_txt, to_tsquery('").append(term).append("')) > 0 ");
+		sql.append("limit 10");
+		log.debug(sql.length() + "|" + sql + "|" + term);
 		
 		// Execute and return the data
 		DBProcessor db = new DBProcessor(getDBConnection());
-		return db.executeSelect(sql.toString(), vals, new GenericVO());
+		return db.executeSelect(sql.toString(), null, new GenericVO());
 	}
 }

@@ -1,5 +1,88 @@
 WC_Custom Changelog (auto-generated)
 
+## [3.39.1](https://github.com/smtadmin/WC_Custom/compare/3.39.0...3.39.1) (2019-11-14)
+
+
+### Bug Fixes
+
+* **RP-I12:** final path changes per customer ([911be6c](https://github.com/smtadmin/WC_Custom/commit/911be6c))
+* **RP-I12:** set user phone to the work phone number type ([9cd50ae](https://github.com/smtadmin/WC_Custom/commit/9cd50ae))
+* **RP-I12:** update paths per customer ([8403b66](https://github.com/smtadmin/WC_Custom/commit/8403b66))
+
+# [3.39.0](https://github.com/smtadmin/WC_Custom/compare/3.38.1...3.39.0) (2019-11-12)
+
+
+### Bug Fixes
+
+* **MTS-i35:** Change ordering to most recent first ([54aa1ae](https://github.com/smtadmin/WC_Custom/commit/54aa1ae))
+* **MTS-i35:** Change query to use publish date ([0c8befe](https://github.com/smtadmin/WC_Custom/commit/0c8befe))
+* **Sc-1321:** Ensure loading all charts does not miss row detail data. ([770ec85](https://github.com/smtadmin/WC_Custom/commit/770ec85))
+* **Sc-1603:** Tweak growth rate calculations. ([465285d](https://github.com/smtadmin/WC_Custom/commit/465285d))
+* **ST-25:** Add published quarter simulation and fix minor issues with growth calculations. ([7ff91b0](https://github.com/smtadmin/WC_Custom/commit/7ff91b0))
+
+
+### Features
+
+* **DSEMEA-63:** Add Asset URL on front-end.  Cleanup code to align with UI ([f4f3ca2](https://github.com/smtadmin/WC_Custom/commit/f4f3ca2))
+
+## [3.38.1](https://github.com/smtadmin/WC_Custom/compare/3.38.0...3.38.1) (2019-11-07)
+
+
+### Bug Fixes
+
+* **feature-wsla-i97:** fix warehouse when shipping products for repair ([9f4e4f1](https://github.com/smtadmin/WC_Custom/commit/9f4e4f1))
+* **MTS-i36:** Carousels should only randomly load content from the past 2yrs ([aa5b57e](https://github.com/smtadmin/WC_Custom/commit/aa5b57e))
+* **MTS-i36:** Use publish date rather than create date ([41945d0](https://github.com/smtadmin/WC_Custom/commit/41945d0))
+* **MTS-i39:** Incorperate publish date when counting articles visible to the user ([e93424f](https://github.com/smtadmin/WC_Custom/commit/e93424f))
+* **Sc-1506:** Add ability to create annual archives for markets. ([e252256](https://github.com/smtadmin/WC_Custom/commit/e252256))
+* **Sc-1506:** Fix issues with duplicated grids and historical grids. ([526e48f](https://github.com/smtadmin/WC_Custom/commit/526e48f))
+
+# [3.38.0](https://github.com/smtadmin/WC_Custom/compare/3.37.0...3.38.0) (2019-11-06)
+
+
+### Bug Fixes
+
+* **feature-wsla-i97:** debit memo job fix ([b09e34d](https://github.com/smtadmin/WC_Custom/commit/b09e34d))
+* **feature-wsla-i97:** fix for stuck tickets, and added shipment invoice code ([a8e0be4](https://github.com/smtadmin/WC_Custom/commit/a8e0be4))
+* **feature-wsla-i97:** fix logistics so you can ship to or from an end user ([3ec71a0](https://github.com/smtadmin/WC_Custom/commit/3ec71a0))
+* **RP-I12:** clean up various bugs and minor enhancements ([ba32ab3](https://github.com/smtadmin/WC_Custom/commit/ba32ab3))
+* **Search:** Found issue when searching for multiple paramters ([3bd30b3](https://github.com/smtadmin/WC_Custom/commit/3bd30b3))
+
+
+### Features
+
+* **feature-wsla-i97:** feature add check to make sure there is only ever one attr_dispositionCode i ([7f67eda](https://github.com/smtadmin/WC_Custom/commit/7f67eda))
+* **Performance:** Updated queries to improve performance on critical queries ([ce53e95](https://github.com/smtadmin/WC_Custom/commit/ce53e95))
+* **Small Requests:** Implemented small changes for the WSLA request list ([d8ad8eb](https://github.com/smtadmin/WC_Custom/commit/d8ad8eb))
+
+# [3.37.0](https://github.com/smtadmin/WC_Custom/compare/3.36.1...3.37.0) (2019-10-25)
+
+
+### Features
+
+* **feature-wlsa-i96:** add warehouse quantity to the parts tab ([154b98b](https://github.com/smtadmin/WC_Custom/commit/154b98b))
+
+## [3.36.1](https://github.com/smtadmin/WC_Custom/compare/3.36.0...3.36.1) (2019-10-25)
+
+
+### Bug Fixes
+
+* **RezDox-326:** Use DB View to calculate project valuation ([d72c4ea](https://github.com/smtadmin/WC_Custom/commit/d72c4ea))
+
+# [3.36.0](https://github.com/smtadmin/WC_Custom/compare/3.35.0...3.36.0) (2019-10-24)
+
+
+### Bug Fixes
+
+* **feature-wsla-i95:** fixed a bug where dates didnt progress in a logical pattern ([0e8da38](https://github.com/smtadmin/WC_Custom/commit/0e8da38))
+* **ST-62:** Add fd snapshot table. ([2da0a00](https://github.com/smtadmin/WC_Custom/commit/2da0a00))
+
+
+### Features
+
+* **feature-wsla-i87:** add customer product id to select search ([07ca0e1](https://github.com/smtadmin/WC_Custom/commit/07ca0e1))
+* clean up ([151688e](https://github.com/smtadmin/WC_Custom/commit/151688e))
+
 # [3.35.0](https://github.com/smtadmin/WC_Custom/compare/3.34.0...3.35.0) (2019-10-17)
 
 
