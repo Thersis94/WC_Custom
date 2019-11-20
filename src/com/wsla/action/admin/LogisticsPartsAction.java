@@ -149,6 +149,9 @@ public class LogisticsPartsAction extends SBActionAdapter {
 		// If shipping src=dest, or if the unit will be harvested, don't modify inventory
 		if (StringUtil.checkVal(shipment.getFromLocationId()).equals(shipment.getToLocationId()) || isHarvest)
 			return;
+		
+		// if the shipment is marked in the UI UX to ingore inventory return nothing more to do
+		if (shipment.getInventoryIgnoreFlag() ==1 ) return;
 
 		// Load the list of parts
 		List<PartVO> parts = shipment.getParts();
