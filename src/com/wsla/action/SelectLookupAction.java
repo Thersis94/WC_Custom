@@ -449,11 +449,13 @@ public class SelectLookupAction extends SBActionAdapter {
 	 */
 	public List<GenericVO> getRetailerACList(ActionRequest req) {
 		StringBuilder term = new StringBuilder(32);
-		String[] terms = StringUtil.checkVal(req.getParameter(REQ_SEARCH)).split(" ");
+		String[] terms = StringUtil.checkVal(req.getParameter(REQ_SEARCH)).replaceAll("[^\\w\\s]+", "").split(" ");
 		for (int i=0; i < terms.length; i++) {
-			if (i > 0) term.append(" & ");
-			term.append(terms[i]).append(":*");
+			if (i > 0 && terms[i].length() > 0 ) term.append(" & ");
+			
+			if (terms[i].length() > 0 )term.append(terms[i]).append(":*");
 		}
+
 		log.debug("Search Term: " + term);
 
 		StringBuilder sql = new StringBuilder(512);

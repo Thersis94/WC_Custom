@@ -69,7 +69,7 @@ public class TicketSearchAction extends SBActionAdapter {
 		
 		// Build the sql
 		StringBuilder sql = new StringBuilder(576);
-		sql.append("select ticket_no as key, ticket_no || ' - ' || first_nm || ");
+		sql.append("select ticket_no||'|'||status_cd as key, ticket_no || ' - ' || first_nm || ");
 		sql.append("' ' || last_nm || ': ' || coalesce(serial_no_txt, 'NOSN') as value ");
 		sql.append(DBUtil.FROM_CLAUSE).append(getCustomSchema()).append("wsla_ticket a ");
 		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema());
