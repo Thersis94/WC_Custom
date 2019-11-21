@@ -1,5 +1,18 @@
 WC_Custom Changelog (auto-generated)
 
+## [3.39.2](https://github.com/smtadmin/WC_Custom/compare/3.39.1...3.39.2) (2019-11-21)
+
+
+### Bug Fixes
+
+* **Rezdox-346:** Only trigger notifications if the administrator selects this option ([c54b29d](https://github.com/smtadmin/WC_Custom/commit/c54b29d))
+* **RP-I32:** include role id in user data ([2e213b1](https://github.com/smtadmin/WC_Custom/commit/2e213b1))
+
+
+### Reverts
+
+* **DS-537:** Restore action needed for IFU site ([99d2644](https://github.com/smtadmin/WC_Custom/commit/99d2644))
+
 ## [3.39.1](https://github.com/smtadmin/WC_Custom/compare/3.39.0...3.39.1) (2019-11-14)
 
 
