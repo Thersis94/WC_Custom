@@ -542,6 +542,9 @@ public class ProductSerialAction extends BatchImport {
 			vo.setProductId(productId);
 			vo.setValidatedFlag(1); //vendor-provided file (not customer via ticket request), mark these all as validated
 			vo.setRetailerDate(dt); //default to today for retailer issued date.
+			vo.setBatchFlag(1); //set the batch flag to one so the trigger knows to skip this particular type of insert.  updating ts vector 
+								//for tickets on new inserted numbers isnt needed
+			
 		}
 	}
 
