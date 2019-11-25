@@ -14,6 +14,7 @@ import com.biomed.smarttrak.admin.report.CompanySegmentsReportAction;
 import com.biomed.smarttrak.admin.report.CompanySegmentsReportVO;
 import com.biomed.smarttrak.admin.report.EmailMetricsReportAction;
 import com.biomed.smarttrak.admin.report.LinkReportAction;
+import com.biomed.smarttrak.admin.report.LinkReportVO;
 import com.biomed.smarttrak.admin.report.LinkWebReportVO;
 import com.biomed.smarttrak.admin.report.MonthlyPageViewReportAction;
 import com.biomed.smarttrak.admin.report.MonthlyPageViewReportVO;
@@ -37,6 +38,7 @@ import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.common.constants.GlobalConfig;
 import com.siliconmtn.common.http.CookieUtil;
+import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 // WebCrescendo
 import com.smt.sitebuilder.action.AbstractSBReportVO;
@@ -71,6 +73,7 @@ public class ReportFacadeAction extends SBActionAdapter {
 		USAGE_ROLLUP_MONTHLY,
 		SUPPORT,
 		LINK,
+		LINK_DOWNLOAD,
 		EMAIL_METRICS,
 		MONTHLY_PAGE_VIEW,
 		RED_YELLOW_GREEN_REPORT;
@@ -145,6 +148,9 @@ public class ReportFacadeAction extends SBActionAdapter {
 				rpt = generateLinkReport(req);
 				doRedirect = false;
 				break;
+			case LINK_DOWNLOAD:
+				rpt = generateLinkDownloadReport(req);
+				break;
 			case EMAIL_METRICS:
 				rpt = generateMetricsReport(req);
 				break;
@@ -213,7 +219,7 @@ public class ReportFacadeAction extends SBActionAdapter {
 
 
 	/**
-	 * Generates the Account report.
+	 * Generates the downloadable link report.
 	 * @param req
 	 * @return
 	 * @throws ActionException
@@ -226,6 +232,25 @@ public class ReportFacadeAction extends SBActionAdapter {
 		ara.setAttributes(getAttributes());
 		
 		AbstractSBReportVO rpt = new LinkWebReportVO();
+		rpt.setData(ara.retrieveData(req));
+		return rpt;
+	}
+
+
+	/**
+	 * Generates the Account report.
+	 * @param req
+	 * @return
+	 * @throws ActionException
+	 */
+	protected AbstractSBReportVO generateLinkDownloadReport(ActionRequest req) 
+			throws ActionException {		
+		log.debug("generating Link Report...");
+		LinkReportAction ara = new LinkReportAction();
+		ara.setDBConnection(getDBConnection());
+		ara.setAttributes(getAttributes());
+		
+		AbstractSBReportVO rpt = new LinkReportVO();
 		rpt.setData(ara.retrieveData(req));
 		return rpt;
 	}
