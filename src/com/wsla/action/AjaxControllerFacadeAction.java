@@ -5,6 +5,7 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.BatchImport;
 // WC Core
 import com.smt.sitebuilder.action.FacadeActionAdapter;
@@ -167,9 +168,15 @@ public class AjaxControllerFacadeAction extends FacadeActionAdapter {
 
 		if (req.hasParameter("isBatch") && BatchImport.class.isAssignableFrom(action.getClass())) {
 			log.debug("### BATCH TRANSACTION ###");
+			boolean disableAllTriggers = false;
+			
+			if("productSerial".equalsIgnoreCase(StringUtil.checkVal(req.getParameter("type")))) {
+				disableAllTriggers = true;
+			}
+			
 			BatchImport ba = (BatchImport) action;
 			if (!req.getFiles().isEmpty()) { //if files were passed, ingest them.
-				ba.processImport(req);
+				ba.processImport(req, disableAllTriggers);
 			} else { //return a template for user to populate
 				ba.getBatchTemplate(req, req.getStringParameter("fileName", "batch-file"));
 			}
