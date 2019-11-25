@@ -1,5 +1,19 @@
 WC_Custom Changelog (auto-generated)
 
+# [3.40.0](https://github.com/smtadmin/WC_Custom/compare/3.39.2...3.40.0) (2019-11-25)
+
+
+### Bug Fixes
+
+* **feature-wsla-i97:** fix allowing the upload of more then 90 serial numbers before time out ([2557597](https://github.com/smtadmin/WC_Custom/commit/2557597))
+* **feature-wsla-i97:** fix emails being sent with no to address ([9f32e36](https://github.com/smtadmin/WC_Custom/commit/9f32e36))
+* **feature-wsla-i97:** misc fixes ([2d19ee2](https://github.com/smtadmin/WC_Custom/commit/2d19ee2))
+
+
+### Features
+
+* **feature-wsla-i97:** add flag to shipment to ignore inventory changes for example when shipping a ([4c47f3c](https://github.com/smtadmin/WC_Custom/commit/4c47f3c))
+
 ## [3.39.2](https://github.com/smtadmin/WC_Custom/compare/3.39.1...3.39.2) (2019-11-21)
 
 
