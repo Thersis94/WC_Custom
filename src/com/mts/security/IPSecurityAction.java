@@ -4,6 +4,7 @@ package com.mts.security;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -15,7 +16,6 @@ import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
-import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 
 // WC Libs
@@ -90,31 +90,37 @@ public class IPSecurityAction extends SBActionAdapter {
 	 * @return
 	 */
 	public boolean checkIpAddress(String ipAddress) {
+		log.debug(ipAddress);
 		if (StringUtil.isEmpty(ipAddress)) return false;
 		
-		boolean auth = false;
-		int index = ipAddress.lastIndexOf('.');
-		String base = ipAddress.substring(0, index);
-		int range = Convert.formatInteger(ipAddress.substring(index + 1));
+		// Convert the ips to numbers in the case of a leading zero
+		int[] ip = Arrays.stream(ipAddress.split("\\."))
+				.mapToInt(Integer::parseInt)
+				.toArray();
+		
+		// Build the ip back with the first 2 numbers as the base
+		String ipBase = ip[0] + "." + ip[1] + ".%";
 		
 		StringBuilder sql = new StringBuilder(128);
-		sql.append("select ip_security_id from ").append(getCustomSchema());
-		sql.append("mts_ip_security where ip_base_txt = ? ");
-		sql.append("and ? between ip_start_no and ip_end_no ");
-		log.debug(sql.length() + "|" + sql + "|" + base + "|" + range);
+		sql.append("select * from ").append(getCustomSchema());
+		sql.append("mts_ip_security where ip_base_txt like ? ");
+		log.debug(sql.length() + "|" + sql + "|" + ipBase);
 		
+		// Search the DB for matches for each element.  Return true when matched
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			ps.setString(1, base);
-			ps.setInt(2, range);
+			ps.setString(1, ipBase);
 			
 			try (ResultSet rs = ps.executeQuery()) {
-				if (rs.next()) auth = true;
+				while (rs.next()) {
+					IPSecurityVO vo = new IPSecurityVO(rs);
+					if (vo.insideIPRange(ipAddress)) return true;
+				}
 			}
 		} catch (Exception e) {
 			log.error("Unable to retrieve ip address check", e);
 		}
 		
-		return auth;
+		return false;
 	}
 	
 	/**

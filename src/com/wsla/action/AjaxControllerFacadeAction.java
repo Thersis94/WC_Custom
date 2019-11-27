@@ -5,6 +5,7 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.BatchImport;
 // WC Core
 import com.smt.sitebuilder.action.FacadeActionAdapter;
@@ -27,6 +28,7 @@ import com.wsla.action.admin.ProductMasterAction;
 import com.wsla.action.admin.ProductSerialAction;
 import com.wsla.action.admin.ProductSetAction;
 import com.wsla.action.admin.ProductWarrantyAction;
+import com.wsla.action.admin.ProfecoAction;
 import com.wsla.action.admin.ProviderAction;
 import com.wsla.action.admin.ProviderLocationAction;
 import com.wsla.action.ticket.PartsAction;
@@ -36,11 +38,13 @@ import com.wsla.action.ticket.TicketEditAction;
 import com.wsla.action.ticket.TicketLedgerAction;
 import com.wsla.action.ticket.TicketListAction;
 import com.wsla.action.ticket.TicketOverviewAction;
+import com.wsla.action.ticket.transaction.TicketCallCenterReviewTransaction;
 import com.wsla.data.provider.ProviderPhoneAction;
 import com.wsla.action.admin.ProviderLocationUserAction;
 import com.wsla.action.admin.RefundVerificationAction;
 import com.wsla.action.admin.ScheduleAdminAction;
 import com.wsla.action.admin.StatusCodeAction;
+import com.wsla.action.admin.UserAction;
 import com.wsla.action.admin.WarrantyAction;
 import com.wsla.action.admin.WarrantyBillableAction;
 import com.wsla.action.report.DebitMemoWidget;
@@ -124,6 +128,9 @@ public class AjaxControllerFacadeAction extends FacadeActionAdapter {
 		actionMap.put("logistics", LogisticsAction.class);
 		actionMap.put("logisticsParts", LogisticsPartsAction.class);
 		actionMap.put(RefundVerificationAction.AJAX_KEY, RefundVerificationAction.class);
+		actionMap.put(TicketCallCenterReviewTransaction.AJAX_KEY, TicketCallCenterReviewTransaction.class);
+		actionMap.put(UserAction.AJAX_KEY, UserAction.class);
+		actionMap.put(ProfecoAction.AJAX_KEY, ProfecoAction.class);
 		
 		//these are actually ticket actions - should be called through the ticket controller
 		actionMap.put("parts", PartsAction.class);
@@ -161,9 +168,15 @@ public class AjaxControllerFacadeAction extends FacadeActionAdapter {
 
 		if (req.hasParameter("isBatch") && BatchImport.class.isAssignableFrom(action.getClass())) {
 			log.debug("### BATCH TRANSACTION ###");
+			boolean disableAllTriggers = false;
+			
+			if("productSerial".equalsIgnoreCase(StringUtil.checkVal(req.getParameter("type")))) {
+				disableAllTriggers = true;
+			}
+			
 			BatchImport ba = (BatchImport) action;
 			if (!req.getFiles().isEmpty()) { //if files were passed, ingest them.
-				ba.processImport(req);
+				ba.processImport(req, disableAllTriggers);
 			} else { //return a template for user to populate
 				ba.getBatchTemplate(req, req.getStringParameter("fileName", "batch-file"));
 			}

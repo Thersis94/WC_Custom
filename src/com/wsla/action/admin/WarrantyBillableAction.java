@@ -85,8 +85,8 @@ public class WarrantyBillableAction extends SBActionAdapter {
 		List<Object> vals = new ArrayList<>();
 		vals.add(warrantyId);
 		
-		StringBuilder sql = new StringBuilder(336);
-		sql.append("select a.*, b.cost_no, warranty_id, ");
+		StringBuilder sql = new StringBuilder(360);
+		sql.append("select a.*, b.cost_no, b.invoice_amount_no, warranty_id, ");
 		sql.append("coalesce(warranty_billable_id, replace(newid(), '-', '')) as warranty_billable_id ");
 		sql.append("from ").append(getCustomSchema()).append("wsla_billable_activity a ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(getCustomSchema());
@@ -98,6 +98,32 @@ public class WarrantyBillableAction extends SBActionAdapter {
 		
 		DBProcessor db = new DBProcessor(getDBConnection());
 		return db.executeSelect(sql.toString(), vals, new WarrantyBillableVO());
+	}
+	
+	/**
+	 * 
+	 * @param warrantyId
+	 * @param activityCode
+	 * @return
+	 */
+	public WarrantyBillableVO getBillableActivity (String warrantyId, String activityCode) {
+		if (StringUtil.isEmpty(warrantyId) || StringUtil.isEmpty(activityCode) ) return new WarrantyBillableVO();
+		
+		List<Object> vals = new ArrayList<>();
+		vals.add(activityCode);
+		vals.add(warrantyId);
+		
+		StringBuilder sql = new StringBuilder(154);
+		sql.append(DBUtil.SELECT_FROM_STAR).append(getCustomSchema()).append("wsla_warranty_billable_xr where billable_activity_cd = ? and warranty_id = ?");
+		
+		DBProcessor db = new DBProcessor(getDBConnection());
+		List<WarrantyBillableVO> data = db.executeSelect(sql.toString(), vals, new WarrantyBillableVO());
+		
+		if (data != null && !data.isEmpty() ){
+			return data.get(0);
+		}else {
+			return new WarrantyBillableVO();
+		}
 	}
 	
 	/*

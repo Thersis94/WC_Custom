@@ -72,11 +72,6 @@ public class RezDoxUtils {
 	public static final String EARN_PATH = REWARD_PATH + "/earn";
 
 	/**
-	 * coefficient modifier for putting a dollar value on home improvements (projects)
-	 */
-	public static final double IMPROVEMENTS_VALUE_COEF = .537;
-
-	/**
 	 * Org Roles for the site
 	 */
 	public static final String REZDOX_RESIDENCE_ROLE = "REZDOX_RESIDENCE";
@@ -103,7 +98,7 @@ public class RezDoxUtils {
 	/**
 	 * the pkId of the "100 Connections" we give to each new business upon creation (See BusinessAction)
 	 */
-	public static final String FREE_CONNECTIONS_PKID = "CONNECTIONS100";
+	public static final String FREE_CONNECTIONS_PKID = "CONNECTIONS50";
 	
 	/**
 	 * Used for setting notifications from outside of the sub-site context; like in the admintool.

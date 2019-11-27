@@ -6,6 +6,7 @@ import java.util.Map;
 import javax.servlet.http.HttpServletResponse;
 
 import com.biomed.smarttrak.admin.report.AccountCountReportVO;
+import com.biomed.smarttrak.admin.report.AccountPermissionsSummaryReportVO;
 //WC custom
 import com.biomed.smarttrak.admin.report.AccountReportVO;
 import com.biomed.smarttrak.admin.report.AccountsReportAction;
@@ -16,6 +17,8 @@ import com.biomed.smarttrak.admin.report.LinkReportAction;
 import com.biomed.smarttrak.admin.report.LinkWebReportVO;
 import com.biomed.smarttrak.admin.report.MonthlyPageViewReportAction;
 import com.biomed.smarttrak.admin.report.MonthlyPageViewReportVO;
+import com.biomed.smarttrak.admin.report.RedYellowGreenReportVO;
+import com.biomed.smarttrak.admin.report.RedYellowGreenReportAction;
 import com.biomed.smarttrak.admin.report.SupportReportAction;
 import com.biomed.smarttrak.admin.report.SupportReportVO;
 import com.biomed.smarttrak.admin.report.UserActivityAction;
@@ -63,12 +66,14 @@ public class ReportFacadeAction extends SBActionAdapter {
 		USER_LIST,
 		USER_PERMISSIONS,
 		ACCOUNT_PERMISSIONS,
+		ACCOUNT_PERMISSIONS_SUMMARY,
 		USAGE_ROLLUP_DAILY,
 		USAGE_ROLLUP_MONTHLY,
 		SUPPORT,
 		LINK,
 		EMAIL_METRICS,
-		MONTHLY_PAGE_VIEW;
+		MONTHLY_PAGE_VIEW,
+		RED_YELLOW_GREEN_REPORT;
 	}
 
 	/**
@@ -115,11 +120,17 @@ public class ReportFacadeAction extends SBActionAdapter {
 			case USER_LIST:
 				rpt = generateUserListReport(req);
 				break;
+			case RED_YELLOW_GREEN_REPORT:
+				rpt = generateRedYellowGreenReport(req);
+				break;
 			case USER_PERMISSIONS:
 				rpt = generateUserPermissionsReport(req, true);
 				break;
 			case ACCOUNT_PERMISSIONS:
 				rpt = generateUserPermissionsReport(req, false);
+				break;
+			case ACCOUNT_PERMISSIONS_SUMMARY:
+				rpt = generateAccountPermissionsSummaryReport(req);
 				break;
 			case USAGE_ROLLUP_DAILY:
 				rpt = generateUserUtilizationReport(req,true);
@@ -152,6 +163,41 @@ public class ReportFacadeAction extends SBActionAdapter {
 		CookieUtil.add(resp, "reportLoadingCookie", "", "/", 0);
 	}
 
+
+	/**
+	 * Build the account permissions summary report
+	 * @param req
+	 * @return
+	 * @throws ActionException
+	 */
+	private AbstractSBReportVO generateAccountPermissionsSummaryReport(ActionRequest req) throws ActionException {
+		UserPermissionsReportAction upra = new UserPermissionsReportAction();
+		upra.setDBConnection(dbConn);
+		upra.setAttributes(getAttributes());
+	
+		AbstractSBReportVO rpt = new AccountPermissionsSummaryReportVO();
+		Map<String, Object> data = new HashMap<>(1);
+		data.put("accounts", upra.retrieveUserPermissions(req));
+		rpt.setData(data);
+		return rpt;
+	}
+
+
+	/**
+	 * Build the Red Yellow Green Report User Login Statistics report.
+	 * @param req
+	 * @return
+	 * @throws ActionException 
+	 */
+	private AbstractSBReportVO generateRedYellowGreenReport(ActionRequest req) throws ActionException {
+		RedYellowGreenReportAction rgu = new RedYellowGreenReportAction();
+		rgu.setDBConnection(dbConn);
+		rgu.setAttributes(getAttributes());
+
+		AbstractSBReportVO rpt = new RedYellowGreenReportVO();
+		rpt.setData(rgu.retrieveMergedUsers(req));
+		return rpt;
+	}
 
 	/*
 	 * (non-Javadoc)

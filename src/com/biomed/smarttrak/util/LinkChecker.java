@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -43,6 +44,7 @@ public class LinkChecker extends CommandLineUtil {
 	static final String HREF_EXP = "<a([^<>]*)href=(\"|')(\\S*)(\"|')([^<>]*)>"; 
 	static final int HTTP_CONN_TIMEOUT = 10000;
 	static final int HTTP_READ_TIMEOUT = 10000;
+	static final int BUFFER_LIMIT = 250;
 
 	//section & url constants
 	private static final String PRODUCTS = "products";
@@ -50,8 +52,9 @@ public class LinkChecker extends CommandLineUtil {
 	private static final String MARKETS = "markets";
 	private static final String ANALYSIS = "analysis";  //formerly called INSIGHTS
 	private static final String UPDATES = "updates";
-
+	private static final String IGNORE_DOMAINS = "ignoreDomains";
 	private Map<String, Long> accessTimes;
+	private List<String> ignoreDomains;
 	private static final long LAG_TIME_MS = 1000;
 
 	/**
@@ -88,6 +91,7 @@ public class LinkChecker extends CommandLineUtil {
 	List<String> getDomainsReport; //temp object for domains we'll report in the log, at the end.
 	boolean onlyBroken;
 	String mockUserAgent;
+	int maxAttempts;
 
 	//email reporting metrics
 	long startTime;
@@ -95,6 +99,7 @@ public class LinkChecker extends CommandLineUtil {
 	int extTested;
 	int intTested;
 	int skipped;
+	int ignored;
 	List<LinkVO> linksFailed;
 
 	/**
@@ -115,9 +120,11 @@ public class LinkChecker extends CommandLineUtil {
 		encoder = new StringEncoder();
 		getDomains = Arrays.asList(props.getProperty("getDomains").split(","));
 		linksFailed = new ArrayList<>(10000);
+		ignoreDomains = new ArrayList<>();
 		startTime = System.currentTimeMillis();
 		onlyBroken = Convert.formatBoolean(props.getProperty("checkAllBroken"));
 		mockUserAgent = StringUtil.checkVal(props.getProperty("mockUserAgent"));
+		maxAttempts = Convert.formatInteger(props.getProperty("maxAttempts"), 10);
 		System.setProperty("http.agent", "");
 	}
 
@@ -144,6 +151,7 @@ public class LinkChecker extends CommandLineUtil {
 		populateLookup("select product_id from custom.biomedgps_product where status_no in ('P')", validProductIds, false);
 		populateLookup("select company_id from custom.biomedgps_company where status_no in ('P')", validCompanyIds, false);
 		populateLookup("select insight_id from custom.biomedgps_insight where status_cd in ('P')", validInsightIds, false);
+		populateIgnorableDomains();
 
 		if (onlyBroken) {
 			//consider everything NOT a 404 as valid, and we won't check them
@@ -163,9 +171,19 @@ public class LinkChecker extends CommandLineUtil {
 
 
 	/**
+	 * Populate ignoreDomains from properties.
+	 */
+	private void populateIgnorableDomains() {
+		String domains = props.getProperty(IGNORE_DOMAINS);
+		ignoreDomains.addAll(Arrays.asList(domains.split(",")));
+	}
+
+
+	/**
 	 * build lists of recordIds in our database for cross-checking
 	 */
 	protected void populateLookup(String sql, List<String> records, boolean removeProtocol) {
+		log.info("Loading Content Records");
 		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
@@ -178,7 +196,7 @@ public class LinkChecker extends CommandLineUtil {
 		} catch (SQLException sqle) {
 			log.error("could not load lookups from: " + sql, sqle);
 		}
-		log.debug("loaded " + records.size() + " lookup values for " + sql.split(" ")[1]);
+		log.info("loaded " + records.size() + " lookup values for " + sql.split(" ")[1]);
 	}
 
 
@@ -189,7 +207,6 @@ public class LinkChecker extends CommandLineUtil {
 	protected void run(Table t) {
 		List<LinkVO> links = parseLinks(readRecords(t));
 		checkLinks(links);
-		saveOutcomes(links);
 	}
 
 
@@ -200,6 +217,7 @@ public class LinkChecker extends CommandLineUtil {
 	 */
 	protected List<LinkVO> readRecords(Table t) {
 		List<LinkVO> records = new ArrayList<>();
+		log.info("Loading Records.");
 		try (PreparedStatement ps = dbConn.prepareStatement(t.getSelectSql())) {
 			ps.setString(1, Status.P.toString());
 			if (t.needsExtraCheck())
@@ -222,10 +240,11 @@ public class LinkChecker extends CommandLineUtil {
 		List<LinkVO> urls = new ArrayList<>();
 		int priorSkips = skipped;
 
+		log.info("Parsing Links");
 		for (LinkVO vo : records) {
 			if (StringUtil.isEmpty(vo.getHtml())) 
 				continue;
-			
+
 			// Check to see if the content is html or a single link. If neither it is skipped
 			if (vo.getHtml().contains("<")) {
 				checkLinksInHtml(urls, vo);
@@ -235,7 +254,7 @@ public class LinkChecker extends CommandLineUtil {
 				urls.add(LinkVO.makeForUrl(vo.getSection(), vo.getObjectId(), vo.getHtml(), vo.getContentId()));
 			}
 		}
-		log.debug("need to check " + urls.size() + " embedded links.  Skipping " + (skipped-priorSkips));
+		log.info("need to check " + urls.size() + " embedded links.  Skipping " + (skipped-priorSkips));
 		return urls;
 	}
 
@@ -248,7 +267,7 @@ public class LinkChecker extends CommandLineUtil {
 		while (m.find()) {
 			u = m.group(3);
 			if (u.startsWith("javascript:")) continue;
-			
+
 			++found;
 			//remove html encoding
 			if (!StringUtil.isEmpty(u) && u.length() > 4)
@@ -272,7 +291,12 @@ public class LinkChecker extends CommandLineUtil {
 	 * @param links
 	 */
 	protected void checkLinks(List<LinkVO> links) {
-		for (LinkVO vo : links) {
+		Iterator<LinkVO> lIter = links.iterator();
+		List<LinkVO> temps = new ArrayList<>();
+		LinkVO vo;
+		int cnt = 0;
+		while(lIter.hasNext()) {
+			vo = lIter.next();
 			if (vo.getUrl().matches("^https?://(www|app\\.)?smarttrak\\.(com|net)/(.*)") || vo.getUrl().matches("(?i)^/([A-Z]{1,})(.*)")) {
 				testInternalLink(vo);
 				++intTested;
@@ -280,11 +304,35 @@ public class LinkChecker extends CommandLineUtil {
 				httpTest(vo);
 				++extTested;
 			}
+
+			temps.add(vo);
+			lIter.remove();
+			cnt++;
+ 
+			//Log every 100 for tracking.
+			if(cnt % 100 == 0) log.info(String.format("Processed %d Broken Link Records", cnt));
+
 			//if it failed, add it to the report email - 200=success, 3xx=redirects (okay)
 			//429 is not a failure necessarily, it's a request rate limit.
-			if (vo.getOutcome() != 429 && vo.getOutcome() > 403)
+			if (vo.getOutcome() != 429 && vo.getOutcome() > 403) {
 				linksFailed.add(vo);
+			}
+
+			if(vo.getIgnoreFlg() == 1) {
+				ignored++;
+			}
+			/*
+			 * Save Records each time we hit the BUFFER_LIMIT in temp Records
+			 * then flush temp.
+			 */
+			if(temps.size() == BUFFER_LIMIT) {
+				saveOutcomes(temps);
+				temps.clear();
+			}
 		}
+
+		//Save Trailing Records.
+		saveOutcomes(temps);
 	}
 
 
@@ -314,6 +362,9 @@ public class LinkChecker extends CommandLineUtil {
 			vo.setOutcome(404); //links should never go to the /manage tool
 		} else {
 			inspectLocalUrl(vo, relaUrl);
+		}
+		if(vo.getOutcome() != 200) {
+			vo.setIgnoreFlg(1);
 		}
 		log.debug(vo.getOutcome() == 200 ? "success!" : targetObjectId + " in '" + urlSection + "' not found");
 	}
@@ -362,6 +413,20 @@ public class LinkChecker extends CommandLineUtil {
 			//check for redirects
 			checkRedirect(vo);
 
+			/*
+			 * Check if ignoreable or not. If not if we don't pass,
+			 * pause 1 seconds and re-attempt for government urls.
+			 * Believe we're hitting a throttling limit like we did in Quertle
+			 * Patent Feeds as these tend to be false positives.
+			 */
+			if(isIgnoreable(vo.getUrl())) {
+				vo.setIgnoreFlg(1);
+			} else if(vo.getOutcome() != 200 && vo.getUrl().contains(".gov") && vo.getNumAttempts() < maxAttempts) {
+				log.warn(String.format("Url Failed, Re-attempt #%d, %s", vo.getNumAttempts(), vo.getUrl()));
+				Thread.sleep(1000);
+				vo.setNumAttempts(vo.getNumAttempts() + 1);
+				httpTest(vo);
+			}
 		} catch (Exception e) {
 			log.warn("URL Failed: " + e.getMessage() + " sts=" + vo.getOutcome());
 			if ("Connection reset".equals(e.getMessage()) || 429 == vo.getOutcome()) {
@@ -381,6 +446,20 @@ public class LinkChecker extends CommandLineUtil {
 		}
 	}
 
+	/**
+	 * Check if the given url is part of our ignorable list.
+	 * @param url
+	 * @return
+	 */
+	private boolean isIgnoreable(String url) {
+		for(String ignore : ignoreDomains) {
+			if(url.contains(ignore)) {
+				return true;
+			}
+		}
+
+		return false;
+	}
 
 	/**
 	 * if the initial http call returned a redirect, transpose it into the main URL field and call a second time.
@@ -528,10 +607,16 @@ public class LinkChecker extends CommandLineUtil {
 	protected void saveOutcomes(List<LinkVO> records) {
 		UUIDGenerator uuid = new UUIDGenerator();
 		String sql = "insert into custom.biomedgps_link (link_id, company_id, market_id, product_id, insight_id, update_id, " +
-				"url_txt, check_dt, status_no, content_id, create_dt) values (?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)";
+				"url_txt, check_dt, status_no, content_id, ignore_flg, create_dt) values (?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)";
+		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
+			for(LinkVO vo : records) {
+				/*
+				 * Prevent an error case where the Outcome Code is outside the range of a 2B int.
+				 */
+				if(vo.getOutcome() > 999) {
+					vo.setOutcome(1000);
+				}
 
-		for (LinkVO vo : records) {
-			try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
 				ps.setString(1, uuid.getUUID());
 				ps.setString(2, COMPANIES.equals(vo.getSection()) ? vo.getObjectId() : null);
 				ps.setString(3, MARKETS.equals(vo.getSection()) ? vo.getObjectId() : null);
@@ -542,11 +627,12 @@ public class LinkChecker extends CommandLineUtil {
 				ps.setTimestamp(8, Convert.formatTimestamp(vo.getLastChecked()));
 				ps.setInt(9, vo.getOutcome());
 				ps.setString(10, vo.getContentId());
-				ps.executeUpdate();
-
-			} catch (Exception e) {
-				log.error("could not save outcome for " + vo.getUrl(), e);
+				ps.setInt(11, vo.getIgnoreFlg());
+				ps.addBatch();
 			}
+			ps.executeBatch();
+		} catch (Exception e) {
+			log.error("Problem Saving Records.", e);
 		}
 	}
 
@@ -556,13 +642,14 @@ public class LinkChecker extends CommandLineUtil {
 	 */
 	protected void sendEmail() {
 		final String br = "<br/>";
-		StringBuilder msg = new StringBuilder(1000);
+		StringBuilder msg = new StringBuilder(1000 + 250 * linksFailed.size());
 		msg.append("<h3>SmartTRAK Link Checker &mdash; ").append(Convert.formatDate(new Date(), Convert.DATE_SLASH_PATTERN)).append("</h3>\n");
 		msg.append("<h4>Embedded URLs Found: ").append(fmtNo(found)).append(br);
 		msg.append("Skipped (Tested Recently): ").append(fmtNo(skipped)).append(br);
 		msg.append("Internal URLs Tested: ").append(fmtNo(intTested)).append(br);
 		msg.append("External URLs Tested: ").append(fmtNo(extTested)).append(br);
 		msg.append("Broken Links Found: ").append(linksFailed.size()).append(br);
+		msg.append("Broken Links Ignored: ").append(ignored).append(br);
 		//exec time
 		long secs = System.currentTimeMillis()-startTime;
 		if (secs > 60000) {

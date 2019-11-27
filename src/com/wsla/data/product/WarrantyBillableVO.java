@@ -36,6 +36,7 @@ public class WarrantyBillableVO extends BillableActivityVO {
 	private String warrantyBillableId;
 	private String warrantyId;
 	private double cost;
+	private double invoiceAmount;
 	
 	/**
 	 * 
@@ -111,6 +112,21 @@ public class WarrantyBillableVO extends BillableActivityVO {
 	 */
 	public void setCost(double cost) {
 		this.cost = cost;
+	}
+
+	/**
+	 * @return the invoiceAmount
+	 */
+	@Column(name="invoice_amount_no")
+	public double getInvoiceAmount() {
+		return invoiceAmount;
+	}
+
+	/**
+	 * @param invoiceAmount the invoiceAmount to set
+	 */
+	public void setInvoiceAmount(double invoiceAmount) {
+		this.invoiceAmount = invoiceAmount;
 	}
 
 }

@@ -42,6 +42,7 @@ import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.http.session.SMTCookie;
 import com.siliconmtn.io.http.SMTHttpConnectionManager;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.EnumUtil;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
 import com.smt.sitebuilder.action.AbstractSBReportVO;
@@ -259,21 +260,14 @@ public class MarketManagementAction extends ManagementAction {
 	private void retrieveMarket(ActionRequest req) throws ActionException {
 		if (req.hasParameter(MARKET_ID) && ! req.hasParameter("add")) {
 			retrieveSingleMarket(req);
-			if (!req.getSession().getAttributes().keySet().contains("marketSections")) {
-				req.getSession().setAttribute("marketSections", loadDefaultTree().preorderList());
-			}
+			loadFullTree(req);
 
 		} else if (!req.hasParameter("add")) {
 			retrieveMarkets(req);
 
 		} else{ 
 			loadAuthors(req); //load list of BiomedGPS Staff for the "Author" drop-down
-
-			//TODO Cleanup hierarchy loading/caching code - Zoho SC-230
-			if (!req.getSession().getAttributes().keySet().contains("marketSections")) {
-				// This is a form for a new market make sure that the hierarchy tree is present 
-				req.getSession().setAttribute("marketSections", loadDefaultTree().preorderList());
-			}
+			loadFullTree(req);
 		}
 	}
 
@@ -406,7 +400,7 @@ public class MarketManagementAction extends ManagementAction {
 		List<Object> params = new ArrayList<>();
 		StringBuilder sql = new StringBuilder(300);
 		sql.append("select m.market_nm, m.market_id, m.order_no, m.status_no, m.indent_no, s.section_nm, s.section_id, s.parent_id as section_parent_id, ");
-		sql.append("greatest(coalesce(m.update_dt, m.create_dt), max(coalesce(xr.update_dt, xr.create_dt))) as update_dt ");
+		sql.append("greatest(coalesce(m.update_dt, m.create_dt), max(coalesce(xr.update_dt, xr.create_dt))) as update_dt, m.year_no, m.market_group_id ");
 		sql.append("FROM ").append(customDbSchema).append("BIOMEDGPS_MARKET m ");
 		sql.append("LEFT JOIN COUNTRY c on c.COUNTRY_CD = m.REGION_CD ");
 		sql.append(LEFT_OUTER_JOIN).append(customDbSchema).append("BIOMEDGPS_MARKET_ATTRIBUTE_XR xr ");
@@ -1011,6 +1005,8 @@ public class MarketManagementAction extends ManagementAction {
 				createDBArchive(req);
 			} else if("bulkLinkUpdate".equals(buildAction)) {
 				new ManagementActionUtil(dbConn, attributes).bulkUpdateAttributeLinks(req);
+			} else if("promoteMarket".equals(buildAction)) {
+				promoteMarket(req);
 			} else if("generateArchive".equals(buildAction)) {
 				String marketArchiveId = createHTMLArchive(req.getCookie("JSESSIONID"), req);
 				super.putModuleData(marketArchiveId);
@@ -1023,13 +1019,67 @@ public class MarketManagementAction extends ManagementAction {
 
 		if (!StringUtil.isEmpty(marketId)) {
 			String status = req.getParameter("statusNo");
-			if (StringUtil.isEmpty(status))
+
+			if (StringUtil.isEmpty(status) || ActionTarget.MARKET != EnumUtil.safeValueOf(ActionTarget.class, req.getParameter(ACTION_TARGET)))
 				status = findStatus(marketId);
 			writeToSolr(marketId, status);
 		}
 
 		redirectRequest(msg, buildAction, req);
 	}
+
+	
+	/**
+	 * Promote the supplied market to the published version of its market group
+	 * @param req
+	 * @throws ActionException
+	 */
+	private void promoteMarket(ActionRequest req) throws ActionException {
+		try {
+			demoteMarkets(req.getParameter("marketGroupId"));
+			promoteMarket(req.getParameter("marketId"));
+		} catch (SQLException e) {
+			throw new ActionException(e);
+		}
+	}
+
+	
+	/**
+	 * set the selected market's status to published
+	 * @param marketId
+	 * @throws SQLException
+	 */
+	private void promoteMarket(String marketId) throws SQLException {
+		StringBuilder sql = new StringBuilder(75);
+		sql.append("update ").append(customDbSchema).append("biomedgps_market ");
+		sql.append("set status_no = ? where market_id = ? ");
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, Status.P.toString());
+			ps.setString(2, marketId);
+			
+			ps.executeUpdate();
+		}
+	}
+
+
+	/**
+	 * Set all markets sharing the supplied group id to unpublished
+	 * @param groupId
+	 * @throws SQLException
+	 */
+	private void demoteMarkets(String groupId) throws SQLException {
+		StringBuilder sql = new StringBuilder(75);
+		sql.append("update ").append(customDbSchema).append("biomedgps_market ");
+		sql.append("set status_no = ? where market_group_id = ? ");
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, Status.E.toString());
+			ps.setString(2, groupId);
+			
+			ps.executeUpdate();
+		}
+	}
+
 
 	/**
 	 * Create a copy of the supplied market and archive it.
@@ -1064,10 +1114,13 @@ public class MarketManagementAction extends ManagementAction {
 			rdu.copy();
 			
 			// Update the name and status of the new market
+			int archiveYear = Convert.formatInteger(req.getParameter("archiveYear"));
 			String marketId = ids.get( req.getParameter(MARKET_ID));
-			updateMarketName(marketId);
+			updateMarketCopy(marketId, archiveYear);
 			updateMarketAttributes(marketId);
-
+			if (archiveYear > 0)
+				archiveMarketGrids(archiveYear, marketId);
+			
 			dbConn.commit();
 			
 			putModuleData("Market Successfully Archived");
@@ -1081,6 +1134,131 @@ public class MarketManagementAction extends ManagementAction {
 			}
 		}
 	}
+	
+	
+	/**
+	 * Copy all grids associated with the market
+	 * @param archiveYear
+	 * @param marketId
+	 * @throws ActionException
+	 */
+	private void archiveMarketGrids(int archiveYear, String marketId) throws ActionException {
+		List<String> gridIds = loadGridIds(marketId);
+
+		try {
+			for (String id : gridIds) {
+				String newId = copyGrid(id);
+				updateGridXr(newId, id, marketId);
+				updateGridInfo(newId, archiveYear);
+			}
+		} catch(Exception e) {
+			log.error("Copy Grid and Charts Failed", e);
+			try {
+				dbConn.rollback();
+			} catch (SQLException sqle) {
+				log.error("A Problem occured with the rollback.", sqle);
+			}
+			throw new ActionException(e);
+		}
+	}
+
+
+	/**
+	 * Copy the supplied grid
+	 * @param gridId
+	 * @return
+	 * @throws ActionException
+	 */
+	@SuppressWarnings("rawtypes")
+	private String copyGrid(String gridId) throws ActionException {
+		Map<String, Object> replaceVals = new HashMap<>();
+		attributes.put(RecordDuplicatorUtility.REPLACE_VALS, replaceVals);
+		
+		//Copy Grid
+		RecordDuplicatorUtility rdu = new RecordDuplicatorUtility(attributes, dbConn, "BIOMEDGPS_GRID", GridChartAction.DB_GRID_ID, true);
+		rdu.setSchemaNm(getCustomSchema());
+		rdu.addWhereClause(GridChartAction.DB_GRID_ID, gridId);
+		replaceVals.put(GridChartAction.DB_GRID_ID, rdu.copy());
+
+		//Copy Grid Details
+		rdu = new RecordDuplicatorUtility(attributes, dbConn, "BIOMEDGPS_GRID_DETAIL", "GRID_DETAIL_ID", true);
+		rdu.setSchemaNm(getCustomSchema());
+		rdu.addWhereListClause(GridChartAction.DB_GRID_ID);
+
+		replaceVals.put("GRID_DETAIL_ID", rdu.copy());
+
+		return (String)((Map)replaceVals.get(GridChartAction.DB_GRID_ID)).get(gridId);
+	}
+
+
+	/**
+	 * Load the ids of all grids associated with the supplied market.
+	 * @param marketId
+	 * @return
+	 * @throws ActionException
+	 */
+	private List<String> loadGridIds(String marketId) throws ActionException {
+		List<String> gridIds = new ArrayList<>();
+		StringBuilder sql = new StringBuilder(120);
+		sql.append("select value_1_txt from ").append(customDbSchema).append("biomedgps_market_attribute_xr ");
+		sql.append("where market_id = ? and attribute_id = 'GRID'");
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, marketId);
+			
+			ResultSet rs = ps.executeQuery();
+			
+			while (rs.next())
+				gridIds.add(rs.getString("value_1_txt"));
+		} catch (SQLException e) {
+			throw new ActionException(e);
+		}
+		
+		return gridIds;
+	}
+
+	
+	/**
+	 * Update the xr values to point to the new grids
+	 * @param newId
+	 * @param oldId
+	 * @param marketId
+	 * @throws SQLException
+	 */
+	private void updateGridXr(String newId, String oldId, String marketId) throws SQLException {
+		StringBuilder sql = new StringBuilder(100);
+		sql.append("update ").append(customDbSchema).append("biomedgps_market_attribute_xr ");
+		sql.append("set value_1_txt = ? where market_id = ? and value_1_txt = ? ");
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, newId);
+			ps.setString(2, marketId);
+			ps.setString(3, oldId);
+			
+			ps.executeUpdate();
+		}
+	}
+	
+	
+	/**
+	 * Change the grid's year to match the market's
+	 * @param gridId
+	 * @param yearNo
+	 * @throws SQLException
+	 */
+	private void updateGridInfo(String gridId, int yearNo) throws SQLException {
+		StringBuilder sql = new StringBuilder(75);
+		sql.append("update ").append(customDbSchema).append("biomedgps_grid ");
+		sql.append("set year_no = ?, grid_group_id = grid_id where grid_id = ? ");
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setInt(1, yearNo);
+			ps.setString(2, gridId);
+			
+			ps.executeUpdate();
+		}
+	}
+
 
 	/**
 	 * Update the cloned market attributes group ids to match the new market attribute ids
@@ -1182,14 +1360,21 @@ public class MarketManagementAction extends ManagementAction {
 	/**
 	 * Change the name and status of the supplied market to denote its archived status
 	 */
-	private void updateMarketName(String marketId) throws SQLException {
+	private void updateMarketCopy(String marketId, int archiveYear) throws SQLException {
 		StringBuilder sql = new StringBuilder(200);
 		sql.append("update ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA));
-		sql.append("biomedgps_market set market_nm = market_nm + '(Archived)', ");
-		sql.append("status_no = 'A' where market_id = ?");
+		sql.append("biomedgps_market set ");
+		if (archiveYear > 0) {
+			sql.append("status_no = 'E', year_no = ? ");
+		} else {
+			sql.append("market_nm = market_nm + '(Archived)', status_no = 'A' ");
+		}
+		sql.append("where market_id = ?");
 		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			ps.setString(1, marketId);
+			int i = 1;
+			if (archiveYear > 0) ps.setInt(i++, archiveYear);
+			ps.setString(i, marketId);
 			ps.executeUpdate();
 		}
 	}
@@ -1376,6 +1561,10 @@ public class MarketManagementAction extends ManagementAction {
 		// Only add a tab parameter if one was provided.
 		if (req.hasParameter("tab")) {
 			url.append("&tab=").append(req.getParameter("tab"));
+		}
+		// Add the public preview selected tab if present
+		if (req.hasParameter("selTab")) {
+			url.append("&selTab=").append(req.getParameter("selTab"));
 		}
 		//if a market is being deleted do not redirect the user to a market page
 		if (!"delete".equals(buildAction) || 

@@ -33,8 +33,40 @@ public class TicketCommentVO extends BeanDataVO {
 		private String typeName;
 		private ActivityType(String typeName) { this.typeName = typeName; }
 		public String getTypeName() { return typeName; }
+		
+		//Used to check if a billible type exists or is a comment
+		public static boolean isActivityType(String test) {
+
+		    for (ActivityType c : ActivityType.values()) {
+		        if (c.name().equalsIgnoreCase(test)) {
+		            return true;
+		        }
+		    }
+
+		    return false;
+		}
 	}
 
+	
+	/**
+	 * Options for the Role of the person you're communicating to
+	 */
+	public enum CommunicationRole {
+		CAS("CAS", "role.WSLA_SERVICE_CENTER"), COURIER("COURIER", "unitLocationType.COURIER"), 
+		END_USER("END_USER", "role.WSLA_END_CUSTOMER"), 
+		OEM("OEM", "role.WSLA_OEM"), RETAILER("RETAILER", "role.WSLA_RETAILER"), 
+		OTHER("OTHER", "common.other");
+		
+		private String commName;
+		private String commRoleId;
+		private CommunicationRole(String commName, String commRoleId) { 
+			this.commName = commName;
+			this.commRoleId = commRoleId;
+		}
+		public String getCommName() { return commName; }
+		public String getCommRoleId() { return commRoleId; }
+	}
+	
 	/**
 	 * 
 	 */
@@ -51,7 +83,9 @@ public class TicketCommentVO extends BeanDataVO {
 	private int priorityTicketFlag;
 	private int endUserFlag;
 	private int wslaReplyFlag;
+	private int userShareFlag;
 	private Date createDate;
+	private String ledgerEntryId;
 	
 	// Bean Sub-elements
 	private UserVO user;
@@ -147,6 +181,14 @@ public class TicketCommentVO extends BeanDataVO {
 	@Column(name="create_dt", isInsertOnly=true, isAutoGen=true)
 	public Date getCreateDate() {
 		return createDate;
+	}
+
+	/**
+	 * @return the userShareFlag
+	 */
+	@Column(name="user_share_flg")
+	public int getUserShareFlag() {
+		return userShareFlag;
 	}
 
 	/**
@@ -262,6 +304,28 @@ public class TicketCommentVO extends BeanDataVO {
 	 */
 	public void setWslaReplyFlag(int wslaReplyFlag) {
 		this.wslaReplyFlag = wslaReplyFlag;
+	}
+
+	/**
+	 * @param userShareFlag the userShareFlag to set
+	 */
+	public void setUserShareFlag(int userShareFlag) {
+		this.userShareFlag = userShareFlag;
+	}
+
+	/**
+	 * @return the ledgerEntryId
+	 */
+	@Column(name="ledger_entry_id")
+	public String getLedgerEntryId() {
+		return ledgerEntryId;
+	}
+
+	/**
+	 * @param ledgerEntryId the ledgerEntryId to set
+	 */
+	public void setLedgerEntryId(String ledgerEntryId) {
+		this.ledgerEntryId = ledgerEntryId;
 	}
 
 }

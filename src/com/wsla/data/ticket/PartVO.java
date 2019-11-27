@@ -29,6 +29,7 @@ public class PartVO extends ProductVO {
 	private String ticketId;
 	private String shipmentId;
 	private int quantity;
+	private int warehouseQuantity;
 	private int quantityReceived;
 	private int usedQuantityNo;
 	private int destEstQuantity;
@@ -37,6 +38,7 @@ public class PartVO extends ProductVO {
 	private String availabilityCode;
 	private Date availabilityDate;
 	private String serialNumberText;
+	private String locationText;
 
 	private int quantityOnHand; //used for display, if negative we display "cas not assigned".  If >0 we display 'in stock'
 	private ShipmentStatus shipmentStatus;
@@ -126,6 +128,21 @@ public class PartVO extends ProductVO {
 		return submitApprovalFlag;
 	}
 
+	/**
+	 * @return
+	 */
+	@Column(name="warehouse_qnty_no", isReadOnly=true)
+	public int getWarehouseQuantity() {
+		return warehouseQuantity;
+	}
+
+	/**
+	 * @param warehouseQuantity
+	 */
+	public void setWarehouseQuantity(int warehouseQuantity) {
+		this.warehouseQuantity = warehouseQuantity;
+	}
+
 	public void setPartId(String partId) {
 		this.partId = partId;
 	}
@@ -197,5 +214,20 @@ public class PartVO extends ProductVO {
 	 */
 	public void setSerialNumberText(String serialNumberText) {
 		this.serialNumberText = serialNumberText;
+	}
+
+	/**
+	 * @return the locationText
+	 */
+	@Column(name="location_txt", isReadOnly=true)
+	public String getLocationText() {
+		return locationText;
+	}
+
+	/**
+	 * @param locationText the locationText to set
+	 */
+	public void setLocationText(String locationText) {
+		this.locationText = locationText;
 	}
 }

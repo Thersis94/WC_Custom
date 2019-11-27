@@ -10,7 +10,6 @@ import java.util.Map;
 import com.restpeer.common.RPConstants;
 import com.restpeer.common.RPConstants.RPRole;
 import com.restpeer.data.RPUserVO;
-
 // SMT Base Libs
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.commerce.catalog.InvoiceVO;
@@ -20,7 +19,6 @@ import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.security.AuthorizationException;
 import com.siliconmtn.security.UserDataVO;
-
 // WC3
 import com.smt.sitebuilder.action.commerce.product.InvoiceAction;
 import com.smt.sitebuilder.action.dealer.DealerInfoAction;
@@ -68,15 +66,15 @@ public class RoleModule extends DBRoleModule {
 		SBUserRole role = super.getUserRole(profileId, siteId);
 		UserDataVO user = (UserDataVO) getAttribute(Constants.USER_DATA);
 		RPUserVO rpUser = (RPUserVO) user.getUserExtendedInfo();
-		
+
 		// Check if the user's dealers have active payments to use the Mobile Restaurateur
-		if (RPRole.MEMBER.getRoleId().equals(role.getRoleId())) {
+		if (RPRole.MEMBER.getRoleId().equals(role.getRoleId()) && rpUser != null) {
 			validatePayments(user.getProfileId(), rpUser);
 		}
-		
+
 		return role;
 	}
-	
+
 	/**
 	 * Validates the user's dealers have active payments for
 	 * using the Mobile Restaurateur.
@@ -87,29 +85,29 @@ public class RoleModule extends DBRoleModule {
 	private void validatePayments(String profileId, RPUserVO rpUser) {
 		SMTDBConnection dbConn = (SMTDBConnection) getAttribute(GlobalConfig.KEY_DB_CONN);
 		SiteVO site = (SiteVO) getAttribute(Constants.SITE_DATA);
-		
+
 		// Get dealers associated to this user
 		List<DealerVO> dealers;
 		try {
 			ActionRequest req = new ActionRequest();
 			req.setParameter("srchProfileId", profileId);
 			req.setParameter(OrganizationAction.ORGANIZATION_ID, site.getOrganizationId());
-			
+
 			DealerInfoAction dia = new DealerInfoAction(dbConn, getInitVals());
 			dealers = new ArrayList<>(dia.search(req).values());
 		} catch (DatabaseException e) {
 			log.error("Unable to get user's dealers", e);
 			dealers = new ArrayList<>();
 		}
-		
+
 		// Validate the status of this user's dealers
 		Map<String, Integer> dealerStatus = new HashMap<>();
-		if (dealers != null && !dealers.isEmpty()) {
+		if (!dealers.isEmpty()) {
 			List<String> dealerIds = new ArrayList<>();
 			for (DealerVO dealer : dealers) {
 				dealerIds.add(dealer.getDealerId());
 			}
-			
+
 			InvoiceAction ia = new InvoiceAction(dbConn, getInitVals());
 			List<InvoiceVO> invoices = ia.getLatestByCategory(dealerIds, RPConstants.MEMBERSHIP_CAT);
 			for (InvoiceVO invoice : invoices) {

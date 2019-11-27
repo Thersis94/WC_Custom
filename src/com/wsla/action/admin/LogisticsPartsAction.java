@@ -149,6 +149,9 @@ public class LogisticsPartsAction extends SBActionAdapter {
 		// If shipping src=dest, or if the unit will be harvested, don't modify inventory
 		if (StringUtil.checkVal(shipment.getFromLocationId()).equals(shipment.getToLocationId()) || isHarvest)
 			return;
+		
+		// if the shipment is marked in the UI UX to ingore inventory return nothing more to do
+		if (shipment.getInventoryIgnoreFlag() ==1 ) return;
 
 		// Load the list of parts
 		List<PartVO> parts = shipment.getParts();
@@ -171,7 +174,7 @@ public class LogisticsPartsAction extends SBActionAdapter {
 	 * @throws ActionException
 	 */
 	private void secureShipmentReceipt(UserVO user, String roleId, ShipmentVO shipment) throws ActionException {
-		if (!user.getLocationId().equals(shipment.getToLocationId()) && !WSLARole.ADMIN.getRoleId().equals(roleId))
+		if (!user.getLocationId().equals(shipment.getToLocationId()) && !(WSLARole.ADMIN.getRoleId().equals(roleId)||WSLARole.WSLA_CUSTOMER_SVC.getRoleId().equals(roleId) ))
 			throw new ActionException("this user can not receive the shipment");
 	}
 	
@@ -443,7 +446,7 @@ public class LogisticsPartsAction extends SBActionAdapter {
 		bst.setLimit(10000);
 		String schema = getCustomSchema();
 		StringBuilder sql = new StringBuilder(200);
-		sql.append("select p.*, pm.*, lim.actual_qnty_no, limd.actual_qnty_no as dest_actual_qnty_no ");
+		sql.append("select p.*, pm.*, lim.location_txt, lim.actual_qnty_no, limd.actual_qnty_no as dest_actual_qnty_no ");
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("wsla_shipment s ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("wsla_part p on s.shipment_id=p.shipment_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("wsla_product_master pm on p.product_id=pm.product_id ");

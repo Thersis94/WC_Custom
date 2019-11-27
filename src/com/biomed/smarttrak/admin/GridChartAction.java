@@ -517,6 +517,11 @@ public class GridChartAction extends SBActionAdapter {
 				// so the table row ids can be updated
 				String gridDetailId = StringUtil.checkVal(detail.getGridDetailId());
 				if (gridDetailId.startsWith("BIO_")) detail.setGridDetailId(null);
+				
+				for (int i = 0; i < grid.getSeriesTxtFlg().length; i++) {
+					if ( grid.getSeriesTxtFlg()[i] == 1) continue;
+					detail.getValues()[i] = prepareThousands(detail.getValues()[i]);
+				}
 
 				// Save the data.  If the data is an insert, add to the column xref
 				db.save(detail);
@@ -526,6 +531,21 @@ public class GridChartAction extends SBActionAdapter {
 			log.error("unable to save the grid data", e);
 			throw e;
 		}
+	}
+
+	/**
+	 * Ensure that any value with a known money prefix has thousands seperators
+	 * @param string
+	 */
+	private String prepareThousands(String val) {
+		String nonAlpha = StringUtil.removeNonNumericExceptDecimal(val);
+		// Ensure that we have a value
+		if (StringUtil.isEmpty(nonAlpha) || val.contains(",") ||
+				val.length() - nonAlpha.length() > 10) return val;
+		String prefix = val.substring(0, val.indexOf(nonAlpha.charAt(0)));
+		int decimalIdx = nonAlpha.indexOf('.');
+		String formattedNum = String.format("%,d", Convert.formatInteger(decimalIdx > -1? nonAlpha.substring(0, decimalIdx) : nonAlpha));
+		return prefix + formattedNum + (decimalIdx > -1?nonAlpha.substring(decimalIdx) : "") + val.substring(val.lastIndexOf(nonAlpha.charAt(nonAlpha.length()-1))+1);
 	}
 
 	/**
@@ -696,11 +716,12 @@ public class GridChartAction extends SBActionAdapter {
 		String search = StringUtil.checkVal(req.getParameter("search")).toUpperCase();
 
 		StringBuilder sql = new StringBuilder(250);
-		sql.append("select count(*) from ").append(schema).append("biomedgps_grid ");
+		sql.append("select count(*) over () from ").append(schema).append("biomedgps_grid ");
 		sql.append(DBUtil.WHERE_1_CLAUSE);
 		if (search.length() > 0) sql.append("and (upper(title_nm) like ? or upper(subtitle_nm) like ?) ");
 		if(!req.getBooleanParameter("showArchives"))
 			sql.append("and archive_flg = 'false' ");
+		sql.append("group by grid_group_id");
 
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			if (search.length() > 0) {

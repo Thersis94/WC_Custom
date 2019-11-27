@@ -6,7 +6,6 @@ import java.util.Date;
 import com.siliconmtn.db.orm.Column;
 // SMTBaseLibs
 import com.siliconmtn.security.UserDataVO;
-import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.user.HumanNameIntfc;
 
@@ -109,9 +108,10 @@ public class EmailLogVO extends UserDataVO implements HumanNameIntfc {
 	}
 
 	/**
+	 * Was the Email written to file?
 	 * @return
 	 */
 	public boolean isFileWritten() {
-		return StringUtil.isEmpty(filePathText);
+		return !StringUtil.isEmpty(filePathText);
 	}
 }

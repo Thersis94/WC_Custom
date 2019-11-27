@@ -488,12 +488,7 @@ public class ProductManagementAction extends ManagementAction {
 			retrieveProducts(req);
 		} else {
 			loadAuthors(req); //load list of BiomedGPS Staff for the "Author" drop-down
-			//TODO Cleanup hierarchy loading/caching code - Zoho SC-230
-			if (req.getSession().getAttribute("hierarchyTree") == null) {
-				// This is a form for a new market make sure that the hierarchy tree is present 
-				Tree t = loadDefaultTree();
-				req.getSession().setAttribute("hierarchyTree", t.preorderList());
-			}
+			loadFullTree(req);
 		}
 	}
 
@@ -778,8 +773,7 @@ public class ProductManagementAction extends ManagementAction {
 		DBProcessor db = new DBProcessor(dbConn);
 		product = (ProductVO) db.executeSelect(sql.toString(), params, new ProductVO()).get(0);
 
-		Tree t = loadDefaultTree();
-		req.getSession().setAttribute("hierarchyTree", t.preorderList());
+		loadFullTree(req);
 		req.getSession().setAttribute("productName", product.getProductName());
 		req.getSession().setAttribute("shortProductName", product.getShortName());
 		req.getSession().setAttribute("productNameParam", StringEncoder.urlEncode(product.getProductName()));
@@ -1522,7 +1516,8 @@ public class ProductManagementAction extends ManagementAction {
 		
 		if (!StringUtil.isEmpty(productId)) {
 			String status = req.getParameter("statusNo");
-			if (StringUtil.isEmpty(status))
+
+			if (StringUtil.isEmpty(status) || ActionTarget.PRODUCT != EnumUtil.safeValueOf(ActionTarget.class, req.getParameter(ACTION_TARGET)))
 				status = findStatus(productId);
 			updateSolr(productId, status);
 		}

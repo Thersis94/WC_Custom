@@ -141,6 +141,10 @@ public class TicketEditAction extends SBActionAdapter {
 
 				putModuleData(getExtendedData(req.getParameter(TICKET_ID), req.getParameter("groupCode"), isUserPortal));
 			} else {
+				if (StringUtil.isEmpty(ticketNumber)) {
+					ticketNumber = getTicketNumberFromId(req.getParameter(TICKET_ID));
+				}
+				
 				TicketVO ticket = getCompleteTicket(ticketNumber);
 				req.setAttribute("providerData", ticket.getOem());
 				req.setAttribute("wsla.ticket.locale", ticket.getOriginator().getLocale());
@@ -199,8 +203,10 @@ public class TicketEditAction extends SBActionAdapter {
 		if (endUserFilter) {
 			for (Node n : rootNode.getChildren()) {
 				TicketCommentVO tc = (TicketCommentVO)n.getUserObject();
-
-				if (tc.getEndUserFlag() != 1 && StringUtil.isEmpty(tc.getParentId())) remNodes.add(n);
+				
+				if (tc.getEndUserFlag() != 1 && StringUtil.isEmpty(tc.getParentId())) {
+					if (tc.getUserShareFlag() < 1) remNodes.add(n);
+				}
 			}
 
 			for (Node n : remNodes) {
@@ -415,7 +421,7 @@ public class TicketEditAction extends SBActionAdapter {
 			sql.append(" and ( b.attribute_cd = 'attr_proofPurchase' or b.attribute_cd = 'attr_serialNumberImage' ) ");
 		}
 
-		sql.append("order by b.attribute_group_cd ");
+		sql.append("order by b.attribute_group_cd, attribute_cd, create_dt  ");
 		log.debug(sql.length() + "|" + sql + "|" + ticketId);
 		List<TicketDataVO> data = new ArrayList<>();
 		try(PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
@@ -595,5 +601,25 @@ public class TicketEditAction extends SBActionAdapter {
 		module.setSimpleAction(true);
 		super.list(req);
 
+	}
+	
+	/**
+	 * Gets the ticket number from the ticketId
+	 * @param ticketId
+	 * @return
+	 */
+	public String getTicketNumberFromId(String ticketId) {
+		StringBuilder sql = new StringBuilder(128);
+		sql.append("select ticket_no from ").append(getCustomSchema()).append("wsla_ticket ");
+		sql.append("where ticket_id = ?");
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, ticketId);
+			try (ResultSet rs = ps.executeQuery()) {
+				if (rs.next()) return rs.getString(1);
+			}
+		} catch (Exception e) { /**  nothing to do **/}
+		
+		return null;
 	}
 }

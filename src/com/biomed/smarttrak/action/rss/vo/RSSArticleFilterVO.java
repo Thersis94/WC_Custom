@@ -3,11 +3,20 @@ package com.biomed.smarttrak.action.rss.vo;
 import java.sql.ResultSet;
 import java.util.Date;
 
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+
+import com.biomed.smarttrak.action.AdminControllerAction;
 import com.biomed.smarttrak.action.rss.RSSDataAction.ArticleStatus;
+import com.biomed.smarttrak.util.RSSArticleIndexer;
 import com.siliconmtn.action.ActionRequest;
-import com.siliconmtn.data.parser.BeanDataVO;
+import com.siliconmtn.annotations.SolrField;
+import com.siliconmtn.data.parser.AutoPopulateIntfc;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
+import com.siliconmtn.util.StringUtil;
+import com.smt.sitebuilder.security.SecurityController;
+import com.smt.sitebuilder.util.solr.SolrDocumentVO;
 
 /****************************************************************************
  * <b>Title:</b> RSSFilterArticleVO.java
@@ -21,10 +30,9 @@ import com.siliconmtn.db.orm.Table;
  * @version 3.3.1
  * @since Oct 3, 2017
  ****************************************************************************/
-@Table(name="biomedgps_rss_article_filter")
-public class RSSArticleFilterVO extends BeanDataVO {
+@Table(name="biomedgps_rss_filtered_article")
+public class RSSArticleFilterVO extends SolrDocumentVO implements AutoPopulateIntfc {
 
-	private static final long serialVersionUID = -7885046900442552916L;
 	private String articleFilterId;
 	private String rssArticleId;
 	private String filterArticleTxt;
@@ -34,6 +42,7 @@ public class RSSArticleFilterVO extends BeanDataVO {
 	private int matchCount;
 	private ArticleStatus articleStatus;
 	private Date createDt;
+	private int completeFlg;
 
 	//Temp Variables
 	private String articleUrl;
@@ -41,9 +50,12 @@ public class RSSArticleFilterVO extends BeanDataVO {
 	private String fullArticleTxt;
 	private String titleTxt;
 	private String feedGroupNm;
+	private String affiliationTxt;
 
 	public RSSArticleFilterVO() {
-		super();
+		super(RSSArticleIndexer.INDEX_TYPE);
+		addOrganization(AdminControllerAction.BIOMED_ORG_ID);
+		addRole(SecurityController.PUBLIC_ROLE_LEVEL);
 	}
 
 	public RSSArticleFilterVO(ActionRequest req) {
@@ -82,6 +94,7 @@ public class RSSArticleFilterVO extends BeanDataVO {
 	 * @return the rssArticleId
 	 */
 	@Column(name="rss_article_id")
+	@SolrField(name="rssArticleId_s")
 	public String getRssArticleId() {
 		return rssArticleId;
 	}
@@ -106,11 +119,13 @@ public class RSSArticleFilterVO extends BeanDataVO {
 	 * @return the feedGroupId
 	 */
 	@Column(name="feed_group_id")
+	@SolrField(name="feedGroupId_s")
 	public String getFeedGroupId() {
 		return feedGroupId;
 	}
 
 	@Column(name="bucket_id")
+	@SolrField(name="bucketId_s")
 	public String getBucketId() {
 		return bucketId;
 	}
@@ -123,15 +138,32 @@ public class RSSArticleFilterVO extends BeanDataVO {
 		return articleStatus;
 	}
 
+	@SolrField(name="articleStatus_s")
+	public String getArticleStatusTxt() {
+		if(articleStatus != null)
+			return articleStatus.name();
+		else {
+			return ArticleStatus.O.name();
+		}
+	}
+
 	@Column(name="create_dt", isInsertOnly=true, isAutoGen=true)
 	public Date getCreateDt() {
 		return createDt;
 	}
+
+	@SolrField(name="completeFlag_i")
+	@Column(name="complete_flg")
+	public int getCompleteFlg() {
+		return completeFlg;
+	}
+
 	/**
 	 * @param articleFilterId the articleFilterId to set.
 	 */
 	public void setArticleFilterId(String articleFilterId) {
 		this.articleFilterId = articleFilterId;
+		setDocumentId(articleFilterId);
 	}
 
 	/**
@@ -146,6 +178,7 @@ public class RSSArticleFilterVO extends BeanDataVO {
 	 */
 	public void setFilterArticleTxt(String filterArticleTxt) {
 		this.filterArticleTxt = filterArticleTxt;
+		appendContents(filterArticleTxt);
 	}
 
 	/**
@@ -153,6 +186,7 @@ public class RSSArticleFilterVO extends BeanDataVO {
 	 */
 	public void setFilterTitleTxt(String filterTitleTxt) {
 		this.filterTitleTxt = filterTitleTxt;
+		appendContents(filterTitleTxt);
 	}
 
 	/**
@@ -174,6 +208,11 @@ public class RSSArticleFilterVO extends BeanDataVO {
 
 	public void setCreateDt(Date createDt) {
 		this.createDt = createDt;
+		this.setUpdateDt(createDt);
+	}
+
+	public void setCompleteFlg(int completeFlg) {
+		this.completeFlg = completeFlg;
 	}
 
 	/**
@@ -185,6 +224,7 @@ public class RSSArticleFilterVO extends BeanDataVO {
 
 	public void setArticleUrl(String articleUrl) {
 		this.articleUrl = articleUrl;
+		this.setDocumentUrl(articleUrl);
 	}
 
 	/**
@@ -196,6 +236,7 @@ public class RSSArticleFilterVO extends BeanDataVO {
 
 	public void setArticleTxt(String articleTxt) {
 		this.articleTxt = articleTxt;
+		appendContents(articleTxt);
 	}
 
 	/**
@@ -212,15 +253,26 @@ public class RSSArticleFilterVO extends BeanDataVO {
 	/**
 	 * @return
 	 */
+	@Column(name="full_article_txt")
 	public String getFullArticleTxt() {
 		return fullArticleTxt;
 	}
 
 	public void setFullArticleTxt(String fullArticleTxt) {
 		this.fullArticleTxt = fullArticleTxt;
+
+		if(!StringUtil.isEmpty(fullArticleTxt)) {
+			try {
+				Document d = Jsoup.parse(fullArticleTxt);
+				appendContents(d.text());
+			} catch(Exception e) {
+				//Can ignore this error.
+			}
+		}
 	}
 
 	@Column(name="match_no")
+	@SolrField(name="matchCount_i")
 	public int getMatchCount() {
 		return matchCount;
 	}
@@ -235,5 +287,32 @@ public class RSSArticleFilterVO extends BeanDataVO {
 
 	public void setFeedGroupNm(String feedGroupNm) {
 		this.feedGroupNm = feedGroupNm;
+	}
+
+	@Column(name="affiliation_txt")
+	@SolrField(name="affiliationTxt_s")
+	public String getAffiliationTxt() {
+		return this.affiliationTxt;
+	}
+
+	public void setAffiliationTxt(String affiliationTxt) {
+		this.affiliationTxt = affiliationTxt;
+	}
+
+	/**
+	 * Builds Content Parameter for Solr Indexing.
+	 * @param contents
+	 */
+	private void appendContents(String contents) {
+
+		/*
+		 * Verify contents is not null and fail-fast.
+		 * We set null in other places to ensure no content.
+		 */
+		if(StringUtil.isEmpty(contents)) return;
+
+		StringBuilder s = new StringBuilder(StringUtil.checkVal(getContents()).length() + contents.length() + 1);
+		s.append(getContents()).append(" ").append(contents);
+		super.setContents(s.toString().trim());
 	}
 }

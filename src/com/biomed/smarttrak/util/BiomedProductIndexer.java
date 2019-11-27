@@ -5,6 +5,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -353,6 +354,7 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 	 * @return
 	 */
 	protected Map<String, List<ProductAllianceVO>> retrieveAlliances(Set<String> ids) {
+		if (ids == null) ids = Collections.emptySet();
 		StringBuilder sql = new StringBuilder(475 + ids.size());
 		String customDb = config.getProperty(Constants.CUSTOM_DB_SCHEMA);
 		List<Object> params = new ArrayList<>();
@@ -364,14 +366,14 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(customDb).append("BIOMEDGPS_PRODUCT p ");
 		sql.append("ON p.PRODUCT_ID = xr.PRODUCT_ID ");
 		sql.append("WHERE p.STATUS_NO not in ('A','D') ");
-		if (ids != null && !ids.isEmpty()) {
+		if (!ids.isEmpty()) {
 			sql.append("and xr.PRODUCT_ID in ( ");
 			DBUtil.preparedStatmentQuestion(ids.size(), sql);
 			sql.append(") ");
 			params.addAll(ids);
 		}
-		DBProcessor db = new DBProcessor(dbConn);
 
+		DBProcessor db = new DBProcessor(dbConn, customDb);
 		List<Object> results = db.executeSelect(sql.toString(), params, new ProductAllianceVO());
 		Map<String, List<ProductAllianceVO>> alliances = new HashMap<>();
 		for (Object o : results) {

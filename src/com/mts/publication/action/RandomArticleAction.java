@@ -12,6 +12,7 @@ import com.siliconmtn.util.Convert;
 // WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.ModuleVO;
+import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
@@ -42,7 +43,7 @@ public class RandomArticleAction extends SBActionAdapter {
 	public RandomArticleAction(ActionInitVO actionInit) {
 		super(actionInit);
 	}
-	
+
 	/*
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.action.ActionRequest)
@@ -50,19 +51,20 @@ public class RandomArticleAction extends SBActionAdapter {
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		// Format the data
+		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		String pubId = (String) mod.getAttribute(ModuleVO.ATTRIBUTE_1);
 		int count = Convert.formatInteger((String)mod.getAttribute(ModuleVO.ATTRIBUTE_2));
 		if (count > 0) req.setParameter("limit", count + "");
 		req.setParameter("order", "random()");
-		
+
 		// Query the publication for random articles
 		BSTableControlVO bst = new BSTableControlVO(req, MTSDocumentVO.class);
 		DocumentBrowseAction dba = new DocumentBrowseAction(dbConn, attributes);
-		GridDataVO<MTSDocumentVO> results = dba.search(bst, pubId, null, null, null);
+		GridDataVO<MTSDocumentVO> results = dba.search(bst, pubId, null, null, null, null, page.isPreviewMode());
 		putModuleData(results.getRowData());
 	}
-	
+
 	/*
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#list(com.siliconmtn.action.ActionRequest)
@@ -70,12 +72,12 @@ public class RandomArticleAction extends SBActionAdapter {
 	@Override
 	public void list(ActionRequest req) throws ActionException {
 		super.retrieve(req);
-		
+
 		SelectLookupAction sla = new SelectLookupAction();
 		sla.setDBConnection(getDBConnection());
 		sla.setAttributes(getAttributes());
 		req.setAttribute("mts_publications", sla.getPublications(req));
-		
+
 	}
 
 }

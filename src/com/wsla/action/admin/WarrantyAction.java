@@ -89,7 +89,9 @@ public class WarrantyAction extends SBActionAdapter {
 		
 		String providerId = req.getParameter("providerId");
 		String typeId = req.getParameter("typeId");
-		setModuleData(getData(providerId, typeId, new BSTableControlVO(req, WarrantyVO.class)));
+		Integer activeFlag = req.getIntegerParameter("activeFlag");
+		Integer flatRateFlag = req.getIntegerParameter("flatRateFlag");
+		setModuleData(getData(providerId, typeId, new BSTableControlVO(req, WarrantyVO.class),activeFlag, flatRateFlag));
 	}
 
 
@@ -106,12 +108,35 @@ public class WarrantyAction extends SBActionAdapter {
 				db.delete(vo);
 			} else {
 				db.save(vo);
+				
+				// Add the default cost and invoice amounts
+				if (StringUtil.isEmpty(req.getParameter("warranty_id"))) 
+					addDefaultBillingInfo(vo.getWarrantyId());
 			}
 		} catch (InvalidDataException | DatabaseException e) {
 			log.error("Unable to save warranty", e);
 		}
 	}
 
+	/**
+	 * Adds the default values for a costs and invoices to the warranty / billable xr
+	 * @param warrantyId
+	 */
+	public void addDefaultBillingInfo(String warrantyId) {
+		StringBuilder sql = new StringBuilder(512);
+		sql.append("insert into ").append(getCustomSchema());
+		sql.append("wsla_warranty_billable_xr (warranty_billable_id, ");
+		sql.append("warranty_id, billable_activity_cd, cost_no, invoice_amount_no, create_dt) ");
+		sql.append("select replace(newid(), '-', ''), '").append(warrantyId);
+		sql.append("', billable_activity_cd, default_cost_no, default_invoice_amt_no, now() ");
+		sql.append("from ").append(getCustomSchema());
+		sql.append("wsla_billable_activity where active_flg = 1 ");
+		sql.append("and parent_id is null and billable_activity_cd not in ('MISC_ACTIVITY')");
+		log.debug(sql.length() + "|" + sql);
+		
+		DBProcessor db = new DBProcessor(getDBConnection());
+		db.executeSQLCommand(sql.toString());
+	}
 
 	/**
 	 * Pull a single warranty from the DB.  Used when creating product_warranty records
@@ -126,14 +151,35 @@ public class WarrantyAction extends SBActionAdapter {
 		return data != null && !data.isEmpty() ? data.get(0) : new WarrantyVO();
 	}
 
+	/**
+	 * gets the warranty when sent a ticket id
+	 * @param TicketId
+	 * @return
+	 */
+	public WarrantyVO getWarrantyByTicketId(String ticketId) {
+		
+		StringBuilder sql = new StringBuilder(255);
+		sql.append(DBUtil.SELECT_CLAUSE).append(" w.* ").append(DBUtil.FROM_CLAUSE).append(getCustomSchema()).append("wsla_ticket t ");
+		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("wsla_product_warranty pw on t.product_warranty_id = pw.product_warranty_id ");
+		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("wsla_warranty w on pw.warranty_id = w.warranty_id ");
+		sql.append(DBUtil.WHERE_CLAUSE).append("t.ticket_id = ? ");
+
+		DBProcessor dbp = new DBProcessor(getDBConnection(), getCustomSchema());
+		List<WarrantyVO> data = dbp.executeSelect(sql.toString(), Arrays.asList(ticketId), new WarrantyVO());
+		return data != null && !data.isEmpty() ? data.get(0) : new WarrantyVO();
+	}
 
 	/**
 	 * Return a list of Warranties included in the requested set.
 	 * @param setId
 	 * @param bst
+	 * @param hasFlatRateFlag 
+	 * @param flatRateFlag 
+	 * @param hasActiveFlag 
+	 * @param activeFlag 
 	 * @return
 	 */
-	public GridDataVO<WarrantyVO> getData(String providerId, String typeId, BSTableControlVO bst) {
+	public GridDataVO<WarrantyVO> getData(String providerId, String typeId, BSTableControlVO bst, Integer activeFlag, Integer flatRateFlag) {
 		String schema = getCustomSchema();
 		List<Object> params = new ArrayList<>();
 		StringBuilder sql = new StringBuilder(304);
@@ -162,6 +208,16 @@ public class WarrantyAction extends SBActionAdapter {
 			sql.append("and w.warranty_type_cd=? ");
 			params.add(typeId);
 		}
+		
+		if(activeFlag != null) {
+			sql.append("and w.active_flg =? ");
+			params.add(activeFlag);
+		}
+		
+		if(flatRateFlag != null) {
+			sql.append("and w.flat_rate_flg =? ");
+			params.add(flatRateFlag);
+		}
 
 		sql.append(bst.getSQLOrderBy("p.provider_nm",  "asc"));
 		log.debug(sql.length() + "|" + sql);
@@ -181,12 +237,15 @@ public class WarrantyAction extends SBActionAdapter {
 		StringBuilder sql = new StringBuilder(150);
 		sql.append("select warranty_id as key, desc_txt as value ");
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("wsla_warranty ");
+		sql.append(DBUtil.WHERE_1_CLAUSE).append("and active_flg  = 1 ");
+		
 		if (!StringUtil.isEmpty(providerId)) {
-			sql.append("where provider_id=? ");
+			sql.append(" and provider_id=? ");
 			params = Arrays.asList(providerId);
 		}
+		
 		sql.append("order by desc_txt");
-		log.debug(sql);
+		log.debug(sql + "|" + params);
 
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema()); 
 		return db.executeSelect(sql.toString(), params, new GenericVO());

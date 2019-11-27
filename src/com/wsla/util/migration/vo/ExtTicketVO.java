@@ -28,12 +28,14 @@ public class ExtTicketVO extends TicketVO {
 	private String uniqueUserId;
 	private String casLocationId;
 	private Date closedDate;
+	private String operator;
+	private String batchName;
 
 	@Override
 	@Column(name="originator_user_id")
-	public String getUserId() {
+	public String getOriginatorUserId() {
 		String id = super.getOriginator() != null ? super.getOriginator().getUserId() : null;
-		return  !StringUtil.isEmpty(id) ? id :  super.getUserId();
+		return  !StringUtil.isEmpty(id) ? id :  super.getOriginatorUserId();
 	}
 
 	public String getProductId() {
@@ -82,5 +84,30 @@ public class ExtTicketVO extends TicketVO {
 
 	public void setClosedDate(Date closedDate) {
 		this.closedDate = closedDate;
+	}
+
+	public String getOperator() {
+		return operator;
+	}
+
+	public void setOperator(String operator) {
+		this.operator = operator;
+	}
+
+	/**
+	 * used for 800# lookup - operator when available, OEM otherwise
+	 * @return
+	 */
+	public String getPhoneLookup() {
+		return StringUtil.checkVal(operator, getOemId());
+	}
+
+	@Column(name="batch_txt", isInsertOnly=true)
+	public String getBatchName() {
+		return batchName;
+	}
+
+	public void setBatchName(String batchName) {
+		this.batchName = batchName;
 	}
 }

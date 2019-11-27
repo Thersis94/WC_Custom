@@ -38,6 +38,7 @@ import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.EnumUtil;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
 import com.smt.sitebuilder.action.search.SolrAction;
@@ -273,7 +274,7 @@ public class CompanyManagementAction extends ManagementAction {
 		CompanyAction ca = new CompanyAction(actionInit);
 		ca.setDBConnection(dbConn);
 		ca.setAttributes(attributes);
-		putModuleData(ca.retrieveCompany(req.getParameter(COMPANY_ID), role, true, true));
+		putModuleData(ca.retrieveCompany(req.getParameter(COMPANY_ID), role, true));
 	}
 
 
@@ -295,12 +296,6 @@ public class CompanyManagementAction extends ManagementAction {
 			retrieveCompanies(req);
 		}else{
 			loadAuthors(req); //load list of BiomedGPS Staff for the "Author" drop-down
-			//TODO Cleanup hierarchy loading/caching code - Zoho SC-230
-			if (req.getSession().getAttribute("hierarchyTree") == null) {
-				// This is a form for a new market make sure that the hierarchy tree is present 
-				Tree t = loadDefaultTree();
-				req.getSession().setAttribute("hierarchyTree", t.preorderList());
-			}
 		}	
 	}
 
@@ -703,11 +698,6 @@ public class CompanyManagementAction extends ManagementAction {
 		params.add(companyId);
 		DBProcessor db = new DBProcessor(dbConn);
 		company = db.executeSelect(sql.toString(), params, new CompanyVO()).get(0);
-
-		if (req.getSession().getAttribute("hierarchyTree") == null) {
-			Tree t = loadDefaultTree();
-			req.getSession().setAttribute("hierarchyTree", t.preorderList());
-		}
 		req.getSession().setAttribute("companyName", company.getCompanyName());
 		req.getSession().setAttribute("shortCompanyName", company.getShortName());
 		req.getSession().setAttribute("companyNameParam", StringEncoder.urlEncode(company.getCompanyName()));
@@ -919,7 +909,7 @@ public class CompanyManagementAction extends ManagementAction {
 			case COMPANYATTACH:
 			case UNKNOWNATTRIBUTE:
 				CompanyAttributeVO attr = new CompanyAttributeVO(req);
-				saveAttribute(attr, db);
+				saveAttribute(attr, db, action);
 				break;
 			case ATTRIBUTE:
 				CompanyAttributeTypeVO t = new CompanyAttributeTypeVO(req);
@@ -1105,10 +1095,14 @@ public class CompanyManagementAction extends ManagementAction {
 	 * Check whether the supplied attribute needs to be inserted or updated and do so.
 	 * @param attr
 	 * @param db
+	 * @param action 
 	 * @throws ActionException
 	 */
-	protected void saveAttribute(CompanyAttributeVO attr, DBProcessor db) throws ActionException {
-		attr.calulateOrderNo();
+	protected void saveAttribute(CompanyAttributeVO attr, DBProcessor db, ActionType action) throws ActionException {
+		//Only calculate the order on content type attribtues.
+		if (action == ActionType.COMPANYATTRIBUTE)
+			attr.calulateOrderNo();
+		
 		try {
 			if (StringUtil.isEmpty(attr.getCompanyAttributeId())) {
 				attr.setCompanyAttributeId(new UUIDGenerator().getUUID());
@@ -1394,7 +1388,7 @@ public class CompanyManagementAction extends ManagementAction {
 		String companyId = req.getParameter(COMPANY_ID);
 		if (!StringUtil.isEmpty(companyId)) {
 			String status = req.getParameter("statusNo");
-			if (StringUtil.isEmpty(status))
+			if (StringUtil.isEmpty(status) || ActionType.COMPANY != EnumUtil.safeValueOf(ActionType.class, req.getParameter(ACTION_TYPE)))
 				status = findStatus(companyId);
 			updateSolr(companyId, status);
 		}
@@ -1553,6 +1547,15 @@ public class CompanyManagementAction extends ManagementAction {
 			url.append("&tab=").append(req.getParameter("tab"));
 		}
 
+		// Add the public preview selected tab and section if present
+		if (req.hasParameter("selTab")) {
+			url.append("&selTab=").append(req.getParameter("selTab"));
+		}
+		
+		if (req.hasParameter("section")) {
+			url.append("&section=").append(req.getParameter("section"));
+		}
+		
 		//if a company is being deleted do not redirect the user to a company page
 		if (!"delete".equals(buildAction) || 
 				ActionType.valueOf(req.getParameter(ACTION_TYPE)) != ActionType.COMPANY) {

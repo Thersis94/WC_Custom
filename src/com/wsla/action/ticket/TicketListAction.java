@@ -110,14 +110,15 @@ public class TicketListAction extends SimpleActionAdapter {
 		List<String> params = new ArrayList<>();
 		
 		// Build the sql for the main query
-		StringBuilder sql = new StringBuilder(768);
+		StringBuilder sql = new StringBuilder(1600);
 		sql.append(DBUtil.SELECT_CLAUSE).append("a.ticket_id, a.historical_flg, ticket_no, provider_nm, ");
-		sql.append("product_nm, status_nm, a.status_cd, e.first_nm, e.last_nm, location_nm, ");
+		sql.append("product_nm, status_nm, a.status_cd, e.first_nm, e.last_nm, g.location_nm, ");
 		sql.append("a.create_dt, e.email_address_txt, locked_by_id, a.product_serial_id, ");
-		sql.append("serial_no_txt, oem_id, locked_dt, ");
-		sql.append("h.first_nm || ' ' || h.last_nm as locked_nm ");
+		sql.append("serial_no_txt, oem_id, locked_dt, h.first_nm || ' ' || h.last_nm as locked_nm, ");
+		sql.append("pl.location_nm as cas_nm, pl.address_txt || ', ' || pl.zip_cd || ' ' || pl.country_cd as cas_loc_nm ");
+		
 		// Build the select for the count query
-		StringBuilder cSql = new StringBuilder(768);
+		StringBuilder cSql = new StringBuilder(1600);
 		cSql.append(DBUtil.SELECT_CLAUSE).append("cast(count(*) as int) ");
 
 		// Get the base query and append to the count and display select
@@ -233,7 +234,7 @@ public class TicketListAction extends SimpleActionAdapter {
 				questions = 1;
 			}
 			return "and a.status_cd in ( " + DBUtil.preparedStatmentQuestion(questions) + ") ";
-		} else if (!StringUtil.isEmpty(status) && !"ALL".equals(status)) {
+		} else if (!StringUtil.isEmpty(status) && !"ALL".equals(status) && !"CM_OPEN".equals(status)) {
 			return "and a.status_cd != 'CLOSED' ";
 		} 
 
@@ -315,20 +316,24 @@ public class TicketListAction extends SimpleActionAdapter {
 		base.append(DBUtil.FROM_CLAUSE).append(getCustomSchema()).append("wsla_ticket a ");
 		base.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("wsla_user e ");
 		base.append("on a.originator_user_id = e.user_id ");
+		base.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("wsla_ticket_ledger i ");
+		base.append("on a.ticket_id = i.ticket_id and i.status_cd = 'OPENED' ");
+		base.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("wsla_ticket_status d ");
+		base.append("ON a.status_cd = d.status_cd ");
 		base.append(DBUtil.LEFT_OUTER_JOIN).append(getCustomSchema()).append("wsla_product_serial b ");
 		base.append("on a.product_serial_id = b.product_serial_id ");
 		base.append(DBUtil.LEFT_OUTER_JOIN).append(getCustomSchema()).append("wsla_product_master c ");
 		base.append("on b.product_id = c.product_id ");
-		base.append(DBUtil.LEFT_OUTER_JOIN).append(getCustomSchema()).append("wsla_ticket_status d ");
-		base.append("ON a.status_cd = d.status_cd ");
 		base.append(DBUtil.LEFT_OUTER_JOIN).append(getCustomSchema()).append("wsla_provider f ");
 		base.append("on a.oem_id = f.provider_id ");
 		base.append(DBUtil.LEFT_OUTER_JOIN).append(getCustomSchema()).append("wsla_provider_location g ");
 		base.append("on a.retailer_id = g.location_id ");
+		base.append(DBUtil.LEFT_OUTER_JOIN).append(getCustomSchema()).append("wsla_ticket_assignment ta ");
+		base.append("on a.ticket_id = ta.ticket_id and ta.assg_type_cd = 'CAS' ");
+		base.append(DBUtil.LEFT_OUTER_JOIN).append(getCustomSchema()).append("wsla_provider_location pl ");
+		base.append("on ta.location_id = pl.location_id ");
 		base.append(DBUtil.LEFT_OUTER_JOIN).append(getCustomSchema()).append("wsla_user h ");
 		base.append("on a.locked_by_id = h.user_id ");
-		base.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("wsla_ticket_ledger i ");
-		base.append("on a.ticket_id = i.ticket_id and i.status_cd = 'OPENED' ");
 		
 		// Join if searching only for tickets that need a comment reply or have an open credit memo
 		if ("NEEDS_REPLY".equals(status)) {
@@ -342,6 +347,12 @@ public class TicketListAction extends SimpleActionAdapter {
 			base.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("wsla_credit_memo cm ");
 			base.append("on rr.ticket_ref_rep_id = cm.ticket_ref_rep_id ");
 			base.append("where cm.approval_dt is null) trr on a.ticket_id = trr.ticket_id ");
+		} else if ("WSLA_CAS".equals(status)) {
+			base.append(DBUtil.INNER_JOIN).append("(select ticket_id ");
+			base.append(DBUtil.FROM_CLAUSE).append(getCustomSchema()).append("wsla_ticket_assignment ta ");
+			base.append("where assg_type_cd = 'CAS' and location_id in ( ");
+			base.append("select location_id from ").append(getCustomSchema()).append("wsla_provider_location ");
+			base.append("where provider_id = 'WSLA_ID')) tat on a.ticket_id = tat.ticket_id ");
 		}
 		
 		// Add a filter to make sure users only see the tickets they are supposed to.
@@ -356,26 +367,52 @@ public class TicketListAction extends SimpleActionAdapter {
 		return base;
 	}
 
+	/**
+	 * added this layer for backwards compatibility
+	 * @param status
+	 * @return
+	 */
+	public  List<GenericVO> getTickets(StatusCode status) {
+		return getTickets(status, null);
+	}
 
 	/**
 	 * Return a <K,V> list of tickets, at the specific status level.  Called from SelectLookupAction for Logistics UI.
 	 * @param req
 	 * @return
 	 */
-	public List<GenericVO> getTickets(StatusCode status) {
-		List<Object> params = null;
+	public List<GenericVO> getTickets(StatusCode status, String search) {
+
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		List<Object> params = new ArrayList<>();
 		StringBuilder sql = new StringBuilder(200);
+		
 		sql.append("select distinct ticket_id as key, ticket_no as value from ");
 		sql.append(getCustomSchema()).append("wsla_ticket ");
+		sql.append(DBUtil.WHERE_1_CLAUSE);
 		if (status != null) {
-			sql.append("where status_cd=?");
-			params = Arrays.asList(status.toString());
+			sql.append("and status_cd=? ");
+			params.add(status.toString());
 		}
+		
+		if (search != null) {
+			sql.append("and lower(ticket_id) like ? or lower(ticket_no) like ? ");
+			params.add("%"+search.toLowerCase()+"%");
+			params.add("%"+search.toLowerCase()+"%");
+		}
+		
 		sql.append("order by ticket_no");
 		log.debug(sql);
+		
+		if (search != null) {
+			sql.append(" limit 10 ");
+		}
 
 		// Execute and return
-		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
-		return db.executeSelect(sql.toString(), params, new GenericVO());
+		List<GenericVO> data = db.executeSelect(sql.toString(), params, new GenericVO());
+		
+		if(data != null && ! data.isEmpty())log.debug("number of tickets found " + data.size());
+		
+		return data;
 	}
 }

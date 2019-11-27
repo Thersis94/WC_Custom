@@ -42,9 +42,11 @@ public class RSSArticleVO extends BeanDataVO implements Serializable {
 	private String articleUrl;
 	private String publicationName;
 	private String attribute1Txt;
+	private String affiliation;
 	private ArticleSourceType articleSourceType;
 	private Date publishDt;
 	private Date createDt;
+	private int bytesNo;
 
 	public RSSArticleVO() {
 		super();
@@ -79,6 +81,14 @@ public class RSSArticleVO extends BeanDataVO implements Serializable {
 		}
 		setTitleTxt(StringUtil.checkVal(i.getTitle()).replace("\u00a0"," "));
 		setPublicationName(i.getTitle());
+		calcDataSize();
+	}
+
+	/**
+	 * Calculate the Approximate Data Size of the Record.
+	 */
+	public void calcDataSize() {
+		this.bytesNo = StringUtil.checkVal(titleTxt).length() + StringUtil.checkVal(fullArticleTxt, articleTxt).length();
 	}
 
 	/**
@@ -175,6 +185,7 @@ public class RSSArticleVO extends BeanDataVO implements Serializable {
 		return filteredText != null && filteredText.size() == 1 ? filteredText.entrySet().iterator().next().getValue() : null;
 	}
 
+	@Column(name="full_article_txt")
 	public String getFullArticleTxt() {
 		return fullArticleTxt;
 	}
@@ -271,5 +282,23 @@ public class RSSArticleVO extends BeanDataVO implements Serializable {
 	 */
 	public void flushFilteredText() {
 		this.filteredText.clear();
+	}
+
+	@Column(name="affiliation_txt")
+	public String getAffiliation() {
+		return this.affiliation;
+	}
+
+	public void setAffiliation(String affiliation) {
+		this.affiliation = affiliation;
+	}
+
+	@Column(name="bytes_no")
+	public int getBytesNo() {
+		return this.bytesNo;
+	}
+
+	public void setBytesNo(int bytesNo) {
+		this.bytesNo = bytesNo;
 	}
 }

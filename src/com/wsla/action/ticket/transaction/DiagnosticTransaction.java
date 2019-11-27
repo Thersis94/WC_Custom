@@ -1,13 +1,17 @@
 package com.wsla.action.ticket.transaction;
 
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
@@ -21,6 +25,7 @@ import com.wsla.action.ticket.TicketEditAction;
 import com.wsla.action.ticket.TicketOverviewAction;
 import com.wsla.data.ticket.DiagnosticRunVO;
 import com.wsla.data.ticket.DiagnosticTicketVO;
+import com.wsla.data.ticket.DiagnosticVO;
 import com.wsla.data.ticket.DispositionCode;
 import com.wsla.data.ticket.LedgerSummary;
 import com.wsla.data.ticket.StatusCode;
@@ -74,6 +79,17 @@ public class DiagnosticTransaction extends BaseTransactionAction {
 				saveDisposition(req);
 			}else if(req.hasParameter("isBypass") && req.hasParameter("isClose")) {
 				closeTicket(req);
+			}else if(req.hasParameter("orderNumberUpdate")) {
+				String movedCode = req.getParameter("movedDiagId");
+				String locationCode = req.getParameter("locationDiagId");
+				String rowRelation = req.getParameter("rowRelation");
+
+				List<DiagnosticVO> diag = getExistingDiagnosticOrder();
+				
+				processReorderDiagnostics(movedCode, locationCode, rowRelation, diag);
+				
+				return;
+				
 			}else {
 				saveDiagnosticRun(req);
 			}
@@ -83,6 +99,74 @@ public class DiagnosticTransaction extends BaseTransactionAction {
 		}
 	}
 
+	/**
+	 * processes the change in order for the diagnostics table
+	 * @param diag 
+	 * @param rowRelation 
+	 * @param locationCode 
+	 * @param movedCode 
+	 * @throws DatabaseException 
+	 * @throws InvalidDataException 
+	 * 
+	 */
+	private void processReorderDiagnostics(String movedCode, String locationCode, String rowRelation, List<DiagnosticVO> diag) throws InvalidDataException, DatabaseException {
+
+		//remove the moved id from its old postion
+		for (DiagnosticVO di : diag) {
+			if (di.getDiagnosticCode().equals(movedCode)) {
+				diag.remove(di);
+				break;
+			}
+		}
+		
+		//place the moved id in the correct postion
+		//find the location of the location code
+		for (int i=0; i<diag.size(); i++) { 
+			if(diag.get(i).getDiagnosticCode().equals(locationCode)) {
+				int targetIndex = i;
+					//if the moved row is above the location row drop the index by one and add the moved row if its 
+					//under the location row increase the index.
+					if("above".equals(rowRelation)) {
+						targetIndex++;
+					}else {
+						targetIndex--;
+						targetIndex = (targetIndex < 0 )?  0 : targetIndex;
+					}
+					DiagnosticVO dvo = new DiagnosticVO();
+					dvo.setDiagnosticCode(movedCode);
+					diag.add(targetIndex, dvo);
+				break;
+			}
+		}
+		
+		//loop all list and reindex
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		for (int i=0; i<diag.size(); i++) { 
+			DiagnosticVO d = diag.get(i);
+			d.setOrderNumber(i);
+			db.update(d,  Arrays.asList("order_no", "diagnostic_cd"));
+		}
+		
+		
+	}
+
+	/**
+	 * returns all diagnostics codes and order numbers ordered by order number
+	 * @return
+	 */
+	private List<DiagnosticVO> getExistingDiagnosticOrder() {
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		
+		StringBuilder sql = new StringBuilder(82);
+		sql.append(DBUtil.SELECT_CLAUSE).append("diagnostic_cd, order_no ").append(DBUtil.FROM_CLAUSE).append(getCustomSchema());
+		sql.append("wsla_diagnostic ").append(DBUtil.ORDER_BY).append("order_no asc");
+		
+		return db.executeSelect(sql.toString(), new ArrayList<Object>(), new DiagnosticVO());
+		
+	}
+
+
+	
 	/**
 	 * closes the ticket early if a by pass was triggered
 	 * @param req
@@ -129,7 +213,7 @@ public class DiagnosticTransaction extends BaseTransactionAction {
 				
 				try {
 					TicketDataTransaction tdt = new TicketDataTransaction(getDBConnection(), getAttributes());
-					tdt.saveDataAttribute(ticketId, "attr_issueResolved", "1", true);
+					tdt.saveDataAttribute(ticketId, "attr_issueResolved", "1", null, true);
 				} catch (SQLException e) {
 					throw new DatabaseException(e);
 				}
@@ -200,7 +284,34 @@ public class DiagnosticTransaction extends BaseTransactionAction {
 		
 		// Save the ticket data record
 		td.setLedgerEntryId(ledger.getLedgerEntryId());
+		
+		//check for an existing ticket data with the same code and get the 
+		//    primary id so it updates rather then inserts on save
+		checkForExistingAttr(td);
+		
 		dbp.save(td);
+	}
+
+	/**
+	 * this method looks for an attribute with the same code and the same ticket id
+	 * and sets the primary key on the ticket data vo sent into the method
+	 * @param td
+	 */
+	private void checkForExistingAttr(TicketDataVO tdOrig) {
+		DBProcessor dbp = new DBProcessor(getDBConnection(), getCustomSchema());
+		StringBuilder sql = new StringBuilder(120);
+		ArrayList<Object> vals = new ArrayList<>();
+		
+		sql.append(DBUtil.SELECT_CLAUSE).append(" data_entry_id ").append(DBUtil.FROM_CLAUSE).append(getCustomSchema()).append("wsla_ticket_data ");
+		sql.append(DBUtil.WHERE_CLAUSE).append("ticket_id = ? and attribute_cd = ? ");
+		vals.add(tdOrig.getTicketId());
+		vals.add(tdOrig.getAttributeCode());
+		
+		List<TicketDataVO> data = dbp.executeSelect(sql.toString(), vals, new TicketDataVO());
+		
+		if(data != null && ! data.isEmpty()) {
+			tdOrig.setDataEntryId(data.get(0).getDataEntryId());
+		}
 	}
 }
 

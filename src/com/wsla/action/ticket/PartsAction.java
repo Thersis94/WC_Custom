@@ -19,6 +19,7 @@ import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 // WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
+import com.wsla.common.WSLAConstants;
 import com.wsla.data.ticket.PartVO;
 import com.wsla.data.ticket.ShipmentVO.ShipmentStatus;
 import com.wsla.data.ticket.ShipmentVO.ShipmentType;
@@ -123,21 +124,21 @@ public class PartsAction extends SBActionAdapter {
 		//always fetch all rows, the UI is not paginated here:
 		bst.setLimit(10000);
 		String schema = getCustomSchema();
-		StringBuilder sql = new StringBuilder(200);
-		sql.append("select p.*, pm.product_nm, lim.actual_qnty_no, s.status_cd ");
+		StringBuilder sql = new StringBuilder(684);
+		sql.append("select p.*, pm.product_nm, pm.cust_product_id, lim.actual_qnty_no, s.status_cd, wlim.actual_qnty_no as warehouse_qnty_no ");
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("wsla_part p ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("wsla_product_master pm on p.product_id=pm.product_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("wsla_ticket_assignment ta on p.ticket_id=ta.ticket_id and ta.assg_type_cd='CAS' ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("wsla_provider_location pl on ta.location_id=pl.location_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("wsla_shipment s on p.shipment_id=s.shipment_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("wsla_location_item_master lim on pl.location_id=lim.location_id and p.product_id=lim.product_id ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("wsla_location_item_master wlim on p.product_id=wlim.product_id  and wlim.location_id = ? ");
 		sql.append("where p.ticket_id = ? and (s.shipment_type_cd = ? or s.shipment_type_cd is null) and (s.status_cd != ? or s.status_cd is null) ");
-
 		sql.append(bst.getSQLOrderBy("pm.product_nm",  "asc"));
-		log.debug(sql);
+		log.debug(sql.length() + "|" + sql + "|" + ticketId + "|" + ShipmentType.PARTS_REQUEST.name() + "|" + ShipmentStatus.CANCELED.name());
 
 		DBProcessor db = new DBProcessor(getDBConnection(), schema);
-		List<Object> params = Arrays.asList(ticketId, ShipmentType.PARTS_REQUEST.name(), ShipmentStatus.CANCELED.name());
+		List<Object> params = Arrays.asList(WSLAConstants.MAIN_WAREHOUSE_ID, ticketId, ShipmentType.PARTS_REQUEST.name(), ShipmentStatus.CANCELED.name());
 		return db.executeSQLWithCount(sql.toString(), params, new PartVO(), bst);
 	}
 }

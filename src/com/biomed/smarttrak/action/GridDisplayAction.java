@@ -421,7 +421,9 @@ public class GridDisplayAction extends SimpleActionAdapter {
 
 			// Retrieve the data for all of the charts
 			SMTChartOptionIntfc options = buildOptions(chart, ct, pt, full, labelType, grid.getAbbreviateNumbers(), loadTable);
+			addDetailTypes(options, grid);
 			SMTChartIntfc loadedGrid = retrieveChartData(chart, ct, stacked, pt, options);
+			addDetailTypes(options, grid);
 			data.put(id, loadedGrid);
 		}
 

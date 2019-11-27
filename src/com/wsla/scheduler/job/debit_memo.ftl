@@ -69,7 +69,7 @@
 					<td>${memo.customerMemoCode}</td>
 					<td>${memo.productName}</td>
 					<td>${memo.approvalDate?date}</td>
-					<td>${memo.approvedBy}</td>
+					<td>${memo.approvedBy!''}</td>
 					<td>&#36;${memo.refundAmount}</td></tr>
 			</#list>
 			<tr><td colspan="6">&nbsp;</td></tr>

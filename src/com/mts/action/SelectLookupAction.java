@@ -17,7 +17,6 @@ import com.mts.publication.data.IssueVO;
 import com.mts.publication.data.PublicationVO;
 import com.mts.subscriber.action.SubscriptionAction.SubscriptionType;
 import com.mts.subscriber.data.MTSUserVO;
-
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -25,14 +24,17 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.common.html.BSTableControlVO;
 import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.db.DBUtil;
-import com.siliconmtn.db.orm.*;
+import com.siliconmtn.db.orm.DBProcessor;
+import com.siliconmtn.db.orm.GridDataVO;
+import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
-
 // WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.metadata.MetadataVO;
 import com.smt.sitebuilder.action.metadata.OrgMetadataAction;
+import com.smt.sitebuilder.common.PageVO;
+import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
  * <b>Title</b>: SelectLookupAction.java
@@ -61,7 +63,7 @@ public class SelectLookupAction extends SBActionAdapter {
 	 */
 	public static final String REQ_SEARCH = "search";
 
-		/**
+	/**
 	 * Assigns the keys for the select type to method mapping.  In the generic vo
 	 * the key is the method name.  The value is a boolean which indicates whether
 	 * or not the request object is needed in that method 
@@ -97,6 +99,15 @@ public class SelectLookupAction extends SBActionAdapter {
 		super(actionInit);
 	}
 
+	/**
+	 * @param actionInit
+	 */
+	public SelectLookupAction(SMTDBConnection dbConn, Map<String, Object> attributes) {
+		super();
+		setDBConnection(dbConn);
+		setAttributes(attributes);
+	}
+
 	/*
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#list(com.siliconmtn.action.ActionRequest)
@@ -105,7 +116,7 @@ public class SelectLookupAction extends SBActionAdapter {
 	public void retrieve(ActionRequest req) throws ActionException {
 		String listType = req.getStringParameter(SELECT_KEY);
 		GenericVO vo = keyMap.get(listType);
-		
+
 		// If the key is not found, throw a json error
 		if (vo == null) {
 			putModuleData(null, 0, false, "List Type Not Found in KeyMap", true);
@@ -149,11 +160,11 @@ public class SelectLookupAction extends SBActionAdapter {
 		sql.append("select role_id as key, role_nm as value from role ");
 		sql.append("where role_id = '100' or organization_id = 'MTS' "); 
 		sql.append("order by role_nm ");
-		
+
 		DBProcessor db = new DBProcessor(getDBConnection());
 		return db.executeSelect(sql.toString(), null, new GenericVO());
 	}
-	
+
 	/**
 	 * Retruns a list of user prefixes
 	 * @return
@@ -167,7 +178,7 @@ public class SelectLookupAction extends SBActionAdapter {
 
 		return selectList;
 	}
-	
+
 	/**
 	 * Gets the supported genders for the app
 	 * @return
@@ -179,7 +190,7 @@ public class SelectLookupAction extends SBActionAdapter {
 
 		return data;
 	}
-	
+
 	/**
 	 * Gets a list of attribute categories
 	 * @return
@@ -189,17 +200,17 @@ public class SelectLookupAction extends SBActionAdapter {
 		OrgMetadataAction oma = new OrgMetadataAction(getDBConnection(), getAttributes());
 		List<MetadataVO> items = oma.getOrgMetadata("MTS", null, false);
 		String filter = req.getParameter("parentId");
-		
+
 		for (MetadataVO md : items) {
 			if (StringUtil.isEmpty(filter)) data.add(new GenericVO(null, md.getFieldName()));
 			if (! StringUtil.isEmpty(filter) &&  !md.getMetadataId().equals(filter)) continue;
-			
+
 			for (MetadataVO option : md.getOptions()) {
 				if (! StringUtil.isEmpty(filter) && StringUtil.isEmpty(option.getParentId())) continue;
 				data.add(new GenericVO(option.getMetadataId(), option.getFieldName()));
 			}
 		}
-		
+
 		return data;
 	}
 
@@ -214,17 +225,17 @@ public class SelectLookupAction extends SBActionAdapter {
 		String subType = req.getParameter("subscriptionTypeCode");
 		BSTableControlVO bst = new BSTableControlVO(req, MTSUserVO.class);
 		bst.setLimit(1000);
-		
+
 		UserAction ua = new UserAction(getDBConnection(), getAttributes());
-		GridDataVO<MTSUserVO> users = ua.getAllUsers(bst, roleId, subType);
-		
+		GridDataVO<MTSUserVO> users = ua.getAllUsers(bst, roleId, subType, null);
+
 		for (MTSUserVO user : users.getRowData()) {
 			data.add(new GenericVO(user.getUserId(), user.getFullName()));
 		}
 
 		return data;
 	}
-	
+
 	/**
 	 * Gets a list of the editors in the system
 	 * @return
@@ -233,54 +244,54 @@ public class SelectLookupAction extends SBActionAdapter {
 		List<GenericVO> data = new ArrayList<>(16);
 		UserAction ua = new UserAction(getDBConnection(), getAttributes());
 		List<MTSUserVO> editors = ua.getEditors();
-		
+
 		for (MTSUserVO editor : editors) {
 			data.add(new GenericVO(editor.getUserId(), editor.getFullName()));
 		}
-		
+
 		return data;
 	}
-	
+
 	/**
 	 * gets a lit of asset types for uploading of assets
 	 * @return
 	 */
 	public List<GenericVO> getAssetTypes() {
 		List<GenericVO> data = new ArrayList<>(16);
-		
+
 		for (AssetType at : AssetType.values()) {
 			data.add(new GenericVO(at.name(), at.getAssetName()));
 		}
-		
+
 		Collections.sort(data, (a, b) -> ((String)a.getValue()).compareTo((String)b.getValue()));
-		
+
 		return data;
 	}
-	
+
 	/**
 	 * gets a list of publications
 	 * @return
 	 */
 	public List<GenericVO> getPublications(ActionRequest req) {
 		List<GenericVO> data = new ArrayList<>(16);
-		
+
 		// Get params
 		boolean hasIssues = req.getBooleanParameter("hasIssues");
 		boolean hidePublic = req.getBooleanParameter("hidePublic");
-		
+
 		PublicationAction pa = new PublicationAction(getDBConnection(), getAttributes());
 		List<PublicationVO> pubs = pa.getPublications();
 		for (PublicationVO pub : pubs) {
 			boolean addRecord = true;
-			
+
 			if (hasIssues && pub.getNumberIssues() == 0) addRecord = false;
 			if (hidePublic && pub.getPublicFlag() == 1) addRecord = false;
 			if (addRecord) data.add(new GenericVO(pub.getPublicationId(), pub.getName()));
 		}
-		
+
 		return data;
 	}
-	
+
 	/**
 	 * Gets a list of issues for a given publication
 	 * @return
@@ -290,13 +301,15 @@ public class SelectLookupAction extends SBActionAdapter {
 		BSTableControlVO bst = new BSTableControlVO(req, IssueVO.class);
 		bst.setLimit(1000);
 		String publicationId = StringUtil.checkVal(req.getParameter("publicationId")).toUpperCase();
-		
+
+		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
 		IssueAction ia = new IssueAction(getDBConnection(), getAttributes());
-		GridDataVO<IssueVO> issues = ia.getIssues(publicationId, false, bst);
+		//turn off date filtering in the portal, or if the page is being previewed
+		GridDataVO<IssueVO> issues = ia.getIssues(publicationId, false, bst, ("ajax_ctrl".equals(req.getParameter("amid")) || page.isPreviewMode()));
 		for (IssueVO issue : issues.getRowData()) {
 			data.add(new GenericVO(issue.getIssueId(), issue.getName()));
 		}
-		
+
 		return data;
 	}
 
@@ -306,16 +319,16 @@ public class SelectLookupAction extends SBActionAdapter {
 	 */
 	public List<GenericVO> getSubscriptions() {
 		List<GenericVO> data = new ArrayList<>(16);
-		
+
 		for (SubscriptionType st : SubscriptionType.values()) {
 			data.add(new GenericVO(st.name(), st.getTypeName()));
 		}
-		
+
 		Collections.sort(data, (a, b) -> ((String)a.getValue()).compareTo((String)b.getValue()));
-		
+
 		return data;
 	}
-	
+
 	/**
 	 * Gets a lit of articles.  supports type ahead and full list
 	 * @return
@@ -329,48 +342,54 @@ public class SelectLookupAction extends SBActionAdapter {
 		sql.append("inner join sb_action b on a.document_id = b.action_group_id and pending_sync_flg = 0 ");
 		sql.append("order by action_nm ");
 		log.debug(sql.length() + "|" + sql);
-		
+
 		DBProcessor db = new DBProcessor(getDBConnection());
 		return db.executeSelect(sql.toString(), null, new GenericVO());
 	}
-	
+
 	/**
 	 * 
 	 * @param req
 	 * @return
 	 */
 	public List<GenericVO> getArticlesAC(ActionRequest req) {
+		String schema = getCustomSchema();
+		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
+
 		// Build the serach terms
 		StringBuilder term = new StringBuilder(32);
 		String[] terms = StringUtil.checkVal(req.getParameter(REQ_SEARCH)).split(" ");
 		for (int i=0; i < terms.length; i++) {
 			if (i > 0) term.append(" & ");
-			term.append(terms[i]).append(":*");
+			term.append(terms[i].replace("'","''")).append(":*");
 		}
-		
+
 		// Build the sql using Full text indexing
-		StringBuilder sql = new StringBuilder(512);
+		StringBuilder sql = new StringBuilder(900);
 		sql.append("select key, value from ( ");
 		sql.append("select action_nm, '/' || lower(publication_id) || '/article/' || direct_access_pth as key, ");
 		sql.append("concat(action_nm, '|-- ', first_nm, ' ', last_nm)  as value, ");
 		sql.append("to_tsvector(action_nm) || "); 
 		sql.append("to_tsvector(coalesce(action_desc, '')) || ");
 		sql.append("to_tsvector(coalesce(first_nm, '')) || ");
-		sql.append("to_tsvector(coalesce(last_nm, '')) as document ");
-		sql.append(DBUtil.FROM_CLAUSE).append(getCustomSchema()).append("mts_document a ");
-		sql.append(DBUtil.INNER_JOIN).append("sb_action b ");
-		sql.append("on a.action_group_id = b.action_group_id ");
-		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("mts_issue i ");
-		sql.append("on a.issue_id = i.issue_id ");
-		sql.append(DBUtil.INNER_JOIN).append("document d ");
-		sql.append("on b.action_id = d.action_id ");
-		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("mts_user c ");
-		sql.append("on a.author_id = c.user_id ) as search ");
+		sql.append("to_tsvector(coalesce(last_nm, '')) as document, coalesce(a.publish_dt,a.update_dt, a.create_dt) as dt ");
+		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("mts_document a ");
+		sql.append(DBUtil.INNER_JOIN).append("sb_action b on a.action_group_id=b.action_group_id ");
+		if (!page.isPreviewMode()) 
+			sql.append("and b.pending_sync_flg=0 ");
+		sql.append(DBUtil.INNER_JOIN).append(schema).append("mts_issue i on a.issue_id=i.issue_id ");
+		if (!page.isPreviewMode()) 
+			sql.append("and (i.issue_dt < CURRENT_TIMESTAMP or i.issue_dt is null) ");
+		sql.append(DBUtil.INNER_JOIN).append("document d on b.action_id = d.action_id ");
+		sql.append(DBUtil.INNER_JOIN).append(schema).append("mts_user c on a.author_id = c.user_id ");
+		if (!page.isPreviewMode()) 
+			sql.append("where (a.publish_dt < CURRENT_TIMESTAMP or a.publish_dt is null) ");
+		sql.append(") as search ");
 		sql.append("where search.document @@ to_tsquery('").append(term).append("') ");
-		sql.append("order by action_nm limit 20");
+		sql.append("order by dt desc limit 10");
 		log.debug(sql.length() + "|" + sql);
-		
-		DBProcessor db = new DBProcessor(getDBConnection());
+
+		DBProcessor db = new DBProcessor(getDBConnection(), schema);
 		return db.executeSelect(sql.toString(), null, new GenericVO());
 	}
 }

@@ -174,6 +174,7 @@ public class ShowpadDivisionUtil {
 
 	/**
 	 * pushes the asset to the API Util - called from above 'pushAsset' method
+	 * Note: Always send 'dates' to the API in Seconds -JM- 08/21/19 (per Showpad support)
 	 * @param postUrl
 	 * @param title
 	 * @param fType
@@ -186,6 +187,7 @@ public class ShowpadDivisionUtil {
 		params.put("name", title);
 		params.put("resourcetype", ShowpadResourceType.getResourceType(fType)); //Showpad Constant for all assets
 		params.put("suppress_response_codes","true"); //forces a 200 response header
+		params.put("isDivisionShared", "false");
 
 		//distinguish some values for EMEA private assets only - trigger off the tag passed from that script marking them as 'internal'
 		if (DSPrivateAssetsImporter.INTERNAL_TAG.equals(tagMgr.getSourceConstant())) {
@@ -198,8 +200,13 @@ public class ShowpadDivisionUtil {
 			params.put("isDownloadable", "true");
 		}
 
-		params.put("isDivisionShared", "false");
-		params.put("releasedAt", Convert.formatDate(vo.getModifiedDt(), Convert.DATE_TIME_SLASH_PATTERN));
+		if (vo.getExpirationDt() != null) {
+			params.put("expiresAt", Long.toString(vo.getExpirationDt().getTime()/1000));
+		} else {
+			//important to pass null here to flush any values that may exist upstream. (we have no way of knowing)
+			params.put("expiresAt", "null");
+		}
+
 		if (vo.getDownloadTypeTxt() != null)
 			params.put("description", vo.getDownloadTypeTxt());
 
@@ -591,19 +598,21 @@ public class ShowpadDivisionUtil {
 			name.append(title).append(" - ");
 		}
 
-		//add file name - modified with business rules
-		String fileNm = vo.getFileNm();
-		if (!StringUtil.isEmpty(fileNm)) {
-			//remove the existing file extension
-			if (fileNm.lastIndexOf('.') > -1)
-				fileNm = fileNm.substring(0, fileNm.lastIndexOf('.'));
+		//append "- INTERNAL" to internal assets only
+		if (DSPrivateAssetsImporter.INTERNAL_TAG.equals(tagMgr.getSourceConstant())) {
+			name.append("INTERNAL - ");
+		}
+
+		//add tracking number
+		String trackingNo = vo.getTrackingNoTxt();
+		if (!StringUtil.isEmpty(trackingNo)) {
 			//remove all non-alphanumerics
-			fileNm = StringUtil.removeNonAlphaNumeric(fileNm);
+			trackingNo = StringUtil.removeNonAlphaNumeric(trackingNo);
 			//remove LR, low, high keywords
-			fileNm = fileNm.replaceAll("LR", "");
-			fileNm = fileNm.replaceAll("low", "");
-			fileNm = fileNm.replaceAll("high", "");
-			name.append(fileNm);
+			trackingNo = trackingNo.replaceAll("LR", "");
+			trackingNo = trackingNo.replaceAll("low", "");
+			trackingNo = trackingNo.replaceAll("high", "");
+			name.append(trackingNo);
 		}
 
 		log.debug("title: " + name);

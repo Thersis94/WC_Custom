@@ -38,15 +38,17 @@ public class FinancialDashColumnSet implements Serializable {
 	public static final String DEFAULT_DISPLAY_TYPE = "CURYR";
 	
 	protected enum DisplayType {
-		CURYR("Current Year", 2), SIXQTR("Six Quarter Running", 4), FOURYR("Four-Year Comparison", 5),
-		YOY("Year-Over-Year", 3), CALYR("Calendar Year", 2), EIGHTQTR("Eight Quarter Running", 4), ALL("All History", 0);
+		CURYR("Current Year", 2, true), SIXQTR("Six Quarter Running", 4, true), FOURYR("Four-Year Comparison", 5, false),
+		YOY("Year-Over-Year", 3, false), CALYR("Calendar Year", 2, true), EIGHTQTR("Eight Quarter Running", 4, true), ALL("All History", 0, true);
 		
 		private String name;
+		private boolean showAll;
 		private int dataYears;
 		
-		DisplayType(String name, int dataYears) {
+		DisplayType(String name, int dataYears, boolean showAll) {
 			this.name= name;
 			this.dataYears = dataYears;
+			this.showAll = showAll;
 		}
 		
 		public String getName() {
@@ -55,6 +57,10 @@ public class FinancialDashColumnSet implements Serializable {
 		
 		public int getDataYears() {
 			return dataYears;
+		}
+		
+		public boolean getShowAll() {
+			return showAll;
 		}
 	}
 

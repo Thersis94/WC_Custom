@@ -18,11 +18,16 @@ import java.util.Set;
 import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.Column;
+import com.siliconmtn.db.util.DatabaseException;
+import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.MapUtil;
 import com.siliconmtn.util.StringUtil;
+import com.wsla.data.ticket.StatusCode;
 import com.wsla.data.ticket.TicketAssignmentVO;
 import com.wsla.data.ticket.TicketAssignmentVO.TypeCode;
 import com.wsla.data.ticket.TicketDataVO;
+import com.wsla.data.ticket.TicketLedgerVO;
 import com.wsla.util.migration.vo.SOXDDFileVO;
 
 /****************************************************************************
@@ -48,12 +53,6 @@ public class SOExtendedData extends AbsImporter {
 	 */
 	private static Map<String, String> retailLocnMap = new HashMap<>(20, 1);
 
-
-	/**
-	 * SW Operators - start with a static mapping and add the users table to it.
-	 */
-	private static Map<String, String> operatorMap = new HashMap<>(200);
-
 	private Map<String, String> defectMap;
 	private String deleteSql;
 	private String deleteNote = "deleted %d existing attributes from ticket %s";
@@ -61,7 +60,17 @@ public class SOExtendedData extends AbsImporter {
 	private int saveCnt;
 	private int delCnt;
 
+	//attributes that display on the Assets tab - we won't import these for open tickets
+	private static final Set<String> ASSET_ATTRS = new HashSet<>();
+
 	static {
+		ASSET_ATTRS.add("attr_proofPurchase");
+		ASSET_ATTRS.add("attr_receiptSignature");
+		ASSET_ATTRS.add("attr_serialNumberImage"); 
+		ASSET_ATTRS.add("attr_serialPlateReturned");
+		ASSET_ATTRS.add("attr_unitImage");
+		ASSET_ATTRS.add("attr_unitVideo");
+
 		retailLocnMap.put("16","90133a088d6121f57f0001018b72cfa3");
 		retailLocnMap.put("AB","90133a088d6121f57f0001018b72cfa3");
 		retailLocnMap.put("28","276e3b428da92ff77f000101e7198688");
@@ -121,25 +130,41 @@ public class SOExtendedData extends AbsImporter {
 			data.addAll(readFile(f, SOXDDFileVO.class, SHEET_1));
 		log.info(String.format("loaded %d records from %d XDD files", data.size(), files.length));
 
+		pruneData();
+
 		defectMap = SOHeader.loadDefectCodes(db, schema);
 
 		//transpose soNumbers into ticketIds
 		loadTicketIds();
 		setTicketIds();
 
-		//		save();
-		log.info(String.format("replaced %d ticket_data records", delCnt));
-		log.info(String.format("added %d ticket_data records", saveCnt-delCnt));
+		//save the data - involves ticket_data and ticket_ledger
+		save();
 
 		//update purchase dates on the tickets
-		//		updatePurchaseDates();
+		updatePurchaseDates();
 
 		//update all ledger entries to be dispositioned by the SW User ID
 		updateLedgerDispositions();
 
 		//affiliate the Retailers to the tickets
-		//		addRetailerAssignments();
+		addRetailerAssignments();
 	}
+
+
+	/**
+	 * 
+	 */
+	private void pruneData() {
+		List<SOXDDFileVO> newData = new ArrayList<>(data.size());
+		for (SOXDDFileVO vo : data) {
+			if (isImportable(vo.getSoNumber()))
+				newData.add(vo);
+		}
+		log.info(String.format("pruned data from %d to %d tickets", data.size(), newData.size()));
+		data = newData;
+	}
+
 
 	/**
 	 * Loop through the tickets/rows and update the ticket data for each using 
@@ -162,6 +187,8 @@ public class SOExtendedData extends AbsImporter {
 				log.error("could not save ticket data", e);
 			}
 		}
+		log.info(String.format("replaced %d ticket_data records", delCnt));
+		log.info(String.format("added %d ticket_data records", saveCnt-delCnt));
 	}
 
 
@@ -209,25 +236,18 @@ public class SOExtendedData extends AbsImporter {
 
 	/**
 	 * update the ticket_ledger entries for the tickets (entries where dispositioned_by_id=null) 
-	 * to reference the SW userId
+	 * to reference the default SW userId
 	 */
 	private void updateLedgerDispositions() {
-		//TODO make sure thes users exist first
-
-		String sql = StringUtil.join(DBUtil.UPDATE_CLAUSE, schema, "wsla_ticket_ledger ",
-				"set disposition_by_id=? where ticket_id=? and disposition_by_id is null");
+		String sql = StringUtil.join(DBUtil.UPDATE_CLAUSE, schema, "wsla_ticket_ledger a ",
+				"set disposition_by_id=? from ", schema, "wsla_ticket t ",
+				"where a.ticket_id=t.ticket_id and t.batch_txt=? and a.disposition_by_id is null");
 		log.debug(sql);
 		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
-			for (SOXDDFileVO vo : data) {
-				if (!StringUtil.isEmpty(vo.getSwUserId())) {
-					ps.setString(1, vo.getSwUserId());
-					ps.setString(2, vo.getSoNumber());
-					ps.addBatch();
-				}
-			}
-			int[] cnt = ps.executeBatch();
-			log.info(String.format("updated %d ledger dispositions", cnt.length));
-
+			ps.setString(1, SOHeader.LEGACY_USER_ID);
+			ps.setString(2, batchNm);
+			int cnt = ps.executeUpdate();
+			log.info(String.format("updated %d ledger dispositions", cnt));
 		} catch (Exception e) {
 			log.error("could not save ledger dispositions", e);
 		}
@@ -261,13 +281,19 @@ public class SOExtendedData extends AbsImporter {
 	 * transpose ticketIds.  If some are missing print them, then throw a Runtime to stop the script
 	 */
 	private void setTicketIds() {
-		Set<String> blanks = new HashSet<>();
-		for (SOXDDFileVO row : data) {
-			String ticketId = ticketMap.get(row.getSoNumber());
+		//remove any records for tickets we can't save
+		Set<String> blanks = new HashSet<>(500);
+		ListIterator<SOXDDFileVO> iter = data.listIterator();
+		while (iter.hasNext()) {
+			SOXDDFileVO vo = iter.next();
+			String ticketId = ticketMap.get(vo.getSoNumber());
 			if (!StringUtil.isEmpty(ticketId)) {
-				row.setSoNumber(ticketId);
+				vo.setSoNumber(ticketId);
 			} else {
-				blanks.add(row.getSoNumber());
+				if (!vo.getSoNumber().matches("(?i)^WSL0(.*)$")) {
+					blanks.add(vo.getSoNumber());
+				}
+				iter.remove();
 			}
 		}
 		if (blanks.isEmpty()) return;
@@ -276,14 +302,6 @@ public class SOExtendedData extends AbsImporter {
 		log.error("\nMISSING TICKETS.  DATA FOR THESE TICKETS IS BEING IGNORED:");
 		for (String s : blanks)
 			System.err.println(s);
-
-		//remove any records for tickets we can't save
-		ListIterator<SOXDDFileVO> iter = data.listIterator();
-		while (iter.hasNext()) {
-			SOXDDFileVO vo = iter.next();
-			if (blanks.contains(vo.getSoNumber()))
-				iter.remove();
-		}
 	}
 
 
@@ -292,11 +310,7 @@ public class SOExtendedData extends AbsImporter {
 	 */
 	private void loadTicketIds() {
 		String sql = StringUtil.join("select ticket_no as key, ticket_id as value from ", schema, "wsla_ticket");
-		List<GenericVO> tkts = db.executeSelect(sql, null, new GenericVO());
-
-		for (GenericVO vo : tkts)
-			ticketMap.put(vo.getKey().toString(), vo.getValue().toString());
-
+		MapUtil.asMap(ticketMap, db.executeSelect(sql, null, new GenericVO()));
 		log.info("loaded " + ticketMap.size() + " ticketIds from database");
 	}
 
@@ -337,18 +351,31 @@ public class SOExtendedData extends AbsImporter {
 			Column anno = m.getAnnotation(Column.class);
 			if (anno == null || anno.name() == null) continue;
 
+			//do not import attributes we'll get from the notes/text file (precedence given to it, not us)
+			if (ASSET_ATTRS.contains(anno.name())) 
+				continue;
+
 			try {
 				Object value = m.invoke(row);
 				//use the isIdentity() hook to know when we have to transpose defect codes
-				String valueStr = anno.isIdentity() ? lookupDefectCode((String)value) : formatValue(value);
-				if (!StringUtil.isEmpty(valueStr) && !isBogusData(valueStr)) {
-					//create a TicketDataVO and add it to the stack
-					TicketDataVO vo = new TicketDataVO();
-					vo.setTicketId(row.getSoNumber());
-					vo.setAttributeCode(anno.name());
-					vo.setValue(valueStr);
-					attribs.put(vo.getAttributeCode(), vo);
+				String valueStr = null;
+				if (anno.isIdentity() && !anno.isUpdateOnly()) { //updateOnly is our flag for repairType, which we can use the raw data to align on.
+					valueStr = lookupDefectCode((String)value);
+				} else {
+					valueStr = formatValue(value);
 				}
+				if (StringUtil.isEmpty(valueStr) || isBogusData(valueStr)) continue;
+
+				//create a TicketDataVO and add it to the stack
+				TicketDataVO vo = new TicketDataVO();
+				vo.setTicketId(row.getSoNumber());
+				vo.setAttributeCode(anno.name());
+				vo.setValue(valueStr);
+				//possibly create a ledger entry if isAutoGen is set true
+				if (anno.isAutoGen())
+					vo.setLedgerEntryId(createLedgerEntry(row.getSoNumber()));
+
+				attribs.put(vo.getAttributeCode(), vo);
 
 			} catch (Exception e) {
 				log.error("could not read data value", e);
@@ -360,13 +387,33 @@ public class SOExtendedData extends AbsImporter {
 
 
 	/**
+	 * Creates a ledger entry for the ticket to bind to the ticket_data table.
+	 * Typically these trigger for attributes which are event-based, like "the user uploaded a receipt".
+	 * @param soNumber
+	 * @return
+	 * @throws DatabaseException
+	 * @throws InvalidDataException
+	 */
+	private String createLedgerEntry(String ticketId) throws Exception {
+		TicketLedgerVO vo = new TicketLedgerVO();
+		vo.setTicketId(ticketId);
+		vo.setDispositionBy(SOHeader.LEGACY_USER_ID);
+		vo.setSummary("Usuario Agrega Evidencia");
+		vo.setStatusCode(StatusCode.USER_DATA_APPROVAL_PENDING);
+		vo.setLedgerEntryId(uuid .getUUID());
+
+		db.insert(vo);
+		return vo.getLedgerEntryId();
+	}
+
+	/**
 	 * transpose partial defect & repair codes to the full pkId values stored in our DB.
 	 * Note: this method is duplicated in SOHeader - change both when revising
 	 * @param problemCode
 	 * @return
 	 */
 	private String lookupDefectCode(String partialDefectCode) {
-		if (StringUtil.isEmpty(partialDefectCode)) return null;
+		if (StringUtil.checkVal(partialDefectCode).trim().isEmpty()) return null;
 		if (partialDefectCode.matches("0+")) partialDefectCode="0";
 
 		String code = defectMap.get(partialDefectCode);

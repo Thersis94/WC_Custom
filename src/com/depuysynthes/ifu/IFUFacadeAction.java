@@ -51,7 +51,7 @@ public class IFUFacadeAction extends SimpleActionAdapter {
 	public void list(ActionRequest req) throws ActionException {
 		if (req.hasParameter("dataMod")) {
 			ActionInterface sai = getAction(StringUtil.checkVal(req.getParameter(AdminConstants.FACADE_TYPE), "ifu"));
-			sai.list(req);
+			if (sai != null) sai.list(req);
 		} else {
 			//list the portlet instances in the admintool
 			super.retrieve(req);
@@ -137,6 +137,7 @@ public class IFUFacadeAction extends SimpleActionAdapter {
 	 */
 	@Override
 	public void copy(ActionRequest req) throws ActionException {
-		getAction(ActionType.ifu).copy(req);
+		ActionInterface sai = getAction(ActionType.ifu);
+		if (sai != null) sai.copy(req);
 	}
 }

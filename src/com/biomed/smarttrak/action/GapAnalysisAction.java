@@ -60,7 +60,7 @@ public class GapAnalysisAction extends SectionHierarchyAction {
 	/*
 	 * Gap Attribute Types.
 	 */
-	public enum AType {MARKET, CLASSIFICATION, INDICATION, TECHNOLOGY, METHOD}
+	public enum AType {MARKET, CLASSIFICATION, INDICATION, TECHNOLOGY, APPROACH}
 
 	private static final String INNER_JOIN = DBUtil.INNER_JOIN;
 	private static final String FROM = DBUtil.FROM_CLAUSE;

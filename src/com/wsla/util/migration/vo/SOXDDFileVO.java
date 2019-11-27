@@ -4,7 +4,9 @@ import java.util.Date;
 
 import com.siliconmtn.annotations.Importable;
 import com.siliconmtn.db.orm.Column;
+import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
+import com.wsla.util.migration.LegacyDataImporter;
 
 /****************************************************************************
  * <p><b>Title:</b> SOExtendedFileVO.java</p>
@@ -19,6 +21,8 @@ import com.siliconmtn.util.StringUtil;
  ****************************************************************************/
 public class SOXDDFileVO {
 
+	private static final Date MIN_PURCHASE_DT = Convert.formatDate(Convert.DATE_DASH_PATTERN, "2000-01-01");
+	private static final Date TODAY = new Date();
 	private String soNumber;
 	private Date createDate;
 	private String swUserId;
@@ -45,6 +49,7 @@ public class SOXDDFileVO {
 	private Date partSentDate; //goes in part table
 	private Date partRcvdDate; //goes in part table
 	private String productLocation;
+	private String actionCode;
 	private String exitCode;
 	private String shipmentTrackingNumber; //goes in shipment table
 	private String partDescription;
@@ -78,21 +83,37 @@ public class SOXDDFileVO {
 		return soNumber;
 	}
 	public Date getCreateDate() {
-		return createDate;
+		return LegacyDataImporter.toUTCDate(createDate);
 	}
 	public String getSwUserId() {
 		return swUserId;
 	}
 	@Column(name="attr_ownsTv")
 	public String getEquipOwned() {
-		return equipOwned;
+		if (StringUtil.isEmpty(equipOwned)) 
+			return null;
+
+		switch (equipOwned) {
+			case "1": return "END_USER";
+			case "2": return "RETAILER";
+			case "3": return "OEM";
+			case "4": return "COURIER";
+			default: return null;
+		}
+	}
+	@Column(name="attr_calling")
+	public String getWhosCalling() {
+		return getEquipOwned();
 	}
 	public String getRetailer() {
 		return retailer;
 	}
 	@Column(name="purchaseDate")
 	public Date getPurchaseDate() {
-		return purchaseDate;
+		if (purchaseDate == null) return null;
+		//if the purchase date isn't realistic, use today
+		Date d = LegacyDataImporter.toUTCDate(purchaseDate);
+		return d.before(MIN_PURCHASE_DT) || d.after(TODAY) ? new Date() : d;
 	}
 	@Column(name="attr_mounted")
 	public String getIsTVMounted() {
@@ -121,9 +142,9 @@ public class SOXDDFileVO {
 		return bankDetail;
 	}
 	public Date getMfgAuthDate() {
-		return mfgAuthDate;
+		return LegacyDataImporter.toUTCDate(mfgAuthDate);
 	}
-	@Column(name="attr_credit_memo")
+	//TODO - this doesn't go into ticket_data @Column(name="attr_credit_memo")
 	public String getStoreCreditNote() {
 		return storeCreditNote;
 	}
@@ -131,21 +152,21 @@ public class SOXDDFileVO {
 		return mfgDebitMemoToStore;
 	}
 	public Date getMfgReimbursedStore() {
-		return mfgReimbursedStore;
+		return LegacyDataImporter.toUTCDate(mfgReimbursedStore);
 	}
 	public String getMfgDepositDetail() {
 		return mfgDepositDetail;
 	}
 	public Date getStoreRcvdDeposit() {
-		return storeRcvdDeposit;
+		return LegacyDataImporter.toUTCDate(storeRcvdDeposit);
 	}
 	public Date getStoreRefundedUser() {
-		return storeRefundedUser;
+		return LegacyDataImporter.toUTCDate(storeRefundedUser);
 	}
 	public String getStoreAppliedCreditNote() {
 		return storeAppliedCreditNote;
 	}
-	@Column(name="attr_proofPurchase")
+	@Column(name="attr_proofPurchase", isAutoGen=true)
 	public int getPopAttached() {
 		return popAttached;
 	}
@@ -154,25 +175,28 @@ public class SOXDDFileVO {
 		return partRequired;
 	}
 	public Date getPartSentDate() {
-		return partSentDate;
+		return LegacyDataImporter.toUTCDate(partSentDate);
 	}
 	public Date getPartRcvdDate() {
-		return partRcvdDate;
+		return LegacyDataImporter.toUTCDate(partRcvdDate);
 	}
 	public String getProductLocation() {
 		return productLocation;
 	}
-	@Column(name="attr_unitDefect", isIdentity=true)
-	public String getExitCode() {
-		return exitCode;
+	@Column(name="attr_issueResolved", isIdentity=true)
+	public String getActionCode() {
+		return getExitCode();
 	}
 	@Column(name="attr_unitRepairCode", isIdentity=true)
-	public String getRepairCode() {
-		return getExitCode();
+	public String getExitCode() {
+		return !StringUtil.isEmpty(exitCode) ? exitCode : actionCode; //actionCode holds the equiv legacy value
 	}
-	@Column(name="attr_unitRepairType", isIdentity=true)
+	@Column(name="attr_unitRepairType", isIdentity=true, isUpdateOnly=true)
 	public String getRepairType() {
-		return getExitCode();
+		if (StringUtil.isEmpty(getExitCode())) return null;
+		//if the exit code matches a billable code, return it.  Otherwise null
+		//note these values match the dropdown on the overview tab, not defect table records
+		return getExitCode().matches("(?i)RP01|M0[1-7]") ? getExitCode() : null;
 	}
 	public String getShipmentTrackingNumber() {
 		return shipmentTrackingNumber;
@@ -184,16 +208,16 @@ public class SOXDDFileVO {
 		return shipmentReturnTracking;
 	}
 	public Date getPendingPopEndUserConfDate() {
-		return pendingPopEndUserConfDate;
+		return LegacyDataImporter.toUTCDate(pendingPopEndUserConfDate);
 	}
 	public Date getReturnShipmentDate() {
-		return returnShipmentDate;
+		return LegacyDataImporter.toUTCDate(returnShipmentDate);
 	}
 	@Column(name="attr_userFunded")
 	public String getProductInsured() {
 		return productInsured;
 	}
-//	@Column(name="attr_symptomsComments")
+	//	@Column(name="attr_symptomsComments")
 	public String getProductInstructions() {
 		return productInstructions;
 	}
@@ -201,12 +225,11 @@ public class SOXDDFileVO {
 		return casInvoiceNumber;
 	}
 	public Date getCasPaidDate() {
-		return casPaidDate;
+		return LegacyDataImporter.toUTCDate(casPaidDate);
 	}
 	public String getPrimary3Status() {
 		return primary3Status;
 	}
-	@Column(name="attr_dispositionCode")
 	public String getProductDisposition() {
 		return productDisposition;
 	}
@@ -318,6 +341,7 @@ public class SOXDDFileVO {
 	}
 	@Importable(name="STORE CREDIT NOTE")
 	public void setStoreCreditNote(String storeCreditNote) {
+		if ("N".equalsIgnoreCase(storeCreditNote)) return;
 		this.storeCreditNote = storeCreditNote;
 	}
 	@Importable(name="MFG DEBIT MEMO TO STORE")
@@ -363,6 +387,10 @@ public class SOXDDFileVO {
 	@Importable(name="PRODUCT LOCATION")
 	public void setProductLocation(String productLocation) {
 		this.productLocation = productLocation;
+	}
+	@Importable(name="Action Code 1")
+	public void setActionCode(String actionCode) {
+		this.actionCode = actionCode;
 	}
 	@Importable(name="EXIT CODE")
 	public void setExitCode(String exitCode) {

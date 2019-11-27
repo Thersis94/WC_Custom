@@ -11,6 +11,7 @@ import java.util.Map;
 //SMT Base Libs
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
+import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.io.mail.EmailRecipientVO;
 import com.siliconmtn.io.mail.EmailMessageVO.Header;
 import com.siliconmtn.sb.email.util.EmailCampaignBuilderUtil;
@@ -103,7 +104,7 @@ public class NotificationWorkflowModule extends AbstractWorkflowModule {
 		
 		// If the role is an end customer, send one email to the originator user on the ticket.
 		if (notification.getRoles().contains(WSLA_END_CUSTOMER) && !StringUtil.isEmpty(ticket.getTicketIdText())) {
-			UserVO user = bpa.getUser(ticket.getUserId());
+			UserVO user = bpa.getUser(ticket.getCaller().getUserId());
 			if (StringUtil.checkVal(user.getLocale(), "es_MX").equals(notification.getLocale())) {
 				users.add(user);
 			}
@@ -153,12 +154,15 @@ public class NotificationWorkflowModule extends AbstractWorkflowModule {
 		sql.append(DBUtil.INNER_JOIN).append("profile_role d on c.profile_id = d.profile_id ");
 		sql.append(DBUtil.WHERE_CLAUSE).append("provider_id = ? and role_id in (");
 		sql.append(DBUtil.preparedStatmentQuestion(roles.size())).append(") and locale_txt = ? ");
-		sql.append(DBUtil.UNION);
-		sql.append(DBUtil.SELECT_CLAUSE).append("a.user_id, email_address_txt, a.profile_id, locale_txt ");
-		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("wsla_user a ");
-		sql.append(DBUtil.INNER_JOIN).append("profile_role b on a.profile_id = b.profile_id and site_id = 'WSLA_1' ");
-		sql.append(DBUtil.WHERE_CLAUSE).append("role_id in (");
-		sql.append(DBUtil.preparedStatmentQuestion(wRoles.size())).append(") and locale_txt = ? ");
+		if( ! wRoles.isEmpty()) {
+			sql.append(DBUtil.UNION);
+			sql.append(DBUtil.SELECT_CLAUSE).append("a.user_id, email_address_txt, a.profile_id, locale_txt ");
+			sql.append(DBUtil.FROM_CLAUSE).append(schema).append("wsla_user a ");
+			sql.append(DBUtil.INNER_JOIN).append("profile_role b on a.profile_id = b.profile_id and site_id = 'WSLA_1' ");
+			sql.append(DBUtil.WHERE_CLAUSE).append("role_id in (");
+			sql.append(DBUtil.preparedStatmentQuestion(wRoles.size())).append(") and locale_txt = ? ");
+		}
+		
 		
 		// Add the parameters
 		List<Object> vals = new ArrayList<>();
@@ -169,14 +173,15 @@ public class NotificationWorkflowModule extends AbstractWorkflowModule {
 		vals.add(ticket.getOemId());
 		vals.addAll(roles);
 		vals.add(notification.getLocale());
-		vals.addAll(wRoles);
-		vals.add(notification.getLocale());
-		
+		if( ! wRoles.isEmpty()) {
+			vals.addAll(wRoles);
+			vals.add(notification.getLocale());
+		}
 		// Return the data
 		DBProcessor db = new DBProcessor(getConnection());
 		db.setGenerateExecutedSQL(true);
 		List<UserVO> users = db.executeSelect(sql.toString(), vals, new UserVO());
-		log.info(db.getExecutedSql());
+		log.debug(db.getExecutedSql());
 		return users;
 	}
 	
@@ -188,6 +193,7 @@ public class NotificationWorkflowModule extends AbstractWorkflowModule {
 	 * @throws SQLException 
 	 */
 	private void sendLocaleEmail(UserVO user, StatusNotificationVO notification) throws SQLException {
+		
 		// Set the email recipient's data
 		List<EmailRecipientVO> rcpts = new ArrayList<>();
 		rcpts.add(new EmailRecipientVO(user.getProfileId(), user.getEmail(), EmailRecipientVO.TO));
@@ -206,6 +212,68 @@ public class NotificationWorkflowModule extends AbstractWorkflowModule {
 		String headerValue = StringUtil.join("<", ticketId, "|", user.getUserId(), WSLAConstants.TICKET_EMAIL_REFERENCE_SUFFIX, ">");
 		mData.put(Header.IN_REPLY_TO.toString(), headerValue);
 		mData.put(Header.REFERENCES.toString(), headerValue);
+		
+		mData.put("firstName", user.getFirstName());
+		mData.put("lastName", user.getLastName());
+		mData.put("emailAddress", user.getEmail());
+		
+		TicketEditAction tea = new TicketEditAction(getConnection(), attributes);
+		try {
+			TicketVO ticket = tea.getCompleteTicket(ticketId);
+			if(ticket.getOem() != null) {
+				mData.put("providerName", StringUtil.checkVal(ticket.getOem().getProviderName()));
+			}else {
+				mData.put("providerName", "");
+			}
+			
+			if( ticket.getProductSerial() != null && ticket.getProductSerial().getProduct() != null) {
+				mData.put("productName", StringUtil.checkVal(ticket.getProductSerial().getProduct().getProductName()));
+			}else {
+				mData.put("productName", "");
+			}
+			
+			if(ticket.getStatus() != null) {
+				mData.put("groupStatusCode", StringUtil.checkVal(ticket.getStatus().getGroupStatusCode()));
+				mData.put("statusName", StringUtil.checkVal(ticket.getStatus().getStatusName()));
+				mData.put("statusCd",  StringUtil.checkVal(ticket.getStatus()));
+			}else {
+				mData.put("groupStatusCode", "");
+				mData.put("statusName", "");
+				mData.put("statusCd",  "");
+			}
+			
+		} catch (DatabaseException e) {
+			log.error("could not get ticket ",e);
+		}
+		
+		if(user.getProfile() != null && user.getProfile().getLocation() != null ) {
+			mData.put("addressText", StringUtil.checkVal(user.getProfile().getLocation().getAddress()));
+			mData.put("address2Text", StringUtil.checkVal(user.getProfile().getLocation().getAddress2()));
+			mData.put("cityName", StringUtil.checkVal(user.getProfile().getLocation().getCity()));
+			mData.put("stateCd", StringUtil.checkVal(user.getProfile().getLocation().getState()));
+			mData.put("zipCode", StringUtil.checkVal(user.getProfile().getLocation().getZipCode()));
+		}else {
+			mData.put("addressText", "");
+			mData.put("address2Text", "");
+			mData.put("cityName", "");
+			mData.put("stateCd", "");
+			mData.put("zipCode", "");
+		}
+
+		List<EmailRecipientVO> toRemove = new ArrayList<>();	
+		
+		for(EmailRecipientVO r:rcpts) {
+			if (r.getEmailAddress() == null) {
+				toRemove.add(r);
+			}
+		}
+		rcpts.removeAll(toRemove);
+		
+		
+		if(rcpts.isEmpty()) {
+			log.debug("no remaining valid emails return");
+			return;
+		}
 		
 		util.sendMessage(mData, rcpts, notification.getCampaignInstanceId());
 	}

@@ -26,6 +26,41 @@ import com.wsla.util.migration.vo.InventoryFileVO;
  * <b>Changes:</b>
  ****************************************************************************/
 public class LocationInventory extends AbsImporter {
+	
+	/**
+	 * These are locations that already exist but didn't align with out matching algorithm.
+	 */
+	protected static Map<String, String> staticMappings = new HashMap<>(20); 
+	static {
+		staticMappings.put("ALF", "ALF100");
+		staticMappings.put("BEL", "BEL100");
+		staticMappings.put("EAL", "EAL100");
+		staticMappings.put("EAS", "EAS100");
+		staticMappings.put("EGO", "EGO100");
+		staticMappings.put("ELU", "ELU100");
+		staticMappings.put("ETI", "ETI100");
+		staticMappings.put("EVM", "EVM100");
+		staticMappings.put("RAC", "RAC100");
+		staticMappings.put("ROM", "ROM100");
+		staticMappings.put("SED", "SED100");
+		staticMappings.put("SLR", "SLR100");
+		staticMappings.put("SVT", "SVT100");
+		staticMappings.put("TDG", "TDG100");
+		staticMappings.put("TEL", "TEL100");
+		staticMappings.put("TSM", "TSM110");
+		//these are manually created.  See notes file and run those first!
+		staticMappings.put("020", "WSLA_020");
+		staticMappings.put("030", "WSLA_030");
+		staticMappings.put("031", "WSLA_031");
+		staticMappings.put("SRK", "WSLA_SRK");
+		staticMappings.put("UNI", "WSLA_UNI");
+		staticMappings.put("D11", "WLSA_D11");
+		staticMappings.put("D21", "WSLA_D21");
+		staticMappings.put("D31", "WSLA_D31");
+		staticMappings.put("D41", "WSLA_D41");
+		staticMappings.put("D51", "WSLA_D51");
+	}
+	
 
 	private List<InventoryFileVO> data;
 
@@ -43,7 +78,7 @@ public class LocationInventory extends AbsImporter {
 
 		//retrieve the locationIds
 		locationIds.putAll(getProviderLocations());
-		locationIds.putAll(WSLAInventoryLocation.staticMappings);
+		locationIds.putAll(staticMappings);
 		//add a few manual anomalies
 		locationIds.put("GD1", "GDL100");
 		locationIds.put("GD2", "GDL200");

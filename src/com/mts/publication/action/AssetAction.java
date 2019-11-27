@@ -75,7 +75,7 @@ public class AssetAction extends SBActionAdapter {
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		String keyId = req.getParameter("objectKeyId");
-		log.info("Key ID: " + keyId);
+		log.debug("Key ID: " + keyId);
 		setModuleData(getAssets(keyId));
 	}
 	
@@ -162,7 +162,7 @@ public class AssetAction extends SBActionAdapter {
 			
 			// Delete the item from the file path
 			Files.deleteIfExists(Paths.get(path));
-			log.info("Delete file: " + path);
+			log.debug("Delete file: " + path);
 			
 			setModuleData(avo);
 		} catch(Exception e) {
