@@ -38,6 +38,7 @@ public class PartVO extends ProductVO {
 	private String availabilityCode;
 	private Date availabilityDate;
 	private String serialNumberText;
+	private String locationText;
 
 	private int quantityOnHand; //used for display, if negative we display "cas not assigned".  If >0 we display 'in stock'
 	private ShipmentStatus shipmentStatus;
@@ -213,5 +214,20 @@ public class PartVO extends ProductVO {
 	 */
 	public void setSerialNumberText(String serialNumberText) {
 		this.serialNumberText = serialNumberText;
+	}
+
+	/**
+	 * @return the locationText
+	 */
+	@Column(name="location_txt", isReadOnly=true)
+	public String getLocationText() {
+		return locationText;
+	}
+
+	/**
+	 * @param locationText the locationText to set
+	 */
+	public void setLocationText(String locationText) {
+		this.locationText = locationText;
 	}
 }

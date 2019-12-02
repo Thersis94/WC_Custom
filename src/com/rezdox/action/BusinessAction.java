@@ -639,7 +639,7 @@ public class BusinessAction extends SBActionAdapter {
 			throw new DatabaseException(e);
 		}
 
-		//when a new business is created, add 100 connections (the free offering) to it
+		//when a new business is created, add 50 connections (the free offering) to it
 		if (newBusiness) {
 			MembershipAction ma = new MembershipAction(dbConn, attributes);
 			req.setParameter(MembershipAction.MEMBERSHIP_ID, RezDoxUtils.FREE_CONNECTIONS_PKID);

@@ -99,7 +99,7 @@ public class DebitMemoJob extends AbstractSMTJob {
 		// Get a db connection
 		DatabaseConnection dbc = new DatabaseConnection();
 		dbc.setDriverClass("org.postgresql.Driver");
-		dbc.setUrl("jdbc:postgresql://sonic:5432/webcrescnedo_dev08282019_sb?defaultRowFetchSize=25&amp;prepareThreshold=3");
+		dbc.setUrl("jdbc:postgresql://sonic:5432/webcrescendo_dev10092019_sb?defaultRowFetchSize=25&amp;prepareThreshold=3");
 		dbc.setUserName("ryan_user_sb");
 		dbc.setPassword("sqll0gin");
 		job.conn = dbc.getConnection();
@@ -354,7 +354,7 @@ public class DebitMemoJob extends AbstractSMTJob {
 		sql.append("group by oem_id, retail_id, u.user_id, u.first_nm, u.last_nm ");
 		
 		sql.append("order by oem_id, retail_id ");
-		log.debug(sql.length() + "|" + sql);
+		log.info(sql.length() + "|" + sql);
 		DBProcessor db = new DBProcessor(conn, schema);
 		return db.executeSelect(sql.toString(), null, new DebitMemoVO());
 		
@@ -394,10 +394,10 @@ public class DebitMemoJob extends AbstractSMTJob {
 			sql.append("and end_user_refund_flg = 1 and ta.user_id = ? ");
 			vals.add(memo.getUserId());
 		} else {
-			sql.append("and (end_user_refund_flg = 0 or end_user_refund_flg = null ) ");
+			sql.append("and (end_user_refund_flg = 0 or end_user_refund_flg is null ) ");
 		}
 		
-		log.debug(sql.length() + "|" + sql + "|" + vals);
+		log.info(sql.length() + "|" + sql + "|" + vals);
 
 		// Get the memos
 		DBProcessor db = new DBProcessor(conn, schema);

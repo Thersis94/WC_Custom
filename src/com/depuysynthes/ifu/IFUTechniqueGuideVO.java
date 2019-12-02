@@ -39,8 +39,8 @@ public class IFUTechniqueGuideVO {
 	public IFUTechniqueGuideVO(ActionRequest req) {
 		this.setTgId(req.getParameter("tgId"));
 		this.setTgName(req.getParameter("tgName"));
-		this.setUrlText(req.getParameter("urlText"));
-		this.setDpySynMediaBinId(req.getParameter("dpySynMediaBinId"));
+		this.setUrlText(StringUtil.checkVal(req.getParameter("urlText"), null));
+		this.setDpySynMediaBinId(StringUtil.checkVal(req.getParameter("dpySynMediaBinId"), null));
 		this.setImplId(req.getParameter("implId"));
 		this.setOrderNo(Convert.formatInteger(req.getParameter("orderNo")));
 	}
