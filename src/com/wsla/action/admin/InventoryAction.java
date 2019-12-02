@@ -195,7 +195,8 @@ public class InventoryAction extends SBActionAdapter {
 		//fuzzy keyword search
 		String term = bst.getLikeSearch().toLowerCase();
 		if (!StringUtil.isEmpty(term)) {
-			sql.append("and (lower(p.provider_nm) like ? or lower(lcn.location_nm) like ? or lower(pm.product_nm) like ?) ");
+			sql.append("and (lower(p.provider_nm) like ? or lower(lcn.location_nm) like ? or lower(pm.product_nm) like ? or lower(pm.cust_product_id) like ? ) ");
+			params.add(term);
 			params.add(term);
 			params.add(term);
 			params.add(term);

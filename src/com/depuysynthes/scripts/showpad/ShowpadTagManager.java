@@ -223,7 +223,7 @@ public class ShowpadTagManager {
 	 */
 	protected Set<String> getDesiredTags(MediaBinDeltaVO vo) {
 		Set<String> desiredTags = new HashSet<>();
-		desiredTags.add("mediabin");
+		desiredTags.add("eos");
 		if (!StringUtil.isEmpty(sourceConstant))
 			desiredTags.add(sourceConstant); //an additional static tag for private assets.  This could be turned into a String[] if need be.
 
