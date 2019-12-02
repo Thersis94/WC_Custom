@@ -78,7 +78,6 @@ public class CustomerListAction extends SimpleActionAdapter {
 				"from ", getCustomSchema(), "wsla_user where length(email_address_txt) > 0 and active_flg=1 order by 2");
 
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
-		db.setGenerateExecutedSQL(log.isDebugEnabled());
 		return db.executeSelect(sql, null, new GenericVO());
 	}
 }
