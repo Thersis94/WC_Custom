@@ -110,12 +110,13 @@ public class LinkReportAction extends SimpleActionAdapter {
 		StringBuilder sql = new StringBuilder(250);
 		sql.append("select l.link_id, l.url_txt, l.status_no, l.check_dt, l.review_flg, l.content_id, l.ignore_flg, ");
 		sql.append("coalesce(l.company_id,l.product_id,l.insight_id,l.update_id,l.market_id) as id, ");
-		sql.append("coalesce(c.company_nm,p.product_nm,i.title_txt,u.title_txt,m.market_nm) as nm, ");
+		sql.append("coalesce(c.company_nm,p.product_nm,i.title_txt,u.title_txt,m.market_nm) as nm, pc.company_nm as parent_nm, ");
 		sql.append("case when l.company_id is not null then 'COMPANY' when l.product_id is not null then 'PRODUCT' ");
 		sql.append("when l.insight_id is not null then 'INSIGHT' when l.market_id is not null then 'MARKET' else 'UPDATE' end as section ");
 		sql.append("from ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA)).append("biomedgps_link l ");
 		sql.append("left join custom.biomedgps_company c on c.company_id = l.company_id ");
 		sql.append("left join custom.biomedgps_product p on p.product_id = l.product_id ");
+		sql.append("left join custom.biomedgps_company pc on p.company_id = pc.company_id ");
 		sql.append("left join custom.biomedgps_update u on u.update_id = l.update_id ");
 		sql.append("left join custom.biomedgps_market m on m.market_id = l.market_id ");
 		sql.append("left join custom.biomedgps_insight i on i.insight_id = l.insight_id ");

@@ -22,6 +22,7 @@ public class LinkVO {
 	private String objectId; //used for the associated section's id(company, product, update, etc.)
 	private String contentId;
 	private String pageNm;
+	private String parentNm;
 	private String html;
 	private Date lastChecked;
 	private int outcome;
@@ -69,6 +70,7 @@ public class LinkVO {
 		vo.setReviewFlag(rs.getInt("review_flg"));
 		vo.setContentId(rs.getString("content_id"));
 		vo.setIgnoreFlg(rs.getInt("ignore_flg"));
+		vo.setParentNm(rs.getString("parent_nm"));
 		return vo;
 	}
 
@@ -137,6 +139,14 @@ public class LinkVO {
 	 */
 	public void setPageNm(String pageNm) {
 		this.pageNm = pageNm;
+	}
+
+	public String getParentNm() {
+		return parentNm;
+	}
+
+	public void setParentNm(String parentNm) {
+		this.parentNm = parentNm;
 	}
 
 	public Date getLastChecked() {
