@@ -106,6 +106,21 @@ public class ContentFeedVO extends BeanDataVO {
 	public List<ContentFeedItemVO> getItems() {
 		return items;
 	}
+	
+	
+	/**
+	 * loop the items and get a set of all the ids
+	 * @return
+	 */
+	public List<String> getUniqueIds(){
+		List <String> ids = new ArrayList<>();
+		
+		for (ContentFeedItemVO item : getItems()) {
+			ids.add(item.getItemId());
+		}
+		
+		return ids;
+	}
 
 	/**
 	 * @param title the title to set
