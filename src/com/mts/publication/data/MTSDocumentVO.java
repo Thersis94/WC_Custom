@@ -57,6 +57,7 @@ public class MTSDocumentVO extends DocumentVO {
 	private String authorId;
 	private String sbActionId;
 	private String infoBar;
+	private int sentFlag;
 	
 	// Sub-Beans
 	private List<AssetVO> assets = new ArrayList<>();
@@ -418,6 +419,15 @@ public class MTSDocumentVO extends DocumentVO {
 	 */
 	public MTSUserVO getAuthor() {
 		return author;
+	}
+
+	@Column(name="sent_flg")
+	public int getSentFlag() {
+		return sentFlag;
+	}
+
+	public void setSentFlag(int sentFlag) {
+		this.sentFlag = sentFlag;
 	}
 
 	/**
