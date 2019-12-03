@@ -121,6 +121,7 @@ public class PubmedArticleSaxHandler extends DefaultHandler {
 		rss.setTitleTxt(StringUtil.checkVal(data.get(SearchType.ARTICLE_TITLE), data.get(SearchType.TITLE)).replace("\u00a0"," "));
 		rss.setPublicationName(data.get(SearchType.TITLE));
 		rss.setAttribute1Txt(data.get(SearchType.PUB_TYPE));
+		rss.calcDataSize();
 		return rss;
 	}
 

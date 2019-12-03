@@ -79,13 +79,17 @@ public class BlogAction extends SimpleActionAdapter {
 	 */
 	@Override
 	public void update(ActionRequest req) throws ActionException {
+		//capture whether notification should be sent, then reset the approvalFlag for upstream behavior
+		boolean sendNotifs = "100".equals(req.getParameter("approvalFlag"));
+		if (sendNotifs) req.setParameter("approvalFlag", "1");
+
 		BlogFacadeAction bfa = new BlogFacadeAction(actionInit);
 		bfa.setAttributes(getAttributes());
 		bfa.setDBConnection(getDBConnection());
 		bfa.update(req);
 
 		//if we didn't just save a blog ARTICLE, or the one we saved is not approved, return
-		if (!req.hasParameter("blogId") || !"1".equals(req.getParameter("approvalFlag"))) 
+		if (!req.hasParameter("blogId") || !sendNotifs) 
 			return;
 
 		//notify all users that a new blog article has been published

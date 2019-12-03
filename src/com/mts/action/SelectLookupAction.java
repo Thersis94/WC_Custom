@@ -17,7 +17,6 @@ import com.mts.publication.data.IssueVO;
 import com.mts.publication.data.PublicationVO;
 import com.mts.subscriber.action.SubscriptionAction.SubscriptionType;
 import com.mts.subscriber.data.MTSUserVO;
-
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -25,11 +24,11 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.common.html.BSTableControlVO;
 import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.db.DBUtil;
-import com.siliconmtn.db.orm.*;
+import com.siliconmtn.db.orm.DBProcessor;
+import com.siliconmtn.db.orm.GridDataVO;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
-
 // WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.metadata.MetadataVO;
@@ -354,42 +353,43 @@ public class SelectLookupAction extends SBActionAdapter {
 	 * @return
 	 */
 	public List<GenericVO> getArticlesAC(ActionRequest req) {
+		String schema = getCustomSchema();
 		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
 
 		// Build the serach terms
 		StringBuilder term = new StringBuilder(32);
 		String[] terms = StringUtil.checkVal(req.getParameter(REQ_SEARCH)).split(" ");
-
 		for (int i=0; i < terms.length; i++) {
 			if (i > 0) term.append(" & ");
 			term.append(terms[i].replace("'","''")).append(":*");
 		}
 
 		// Build the sql using Full text indexing
-		StringBuilder sql = new StringBuilder(512);
+		StringBuilder sql = new StringBuilder(900);
 		sql.append("select key, value from ( ");
 		sql.append("select action_nm, '/' || lower(publication_id) || '/article/' || direct_access_pth as key, ");
 		sql.append("concat(action_nm, '|-- ', first_nm, ' ', last_nm)  as value, ");
 		sql.append("to_tsvector(action_nm) || "); 
 		sql.append("to_tsvector(coalesce(action_desc, '')) || ");
 		sql.append("to_tsvector(coalesce(first_nm, '')) || ");
-		sql.append("to_tsvector(coalesce(last_nm, '')) as document ");
-		sql.append(DBUtil.FROM_CLAUSE).append(getCustomSchema()).append("mts_document a ");
+		sql.append("to_tsvector(coalesce(last_nm, '')) as document, coalesce(a.publish_dt,a.update_dt, a.create_dt) as dt ");
+		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("mts_document a ");
 		sql.append(DBUtil.INNER_JOIN).append("sb_action b on a.action_group_id=b.action_group_id ");
 		if (!page.isPreviewMode()) 
 			sql.append("and b.pending_sync_flg=0 ");
-		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("mts_issue i on a.issue_id=i.issue_id ");
+		sql.append(DBUtil.INNER_JOIN).append(schema).append("mts_issue i on a.issue_id=i.issue_id ");
 		if (!page.isPreviewMode()) 
 			sql.append("and (i.issue_dt < CURRENT_TIMESTAMP or i.issue_dt is null) ");
 		sql.append(DBUtil.INNER_JOIN).append("document d on b.action_id = d.action_id ");
-		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("mts_user c on a.author_id = c.user_id ");
+		sql.append(DBUtil.INNER_JOIN).append(schema).append("mts_user c on a.author_id = c.user_id ");
 		if (!page.isPreviewMode()) 
 			sql.append("where (a.publish_dt < CURRENT_TIMESTAMP or a.publish_dt is null) ");
-		sql.append(") as search where search.document @@ to_tsquery('").append(term).append("') ");
-		sql.append("order by action_nm limit 10");
+		sql.append(") as search ");
+		sql.append("where search.document @@ to_tsquery('").append(term).append("') ");
+		sql.append("order by dt desc limit 10");
 		log.debug(sql.length() + "|" + sql);
 
-		DBProcessor db = new DBProcessor(getDBConnection());
+		DBProcessor db = new DBProcessor(getDBConnection(), schema);
 		return db.executeSelect(sql.toString(), null, new GenericVO());
 	}
 }

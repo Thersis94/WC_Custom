@@ -16,7 +16,6 @@ import com.biomed.smarttrak.admin.AccountUserAction;
 import com.biomed.smarttrak.admin.AdminSiteSearchAction;
 import com.biomed.smarttrak.admin.ArticlePaneAction;
 import com.biomed.smarttrak.admin.AuditLogAction;
-import com.biomed.smarttrak.admin.CRMAction;
 import com.biomed.smarttrak.admin.CompanyManagementAction;
 import com.biomed.smarttrak.admin.DashboardAction;
 import com.biomed.smarttrak.admin.DuplicateItemCheckerAction;
@@ -236,7 +235,6 @@ public class AdminControllerAction extends SimpleActionAdapter {
 		ACTIONS.put("support", SupportFacadeAction.class);
 		ACTIONS.put("synonyms", SolrSynonymAction.class);
 		ACTIONS.put("marketingCampaigns", CampaignInstanceAction.class);
-		ACTIONS.put("crm", CRMAction.class);
 		ACTIONS.put("marketingInstanceReport", InstanceReport.class);
 		ACTIONS.put("uwr", UpdatesManageReportAction.class);
 		ACTIONS.put("grid", GridChartAction.class);
