@@ -225,6 +225,7 @@ public class QuertleDataFeed extends AbstractSmarttrakRSSFeed {
 			}
 		}
 
+		article.calcDataSize();
 		return article;
 	}
 

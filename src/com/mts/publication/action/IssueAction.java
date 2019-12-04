@@ -10,14 +10,14 @@ import com.mts.action.SelectLookupAction;
 import com.mts.publication.data.AssetVO;
 // MTS Libs
 import com.mts.publication.data.IssueVO;
-
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.common.html.BSTableControlVO;
 import com.siliconmtn.db.DBUtil;
-import com.siliconmtn.db.orm.*;
+import com.siliconmtn.db.orm.DBProcessor;
+import com.siliconmtn.db.orm.GridDataVO;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
@@ -40,12 +40,12 @@ import com.smt.sitebuilder.common.constants.Constants;
  ****************************************************************************/
 
 public class IssueAction extends SBActionAdapter {
-	
+
 	/**
 	 * Ajax Controller key for this action
 	 */
 	public static final String AJAX_KEY = "issue";
-	
+
 	/**
 	 * 
 	 */
@@ -59,7 +59,7 @@ public class IssueAction extends SBActionAdapter {
 	public IssueAction(ActionInitVO actionInit) {
 		super(actionInit);
 	}
-	
+
 	/**
 	 * 
 	 * @param dbConn
@@ -70,7 +70,7 @@ public class IssueAction extends SBActionAdapter {
 		setDBConnection(dbConn);
 		setAttributes(attributes);
 	}
-	
+
 	/*
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.action.ActionRequest)
@@ -84,7 +84,7 @@ public class IssueAction extends SBActionAdapter {
 		//turn off date filtering in the portal, or if the page is being previewed
 		setModuleData(getIssues(pubId, false, bst, ("ajax_ctrl".equals(req.getParameter("amid")) || page.isPreviewMode())));
 	}
-	
+
 	/*
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#list(com.siliconmtn.action.ActionRequest)
@@ -92,13 +92,13 @@ public class IssueAction extends SBActionAdapter {
 	@Override
 	public void list(ActionRequest req) throws ActionException {
 		super.retrieve(req);
-		
+
 		SelectLookupAction sla = new SelectLookupAction();
 		sla.setDBConnection(getDBConnection());
 		sla.setAttributes(getAttributes());
 		req.setAttribute("mts_publications", sla.getPublications(req));
 	}
-	
+
 	/**
 	 * 
 	 * @return
@@ -107,7 +107,7 @@ public class IssueAction extends SBActionAdapter {
 		// Add the params
 		List<Object> vals = new ArrayList<>();
 		vals.add(pubId);
-		
+
 		String schema = getCustomSchema();
 		StringBuilder sql = new StringBuilder(352);
 		sql.append("select coalesce(article_count, 0) as article_no, a.*, b.*, da.*  from ");
@@ -131,20 +131,20 @@ public class IssueAction extends SBActionAdapter {
 		if (beenIssued) sql.append("and issue_dt is not null ");
 		if (!isPagePreview) 
 			sql.append("and (a.issue_dt < CURRENT_TIMESTAMP or a.issue_dt is null) ");
-		
+
 		// Add the search vals
 		if(bst.hasSearch()) {
 			sql.append("and lower(issue_nm) like ? ");
 			vals.add(bst.getLikeSearch().toLowerCase());
 		}
-		
+
 		sql.append(bst.getSQLOrderBy("issue_dt", "desc"));
 		log.debug(sql.length() + "|" + sql + "|" + pubId + "|" + bst.getOffset());
-		
+
 		DBProcessor db = new DBProcessor(getDBConnection(), schema);
 		return db.executeSQLWithCount(sql.toString(), vals, new IssueVO(), bst);
 	}
-	
+
 	/*
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#update(com.siliconmtn.action.ActionRequest)
@@ -152,7 +152,7 @@ public class IssueAction extends SBActionAdapter {
 	@Override
 	public void build(ActionRequest req) throws ActionException {
 		IssueVO issue = new IssueVO(req);
-		
+
 		try {
 			DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 			db.save(issue);
@@ -162,7 +162,7 @@ public class IssueAction extends SBActionAdapter {
 			putModuleData(issue, 1, false, e.getLocalizedMessage(), true);
 		}
 	}
-	
+
 	/**
 	 * Retrieves the data for the feature asset
 	 * @param issueId
@@ -171,30 +171,29 @@ public class IssueAction extends SBActionAdapter {
 	 * @throws DatabaseException
 	 */
 	public IssueVO getIssue(String issueId) {
-		List<Object> vals = new ArrayList<>();
-		vals.add(issueId);
-		vals.add(issueId);
-		
-		StringBuilder sql = new StringBuilder(128);
+		String schema = getCustomSchema();
+		StringBuilder sql = new StringBuilder(300);
 		sql.append("select a.*, b.publication_nm, article_no from ");
-		sql.append(getCustomSchema()).append("mts_issue a inner join ");
-		sql.append(getCustomSchema()).append("mts_publication b ");
-		sql.append("on a.publication_id = b.publication_id ");
-		sql.append("inner join (select issue_id, count(*) as article_no ");
-		sql.append(DBUtil.FROM_CLAUSE).append(getCustomSchema()).append("mts_document ");
-		sql.append("where issue_id = ? group by issue_id ) as n ");
-		sql.append("on a.issue_id = n.issue_id ");
-		sql.append("where a.issue_id = ? ");
-		
-		DBProcessor db = new DBProcessor(getDBConnection());
+		sql.append(schema).append("mts_issue a ");
+		sql.append(DBUtil.INNER_JOIN).append(schema).append("mts_publication b on a.publication_id=b.publication_id ");
+		sql.append(DBUtil.INNER_JOIN).append("(select issue_id, count(*) as article_no ");
+		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("mts_document ");
+		sql.append("where (publish_dt < CURRENT_TIMESTAMP or publish_dt is null) and issue_id=? ");
+		sql.append("group by issue_id) as n on a.issue_id=n.issue_id ");
+		sql.append("where a.issue_id=? ");
+
+		List<Object> vals = Arrays.asList(issueId, issueId);
+		DBProcessor db = new DBProcessor(getDBConnection(), schema);
+		db.setGenerateExecutedSQL(log.isDebugEnabled());
 		List<IssueVO> issues = db.executeSelect(sql.toString(), vals, new IssueVO());
+		log.debug(issues);
 		if (issues.isEmpty()) return null;
+
 		IssueVO issue = issues.get(0);
 		issue.setAssets(getFeatureAssets(issueId));
-		
 		return issue;
 	}
-	
+
 	/**
 	 * Gets the feature assets for the issue
 	 * @param issueId
@@ -202,9 +201,9 @@ public class IssueAction extends SBActionAdapter {
 	 */
 	protected List<AssetVO> getFeatureAssets(String issueId) {
 		StringBuilder sql = new StringBuilder(128);
-		sql.append("select * from ").append(getCustomSchema()).append("mts_document_asset ");
+		sql.append(DBUtil.SELECT_FROM_STAR).append(getCustomSchema()).append("mts_document_asset ");
 		sql.append("where object_key_id = ? and asset_type_cd = 'COVER_IMG' ");
-		
+
 		DBProcessor db = new DBProcessor(getDBConnection());
 		return db.executeSelect(sql.toString(), Arrays.asList(issueId), new AssetVO());
 	}

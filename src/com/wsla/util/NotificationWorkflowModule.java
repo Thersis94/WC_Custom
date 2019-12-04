@@ -181,7 +181,7 @@ public class NotificationWorkflowModule extends AbstractWorkflowModule {
 		DBProcessor db = new DBProcessor(getConnection());
 		db.setGenerateExecutedSQL(true);
 		List<UserVO> users = db.executeSelect(sql.toString(), vals, new UserVO());
-		log.info(db.getExecutedSql());
+		log.debug(db.getExecutedSql());
 		return users;
 	}
 	
@@ -258,6 +258,21 @@ public class NotificationWorkflowModule extends AbstractWorkflowModule {
 			mData.put("cityName", "");
 			mData.put("stateCd", "");
 			mData.put("zipCode", "");
+		}
+
+		List<EmailRecipientVO> toRemove = new ArrayList<>();	
+		
+		for(EmailRecipientVO r:rcpts) {
+			if (r.getEmailAddress() == null) {
+				toRemove.add(r);
+			}
+		}
+		rcpts.removeAll(toRemove);
+		
+		
+		if(rcpts.isEmpty()) {
+			log.debug("no remaining valid emails return");
+			return;
 		}
 		
 		util.sendMessage(mData, rcpts, notification.getCampaignInstanceId());

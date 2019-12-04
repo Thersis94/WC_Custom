@@ -31,6 +31,7 @@ public class LocationItemMasterVO extends ProductVO {
 	// Member Variables
 	private String itemMasterId;
 	private String locationId;
+	private String locationText;
 	private int quantityOnHand;
 	private int parValue;
 
@@ -140,5 +141,20 @@ public class LocationItemMasterVO extends ProductVO {
 	@BeanSubElement
 	public void setLocation(ProviderLocationVO location) {
 		this.location = location;
+	}
+
+	/**
+	 * @return the locationText
+	 */
+	@Column(name="location_txt")
+	public String getLocationText() {
+		return locationText;
+	}
+
+	/**
+	 * @param locationText the locationText to set
+	 */
+	public void setLocationText(String locationText) {
+		this.locationText = locationText;
 	}
 }

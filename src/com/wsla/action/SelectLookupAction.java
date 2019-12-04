@@ -69,6 +69,7 @@ import com.wsla.data.provider.ProviderPhoneVO;
 import com.wsla.data.provider.ProviderType;
 import com.wsla.data.ticket.BillableActivityVO;
 import com.wsla.data.ticket.BillableActivityVO.BillableTypeCode;
+import com.wsla.data.ticket.ShipmentVO;
 import com.wsla.data.ticket.StatusCode;
 import com.wsla.data.ticket.StatusCodeVO;
 import com.wsla.data.ticket.TicketAssignmentVO;
@@ -153,6 +154,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		keyMap.put("standing", new GenericVO("getStanding", Boolean.TRUE));
 		keyMap.put("acShipLocation", new GenericVO("getAcShippingLocation", Boolean.TRUE));
 		keyMap.put("surveyResults", new GenericVO("getSurveyResults", Boolean.TRUE));
+		keyMap.put("shipmentInvoiceTypes", new GenericVO("getShipmentInvoiceTypes", Boolean.TRUE));
 		keyMap.put("profeco", new GenericVO("getProfecoList", Boolean.TRUE));
 	}
 
@@ -447,11 +449,13 @@ public class SelectLookupAction extends SBActionAdapter {
 	 */
 	public List<GenericVO> getRetailerACList(ActionRequest req) {
 		StringBuilder term = new StringBuilder(32);
-		String[] terms = StringUtil.checkVal(req.getParameter(REQ_SEARCH)).split(" ");
+		String[] terms = StringUtil.checkVal(req.getParameter(REQ_SEARCH)).replaceAll("[^\\w\\s]+", "").split(" ");
 		for (int i=0; i < terms.length; i++) {
-			if (i > 0) term.append(" & ");
-			term.append(terms[i]).append(":*");
+			if (i > 0 && terms[i].length() > 0 ) term.append(" & ");
+			
+			if (terms[i].length() > 0 )term.append(terms[i]).append(":*");
 		}
+
 		log.debug("Search Term: " + term);
 
 		StringBuilder sql = new StringBuilder(512);
@@ -577,13 +581,14 @@ public class SelectLookupAction extends SBActionAdapter {
 		String ticketId = req.getParameter(TicketEditAction.TICKET_ID);
 		if (!StringUtil.isEmpty(ticketId)) {
 			sql.append(DBUtil.UNION);
-			sql.append(DBUtil.SELECT_CLAUSE).append("user_id as key, first_nm || ' ' || last_nm ");
-			sql.append("|| ' - ' || coalesce(city_nm, '') || ', ' || coalesce(state_cd, '') as value");
+			sql.append(DBUtil.SELECT_CLAUSE).append("ta.user_id as key, first_nm || ' ' || last_nm ");
+			sql.append("|| ' - ' || coalesce(city_nm, '') || ', ' || coalesce(state_cd, '') as value ");
 			sql.append(DBUtil.FROM_CLAUSE).append(schema).append("wsla_ticket t");
-			sql.append(DBUtil.INNER_JOIN).append(schema).append("wsla_user u on t.originator_user_id = u.user_id");
-			sql.append(DBUtil.INNER_JOIN).append("profile_address pa on u.profile_id = pa.profile_id");
-			sql.append(DBUtil.WHERE_CLAUSE).append("(lower(first_nm || ' ' || last_nm) like ? or lower(city_nm) like ?)");
-			sql.append("and ticket_id = ? ");
+			sql.append(DBUtil.INNER_JOIN).append(schema).append("wsla_ticket_assignment ta on t.ticket_id = ta.ticket_id and ta.assg_type_cd = 'CALLER' ");
+			sql.append(DBUtil.INNER_JOIN).append(schema).append("wsla_user u on ta.user_id = u.user_id ");
+			sql.append(DBUtil.LEFT_OUTER_JOIN).append("profile_address pa on u.profile_id = pa.profile_id ");
+			sql.append(DBUtil.WHERE_CLAUSE).append("(lower(first_nm || ' ' || last_nm) like ? or lower(city_nm) like ?) ");
+			sql.append("and t.ticket_id = ? ");
 			vals.add(term);
 			vals.add(term);
 			vals.add(ticketId);
@@ -808,6 +813,21 @@ public class SelectLookupAction extends SBActionAdapter {
 		return new ProductCategoryAction(getAttributes(), getDBConnection()).getGroupList();
 	}
 
+	
+	/**
+	 * Return a distinct list of shipment invoice codes values from an enum in the shipment vo
+	 * @return
+	 */
+	public List<GenericVO> getShipmentInvoiceTypes(ActionRequest req) {
+		ResourceBundle bundle = new BasePortalAction().getResourceBundle(req);
+
+		List<GenericVO> data = new ArrayList<>();
+		for (ShipmentVO.ShipmentInvoiceType type : ShipmentVO.ShipmentInvoiceType.values()) {
+			data.add(new GenericVO(type.getCodeValue(), bundle.getString("wsla.ticket.schedule.invoice." + type.getCodeValue())));
+		}
+		
+		return data;
+	}
 
 	/**
 	 * Return a list of ticket assignments for the given ticket
@@ -909,7 +929,7 @@ public class SelectLookupAction extends SBActionAdapter {
 
 		List<GenericVO> products = new ArrayList<>(data.getRowData().size());
 		for (LocationItemMasterVO lim : data.getRowData()) {
-			products.add(new GenericVO(lim.getProductId(), lim.getProductName()));
+			products.add(new GenericVO(lim.getProductId(), lim.getProductName() + " : " + lim.getCustomerProductId()));
 		}
 
 

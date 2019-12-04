@@ -103,6 +103,7 @@ public class RSSArticleSaxHandler extends DefaultHandler {
 		}
 		rss.setTitleTxt(StringUtil.checkVal(data.get(SearchType.TITLE)).replace("\u00a0"," "));
 		rss.setPublicationName(data.get(SearchType.TITLE));
+		rss.calcDataSize();
 		return rss;
 	}
 
