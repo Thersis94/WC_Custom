@@ -7,6 +7,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -20,7 +22,6 @@ import org.quartz.JobExecutionException;
 
 // GSON 2.3
 import com.google.gson.Gson;
-import com.mts.publication.data.MTSDocumentVO;
 import com.siliconmtn.db.DBUtil;
 // SMT Base libs
 import com.siliconmtn.db.DatabaseConnection;
@@ -153,36 +154,43 @@ public class ContentFeedJob extends AbstractSMTJob {
 			else saveFile(json, fileLoc, host, user, pwd, msg);
 		}
 		
-		setSentFlags();
+		setSentFlags(docs.getUniqueIds());
 
 		msg.append("Success");
 	}
 
 	/**
 	 * sets all the sent flags for published articles before todays job to sent
+	 * @param uniqueIds 
 	 * @throws com.siliconmtn.db.util.DatabaseException 
 	 * 
 	 */
-	private void setSentFlags() throws DatabaseException, com.siliconmtn.db.util.DatabaseException {
+	private void setSentFlags(List<String> uniqueIds) throws com.siliconmtn.db.util.DatabaseException, DatabaseException {
 		
-		MTSDocumentVO vo = new MTSDocumentVO();
-		
-		vo.setSentFlag(1);
-		vo.setPublishDate(Convert.formatEndDate(new Date()));
+		if(uniqueIds == null || uniqueIds.isEmpty())return;
 		
 		String schema = (String)this.attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(134);
 				
 		sql.append(DBUtil.UPDATE_CLAUSE).append(schema).append("mts_document ");
-		sql.append("set sent_flg = ? ");
-		sql.append(DBUtil.WHERE_CLAUSE).append("publish_dt <= ? and sent_flg = '0' ");
+		sql.append("set data_feed_processed_flg = ? ");
+		sql.append(DBUtil.WHERE_CLAUSE).append("unique_cd in ( ").append(DBUtil.preparedStatmentQuestion(uniqueIds.size())).append(" ) ");
 		
-		DBProcessor db = new DBProcessor(conn);		
-		List<String> fields  = new ArrayList<>();
-		fields.add("sent_flg");
-		fields.add("publish_dt");
+		log.debug(" sql " + sql.toString() +"|1 and than ids : " +uniqueIds);
 		
-		db.executeSqlUpdate(sql.toString(), vo, fields);
+		try (PreparedStatement ps = conn.prepareStatement(sql.toString())) {
+			//set the flag value of 1
+			ps.setInt(1, 1);
+			
+			//loop the unique ids
+			for(int x =0 ; x < uniqueIds.size() ; x++) {
+				ps.setString(x+2, uniqueIds.get(x));
+			}
+
+			ps.executeUpdate();
+		} catch (SQLException sqle) {
+			throw new DatabaseException(sqle);
+		}
 	}
 
 
@@ -255,7 +263,7 @@ public class ContentFeedJob extends AbstractSMTJob {
 		sql.append("inner join document c on b.action_id = c.action_id ");
 		sql.append("left outer join ").append(schema);
 		sql.append("mts_user u on a.author_id = u.user_id ");
-		sql.append("where publish_dt <= ? and publication_id = 'MEDTECH-STRATEGIST' and a.sent_flg = '0' ");
+		sql.append("where publish_dt <= ? and publication_id = 'MEDTECH-STRATEGIST' and a.data_feed_processed_flg = '0' ");
 		sql.append("order by publish_dt ");
 
 		List<Object> vals = new ArrayList<>();
