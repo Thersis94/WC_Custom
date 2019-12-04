@@ -98,7 +98,7 @@ public class RezDoxUtils {
 	/**
 	 * the pkId of the "100 Connections" we give to each new business upon creation (See BusinessAction)
 	 */
-	public static final String FREE_CONNECTIONS_PKID = "CONNECTIONS100";
+	public static final String FREE_CONNECTIONS_PKID = "CONNECTIONS50";
 	
 	/**
 	 * Used for setting notifications from outside of the sub-site context; like in the admintool.
