@@ -53,11 +53,11 @@ public class CustomerListAction extends SimpleActionAdapter {
 	private void addCustomer(ActionRequest req) {
 		UserVO vo = new UserVO(req);
 		vo.setActiveFlag(1);
-		vo.setLocale(WSLALocales.en_US.toString());
+		vo.setLocale(WSLALocales.es_MX.toString());
 		UserDataVO usr = vo.getProfile();
 
 		ProfileManager pm = ProfileManagerFactory.getInstance(getAttributes());
-		DBProcessor db = new DBProcessor(getDBConnection());
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		try {
 			pm.updateProfile(usr, dbConn);
 			vo.setProfile(usr);
