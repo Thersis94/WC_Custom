@@ -166,4 +166,11 @@ public class RSSSolrDocumentVO extends SolrDocumentVO {
 	public Date getPublishDate() {
 		return super.getPublishDate();
 	}
+
+	@Override
+	@Column(name="create_dt")
+	@SolrField(name=SearchDocumentHandler.UPDATE_DATE)
+	public Date getUpdateDt() {
+		return super.getUpdateDt();
+	}
 }

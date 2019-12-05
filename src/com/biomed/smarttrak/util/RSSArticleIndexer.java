@@ -1,5 +1,6 @@
 package com.biomed.smarttrak.util;
 
+import java.io.IOException;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -12,11 +13,13 @@ import java.util.Properties;
 
 import org.apache.solr.client.solrj.SolrClient;
 
+import com.biomed.smarttrak.action.AdminControllerAction;
 import com.biomed.smarttrak.action.rss.vo.RSSSolrDocumentVO;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.http.filter.fileupload.Constants;
 import com.smt.sitebuilder.search.SMTAbstractIndex;
+import com.smt.sitebuilder.search.SearchDocumentHandler;
 import com.smt.sitebuilder.util.solr.SolrActionUtil;
 import com.smt.sitebuilder.util.solr.SolrDocumentVO;
 
@@ -112,7 +115,7 @@ public class RSSArticleIndexer extends SMTAbstractIndex {
 	protected List<SolrDocumentVO> getDocuments(List<String> documentIds) {
 		StringBuilder sql = new StringBuilder(250);
 		String customDb = config.getProperty(Constants.CUSTOM_DB_SCHEMA);
-		sql.append("select rs.rss_article_id, rs.article_txt, rs.title_txt, rs.affiliation_txt, rs.publish_dt, "); 
+		sql.append("select rs.rss_article_id, rs.article_txt, rs.title_txt, rs.affiliation_txt, rs.publish_dt, rs.create_dt, "); 
 		sql.append("string_agg(rfa.feed_group_id+'~'+ case when rfa.complete_flg = 1 then 'C' else rfa.article_status_cd "); 
 		sql.append("end +'~'+coalesce(rfa.bucket_id, ''), ',') as combo_key, string_agg(rfa.rss_article_filter_id, ',') as filter_id ");
 		sql.append("from ").append(customDb).append("biomedgps_rss_article rs "); 
@@ -148,6 +151,19 @@ public class RSSArticleIndexer extends SMTAbstractIndex {
 			util.addDocuments(getDocuments(loadArticleIds(Arrays.asList(itemIds))));
 		} catch (Exception e) {
 			log.error("Failed to index Update with id=" + itemIds, e);
+		}
+	}
+
+	/**
+	 * Overriding the base purgeIndexItems as we don't use IndexType here. Overrode
+	 * with organization instead as that was an easy "Drop All" field.
+	 */
+	@Override
+	public void purgeIndexItems(SolrClient server) throws IOException {
+		try {
+			server.deleteByQuery(SearchDocumentHandler.ORGANIZATION + ":" + AdminControllerAction.BIOMED_ORG_ID);
+		} catch (Exception e) {
+			throw new IOException(e);
 		}
 	}
 }
