@@ -199,11 +199,13 @@ public class NewsroomAction extends SBActionAdapter {
 		if(req.hasParameter("fieldSort")) {
 			if(req.getParameter("fieldSort").contains("title")) {
 				sql.append("a.title_txt ").append(sortDir);
-				sql.append(", a.create_dt ").append(sortDir);
 			} else {
 				sql.append("a.publish_dt ").append(sortDir);
-				sql.append(", a.create_dt ").append(sortDir);
 			}
+
+			//Secondarily order by create_dt (import Date)
+			sql.append(", a.create_dt ").append(sortDir);
+
 		} else {
 			sql.append("a.create_dt ").append(sortDir);
 		}
@@ -295,6 +297,7 @@ public class NewsroomAction extends SBActionAdapter {
 			}
 		}
 
+		//Override FieldSort if present to take into account updateDate secondarily.
 		String fieldSort = StringUtil.checkVal(req.getParameter("fieldSort"));
 		String sortDir = StringUtil.checkVal(req.getParameter("sortDirection"), "desc");
 		if(req.hasParameter("fieldSort")) {
