@@ -106,6 +106,10 @@ public class NewsroomAction extends SBActionAdapter {
 
 			ModuleVO mod = (ModuleVO) attributes.get(Constants.MODULE_DATA);
 			SolrResponseVO resp = (SolrResponseVO)mod.getActionData();
+			if(resp.getResultDocuments().isEmpty()) {
+				this.putModuleData(Collections.emptyList(), 0, false);
+				return;
+			}
 			List<Object> params = getIdsFromDocs(resp);
 			params.add(req.getParameter(FEED_GROUP_ID));
 
@@ -169,6 +173,7 @@ public class NewsroomAction extends SBActionAdapter {
 	 */
 	private String loadFilteredArticleSql(int size, ActionRequest req, boolean loadFromFilterId) {
 		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
+		String sortDir = StringUtil.checkVal(req.getParameter("sortDirection"), "desc");
 		StringBuilder sql = new StringBuilder(800);
 		sql.append(DBUtil.SELECT_CLAUSE).append("a.rss_article_id, a.rss_entity_id, ");
 		sql.append("a.publication_nm, a.article_guid, a.article_url, a.article_source_type, ");
@@ -192,19 +197,17 @@ public class NewsroomAction extends SBActionAdapter {
 		}
 		sql.append(" order by ");
 		if(req.hasParameter("fieldSort")) {
-			switch(req.getParameter("fieldSort")) {
-				case "title":
-					sql.append("filter_title_txt ");
-					break;
-				case "publishDate":
-				default:
-					sql.append("a.create_dt ");
-					break;
+			if(req.getParameter("fieldSort").contains("title")) {
+				sql.append("a.title_txt ").append(sortDir);
+				sql.append(", a.create_dt ").append(sortDir);
+			} else {
+				sql.append("a.publish_dt ").append(sortDir);
+				sql.append(", a.create_dt ").append(sortDir);
 			}
 		} else {
-			sql.append("a.create_dt ");
+			sql.append("a.create_dt ").append(sortDir);
 		}
-		sql.append(StringUtil.checkVal(req.getParameter("sortDirection"), "desc"));
+
 		return sql.toString();
 	}
 
@@ -292,6 +295,11 @@ public class NewsroomAction extends SBActionAdapter {
 			}
 		}
 
+		String fieldSort = StringUtil.checkVal(req.getParameter("fieldSort"));
+		String sortDir = StringUtil.checkVal(req.getParameter("sortDirection"), "desc");
+		if(req.hasParameter("fieldSort")) {
+			req.setParameter("fieldSort", StringUtil.join(fieldSort, " ", sortDir, ", updateDate"));
+		}
 		req.setParameter("fq", fq.toArray(new String[fq.size()]), true);
 		req.setParameter("allowCustom", "true");
 	}
