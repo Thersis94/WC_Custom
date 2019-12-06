@@ -60,7 +60,7 @@ public class RSSOOBIndexer extends RSSArticleIndexer {
 		log.debug("adding single Update: " + itemIds);
 		SolrClient server = makeServer();
 		try (SolrActionUtil util = new SolrActionUtil(server)) {
-				util.addDocuments(getDocuments(null, Arrays.asList(itemIds)));
+			util.addDocuments(getDocuments(loadArticleIds(Arrays.asList(itemIds))));
 		} catch (Exception e) {
 			log.error("Failed to index Update with id=" + itemIds, e);
 		}
