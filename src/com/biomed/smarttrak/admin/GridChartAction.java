@@ -247,8 +247,8 @@ public class GridChartAction extends SBActionAdapter {
 			ps.setString(1, gridId);
 			ps.setString(2, gridId);
 			ResultSet rs = ps.executeQuery();
-			rs.next();
-			numCols = rs.getInt("num_cols");
+			if (rs.next())
+				numCols = rs.getInt("num_cols");
 		} catch(Exception e) {
 			log.error("Unable to retrieve the number of columns", e);
 		}
@@ -731,8 +731,8 @@ public class GridChartAction extends SBActionAdapter {
 
 			log.debug(ps);
 			ResultSet rs = ps.executeQuery();
-			rs.next();
-			count = rs.getInt(1);
+			if (rs.next())
+				count = rs.getInt(1);
 		}
 
 		return count;
