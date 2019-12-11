@@ -129,6 +129,8 @@ public class LinkReportVO extends AbstractSBReportVO {
 			HSSFCell cell = row.createCell(++cellCnt);
 			cell.setCellValue(vo.getSection());
 			cell = row.createCell(++cellCnt);
+			cell.setCellValue(vo.getParentNm());
+			cell = row.createCell(++cellCnt);
 			cell.setCellValue(vo.getPageNm());
 			cell = row.createCell(++cellCnt);
 			cell.setCellValue(Convert.formatDate(vo.getLastChecked(), Convert.DATE_SLASH_PATTERN));
@@ -165,6 +167,7 @@ public class LinkReportVO extends AbstractSBReportVO {
 	protected Map<String, String> getHeader() {
 		Map<String, String> hdr = new LinkedHashMap<>();
 		hdr.put("SECTION","Section");
+		hdr.put("PARENT_NM","Parent Name");
 		hdr.put("PAGE_NM","Page Name");
 		hdr.put("DATE","Date checked");
 		hdr.put("CODE","Response Code");
