@@ -5,7 +5,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
@@ -74,6 +73,7 @@ public class GapAnalysisAction extends SectionHierarchyAction {
 
 	public static final String GAP_ROOT_ID = "GAP_ANALYSIS_ROOT";
 	public static final String GAP_CACHE_KEY = "GAP_ANALYSIS_TREE_CACHE_KEY";
+	public static final String SEL_NODES = "selNodes";
 	private String[] selNodes;
 	public GapAnalysisAction() {
 		super();
@@ -90,7 +90,7 @@ public class GapAnalysisAction extends SectionHierarchyAction {
 	public void retrieve(ActionRequest req) throws ActionException {
 		SecurityController.isGaAuth(req);
 
-		if (req.hasParameter("selNodes")) {
+		if (req.hasParameter(SEL_NODES)) {
 			GapTableVO gtv = getGapTable(req, true);
 
 			//forward to Report if parameter present.
@@ -130,7 +130,7 @@ public class GapAnalysisAction extends SectionHierarchyAction {
 
 		req.setParameter("sectionId", null);
 		//Filter the List of Nodes to just the ones we want.
-		selNodes = req.getParameterValues("selNodes");
+		selNodes = req.getParameterValues(SEL_NODES);
 		gtv.setHeaders(filterNodes(getColData(req)));
 
 		//Get Table Body Data based on columns in the GTV.
@@ -481,11 +481,11 @@ public class GapAnalysisAction extends SectionHierarchyAction {
 	 * @throws ActionException
 	 */
 	private void loadGapTableData(ActionRequest req, GapTableVO gtv, boolean useSolr) throws ActionException {
-		Map<String, GapCompanyVO> companies = Collections.emptyMap();
+		Map<String, GapCompanyVO> companies;
 
 		//Load Data for Companies using either Solr or DB.
 		if(useSolr) {
-			companies = loadCompaniesSolr(gtv, req);
+			companies = loadCompaniesSolr(req);
 		} else {
 
 			//Load Attributes we want to search for.
@@ -545,12 +545,11 @@ public class GapAnalysisAction extends SectionHierarchyAction {
 	 * Helper method connects to Solr and retrieves Gap Company Data.  DB Queries
 	 * are slow, Solr is about 99% faster.
 	 * parameters.
-	 * @param gtv
 	 * @param req
 	 * @return
 	 * @throws ActionException
 	 */
-	private Map<String, GapCompanyVO> loadCompaniesSolr(GapTableVO gtv, ActionRequest req) throws ActionException {
+	private Map<String, GapCompanyVO> loadCompaniesSolr(ActionRequest req) throws ActionException {
 		Map<String, GapCompanyVO> companies = new HashMap<>();
 
 		// Build the solr action
@@ -644,7 +643,7 @@ public class GapAnalysisAction extends SectionHierarchyAction {
 
 		//build a list of filter queries
 		List<String> fq = new ArrayList<>();
-		for(String n : req.getParameterValues("selNodes")) {
+		for(String n : req.getParameterValues(SEL_NODES)) {
 			fq.add(StringUtil.join("section:", n));
 		}
 
