@@ -57,6 +57,7 @@ public class MTSDocumentVO extends DocumentVO {
 	private String authorId;
 	private String sbActionId;
 	private String infoBar;
+	private int dataFeedProcessedFlag;
 	
 	// Sub-Beans
 	private List<AssetVO> assets = new ArrayList<>();
@@ -418,6 +419,15 @@ public class MTSDocumentVO extends DocumentVO {
 	 */
 	public MTSUserVO getAuthor() {
 		return author;
+	}
+
+	@Column(name="data_feed_processed_flg")
+	public int getSentFlag() {
+		return dataFeedProcessedFlag;
+	}
+
+	public void setSentFlag(int dataFeedProcessedFlag) {
+		this.dataFeedProcessedFlag = dataFeedProcessedFlag;
 	}
 
 	/**

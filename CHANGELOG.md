@@ -1,5 +1,27 @@
 WC_Custom Changelog (auto-generated)
 
+## [3.41.1](https://github.com/smtadmin/WC_Custom/compare/3.41.0...3.41.1) (2019-12-06)
+
+
+### Bug Fixes
+
+* **ST-205:** Change how we index feeds. ([7a8d399](https://github.com/smtadmin/WC_Custom/commit/7a8d399))
+* **ST-205:** Fix issues with OOB indexing. ([a97be97](https://github.com/smtadmin/WC_Custom/commit/a97be97))
+* **ST-205:** Remove debugging line. ([857d689](https://github.com/smtadmin/WC_Custom/commit/857d689))
+
+# [3.41.0](https://github.com/smtadmin/WC_Custom/compare/3.40.0...3.41.0) (2019-12-04)
+
+
+### Bug Fixes
+
+* **MTS-i34:** Define new reports per ticket/request ([5546f12](https://github.com/smtadmin/WC_Custom/commit/5546f12))
+* **WSLA Migration:** Final data imports and corrections ([29fda3a](https://github.com/smtadmin/WC_Custom/commit/29fda3a))
+
+
+### Features
+
+* **feature-mts-i43:** alter content feed to look for a sent flag not published yesterday. ([50ce69a](https://github.com/smtadmin/WC_Custom/commit/50ce69a))
+
 # [3.40.0](https://github.com/smtadmin/WC_Custom/compare/3.39.2...3.40.0) (2019-11-25)
 
 

@@ -14,11 +14,9 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.util.Convert;
-
 // WC Libs
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.action.user.UserLoginReport;
-import com.smt.sitebuilder.action.user.UserLoginReport.ProfileReportVO;
 
 /****************************************************************************
  * <b>Title</b>: MTSReportAction.java
@@ -34,7 +32,7 @@ import com.smt.sitebuilder.action.user.UserLoginReport.ProfileReportVO;
  ****************************************************************************/
 
 public class MTSReportAction extends SimpleActionAdapter {
-	
+
 	/**
 	 * Key to be passed to utilize this action
 	 */
@@ -63,7 +61,7 @@ public class MTSReportAction extends SimpleActionAdapter {
 	public MTSReportAction(ActionInitVO arg0) {
 		super(arg0);
 	}
-	
+
 	/*
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#list(com.siliconmtn.action.ActionRequest)
@@ -71,10 +69,10 @@ public class MTSReportAction extends SimpleActionAdapter {
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		if (! req.hasParameter("json")) return;
-		
+
 		String listType = req.getStringParameter(SELECT_KEY);
 		GenericVO vo = keyMap.get(listType);
-		
+
 		try {
 			if (vo == null) throw new InvalidDataException("List Type Not Found in KeyMap");
 			else if (Convert.formatBoolean(vo.getValue())) {
@@ -90,23 +88,19 @@ public class MTSReportAction extends SimpleActionAdapter {
 			putModuleData(null, 0, false, e.getLocalizedMessage(), true);
 		}
 	}
-	
+
 	/**
 	 * Retrieves the data for the login report
 	 * @param req
 	 * @return
 	 */
-	public List<ProfileReportVO> getUserLogins(ActionRequest req) {
+	public List<Object> getUserLogins(ActionRequest req) {
 		UserLoginReport rpt = new UserLoginReport(getDBConnection(), getAttributes());
-		
-		List<ProfileReportVO> rptData = new ArrayList<>();
 		List<GenericVO> gData = rpt.detailReport(req);
-		for (GenericVO gvo : gData) {
-			rptData.add((ProfileReportVO)gvo.getValue());
-		}
-		
+		List<Object> rptData = new ArrayList<>(gData.size());
+		for (GenericVO gvo : gData)
+			rptData.add(gvo.getValue());
+
 		return rptData;
 	}
-
 }
-

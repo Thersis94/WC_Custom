@@ -38,6 +38,7 @@ import com.smt.sitebuilder.util.MessageSender;
 public class AnalystPostProcessor extends SBActionAdapter {
 
 	public static final String CFG_ZOHO_TICKET_EMAIL = "smarttrakAnalystZOHOEmail";
+	public static final String CFG_JIRA_TICKET_EMAIL = "smarttrakAnalystJIRAEmail";
 	public static final String CFG_ASK_AN_ANALYST_MESSAGE_ID = "smarttrakAnalystMessageId";
 	public static final String CFG_ASK_AN_ANALYST_TYPE_ID = "smarttrakAnalystTypeId";
 	public static final String CFG_ASK_AN_ANALYST_REFERRER_URL_ID = "smarttrakAnalystReffererId";
@@ -83,7 +84,9 @@ public class AnalystPostProcessor extends SBActionAdapter {
 
 		try {
 			EmailMessageVO email = new EmailMessageVO();
+			//TODO - Remove the reference to ZOHO when testing complete.
 			email.addRecipient((String)getAttribute(CFG_ZOHO_TICKET_EMAIL));
+			email.addRecipient((String)getAttribute(CFG_JIRA_TICKET_EMAIL));
 			email.setFrom((String)getAttribute(CFG_SMARTTRAK_EMAIL));
 			email.setHtmlBody(body.toString());
 			email.setSubject(subject.toString());
