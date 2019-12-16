@@ -7,9 +7,10 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -21,6 +22,7 @@ import org.quartz.JobExecutionException;
 
 // GSON 2.3
 import com.google.gson.Gson;
+import com.siliconmtn.db.DBUtil;
 // SMT Base libs
 import com.siliconmtn.db.DatabaseConnection;
 import com.siliconmtn.db.orm.DBProcessor;
@@ -71,9 +73,7 @@ public class ContentFeedJob extends AbstractSMTJob {
 		cfj.attributes.put("FEED_TITLE", "MTS Publications News Feed");
 		cfj.attributes.put("FEED_DESC", "We help you better understand your world as you make key decisions impacting your day-to-day business and long-term strategic goals.");
 		cfj.attributes.put("BASE_URL", "https://www.mystrategist.com");
-		cfj.attributes.put("FEED_FILE_PATH", "/home/jackson/Desktop/");
-		cfj.attributes.put("START_DT", "2019-09-15");
-		cfj.attributes.put("END_DT", "2019-11-30");
+		cfj.attributes.put("FEED_FILE_PATH", "/home/ryan/Desktop/");
 		cfj.attributes.put(Constants.CUSTOM_DB_SCHEMA, "custom.");
 		cfj.isManualJob = true;
 		cfj.setDBConnection();
@@ -92,7 +92,7 @@ public class ContentFeedJob extends AbstractSMTJob {
 	private void setDBConnection() throws DatabaseException, InvalidDataException {
 		DatabaseConnection dc = new DatabaseConnection();
 		dc.setDriverClass("org.postgresql.Driver");
-		dc.setUrl("jdbc:postgresql://playstation:5432/jmckain_webcrescendo_sb?defaultRowFetchSize=25&amp;prepareThreshold=3");
+		dc.setUrl("jdbc:postgresql://sonic:5432/webcrescendo_dev112019_sb?defaultRowFetchSize=25&amp;prepareThreshold=3");
 		dc.setUserName("ryan_user_sb");
 		dc.setPassword("sqll0gin");
 		conn = dc.getConnection();
@@ -125,8 +125,9 @@ public class ContentFeedJob extends AbstractSMTJob {
 	/**
 	 * Runs the workflow for sending the documents
 	 * @throws IOException 
+	 * @throws com.siliconmtn.db.util.DatabaseException 
 	 */
-	public void processDocuments(StringBuilder msg) throws IOException {
+	public void processDocuments(StringBuilder msg) throws Exception {
 		// Get the data fields
 		String fileLoc = (String)attributes.get("FEED_RECPT");
 		String feedTitle = (String)attributes.get("FEED_TITLE");
@@ -152,9 +153,46 @@ public class ContentFeedJob extends AbstractSMTJob {
 			if (isManualJob) saveFile(json, fileLoc, msg);
 			else saveFile(json, fileLoc, host, user, pwd, msg);
 		}
+		
+		setSentFlags(docs.getUniqueIds());
 
 		msg.append("Success");
 	}
+
+	/**
+	 * sets all the sent flags for published articles before todays job to sent
+	 * @param uniqueIds 
+	 * @throws com.siliconmtn.db.util.DatabaseException 
+	 * 
+	 */
+	private void setSentFlags(List<String> uniqueIds) throws com.siliconmtn.db.util.DatabaseException, DatabaseException {
+		
+		if(uniqueIds == null || uniqueIds.isEmpty())return;
+		
+		String schema = (String)this.attributes.get(Constants.CUSTOM_DB_SCHEMA);
+		StringBuilder sql = new StringBuilder(134);
+				
+		sql.append(DBUtil.UPDATE_CLAUSE).append(schema).append("mts_document ");
+		sql.append("set data_feed_processed_flg = ? ");
+		sql.append(DBUtil.WHERE_CLAUSE).append("unique_cd in ( ").append(DBUtil.preparedStatmentQuestion(uniqueIds.size())).append(" ) ");
+		
+		log.debug(" sql " + sql.toString() +"|1 and than ids : " +uniqueIds);
+		
+		try (PreparedStatement ps = conn.prepareStatement(sql.toString())) {
+			//set the flag value of 1
+			ps.setInt(1, 1);
+			
+			//loop the unique ids
+			for(int x =0 ; x < uniqueIds.size() ; x++) {
+				ps.setString(x+2, uniqueIds.get(x));
+			}
+
+			ps.executeUpdate();
+		} catch (SQLException sqle) {
+			throw new DatabaseException(sqle);
+		}
+	}
+
 
 	/** 
 	 * saves the file to the file system 
@@ -163,6 +201,7 @@ public class ContentFeedJob extends AbstractSMTJob {
 	 * @throws IOException
 	 */
 	protected void saveFile(String json, String fileLoc, StringBuilder msg) throws IOException {
+		log.debug("saving to file");
 		Path p = Paths.get(attributes.get("FEED_FILE_PATH") + fileLoc);
 		try(BufferedWriter bw = Files.newBufferedWriter(p)) {
 			bw.write(json);
@@ -179,6 +218,7 @@ public class ContentFeedJob extends AbstractSMTJob {
 	 */
 	protected void saveFile(String json, String fileLoc, String host, String user, String pwd, StringBuilder msg) 
 			throws IOException {
+		log.debug("saving to infodesk");
 		// Connect to the server and authenticate
 		Connection sftpConn = new Connection(host);
 		try {
@@ -223,19 +263,12 @@ public class ContentFeedJob extends AbstractSMTJob {
 		sql.append("inner join document c on b.action_id = c.action_id ");
 		sql.append("left outer join ").append(schema);
 		sql.append("mts_user u on a.author_id = u.user_id ");
-		sql.append("where publish_dt between ? and ? and publication_id = 'MEDTECH-STRATEGIST' ");
+		sql.append("where publish_dt <= ? and publication_id = 'MEDTECH-STRATEGIST' and a.data_feed_processed_flg = '0' ");
 		sql.append("order by publish_dt ");
 
 		List<Object> vals = new ArrayList<>();
-		if (isManualJob) {
-			vals.add(Convert.formatStartDate((String)attributes.get("START_DT")));
-			vals.add(Convert.formatEndDate((String)attributes.get("END_DT")));
-		} else {
-			Date startDt = Convert.formatStartDate((String)attributes.get("START_DT")); //this can be set in the admintool for a manual re-run, to catch up missed days.
-			Date yesterday = Convert.formatDate(new Date(), Calendar.DAY_OF_YEAR, -1);
-			vals.add(Convert.formatStartDate(startDt != null ? startDt : yesterday));
-			vals.add(Convert.formatEndDate(yesterday));
-		}
+		
+		vals.add(Convert.formatEndDate(new Date()));
 
 		log.debug(sql.length() + "|" + sql + "|" + vals);
 

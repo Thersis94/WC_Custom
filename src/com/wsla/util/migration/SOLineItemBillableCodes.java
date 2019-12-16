@@ -35,6 +35,7 @@ public class SOLineItemBillableCodes extends AbsImporter {
 	private List<SOLNIFileVO> data = new ArrayList<>(500000);
 	private Map<String, String> ticketIds = new HashMap<>(100000);
 	private Map<String, String> ticketCommentIds = new HashMap<>(800000);
+	private Map<String, String> activityMap = new HashMap<>(200);
 
 	/* (non-Javadoc)
 	 * @see com.wsla.util.migration.AbstractImporter#run()
@@ -49,6 +50,7 @@ public class SOLineItemBillableCodes extends AbsImporter {
 		log.info(String.format("loaded %d rows from %d files", data.size(), files.length));
 		loadTicketIds();
 		loadTicketCommentIds();
+		loadActivities();
 
 		//Note we don't have a delete here; deleting the tickets will cascade into the tables affecting LineItems
 
@@ -73,20 +75,20 @@ public class SOLineItemBillableCodes extends AbsImporter {
 				TicketCommentVO cmt = new TicketCommentVO();
 				transposeCommentData(vo, cmt);
 
-				//we can only update records where we married their primary key - report all failures
-				if (!StringUtil.isEmpty(cmt.getTicketCommentId()) && !StringUtil.isEmpty(cmt.getComment())) {
+				//we can only update records where we married their unique key - report all failures
+				if (!StringUtil.isEmpty(cmt.getTicketCommentId()) && !StringUtil.isEmpty(cmt.getActivityType())) {
 					activities.add(cmt);
 				} else if (StringUtil.isEmpty(cmt.getTicketCommentId())) {
-					missingTicketIds.add(cmt.getActivityType());
+					missingTicketIds.add(cmt.getComment());
 				}
 			}
 		}
-		log.info(String.format("found %d service line items (activities)", activities.size()));
+		log.info(String.format("found %d service line items (activities) to update", activities.size()));
 
 		if (!missingTicketIds.isEmpty()) {
+			log.warn(String.format("skipping %d tickets that do not exist", missingTicketIds.size()));
 			for (String id : missingTicketIds)
-				System.err.println(id);
-			throw new RuntimeException(String.format("could not identify %d ticket comments", missingTicketIds.size()));
+				log.warn(id);
 		}
 
 		saveActivities(activities);
@@ -97,12 +99,12 @@ public class SOLineItemBillableCodes extends AbsImporter {
 	 * @param activities
 	 */
 	private void saveActivities(List<TicketCommentVO> activities) {
-		String sql = StringUtil.join(DBUtil.UPDATE_CLAUSE, schema, "wsla_ticket_comment set comment_txt=? where ticket_comment_id=?");
+		String sql = StringUtil.join(DBUtil.UPDATE_CLAUSE, schema, "wsla_ticket_comment set activity_type_cd=? where ticket_comment_id=?");
 		log.debug(sql);
 
 		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
 			for (TicketCommentVO vo : activities) {
-				ps.setString(1, vo.getComment());
+				ps.setString(1, vo.getActivityType());
 				ps.setString(2, vo.getTicketCommentId());
 				ps.addBatch();
 			}
@@ -124,12 +126,11 @@ public class SOLineItemBillableCodes extends AbsImporter {
 	 **/
 	private TicketCommentVO transposeCommentData(SOLNIFileVO dataVo, TicketCommentVO vo) {
 		vo.setTicketId(ticketIds.get(dataVo.getSoNumber())); //transposed
-		vo.setComment(dataVo.getSWComments()); //this getter concats the 12 individual columns for us
 		vo.setCreateDate(dataVo.getChronoReceivedDate());
+		vo.setActivityType(activityMap.get(dataVo.getProductId()));
 		String key = vo.getTicketId()+"--"+Convert.formatDate(vo.getCreateDate(), "yyyy-MM-dd HH:mm:ss");
-		vo.setActivityType(dataVo.getSoNumber() + "~"+key);
+		vo.setComment(dataVo.getSoNumber() + "~"+key);
 		vo.setTicketCommentId(ticketCommentIds.get(key));
-
 		return vo;
 	}
 
@@ -151,5 +152,61 @@ public class SOLineItemBillableCodes extends AbsImporter {
 		String sql = StringUtil.join("select ticket_id||'--'||to_char(create_dt, 'yyyy-MM-dd HH24:MI:SS') as key, ticket_comment_id as value from ", schema, "wsla_ticket_comment");
 		MapUtil.asMap(ticketCommentIds, db.executeSelect(sql, null, new GenericVO()));
 		log.debug(String.format("loaded %d ticketCommentIds", ticketCommentIds.size()));
+	}
+
+
+	/**
+	 * Populate the Map of activities.
+	 * These came from the master listing Excel file - from Steve.
+	 * Take what doesn't align in Cypher and throw them into 'other'.
+	 */
+	private void loadActivities() {
+		activityMap.put("CHATENTR01","EMAIL_END_USER");
+		activityMap.put("CHATENTR02","EMAIL_CAS");
+		activityMap.put("CHATENTR03","EMAIL_RETAILER");
+		activityMap.put("CHATENTR04","EMAIL_OEM");
+		activityMap.put("CHATENTR05","EMAIL_ESC_TECH");
+		activityMap.put("CHATSALD01","EMAIL_OUT_END_USER");
+		activityMap.put("CHATSALD02","EMAIL_OUT_CAS");
+		activityMap.put("CHATSALD03","EMAIL_OUT_RETAILER");
+		activityMap.put("CHATSALD04","EMAIL_OUT_OEM");
+		activityMap.put("CHATSALD05","EMAIL_OUT_ESC_TECH");
+		activityMap.put("CONTINILAM","PHONE_END_USER");
+		activityMap.put("CONTINIWEB","EMAIL_END_USER");
+		activityMap.put("EMLENTR01","EMAIL_END_USER");
+		activityMap.put("EMLENTR02","EMAIL_CAS");
+		activityMap.put("EMLENTR03","EMAIL_RETAILER");
+		activityMap.put("EMLENTR04","EMAIL_OEM");
+		activityMap.put("EMLENTR05","EMAIL_ESC_TECH");
+		activityMap.put("EMLSALD01","EMAIL_OUT_END_USER");
+		activityMap.put("EMLSALD02","EMAIL_OUT_CAS");
+		activityMap.put("EMLSALD03","EMAIL_OUT_RETAILER");
+		activityMap.put("EMLSALD04","EMAIL_OUT_OEM");
+		activityMap.put("EMLSALD05","EMAIL_OUT_ESC_TECH");
+		activityMap.put("EMLSALD06","EMAIL_OUT_ESC_MGMT");
+		activityMap.put("LLAMENTR01","PHONE_END_USER");
+		activityMap.put("LLAMENTR02","PHONE_CAS");
+		activityMap.put("LLAMENTR03","PHONE_RETAILER");
+		activityMap.put("LLAMENTR04","PHONE_OEM");
+		activityMap.put("LLAMENTR05","PHONE_ESC_TECH");
+		activityMap.put("LLAMSALD01","PHONE_OUT_END_USER");
+		activityMap.put("LLAMSALD02","PHONE_OUT_CAS");
+		activityMap.put("LLAMSALD03","PHONE_OUT_RETAILER");
+		activityMap.put("LLAMSALD04","PHONE_OUT_OEM");
+		activityMap.put("LLAMSALD05","PHONE_OUT_ESC_TECH");
+		activityMap.put("LLAMSALD06","PHONE_OUT_ESC_MGMT");
+		activityMap.put("ZENENTR01","EMAIL_END_USER");
+		activityMap.put("ZENENTR02","EMAIL_CAS");
+		activityMap.put("ZENENTR03","EMAIL_RETAILER");
+		activityMap.put("ZENENTR04","EMAIL_OEM");
+		activityMap.put("ZENENTR05","EMAIL_ESC_TECH");
+		activityMap.put("ZENSALD01","EMAIL_OUT_END_USER");
+		activityMap.put("ZENSALD02","EMAIL_OUT_CAS");
+		activityMap.put("ZENSALD03","EMAIL_OUT_RETAILER");
+		activityMap.put("ZENSALD04","EMAIL_OUT_OEM");
+		activityMap.put("ZENSALD05","EMAIL_OUT_ESC_TECH");
+		activityMap.put("ZENSALD06","EMAIL_OUT_ESC_MGMT");
+
+		log.debug("loaded " + activityMap.size() + " activities");
 	}
 }
