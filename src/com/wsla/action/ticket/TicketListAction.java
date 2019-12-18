@@ -234,7 +234,7 @@ public class TicketListAction extends SimpleActionAdapter {
 				questions = 1;
 			}
 			return "and a.status_cd in ( " + DBUtil.preparedStatmentQuestion(questions) + ") ";
-		} else if (!StringUtil.isEmpty(status) && !"ALL".equals(status)) {
+		} else if (!StringUtil.isEmpty(status) && !"ALL".equals(status) && !"CM_OPEN".equals(status)) {
 			return "and a.status_cd != 'CLOSED' ";
 		} 
 
@@ -316,23 +316,24 @@ public class TicketListAction extends SimpleActionAdapter {
 		base.append(DBUtil.FROM_CLAUSE).append(getCustomSchema()).append("wsla_ticket a ");
 		base.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("wsla_user e ");
 		base.append("on a.originator_user_id = e.user_id ");
+		base.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("wsla_ticket_ledger i ");
+		base.append("on a.ticket_id = i.ticket_id and i.status_cd = 'OPENED' ");
+		base.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("wsla_ticket_status d ");
+		base.append("ON a.status_cd = d.status_cd ");
 		base.append(DBUtil.LEFT_OUTER_JOIN).append(getCustomSchema()).append("wsla_product_serial b ");
 		base.append("on a.product_serial_id = b.product_serial_id ");
 		base.append(DBUtil.LEFT_OUTER_JOIN).append(getCustomSchema()).append("wsla_product_master c ");
 		base.append("on b.product_id = c.product_id ");
-		base.append(DBUtil.LEFT_OUTER_JOIN).append(getCustomSchema()).append("wsla_ticket_status d ");
-		base.append("ON a.status_cd = d.status_cd ");
 		base.append(DBUtil.LEFT_OUTER_JOIN).append(getCustomSchema()).append("wsla_provider f ");
 		base.append("on a.oem_id = f.provider_id ");
 		base.append(DBUtil.LEFT_OUTER_JOIN).append(getCustomSchema()).append("wsla_provider_location g ");
 		base.append("on a.retailer_id = g.location_id ");
+		base.append(DBUtil.LEFT_OUTER_JOIN).append(getCustomSchema()).append("wsla_ticket_assignment ta ");
+		base.append("on a.ticket_id = ta.ticket_id and ta.assg_type_cd = 'CAS' ");
+		base.append(DBUtil.LEFT_OUTER_JOIN).append(getCustomSchema()).append("wsla_provider_location pl ");
+		base.append("on ta.location_id = pl.location_id ");
 		base.append(DBUtil.LEFT_OUTER_JOIN).append(getCustomSchema()).append("wsla_user h ");
 		base.append("on a.locked_by_id = h.user_id ");
-		base.append("left outer join custom.wsla_ticket_assignment ta on a.ticket_id = ta.ticket_id and ta.assg_type_cd = 'CAS' ");
-		base.append("left outer join custom.wsla_provider_location pl on ta.location_id = pl.location_id ");
-		base.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("wsla_ticket_ledger i ");
-		base.append("on a.ticket_id = i.ticket_id and i.status_cd = 'OPENED' ");
-		
 		
 		// Join if searching only for tickets that need a comment reply or have an open credit memo
 		if ("NEEDS_REPLY".equals(status)) {

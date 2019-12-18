@@ -126,6 +126,7 @@ public class GridVO extends BeanDataVO {
 	private List<GridUsageVO> usage;
 	private String legacyId;
 	private String legacyName;
+	private int yearNo;
 	
 	// Data containers
 	@Expose(serialize = false, deserialize = false)
@@ -1132,5 +1133,20 @@ public class GridVO extends BeanDataVO {
 
 	public void setLegacyName(String legacyName) {
 		this.legacyName = legacyName;
+	}
+
+	/**
+	 * @return the yearNo
+	 */
+	@Column(name="year_no")
+	public int getYearNo() {
+		return yearNo;
+	}
+
+	/**
+	 * @param yearNo the yearNo to set
+	 */
+	public void setYearNo(int yearNo) {
+		this.yearNo = yearNo;
 	}
 }

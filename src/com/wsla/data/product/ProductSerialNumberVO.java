@@ -35,6 +35,7 @@ public class ProductSerialNumberVO extends ProductVO {
 	private Date retailerDate;
 	private double retailerCost;
 	private int disposeFlag;
+	private int batchFlag;
 
 	// Bean Sub-Elements
 	private ProductVO product;
@@ -124,6 +125,15 @@ public class ProductSerialNumberVO extends ProductVO {
 	 */
 	public ProductVO getProduct() {
 		return product;
+	}
+
+	@Column(name="batch_flg")
+	public int getBatchFlag() {
+		return batchFlag;
+	}
+
+	public void setBatchFlag(int batchFlag) {
+		this.batchFlag = batchFlag;
 	}
 
 	/**

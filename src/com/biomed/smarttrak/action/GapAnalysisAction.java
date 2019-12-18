@@ -13,12 +13,14 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import org.apache.commons.lang.ArrayUtils;
+import org.apache.solr.common.SolrDocument;
 
 import com.biomed.smarttrak.admin.SectionHierarchyAction;
 import com.biomed.smarttrak.admin.report.GapAnalysisReportVO;
 import com.biomed.smarttrak.admin.vo.GapColumnVO;
 import com.biomed.smarttrak.security.SecurityController;
 import com.biomed.smarttrak.vo.GapCompanyVO;
+import com.biomed.smarttrak.vo.GapCompanyVO.StatusVal;
 import com.biomed.smarttrak.vo.GapProductVO;
 import com.biomed.smarttrak.vo.GapTableVO;
 import com.biomed.smarttrak.vo.GapTableVO.ColumnKey;
@@ -27,6 +29,7 @@ import com.biomed.smarttrak.vo.SectionVO;
 import com.biomed.smarttrak.vo.UserVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
+import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.Node;
 import com.siliconmtn.data.OrderedTree;
@@ -35,11 +38,16 @@ import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
+import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.EnumUtil;
 import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.util.UUIDGenerator;
+import com.smt.sitebuilder.action.search.SolrAction;
+import com.smt.sitebuilder.action.search.SolrResponseVO;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
+import com.smt.sitebuilder.search.SearchDocumentHandler;
 
 import net.sf.json.JSONObject;
 
@@ -54,6 +62,7 @@ import net.sf.json.JSONObject;
  * @author Billy Larsen
  * @version 1.0
  * @since Jan 13, 2017
+ * @since Dec 11, 2019, Billy Larsen.  Converted to utilize Solr for faster company retrieval.
  ****************************************************************************/
 public class GapAnalysisAction extends SectionHierarchyAction {
 
@@ -62,10 +71,9 @@ public class GapAnalysisAction extends SectionHierarchyAction {
 	 */
 	public enum AType {MARKET, CLASSIFICATION, INDICATION, TECHNOLOGY, APPROACH}
 
-	private static final String INNER_JOIN = DBUtil.INNER_JOIN;
-	private static final String FROM = DBUtil.FROM_CLAUSE;
 	public static final String GAP_ROOT_ID = "GAP_ANALYSIS_ROOT";
 	public static final String GAP_CACHE_KEY = "GAP_ANALYSIS_TREE_CACHE_KEY";
+	public static final String SEL_NODES = "selNodes";
 	private String[] selNodes;
 	public GapAnalysisAction() {
 		super();
@@ -82,18 +90,8 @@ public class GapAnalysisAction extends SectionHierarchyAction {
 	public void retrieve(ActionRequest req) throws ActionException {
 		SecurityController.isGaAuth(req);
 
-		if (req.hasParameter("selNodes")) {
-			//Instantiate GapTableVO to Store Data.
-			GapTableVO gtv = new GapTableVO();
-
-			req.setParameter("sectionId", null);
-			//Filter the List of Nodes to just the ones we want.
-			selNodes = req.getParameterValues("selNodes");
-			gtv.setHeaders(filterNodes(getColData(req)));
-
-			//Get Table Body Data based on columns in the GTV.
-			if (!gtv.getColumns().isEmpty())
-				loadGapTableData(gtv);
+		if (req.hasParameter(SEL_NODES)) {
+			GapTableVO gtv = getGapTable(req, true);
 
 			//forward to Report if parameter present.
 			if (req.hasParameter("buildReport")) {
@@ -119,6 +117,28 @@ public class GapAnalysisAction extends SectionHierarchyAction {
 		}
 	}
 
+	/**
+	 * Manage Retrieving a complete GapTableVO.
+	 * @param req	- Action Request
+	 * @param useSolr - Should we get data via solr or dbConn.  DB Used to Solr Indexing, Solr used for all other cases.
+	 * @return
+	 * @throws ActionException
+	 */
+	public GapTableVO getGapTable(ActionRequest req, boolean useSolr) throws ActionException {
+		//Instantiate GapTableVO to Store Data.
+		GapTableVO gtv = new GapTableVO();
+
+		req.setParameter("sectionId", null);
+		//Filter the List of Nodes to just the ones we want.
+		selNodes = req.getParameterValues(SEL_NODES);
+		gtv.setHeaders(filterNodes(getColData(req)));
+
+		//Get Table Body Data based on columns in the GTV.
+		if (!gtv.getColumns().isEmpty())
+			loadGapTableData(req, gtv, useSolr);
+
+		return gtv;
+	}
 
 	/**
 	 * turns the GapTableVO into a report to download from WC.
@@ -454,13 +474,27 @@ public class GapAnalysisAction extends SectionHierarchyAction {
 
 	/**
 	 * Helper method that manages retrieving the Gap Table Data and organizing it into the GapTable
-	 * @param selNodes
+	 * @param req
+	 * @param gtv
+	 * @param useSolr
 	 * @return
+	 * @throws ActionException
 	 */
-	private void loadGapTableData(GapTableVO gtv) {
-		Map<String, Map<AType, String>> attrs = loadColumnAttributes(gtv);
+	private void loadGapTableData(ActionRequest req, GapTableVO gtv, boolean useSolr) throws ActionException {
+		Map<String, GapCompanyVO> companies;
 
-		Map<String, GapCompanyVO> companies = loadCompanies(attrs, gtv);
+		//Load Data for Companies using either Solr or DB.
+		if(useSolr) {
+			companies = loadCompaniesSolr(req);
+		} else {
+
+			//Load Attributes we want to search for.
+			Map<String, Map<AType, String>> attrs = loadColumnAttributes(gtv);
+
+			//Load Company data from DB for indexing.
+			companies = loadCompanies(attrs, gtv);
+		}
+
 		log.debug("Retrieved " + companies.size() + " company Records.");
 		gtv.setCompanies(companies);
 	}
@@ -508,6 +542,116 @@ public class GapAnalysisAction extends SectionHierarchyAction {
 	}
 
 	/**
+	 * Helper method connects to Solr and retrieves Gap Company Data.  DB Queries
+	 * are slow, Solr is about 99% faster.
+	 * parameters.
+	 * @param req
+	 * @return
+	 * @throws ActionException
+	 */
+	private Map<String, GapCompanyVO> loadCompaniesSolr(ActionRequest req) throws ActionException {
+		Map<String, GapCompanyVO> companies = new HashMap<>();
+
+		// Build the solr action
+		ActionInterface sa = new SolrAction(actionInit);
+		sa.setDBConnection(dbConn);
+		sa.setAttributes(attributes);
+
+		//parse the request object
+		setSolrParams(req);
+
+		// Pass along the proper information for a search to be done.
+		ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
+		actionInit.setActionId((String)mod.getAttribute(ModuleVO.ATTRIBUTE_1));
+		req.setParameter("pmid", mod.getPageModuleId());
+
+		//Execute Solr.
+		sa.retrieve(req);
+
+		mod = (ModuleVO) attributes.get(Constants.MODULE_DATA);
+		SolrResponseVO resp = (SolrResponseVO)mod.getActionData();
+		//Convert solr Docs to GapCompanyVO
+		parseResponses(resp, companies);
+
+		/*
+		 * In instances where we have more than 100 records, update the page number
+		 * and re-call to solr.  This was a faster and safer solution than upping
+		 * the return count to something like 500.
+		 */
+		while(resp.getNextPage() != 0) {
+			//Update Offset for Pagination on request.
+			req.setParameter("page", "" + resp.getNextPage());
+
+			//Hit Solr Again
+			sa.retrieve(req);
+
+			//Load and Parse Data.
+			mod = (ModuleVO) attributes.get(Constants.MODULE_DATA);
+			resp = (SolrResponseVO)mod.getActionData();
+			parseResponses(resp, companies);
+		}
+
+		return companies;
+	}
+
+
+	/**
+	 * Parse the Documents in the SolrResponseVO into GapCompanyVO Records
+	 * @param resp
+	 * @param companies
+	 */
+	private void parseResponses(SolrResponseVO resp, Map<String, GapCompanyVO> companies) {
+		log.debug(String.format("Processing Result Page %d of %d", resp.getPage(), resp.getPageCount()));
+		String companyId;
+		GapCompanyVO gcv;
+		for(SolrDocument doc : resp.getResultDocuments()) {
+
+			//Extract the company Id
+			companyId = ((String)doc.getFieldValue(SearchDocumentHandler.DOCUMENT_ID)).split(SearchDocumentHandler.HIERARCHY_DELIMITER)[1];
+
+			//Check for existing or create the Record.
+			if(companies.containsKey(companyId)) {
+				gcv = companies.get(companyId);
+			} else {
+				gcv = new GapCompanyVO();
+				gcv.setCompanyId(companyId);
+				gcv.setCompanyName((String)doc.getFieldValue(SearchDocumentHandler.TITLE));
+				gcv.setShortCompanyName((String)doc.getFirstValue("shortCompanyName_s"));
+			}
+
+			// Get any existing regulation, parse the new ones and reset on the VO.
+			Map<String, StatusVal> regMap = gcv.getRegulations();
+			for(Object o : doc.getFieldValues("regulations_ss")) {
+				String[] reg = ((String)o).split(SearchDocumentHandler.HIERARCHY_DELIMITER);
+				regMap.put(reg[0], EnumUtil.safeValueOf(StatusVal.class, reg[1]));
+			}
+			gcv.setRegulations(regMap);
+
+			//Set company back on the companies map.
+			companies.put(companyId, gcv);
+		}
+
+	}
+
+	/**
+	 * Set Pagination counts and selected Node Ids we want to filter by.
+	 * @param req
+	 */
+	private void setSolrParams(ActionRequest req) {
+		int rpp = Convert.formatInteger(req.getParameter("limit"), 100);
+		req.setParameter("rpp", StringUtil.checkVal(rpp));
+
+		//build a list of filter queries
+		List<String> fq = new ArrayList<>();
+		for(String n : req.getParameterValues(SEL_NODES)) {
+			fq.add(StringUtil.join("section:", n));
+		}
+
+		req.setParameter("fq", fq.toArray(new String[fq.size()]), true);
+		req.setParameter("allowCustom", "true");
+	}
+
+	/**
 	 * Load Company Data based on attributes information.
 	 * @param attrs
 	 * @param gtv 
@@ -529,6 +673,8 @@ public class GapAnalysisAction extends SectionHierarchyAction {
 				//Populate PreparedStatement
 				for(Object p : params)
 					ps.setString(i++, (String)p);
+
+				log.debug(ps);
 
 				//Query for Companies.
 				addCompanies(companies, ps.executeQuery(), aData.getKey());
@@ -570,27 +716,26 @@ public class GapAnalysisAction extends SectionHierarchyAction {
 		StringBuilder sql = new StringBuilder(2500);
 		String custom = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		sql.append("select distinct g.short_nm_txt, g.company_nm, g.company_id, s.status_txt, r.region_id ");
-		sql.append(FROM).append(custom).append("biomedgps_product f ");
+		sql.append(DBUtil.FROM_CLAUSE).append(custom).append("biomedgps_product f ");
 		sql.append("left outer join ").append(custom).append("biomedgps_product_alliance_xr axr ");
 		sql.append("on axr.product_id = f.product_id and (axr.alliance_type_id != 'PROD_4' or axr.ga_display_flg > 0) ");
-		sql.append(INNER_JOIN).append(custom).append("biomedgps_product_regulatory r ");
+		sql.append(DBUtil.INNER_JOIN).append(custom).append("biomedgps_product_regulatory r ");
 		sql.append("on f.product_id = r.product_id ");
-		sql.append(INNER_JOIN).append(custom).append("biomedgps_regulatory_status s ");
+		sql.append(DBUtil.INNER_JOIN).append(custom).append("biomedgps_regulatory_status s ");
 		sql.append("on r.status_id = s.status_id ");
-		sql.append(INNER_JOIN).append(custom).append("biomedgps_company g ");
+		sql.append(DBUtil.INNER_JOIN).append(custom).append("biomedgps_company g ");
 		sql.append("on f.company_id = g.company_id and g.status_no = 'P' ");
-		sql.append(INNER_JOIN).append(custom).append("biomedgps_company_attribute_xr h ");
+		sql.append(DBUtil.INNER_JOIN).append(custom).append("biomedgps_company_attribute_xr h ");
 		sql.append("on g.company_id = h.company_id ");
-		sql.append(INNER_JOIN).append(custom).append("biomedgps_company_attribute i ");
+		sql.append(DBUtil.INNER_JOIN).append(custom).append("biomedgps_company_attribute i ");
 		sql.append("on h.attribute_id = i.attribute_id ");
-		sql.append(INNER_JOIN).append(custom).append("biomedgps_section j ");
+		sql.append(DBUtil.INNER_JOIN).append(custom).append("biomedgps_section j ");
 		sql.append("on i.section_id = j.section_id ");
 		sql.append("where 1 = 1 ");
 		sql.append("and f.product_id in ( ");
 		buildProdAttributeFilterQuery(sql, colAttrs);
 		sql.append(") order by g.company_nm");
 
-		log.debug(sql);
 		return sql.toString();
 	}
 
@@ -603,18 +748,18 @@ public class GapAnalysisAction extends SectionHierarchyAction {
 		StringBuilder sql = new StringBuilder(2500);
 		String custom = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		sql.append("select distinct f.short_nm, f.product_id, c.column_nm, g.company_nm ");
-		sql.append(FROM).append(custom).append("biomedgps_ga_column c ");
-		sql.append(INNER_JOIN).append(custom).append("biomedgps_ga_column_attribute_xr d ");
+		sql.append(DBUtil.FROM_CLAUSE).append(custom).append("biomedgps_ga_column c ");
+		sql.append(DBUtil.INNER_JOIN).append(custom).append("biomedgps_ga_column_attribute_xr d ");
 		sql.append("on d.ga_column_id = c.ga_column_id ");
-		sql.append(INNER_JOIN).append(custom).append("biomedgps_product_attribute pa ");
+		sql.append(DBUtil.INNER_JOIN).append(custom).append("biomedgps_product_attribute pa ");
 		sql.append("on d.attribute_id = pa.attribute_id ");
-		sql.append(INNER_JOIN).append(custom).append("biomedgps_product_attribute_xr e ");
+		sql.append(DBUtil.INNER_JOIN).append(custom).append("biomedgps_product_attribute_xr e ");
 		sql.append("on d.attribute_id = e.attribute_id ");
-		sql.append(INNER_JOIN).append(custom).append("biomedgps_product f ");
+		sql.append(DBUtil.INNER_JOIN).append(custom).append("biomedgps_product f ");
 		sql.append("on e.product_id = f.product_id ");
-		sql.append(INNER_JOIN).append(custom).append("biomedgps_product_regulatory r ");
+		sql.append(DBUtil.INNER_JOIN).append(custom).append("biomedgps_product_regulatory r ");
 		sql.append("on f.product_id = r.product_id ");
-		sql.append(INNER_JOIN).append(custom).append("biomedgps_company g ");
+		sql.append(DBUtil.INNER_JOIN).append(custom).append("biomedgps_company g ");
 		sql.append("on f.company_id = g.company_id ");
 		sql.append("where g.company_id = ? and f.status_no = ? ");
 		if(isUSRegion) {
@@ -639,14 +784,13 @@ public class GapAnalysisAction extends SectionHierarchyAction {
 	private void buildProdAttributeFilterQuery(StringBuilder sql, Map<AType, String> colAttrs) {
 		String custom = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
 
-		sql.append("select product_id ").append(FROM).append("( ");
 		sql.append("select distinct ip.product_id ");
-		sql.append(FROM).append(custom).append("biomedgps_product ip ");
-		sql.append(INNER_JOIN).append(custom).append("biomedgps_product_section ps ");
+		sql.append(DBUtil.FROM_CLAUSE).append(custom).append("biomedgps_product ip ");
+		sql.append(DBUtil.INNER_JOIN).append(custom).append("biomedgps_product_section ps ");
 		sql.append("on ip.product_id = ps.product_id and ps.section_id = ? ");
 		for(AType a : AType.values()) {
 			if(colAttrs.containsKey(a)) {
-				sql.append(INNER_JOIN).append(custom).append("biomedgps_product_attribute_xr ").append(a.toString()).append(" ");
+				sql.append(DBUtil.INNER_JOIN).append(custom).append("biomedgps_product_attribute_xr ").append(a.toString()).append(" ");
 				sql.append("on ip.product_id = ").append(a.toString()).append(".product_id and ip.status_no = 'P' ");
 			}
 		}
@@ -658,7 +802,6 @@ public class GapAnalysisAction extends SectionHierarchyAction {
 				sql.append(") ");
 			}
 		}
-		sql.append(") as res ");
 	}
 
 	/**
@@ -672,7 +815,7 @@ public class GapAnalysisAction extends SectionHierarchyAction {
 		sql.append("select c.ga_column_id, ");
 		for(AType a : AType.values()) {
 			sql.append("(select string_agg(tm.attribute_id, ',') ");
-			sql.append(FROM).append(custom).append("biomedgps_ga_column_attribute_xr xr ");
+			sql.append(DBUtil.FROM_CLAUSE).append(custom).append("biomedgps_ga_column_attribute_xr xr ");
 			sql.append("join ").append(custom).append("biomedgps_product_attribute tm on tm.attribute_id = xr.attribute_id ");
 			sql.append("where xr.ga_column_id = c.ga_column_id and tm.parent_id= '").append(a.toString()).append("') as ").append(a.toString()).append(", ");
 		}
@@ -680,7 +823,7 @@ public class GapAnalysisAction extends SectionHierarchyAction {
 		//Remove trailing comma
 		sql.setLength(sql.length() - 2);
 
-		sql.append(" ").append(FROM).append(custom).append("biomedgps_ga_column c ");
+		sql.append(DBUtil.FROM_CLAUSE).append(custom).append("biomedgps_ga_column c ");
 		sql.append("where c.ga_column_id in( ");
 		DBUtil.preparedStatmentQuestion(numColumns, sql);
 		sql.append(") group by c.ga_column_id ");
