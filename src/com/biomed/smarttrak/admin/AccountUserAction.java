@@ -741,6 +741,7 @@ public class AccountUserAction extends SBActionAdapter {
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			UUIDGenerator gen = new UUIDGenerator();
 			for (String skip : user.getSkippedMarkets()) {
+				log.debug("Skipping " + skip + " for " + user.getUserId());
 				ps.setString(1, gen.getUUID());
 				ps.setString(2, user.getUserId());
 				ps.setString(3, skip);

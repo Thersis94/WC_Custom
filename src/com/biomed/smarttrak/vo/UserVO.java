@@ -170,7 +170,10 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 		JOBLEVEL("7bff2e9e3f7f7fb90a0014217397e884", "jobLevel"),
 		INDUSTRY("5291b7693f8104240a001421db8d04ab", "industry"),
 		TYPE("35f1557ev46063760a00141dc2a4ec41", "fieldType"),
-		DIVISIONS("31037d2e3f859f100a001421e77994f4", "divisions", true);
+		DIVISIONS("31037d2e3f859f100a001421e77994f4", "divisions", true),
+		FUNCTION("ee5c7d698bf04b49a5de87f53c4e399c", "function"),
+		ROLE("ffb8f6fa670c441894308344c0830df7", "role"),
+		INTEREST("c81ac8cca48148e792b319eb82432b51", "interest");
 
 		private boolean isArray;
 		private String fieldId;
@@ -458,6 +461,15 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 
 	public String getJobCategory() {
 		return getFirstFrom(getAttribute(RegistrationMap.JOBCATEGORY.getFieldId()));
+	}
+	public String getInterest() {
+		return getFirstFrom(getAttribute(RegistrationMap.INTEREST.getFieldId()));
+	}
+	public String getFunction() {
+		return getFirstFrom(getAttribute(RegistrationMap.FUNCTION.getFieldId()));
+	}
+	public String getChosenRole() {
+		return getFirstFrom(getAttribute(RegistrationMap.ROLE.getFieldId()));
 	}
 	public String getJobLevel() {
 		return getFirstFrom(getAttribute(RegistrationMap.JOBLEVEL.getFieldId()));
