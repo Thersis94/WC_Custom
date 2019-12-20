@@ -168,12 +168,12 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 		NOTES("4bf7dbae3f767aa40a0014217d25df70", "notes"),
 		JOBCATEGORY("ef6444293f7c69630a001421545e4917", "jobCategory"),
 		JOBLEVEL("7bff2e9e3f7f7fb90a0014217397e884", "jobLevel"),
-		INDUSTRY("5291b7693f8104240a001421db8d04ab", "industry"),
-		TYPE("35f1557ev46063760a00141dc2a4ec41", "fieldType"),
-		DIVISIONS("31037d2e3f859f100a001421e77994f4", "divisions", true),
 		FUNCTION("ee5c7d698bf04b49a5de87f53c4e399c", "function"),
 		ROLE("ffb8f6fa670c441894308344c0830df7", "role"),
-		INTEREST("c81ac8cca48148e792b319eb82432b51", "interest");
+		INTEREST("c81ac8cca48148e792b319eb82432b51", "interest"),
+		INDUSTRY("5291b7693f8104240a001421db8d04ab", "industry"),
+		TYPE("35f1557ev46063760a00141dc2a4ec41", "fieldType"),
+		DIVISIONS("31037d2e3f859f100a001421e77994f4", "divisions", true);
 
 		private boolean isArray;
 		private String fieldId;
