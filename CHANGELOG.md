@@ -1,5 +1,15 @@
 WC_Custom Changelog (auto-generated)
 
+## [3.41.2](https://github.com/smtadmin/WC_Custom/compare/3.41.1...3.41.2) (2019-12-23)
+
+
+### Bug Fixes
+
+* **ST-229:** Allow users to download a copy of the broken links report. ([2849857](https://github.com/smtadmin/WC_Custom/commit/2849857))
+* **ST-229:** Remove unused imports. ([dbc8cf6](https://github.com/smtadmin/WC_Custom/commit/dbc8cf6))
+* **ST-234:** Add owner name column for products. ([1b33a5f](https://github.com/smtadmin/WC_Custom/commit/1b33a5f))
+* **ST-234:** Add parent name to report. ([667e107](https://github.com/smtadmin/WC_Custom/commit/667e107))
+
 ## [3.41.1](https://github.com/smtadmin/WC_Custom/compare/3.41.0...3.41.1) (2019-12-06)
 
 
