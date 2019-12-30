@@ -38,7 +38,7 @@ public class FinancialDashColumnSet implements Serializable {
 	public static final String DEFAULT_DISPLAY_TYPE = "CURYR";
 	
 	protected enum DisplayType {
-		CURYR("Current Year", 2, true), SIXQTR("Six Quarter Running", 4, true), FOURYR("Four-Year Comparison", 5, false),
+		CURYR("Current Year", 2, true), SIXQTR("Six Quarter Running", 4, true), FOURYR("Four-Year Comparison", 6, false),
 		YOY("Year-Over-Year", 3, false), CALYR("Calendar Year", 2, true), EIGHTQTR("Eight Quarter Running", 4, true), ALL("All History", 0, true);
 		
 		private String name;
@@ -187,12 +187,17 @@ public class FinancialDashColumnSet implements Serializable {
 
 	/**
 	 * Adds all columns for a four-year comparison display type.
+	 * Only display complete years. If the current quarter is not 4 the current year
+	 * is incomplete and should not be included in the comparison
 	 */
 	private void addFourYearColumns() {
+		if (currentQtr != 4)
+			this.addColumn(FinancialDashBaseAction.CALENDAR_YEAR + "-" + (calendarYear - 4), FinancialDashBaseAction.CALENDAR_YEAR + (calendarYear - 3));
 		this.addColumn(FinancialDashBaseAction.CALENDAR_YEAR + "-" + (calendarYear - 3), FinancialDashBaseAction.CALENDAR_YEAR + (calendarYear - 3));
 		this.addColumn(FinancialDashBaseAction.CALENDAR_YEAR + "-" + (calendarYear - 2), FinancialDashBaseAction.CALENDAR_YEAR + (calendarYear - 2));
 		this.addColumn(FinancialDashBaseAction.CALENDAR_YEAR + "-" + (calendarYear - 1), FinancialDashBaseAction.CALENDAR_YEAR + (calendarYear - 1));
-		this.addColumn(FinancialDashBaseAction.CALENDAR_YEAR + "-" + calendarYear, FinancialDashBaseAction.CALENDAR_YEAR + calendarYear);
+		if (currentQtr == 4)
+			this.addColumn(FinancialDashBaseAction.CALENDAR_YEAR + "-" + calendarYear, FinancialDashBaseAction.CALENDAR_YEAR + calendarYear);
 	}
 
 	/**
