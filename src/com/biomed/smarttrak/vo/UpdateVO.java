@@ -369,6 +369,7 @@ public class UpdateVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc
 	 * @return the creatorProfileId
 	 */
 	@Override
+	@SolrField(name=SearchDocumentHandler.AUTHOR)
 	@Column(name="creator_profile_id")
 	public String getCreatorProfileId() {
 		return creatorProfileId;

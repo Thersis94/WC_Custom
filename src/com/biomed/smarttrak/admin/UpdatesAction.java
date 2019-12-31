@@ -310,6 +310,11 @@ public class UpdatesAction extends ManagementAction {
 			fq.add(StringUtil.join("status_cd_s:", updateStatus));
 		}
 
+		String authorId = CookieUtil.getValue("updateAuthorNm", req.getCookies());
+		if(!StringUtil.isEmpty(authorId)) {
+			fq.add(StringUtil.join(SearchDocumentHandler.AUTHOR, ":", authorId));
+		}
+
 		//Check for ids we want to ignore. Is managed on front end with a timer.
 		if(req.hasParameter("skipIds")) {
 			for(String skipId : req.getParameterValues("skipIds")) {
@@ -491,9 +496,9 @@ public class UpdatesAction extends ManagementAction {
 	 * @return
 	 */
 	protected String formatRetrieveAllQuery(String schema, String... updateIds) {
-		StringBuilder sql = new StringBuilder(400);
+		StringBuilder sql = new StringBuilder(450);
 		sql.append("select up.update_id, up.title_txt, replace(up.message_txt, '&nbsp;', ' ') as message_txt, up.publish_dt, up.type_cd, us.update_section_xr_id, us.section_id, ");
-		sql.append("up.announcement_type, c.short_nm_txt as company_nm, prod.short_nm as product_nm, up.order_no, up.status_cd, ");
+		sql.append("up.announcement_type, c.short_nm_txt as company_nm, prod.short_nm as product_nm, up.order_no, up.status_cd, up.creator_profile_id, ");
 		sql.append("coalesce(up.product_id,prod.product_id) as product_id, coalesce(up.company_id, c.company_id) as company_id, ");
 		sql.append("m.short_nm as market_nm, coalesce(up.market_id, m.market_id) as market_id, up.publish_dt_sort, ");
 		sql.append("'").append(getAttribute(Constants.QS_PATH)).append("' as qs_path, up.create_dt "); //need to pass this through for building URLs
