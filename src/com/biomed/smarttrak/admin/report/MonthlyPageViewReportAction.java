@@ -223,12 +223,16 @@ public class MonthlyPageViewReportAction extends SimpleActionAdapter {
 	 */
 	private String getPageViewSql() {
 		String schema = getCustomSchema();
-		StringBuilder sql = new StringBuilder(1400);
+		StringBuilder sql = new StringBuilder(1700);
 		sql.append(DBUtil.SELECT_CLAUSE).append("concat('https://', a.site_alias_url, pu.request_uri_txt) as request_uri, ");
 		sql.append("count(pu.request_uri_txt) as hit_cnt, concat(to_char(to_timestamp (pu.visit_month_no::text, 'MM'), 'Mon'), ' ', pu.visit_year_no) as visit_dt, ");
 		sql.append("p.page_display_nm as section_nm, case when p.page_display_nm = 'Companies' then c.company_nm ");
 		sql.append("when p.page_display_nm = 'Markets' then m.market_nm when p.page_display_nm = 'Products' then pr.product_nm ");
-		sql.append("when p.page_display_nm = 'Analysis' then i.title_txt else p.page_display_nm end as page_nm ");
+		sql.append("when p.page_display_nm = 'Analysis' then i.title_txt else p.page_display_nm end as page_nm, ");
+		sql.append("case when p.page_display_nm = 'Companies' then coalesce(c.update_dt, c.create_dt) ");
+		sql.append("when p.page_display_nm = 'Markets' then coalesce(m.update_dt, m.create_dt) when p.page_display_nm = 'Products' then coalesce(pr.update_dt, pr.create_dt) "); 
+		sql.append("when p.page_display_nm = 'Analysis' then coalesce(i.publish_dt, i.update_dt, i.create_dt) else coalesce(p.update_dt, p.create_dt) end as publish_dt");
+
 		sql.append(DBUtil.FROM_CLAUSE).append("pageview_user pu ");
 
 		//Join Page data for Page Name
@@ -261,7 +265,8 @@ public class MonthlyPageViewReportAction extends SimpleActionAdapter {
 		sql.append("select profile_id from custom.biomedgps_user u where u.account_id = ? "); 
 		sql.append(") ");
 
-		sql.append(DBUtil.GROUP_BY).append("pu.request_uri_txt, pu.visit_year_no, pu.visit_month_no, p.page_display_nm, c.company_nm, m.market_nm, pr.product_nm, i.title_txt, a.site_alias_url ");
+		sql.append(DBUtil.GROUP_BY).append("pu.request_uri_txt, pu.visit_year_no, pu.visit_month_no, p.page_display_nm, c.company_nm, m.market_nm, pr.product_nm, i.title_txt, a.site_alias_url, ");
+		sql.append("c.create_dt, c.update_dt, m.create_dt, m.update_dt, pr.create_Dt, pr.update_dt, i.publish_dt, i.create_dt, i.update_dt, p.create_dt, p.update_dt ");
 		sql.append(DBUtil.ORDER_BY).append("pu.visit_year_no, pu.visit_month_no");
 		log.debug(sql.toString());
 		return sql.toString();
