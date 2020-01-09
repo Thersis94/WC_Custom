@@ -1,5 +1,19 @@
 WC_Custom Changelog (auto-generated)
 
+## [3.41.3](https://github.com/smtadmin/WC_Custom/compare/3.41.2...3.41.3) (2020-01-07)
+
+
+### Bug Fixes
+
+* **ST-223:** Fix bug where it was assumed an sql query would always return something. ([8f3b129](https://github.com/smtadmin/WC_Custom/commit/8f3b129))
+* **ST-223:** Fix issues with assuming resultset contained items. ([8f35ad0](https://github.com/smtadmin/WC_Custom/commit/8f35ad0))
+* **ST-223:** Remove logging. ([e1edae4](https://github.com/smtadmin/WC_Custom/commit/e1edae4))
+* **ST-227:** Remove rule to shift pending labels to next quarter when current is done. ([71f3ced](https://github.com/smtadmin/WC_Custom/commit/71f3ced))
+* **ST-61:** Add comments. ([e954641](https://github.com/smtadmin/WC_Custom/commit/e954641))
+* **ST-61:** Add full information about usability. ([96d4e48](https://github.com/smtadmin/WC_Custom/commit/96d4e48))
+* **ST-61:** Add method for determining graph usage. ([b355563](https://github.com/smtadmin/WC_Custom/commit/b355563))
+* **ST-61:** Change to display only published uses of charts. ([d9523df](https://github.com/smtadmin/WC_Custom/commit/d9523df))
+
 ## [3.41.2](https://github.com/smtadmin/WC_Custom/compare/3.41.1...3.41.2) (2019-12-23)
 
 
