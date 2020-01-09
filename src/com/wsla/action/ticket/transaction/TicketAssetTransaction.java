@@ -99,12 +99,15 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 			if (req.hasParameter("isApproval")) {
 				approveAsset(req);
 			} 
-			
+
+			if(req.hasParameter("closeTicket")) {
+				closeTicket(req);
+			}
+
 			//if its not a bypass or an approval save
-			if(!req.hasParameter("isBypass") && !req.hasParameter("isApproval")) {
+			if(!req.hasParameter("isBypass") && !req.hasParameter("isApproval")  && !req.hasParameter("closeTicket")) {
 				saveAsset(req);
 			}
-			
 			
 		} catch (InvalidDataException | DatabaseException e) {
 			log.error("Unable to save asset", e);
@@ -112,6 +115,55 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 		}
 	}
 	
+	/**
+	 * closes the ticket and makes a clone if requested.
+	 * 
+	 * @param req
+	 * @throws DatabaseException 
+	 */
+	private void closeTicket(ActionRequest req) throws DatabaseException {
+		UserVO user = (UserVO)getAdminUser(req).getUserExtendedInfo();
+		String ticketId = req.getStringParameter("ticketId", "");
+		
+		if(req.getBooleanParameter("closeTicket")) {
+			TicketCloneTransaction tct = new TicketCloneTransaction(getDBConnection(), getAttributes());
+			try {
+				tct.cloneTicketToWSLA(ticketId, user);
+			} catch (ActionException e) {
+				log.error("could not build ticket clone transaction ",e);
+			}
+		}
+		
+				
+		CreditMemoVO cm = new CreditMemoVO();
+		cm.setCreditMemoId(req.getStringParameter("creditMemoId" ,""));
+		cm.setCreditMemoVoidFlag(1);
+		
+		updateCreditMemoFlag(cm);
+
+		addLedger(ticketId, user.getUserId(), StatusCode.CLOSED, LedgerSummary.CREDIT_MEMO_TICKET_CLOSED.summary, null);
+		changeStatus(ticketId, user.getUserId(), StatusCode.CLOSED, null, null);
+
+	}
+
+	/**
+	 * updates the void flag on a credit memo
+	 * @param cm
+	 * @throws DatabaseException 
+	 */
+	private void updateCreditMemoFlag(CreditMemoVO cm) throws DatabaseException {
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		
+		// Create the SQL for updating the record
+		StringBuilder sql = new StringBuilder(150);
+		sql.append(DBUtil.UPDATE_CLAUSE).append(getCustomSchema()).append("wsla_credit_memo ");
+		sql.append("set credit_memo_void_flg = ? ");
+		sql.append(DBUtil.WHERE_CLAUSE).append("credit_memo_id = ? ");
+
+		db.executeSqlUpdate(sql.toString(), cm, Arrays.asList("credit_memo_void_flg", "credit_memo_id"));
+		
+	}
+
 	/**
 	 * used to by pass having to save assets
 	 * @param req 
@@ -486,6 +538,8 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 		// Assign the nearest CAS
 		CASSelectionAction csa = new CASSelectionAction(getDBConnection(), getAttributes());
 		List<GenericVO> locations = csa.getUserSelectionList(ticket.getTicketId(), user.getLocale());
+		TicketAssignmentVO oldCas = csa.getExsitingCasSelection(ticket.getTicketId());
+		
 		if (!locations.isEmpty()) {
 			GenericVO casLocation = locations.get(0);
 
@@ -494,6 +548,8 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 			tAss.setTypeCode(TypeCode.CAS);
 
 			if(isNewTicketAssignment) tAss.setTicketAssignmentId(null);
+			
+			if(oldCas != null && ! StringUtil.isEmpty( oldCas.getTicketAssignmentId()) ) tAss.setTicketAssignmentId(oldCas.getTicketAssignmentId());
 
 			try {
 				TicketAssignmentTransaction tat = new TicketAssignmentTransaction(getDBConnection(), getAttributes());

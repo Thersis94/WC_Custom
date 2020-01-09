@@ -196,7 +196,8 @@ public class TicketVO extends BeanDataVO {
 	 * @return
 	 */
 	public TicketAssignmentVO getCas() {
-
+		if(assignments == null ) return new TicketAssignmentVO();
+		
 		for (TicketAssignmentVO ta : assignments) {
 			if (TicketAssignmentVO.TypeCode.CAS.equals(ta.getTypeCode())) return ta;
 		}
@@ -209,7 +210,8 @@ public class TicketVO extends BeanDataVO {
 	 * @return
 	 */
 	public UserVO getCaller() {
-
+        if(assignments == null ) return new UserVO();
+        
 		for (TicketAssignmentVO ta : assignments) {
 			if (TicketAssignmentVO.TypeCode.CALLER.equals(ta.getTypeCode())) return ta.getUser();
 		}
@@ -237,7 +239,9 @@ public class TicketVO extends BeanDataVO {
 	 */
 	public Map<String, TicketDataVO> getTicketDataMap() {
 		Map<String, TicketDataVO> data = new HashMap<>();
+		if(ticketData == null)return data;
 		for (TicketDataVO td : ticketData) data.put(td.getAttributeCode(), td);
+		
 		return data;
 	}
 
@@ -247,6 +251,7 @@ public class TicketVO extends BeanDataVO {
 	 */
 	public Map<String, TicketDataVO> getLatestDataMap() {
 		Map<String, TicketDataVO> data = new HashMap<>();
+		
 		for (TicketDataVO td : getTicketData()) {
 			if (data.containsKey(td.getAttributeCode())) {
 				if(data.get(td.getAttributeCode()).getCreateDate().before(td.getCreateDate())) {
@@ -356,6 +361,7 @@ public class TicketVO extends BeanDataVO {
 	 * @return the data
 	 */
 	public List<TicketDataVO> getTicketData() {
+		if(ticketData == null) return new ArrayList<>() ;
 		return ticketData;
 	}
 
