@@ -192,7 +192,7 @@ public class FinancialDashColumnSet implements Serializable {
 	 */
 	private void addFourYearColumns() {
 		if (currentQtr != 4)
-			this.addColumn(FinancialDashBaseAction.CALENDAR_YEAR + "-" + (calendarYear - 4), FinancialDashBaseAction.CALENDAR_YEAR + (calendarYear - 3));
+			this.addColumn(FinancialDashBaseAction.CALENDAR_YEAR + "-" + (calendarYear - 4), FinancialDashBaseAction.CALENDAR_YEAR + (calendarYear - 4));
 		this.addColumn(FinancialDashBaseAction.CALENDAR_YEAR + "-" + (calendarYear - 3), FinancialDashBaseAction.CALENDAR_YEAR + (calendarYear - 3));
 		this.addColumn(FinancialDashBaseAction.CALENDAR_YEAR + "-" + (calendarYear - 2), FinancialDashBaseAction.CALENDAR_YEAR + (calendarYear - 2));
 		this.addColumn(FinancialDashBaseAction.CALENDAR_YEAR + "-" + (calendarYear - 1), FinancialDashBaseAction.CALENDAR_YEAR + (calendarYear - 1));
