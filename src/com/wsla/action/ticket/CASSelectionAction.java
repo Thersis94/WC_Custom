@@ -147,7 +147,7 @@ public class CASSelectionAction extends SBActionAdapter {
 		
 		DBProcessor db = new DBProcessor(getDBConnection());
 		
-		List<TicketAssignmentVO> CasList = db.executeSelect(sql.toString(), vals, new TicketAssignmentVO());
-		return CasList.isEmpty() ? null : CasList.get(0);
+		List<TicketAssignmentVO> casList = db.executeSelect(sql.toString(), vals, new TicketAssignmentVO());
+		return casList.isEmpty() ? null : casList.get(0);
 	}
 }
