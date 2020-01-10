@@ -1,5 +1,14 @@
 WC_Custom Changelog (auto-generated)
 
+## [3.41.4](https://github.com/smtadmin/WC_Custom/compare/3.41.3...3.41.4) (2020-01-10)
+
+
+### Bug Fixes
+
+* **ST-251:** Add new about you fields for registration. ([8e6710c](https://github.com/smtadmin/WC_Custom/commit/8e6710c))
+* **ST-251:** Fix merge conflict. ([a31df37](https://github.com/smtadmin/WC_Custom/commit/a31df37))
+* **ST-251:** remove logging. ([6618c83](https://github.com/smtadmin/WC_Custom/commit/6618c83))
+
 ## [3.41.3](https://github.com/smtadmin/WC_Custom/compare/3.41.2...3.41.3) (2020-01-07)
 
 
