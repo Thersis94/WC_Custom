@@ -125,15 +125,14 @@ public class TicketAssetTransaction extends BaseTransactionAction {
 		UserVO user = (UserVO)getAdminUser(req).getUserExtendedInfo();
 		String ticketId = req.getStringParameter("ticketId", "");
 		
-		if(req.getBooleanParameter("closeTicket")) {
+		if(req.getBooleanParameter("cloneTicketFlag")) {
 			TicketCloneTransaction tct = new TicketCloneTransaction(getDBConnection(), getAttributes());
 			try {
-				tct.cloneTicketToWSLA(ticketId, user);
+				tct.cloneTicket(ticketId, user);
 			} catch (ActionException e) {
 				log.error("could not build ticket clone transaction ",e);
 			}
 		}
-		
 				
 		CreditMemoVO cm = new CreditMemoVO();
 		cm.setCreditMemoId(req.getStringParameter("creditMemoId" ,""));
