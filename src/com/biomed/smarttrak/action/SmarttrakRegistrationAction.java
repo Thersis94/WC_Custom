@@ -5,6 +5,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map.Entry;
@@ -21,6 +22,7 @@ import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.exception.NotAuthorizedException;
+import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.action.registration.RegistrationFacadeAction;
@@ -143,7 +145,6 @@ public class SmarttrakRegistrationAction extends SimpleActionAdapter {
 
 	@Override
 	public void build(ActionRequest req) throws ActionException {
-
 		//Verify they've provided the correct current password.
 		if(!validateRequest(req)) {
 			req.setAttribute(Constants.REDIRECT_REQUEST, Boolean.TRUE);
@@ -154,9 +155,16 @@ public class SmarttrakRegistrationAction extends SimpleActionAdapter {
 		//Process users Registration.
 		loadRegistration().build(req);
 
+		UserVO user = (UserVO) req.getSession().getAttribute(Constants.USER_DATA);
+		
+		if (Convert.formatBoolean(req.getParameter("partialUpdate"))) {
+			req.setAttribute(Constants.REDIRECT_REQUEST, Boolean.FALSE);
+			user.setUpdateDate(new Date());
+			return;
+		}
+
 		//Process their Markets Selections.
 		List<String> skippedMarkets = req.hasParameter(SKIPPED_MARKETS) ? Arrays.asList(req.getParameterValues(SKIPPED_MARKETS)) : new ArrayList<>();
-		UserVO user = (UserVO) req.getSession().getAttribute(Constants.USER_DATA);
 	
 		processSkipMarketPreferences(user, skippedMarkets);
 	}
