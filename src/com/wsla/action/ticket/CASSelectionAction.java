@@ -17,6 +17,7 @@ import com.siliconmtn.gis.GeocodeLocation;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.wsla.common.WSLAConstants;
 import com.wsla.data.ticket.LocationDistanceVO;
+import com.wsla.data.ticket.TicketAssignmentVO;
 
 /****************************************************************************
  * <b>Title</b>: CASSelectionAction.java
@@ -104,6 +105,7 @@ public class CASSelectionAction extends SBActionAdapter {
 		return data;
 	}
 	
+	
 	/**
 	 * Based upon the ticket assignments and the location of the unit, a source 
 	 * location will be returned for the user
@@ -125,5 +127,27 @@ public class CASSelectionAction extends SBActionAdapter {
 		DBProcessor db = new DBProcessor(getDBConnection());
 		List<GeocodeLocation> locs = db.executeSelect(sql.toString(), vals, new GeocodeLocation());
 		return locs.isEmpty() ? null : locs.get(0);
+	}
+
+	/**
+	 * checks to see if there is an existing Cas Assignment and returns it.  if no cass assigntment if found the method returns null
+	 * @param ticketId
+	 * @return
+	 */
+	public TicketAssignmentVO getExsitingCasSelection(String ticketId) {
+		StringBuilder sql = new StringBuilder(175);
+		
+		sql.append(DBUtil.SELECT_CLAUSE).append("wta.* ").append(DBUtil.FROM_CLAUSE).append(getCustomSchema()).append("wsla_ticket_assignment wta ");
+		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("wsla_ticket t  on wta.ticket_id = t.ticket_id ");
+		sql.append(DBUtil.WHERE_CLAUSE).append("assg_type_cd = 'CAS' and (ticket_no = ? or t.ticket_id = ? ) ");
+		
+		List<Object> vals = new ArrayList<>();
+		vals.add(ticketId);
+		vals.add(ticketId);
+		
+		DBProcessor db = new DBProcessor(getDBConnection());
+		
+		List<TicketAssignmentVO> casList = db.executeSelect(sql.toString(), vals, new TicketAssignmentVO());
+		return casList.isEmpty() ? null : casList.get(0);
 	}
 }
