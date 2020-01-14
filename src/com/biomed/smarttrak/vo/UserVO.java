@@ -462,7 +462,7 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 	public String getJobCategory() {
 		return getFirstFrom(getAttribute(RegistrationMap.JOBCATEGORY.getFieldId()));
 	}
-	public Object getInterestString() {
+	public Object getInterests() {
 		return getAttribute(RegistrationMap.INTEREST.getFieldId());
 	}
 	public String getFunction() {
