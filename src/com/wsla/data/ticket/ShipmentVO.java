@@ -69,7 +69,7 @@ public class ShipmentVO extends BeanDataVO {
 	private long numberParts;
 
 	public enum CarrierType {
-		DHL, ESTAFETA, FEDEX, UPS
+		DHL, ESTAFETA, FEDEX, UPS, LOCAL
 	}
 
 	public enum ShipmentStatus {

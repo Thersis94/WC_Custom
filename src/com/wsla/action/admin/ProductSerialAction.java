@@ -576,16 +576,10 @@ public class ProductSerialAction extends BatchImport {
 		String warrantyId = req.getParameter("warrantyId");
 		if (StringUtil.isEmpty(warrantyId)) return;
 
-		//get the warranty, then calculate expiration date for the product based on the warrantyDays, from today.
-		Calendar today = Calendar.getInstance();
-		WarrantyVO warranty = new WarrantyAction(getAttributes(), getDBConnection()).getWarranty(warrantyId);
-		today.add(Calendar.DATE, warranty.getWarrantyLength()); //e.g. add 90 days to today.
-		Date expDate = today.getTime();
-
 		ArrayList<ProductWarrantyVO> data = new ArrayList<>(entries.size());
 		for (Object obj : entries) {
 			ProductSerialNumberVO vo = (ProductSerialNumberVO) obj;
-			data.add(new ProductWarrantyVO(vo.getProductSerialId(), warrantyId, expDate));
+			data.add(new ProductWarrantyVO(vo.getProductSerialId(), warrantyId, null));
 		}
 		//push these through the same batch-insert logic
 		super.saveBatchImport(req, data);
