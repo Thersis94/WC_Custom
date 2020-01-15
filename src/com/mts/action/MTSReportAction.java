@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.mts.report.MtsUserLoginReport;
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -16,7 +17,6 @@ import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.util.Convert;
 // WC Libs
 import com.smt.sitebuilder.action.SimpleActionAdapter;
-import com.smt.sitebuilder.action.user.UserLoginReport;
 
 /****************************************************************************
  * <b>Title</b>: MTSReportAction.java
@@ -95,11 +95,13 @@ public class MTSReportAction extends SimpleActionAdapter {
 	 * @return
 	 */
 	public List<Object> getUserLogins(ActionRequest req) {
-		UserLoginReport rpt = new UserLoginReport(getDBConnection(), getAttributes());
+		MtsUserLoginReport rpt = new MtsUserLoginReport(getDBConnection(), getAttributes());
 		List<GenericVO> gData = rpt.detailReport(req);
 		List<Object> rptData = new ArrayList<>(gData.size());
-		for (GenericVO gvo : gData)
+		
+		for (GenericVO gvo : gData) {
 			rptData.add(gvo.getValue());
+		}
 
 		return rptData;
 	}
