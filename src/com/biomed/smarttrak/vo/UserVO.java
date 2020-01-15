@@ -128,7 +128,7 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 	 */
 	public enum AssigneeSection{
 		DIRECT_ACCESS("Direct Access", "1"), NEWS_ROOM("News Room", "2"), 
-		AUDIT_LOG("Audit Log", "3");
+		AUDIT_LOG("Audit Log", "3"), UPDATE_EDITOR("Update Editor", "4");
 
 		private String label;
 		private String optionValue;
