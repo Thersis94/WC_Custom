@@ -24,7 +24,7 @@ import com.smt.sitebuilder.common.constants.Constants;
 /****************************************************************************
  * <b>Title</b>: MtsUserLoginReport.java
  * <b>Project</b>: WC_Custom
- * <b>Description: </b> TODO Put Something Here
+ * <b>Description: </b> A custom wrapper around the user login report action
  * <b>Copyright:</b> Copyright (c) 2020
  * <b>Company:</b> Silicon Mountain Technologies
  * 
