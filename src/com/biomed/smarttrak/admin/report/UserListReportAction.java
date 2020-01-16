@@ -303,6 +303,13 @@ public class UserListReportAction extends SimpleActionAdapter {
 		return accounts;
 	}
 	
+	
+	/**
+	 * Add the supplied value to the user without overwriting multivalued items.
+	 * @param user
+	 * @param key
+	 * @param val
+	 */
 	private void addAttribute(UserVO user, String key, String val) {
 		if (user.getAttributes().containsKey(key)) {
 			if (!StringUtil.checkVal(user.getAttributes().get(key)).contains(val))
