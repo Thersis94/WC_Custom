@@ -282,9 +282,9 @@ public class UserListReportAction extends SimpleActionAdapter {
 
 			// add registration record for the current user.
 			if(rs.getString("option_desc") != null) {
-				user.addStringAttribute(rs.getString("register_field_id"), rs.getString("option_desc"));	
+				addAttribute(user, rs.getString("register_field_id"), rs.getString("option_desc"));	
 			}else {
-				user.addStringAttribute(rs.getString("register_field_id"), rs.getString("value_txt"));
+				addAttribute(user, rs.getString("register_field_id"), rs.getString("value_txt"));
 			}
 
 			prevAcctId = currAcctId;
@@ -301,6 +301,15 @@ public class UserListReportAction extends SimpleActionAdapter {
 		}
 
 		return accounts;
+	}
+	
+	private void addAttribute(UserVO user, String key, String val) {
+		if (user.getAttributes().containsKey(key)) {
+			if (!StringUtil.checkVal(user.getAttributes().get(key)).contains(val))
+				user.addAttribute(key, user.getAttributes().get(key) + ", " + val);
+		} else {
+			user.addAttribute(key, val);
+		}
 	}
 
 	/**
