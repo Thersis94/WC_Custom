@@ -282,9 +282,9 @@ public class UserListReportAction extends SimpleActionAdapter {
 
 			// add registration record for the current user.
 			if(rs.getString("option_desc") != null) {
-				user.addAttribute(rs.getString("register_field_id"), rs.getString("option_desc"));	
+				user.addStringAttribute(rs.getString("register_field_id"), rs.getString("option_desc"));	
 			}else {
-				user.addAttribute(rs.getString("register_field_id"), rs.getString("value_txt"));
+				user.addStringAttribute(rs.getString("register_field_id"), rs.getString("value_txt"));
 			}
 
 			prevAcctId = currAcctId;
