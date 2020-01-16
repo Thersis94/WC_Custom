@@ -2,7 +2,6 @@ package com.biomed.smarttrak.admin.report;
 
 // Java 8
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -131,7 +130,6 @@ public class UserListReportVO extends AbstractSBReportVO {
 	 * @param rows
 	 * @return
 	 */
-	@SuppressWarnings("unchecked")
 	private void generateDataRows(List<Map<String, Object>> rows) {
 		StringEncoder se = new StringEncoder();
 		PhoneNumberFormat pnf = new PhoneNumberFormat();
