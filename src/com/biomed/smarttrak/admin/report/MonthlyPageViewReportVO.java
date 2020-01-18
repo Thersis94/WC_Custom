@@ -214,6 +214,9 @@ public class MonthlyPageViewReportVO extends AbstractSBReportVO {
 			cell = row.createCell(cellCnt++);
 			cell.setCellValue(pv.getPageName());
 
+			cell = row.createCell(cellCnt++);
+			cell.setCellValue(Convert.formatDate(pv.getPublishDate(), Convert.DATE_SLASH_SHORT_PATTERN));
+
 			//Iterate dynamic headers for each month.
 			for(String h : dateHeaders) {
 				int val = pv.getPageCounts(h);
@@ -240,6 +243,7 @@ public class MonthlyPageViewReportVO extends AbstractSBReportVO {
 		row.createCell(cellNum++).setCellValue("Page Title");
 		row.createCell(cellNum++).setCellValue("Page URL");
 		row.createCell(cellNum++).setCellValue("Name");
+		row.createCell(cellNum++).setCellValue("Publish Date");
 		for(String h : dateHeaders) {
 			row.createCell(cellNum++).setCellValue(h);
 		}

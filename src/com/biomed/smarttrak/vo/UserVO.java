@@ -128,7 +128,7 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 	 */
 	public enum AssigneeSection{
 		DIRECT_ACCESS("Direct Access", "1"), NEWS_ROOM("News Room", "2"), 
-		AUDIT_LOG("Audit Log", "3");
+		AUDIT_LOG("Audit Log", "3"), UPDATE_EDITOR("Update Editor", "4");
 
 		private String label;
 		private String optionValue;
@@ -170,7 +170,7 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 		JOBLEVEL("7bff2e9e3f7f7fb90a0014217397e884", "jobLevel"),
 		FUNCTION("ee5c7d698bf04b49a5de87f53c4e399c", "function"),
 		ROLE("ffb8f6fa670c441894308344c0830df7", "role"),
-		INTEREST("c81ac8cca48148e792b319eb82432b51", "interest"),
+		INTEREST("7997ac9690d984c00a00141da8932925", "interest"),
 		INDUSTRY("5291b7693f8104240a001421db8d04ab", "industry"),
 		TYPE("35f1557ev46063760a00141dc2a4ec41", "fieldType"),
 		DIVISIONS("31037d2e3f859f100a001421e77994f4", "divisions", true);
@@ -462,8 +462,8 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 	public String getJobCategory() {
 		return getFirstFrom(getAttribute(RegistrationMap.JOBCATEGORY.getFieldId()));
 	}
-	public String getInterest() {
-		return getFirstFrom(getAttribute(RegistrationMap.INTEREST.getFieldId()));
+	public Object getInterests() {
+		return getAttribute(RegistrationMap.INTEREST.getFieldId());
 	}
 	public String getFunction() {
 		return getFirstFrom(getAttribute(RegistrationMap.FUNCTION.getFieldId()));

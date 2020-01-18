@@ -9,10 +9,12 @@ import java.util.Map;
 import com.biomed.smarttrak.action.AdminControllerAction;
 import com.biomed.smarttrak.vo.AccountVO;
 import com.biomed.smarttrak.vo.UserVO;
+import com.biomed.smarttrak.vo.UserVO.AssigneeSection;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.EnumUtil;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
 import com.smt.sitebuilder.common.ModuleVO;
@@ -32,6 +34,7 @@ import com.smt.sitebuilder.common.constants.Constants;
  ****************************************************************************/
 public class AuthorAction extends SimpleActionAdapter {
 
+	public static final String ASSIGNEE_SECTION_KEY = "assigneeSection";
 	/**
 	 * Default no-arg constructor
 	 */
@@ -65,11 +68,12 @@ public class AuthorAction extends SimpleActionAdapter {
 	 */
 	protected void loadAuthors(ActionRequest req, boolean loadTitles) {
 		log.debug("loaded authors");
+		AssigneeSection as = EnumUtil.safeValueOf(AssigneeSection.class, req.getParameter(ASSIGNEE_SECTION_KEY), null);
 		AccountAction aa = new AccountAction();
 		aa.setActionInit(actionInit);
 		aa.setAttributes(attributes);
 		aa.setDBConnection(dbConn);
-		aa.loadManagerList(req, (String)getAttributes().get(Constants.CUSTOM_DB_SCHEMA), loadTitles, null, Convert.formatBoolean(req.getParameter("includeInactive")));
+		aa.loadManagerList(req, (String)getAttributes().get(Constants.CUSTOM_DB_SCHEMA), loadTitles, as, Convert.formatBoolean(req.getParameter("includeInactive")));
 	}
 
 	/**

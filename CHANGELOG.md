@@ -1,5 +1,20 @@
 WC_Custom Changelog (auto-generated)
 
+# [3.42.0](https://github.com/smtadmin/WC_Custom/compare/3.41.4...3.42.0) (2020-01-15)
+
+
+### Bug Fixes
+
+* **ST-184:** Modal changes for hierarchy overhaul. ([8e9a6e1](https://github.com/smtadmin/WC_Custom/commit/8e9a6e1))
+* **ST-261:** Change to match new interests field. ([de46fb3](https://github.com/smtadmin/WC_Custom/commit/de46fb3))
+* **ST-262:** Change how interests are handled. ([4f7e4b7](https://github.com/smtadmin/WC_Custom/commit/4f7e4b7))
+
+
+### Features
+
+* **feature-mts-i47:** Removed col for phone number and added added one for user company ([d0fa284](https://github.com/smtadmin/WC_Custom/commit/d0fa284))
+* **feature-mts-i48:** corrected missing data for updating sub id and sub notes ([cbc6fd1](https://github.com/smtadmin/WC_Custom/commit/cbc6fd1))
+
 ## [3.41.4](https://github.com/smtadmin/WC_Custom/compare/3.41.3...3.41.4) (2020-01-10)
 
 
