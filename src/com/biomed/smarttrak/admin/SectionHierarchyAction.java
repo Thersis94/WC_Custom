@@ -332,10 +332,14 @@ public class SectionHierarchyAction extends AbstractTreeAction {
 		sql.append("left join ").append(custom).append("biomedgps_section s4 ");
 		sql.append("on s4.parent_id = s3.section_id ");
 		sql.append("where s.fd_pub_yr = (select max(fd_pub_yr) from ").append(custom).append("biomedgps_section) ");
-		if (sectionId != null) sql.append("and s.section_id = ? ");
+		if (MASTER_ROOT.equals(sectionId)) {
+			sql.append("and s.parent_id = ? ");
+		}else if (sectionId != null) {
+			sql.append("and s.section_id = ? ");
+		}
 		sql.append("group by s.fd_pub_yr, s.fd_pub_qtr, s2.fd_pub_qtr, s3.fd_pub_qtr, s4.fd_pub_qtr ");
 		sql.append("order by fd_pub_qtr desc ");
-
+log.debug(sql+"|"+sectionId);
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			if (sectionId != null) ps.setString(1, sectionId);
 			
@@ -348,7 +352,7 @@ public class SectionHierarchyAction extends AbstractTreeAction {
 		} catch(SQLException sqle) {
 			log.error("Unable to get latest FD publish year & quarter", sqle);
 		}
-
+log.debug(data.getFdPubQtr());
 		return data;
 	}
 

@@ -141,6 +141,7 @@ public class FinancialDashVO extends SBModuleVO {
 
 					//If this is the Public View, calculate Labels.
 					if(DashType.COMMON.equals(dashType)) {
+						log.debug(currentQtr+"|"+reportedQtr);
 						row.setReportingPending(sections, reportedQtr, currentQtr, currentYear);
 					}
 				} else {
@@ -485,7 +486,7 @@ public class FinancialDashVO extends SBModuleVO {
 
 		Calendar calendar = new GregorianCalendar();
 		calendar.setTime(currentDate);
-
+log.debug("Setting via time");
 		// Set the "current" quarter/year
 		int month = calendar.get(Calendar.MONTH);
 		setCurrentQtr(month/3 + 1);
@@ -499,6 +500,7 @@ public class FinancialDashVO extends SBModuleVO {
 	 * @param data
 	 */
 	private void setCurrentQtrYear(SectionVO data) {
+		log.debug(data.getFdPubQtr());
 		setCurrentQtr(data.getFdPubQtr());
 		setCurrentYear(data.getFdPubYr());
 	}
@@ -511,6 +513,7 @@ public class FinancialDashVO extends SBModuleVO {
 	 * @param currentQtr the currentQtr to set
 	 */
 	public void setCurrentQtr(int currentQtr) {
+		log.debug("CurrentQuarter" +"|"+currentQtr);
 		this.currentQtr = currentQtr;
 	}
 
