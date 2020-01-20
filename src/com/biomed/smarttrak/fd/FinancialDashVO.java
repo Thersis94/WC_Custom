@@ -45,6 +45,7 @@ public class FinancialDashVO extends SBModuleVO {
 	private String companyName;
 	private int publishedQtr;
 	private int publishedYear;
+	private int reportedQtr;
 	private int currentQtr;
 	private int currentYear;
 	private boolean behindLatest;
@@ -140,7 +141,7 @@ public class FinancialDashVO extends SBModuleVO {
 
 					//If this is the Public View, calculate Labels.
 					if(DashType.COMMON.equals(dashType)) {
-						row.setReportingPending(sections, currentQtr, currentYear);
+						row.setReportingPending(sections, reportedQtr, currentQtr, currentYear);
 					}
 				} else {
 					row.setColumns(util, rs, this);
@@ -302,6 +303,10 @@ public class FinancialDashVO extends SBModuleVO {
 	 */
 	public int getPublishedYear() {
 		return publishedYear;
+	}
+
+	public int getReportedQtr() {
+		return reportedQtr;
 	}
 
 	/**
@@ -496,6 +501,10 @@ public class FinancialDashVO extends SBModuleVO {
 	private void setCurrentQtrYear(SectionVO data) {
 		setCurrentQtr(data.getFdPubQtr());
 		setCurrentYear(data.getFdPubYr());
+	}
+
+	public void setReportedQtr(int reportedQtr) {
+		this.reportedQtr = reportedQtr;
 	}
 
 	/**

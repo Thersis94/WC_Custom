@@ -285,6 +285,33 @@ public class SectionHierarchyAction extends AbstractTreeAction {
 	public SectionVO getLatestFdPublish() {
 		return getLatestFdPublish(null);
 	}
+	
+	
+	/**
+	 * Determine what the latest reported column is.
+	 * @return
+	 */
+	public int getLatestFdReported() {
+		String custom = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
+
+		StringBuilder sql = new StringBuilder(120);
+		sql.append("select case when max(q4_no) is not null then 4 when max(q3_no) is not null then 3 ");
+		sql.append("when max(q2_no) is not null then 2 else 1 end as max_reported ");
+		sql.append("from ").append(custom).append("biomedgps_fd_revenue ");
+		sql.append("where year_no = (select max(fd_pub_yr) from ").append(custom).append("biomedgps_section) ");
+		
+		int reportedQuarter = 1;
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ResultSet rs = ps.executeQuery();
+			
+			if (rs.next())
+				reportedQuarter = rs.getInt("max_reported");
+		} catch (SQLException e) {
+			log.debug("Failed to get latest reported quarter");
+		}
+		
+		return reportedQuarter;
+	}
 
 	/**
 	 * Gets the year and quarter of the most recently published section.
