@@ -245,7 +245,6 @@ public class FinancialDashDataRowVO implements Serializable {
 			 * with reporter sales or the current section's published year is earlier
 			 * the currently published year mark the column as reporting or pending
 			 */
-			log.debug(currentQtr+":|"+reportedQtr);
 			if (currentQtr < reportedQtr || section.getFdPubYr() < currentYear) {
 				markColumnReportingPending(reportedQtr, currentYear);
 			}
