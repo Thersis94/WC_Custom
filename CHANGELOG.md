@@ -1,5 +1,53 @@
 WC_Custom Changelog (auto-generated)
 
+## [3.42.1](https://github.com/smtadmin/WC_Custom/compare/3.42.0...3.42.1) (2020-01-17)
+
+
+### Bug Fixes
+
+* **ST-261:** Add comments. ([3d53ca2](https://github.com/smtadmin/WC_Custom/commit/3d53ca2))
+* **ST-261:** Cleanup. ([7a8cf0b](https://github.com/smtadmin/WC_Custom/commit/7a8cf0b))
+* **ST-261:** Ensure multivalue items are properly handled. ([24fff03](https://github.com/smtadmin/WC_Custom/commit/24fff03))
+* **ST-262:** Add new marketing info to the user export reports. ([e8e0564](https://github.com/smtadmin/WC_Custom/commit/e8e0564))
+
+# [3.42.0](https://github.com/smtadmin/WC_Custom/compare/3.41.4...3.42.0) (2020-01-15)
+
+
+### Bug Fixes
+
+* **ST-184:** Modal changes for hierarchy overhaul. ([8e9a6e1](https://github.com/smtadmin/WC_Custom/commit/8e9a6e1))
+* **ST-261:** Change to match new interests field. ([de46fb3](https://github.com/smtadmin/WC_Custom/commit/de46fb3))
+* **ST-262:** Change how interests are handled. ([4f7e4b7](https://github.com/smtadmin/WC_Custom/commit/4f7e4b7))
+
+
+### Features
+
+* **feature-mts-i47:** Removed col for phone number and added added one for user company ([d0fa284](https://github.com/smtadmin/WC_Custom/commit/d0fa284))
+* **feature-mts-i48:** corrected missing data for updating sub id and sub notes ([cbc6fd1](https://github.com/smtadmin/WC_Custom/commit/cbc6fd1))
+
+## [3.41.4](https://github.com/smtadmin/WC_Custom/compare/3.41.3...3.41.4) (2020-01-10)
+
+
+### Bug Fixes
+
+* **ST-251:** Add new about you fields for registration. ([8e6710c](https://github.com/smtadmin/WC_Custom/commit/8e6710c))
+* **ST-251:** Fix merge conflict. ([a31df37](https://github.com/smtadmin/WC_Custom/commit/a31df37))
+* **ST-251:** remove logging. ([6618c83](https://github.com/smtadmin/WC_Custom/commit/6618c83))
+
+## [3.41.3](https://github.com/smtadmin/WC_Custom/compare/3.41.2...3.41.3) (2020-01-07)
+
+
+### Bug Fixes
+
+* **ST-223:** Fix bug where it was assumed an sql query would always return something. ([8f3b129](https://github.com/smtadmin/WC_Custom/commit/8f3b129))
+* **ST-223:** Fix issues with assuming resultset contained items. ([8f35ad0](https://github.com/smtadmin/WC_Custom/commit/8f35ad0))
+* **ST-223:** Remove logging. ([e1edae4](https://github.com/smtadmin/WC_Custom/commit/e1edae4))
+* **ST-227:** Remove rule to shift pending labels to next quarter when current is done. ([71f3ced](https://github.com/smtadmin/WC_Custom/commit/71f3ced))
+* **ST-61:** Add comments. ([e954641](https://github.com/smtadmin/WC_Custom/commit/e954641))
+* **ST-61:** Add full information about usability. ([96d4e48](https://github.com/smtadmin/WC_Custom/commit/96d4e48))
+* **ST-61:** Add method for determining graph usage. ([b355563](https://github.com/smtadmin/WC_Custom/commit/b355563))
+* **ST-61:** Change to display only published uses of charts. ([d9523df](https://github.com/smtadmin/WC_Custom/commit/d9523df))
+
 ## [3.41.2](https://github.com/smtadmin/WC_Custom/compare/3.41.1...3.41.2) (2019-12-23)
 
 

@@ -15,7 +15,6 @@ import com.biomed.smarttrak.fd.FinancialDashColumnSet.DisplayType;
 import com.biomed.smarttrak.util.SmarttrakTree;
 import com.biomed.smarttrak.vo.SectionVO;
 import com.siliconmtn.action.ActionRequest;
-import com.siliconmtn.data.Node;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -131,7 +130,6 @@ public class FinancialDashVO extends SBModuleVO {
 	public void setData(ResultSet rs, SmarttrakTree sections, DashType dashType) {
 		FinancialDashDataRowVO row = null;
 
-		boolean allSameQuarter = checkAllSameQuarter(sections);
 		String rowId = "";
 		DBUtil util = new DBUtil();
 		try {
@@ -143,7 +141,7 @@ public class FinancialDashVO extends SBModuleVO {
 
 					//If this is the Public View, calculate Labels.
 					if(DashType.COMMON.equals(dashType)) {
-						row.setReportingPending(sections, currentQtr, currentYear, allSameQuarter);
+						row.setReportingPending(sections, currentQtr, currentYear);
 					}
 				} else {
 					row.setColumns(util, rs, this);
@@ -152,24 +150,6 @@ public class FinancialDashVO extends SBModuleVO {
 		} catch (SQLException sqle) {
 			log.error("Unable to set financial dashboard row data", sqle);
 		}
-	}
-
-	/**
-	 * Check if all Sections are in the same Published Quarter.
-	 * @param sections
-	 * @return
-	 */
-	public boolean checkAllSameQuarter(SmarttrakTree sections) {
-		for(Node n : sections.preorderList()) {
-			if(n.getUserObject() != null) {
-				SectionVO s = (SectionVO) n.getUserObject();
-				if(s.getFdPubQtr() != currentQtr) {
-					return false;
-				}
-			}
-		}
-
-		return true;
 	}
 	
 	
