@@ -37,6 +37,7 @@ public enum LedgerSummary {
 	CAS_ASSIGNED ("Se Asigna Centro de Servicio"),
 	TICKET_CLONED ("Órden de Servicio Cerrada y Duplicada"),
 	TICKET_CLOSED ("Órden de Servicio Cerrada"),
+	CREDIT_MEMO_TICKET_CLOSED ("Boleto cerrado después de la generación de memo de crédito"),
 	REFUND_REJECTED ("Reembolso o Reemplazo Rechazado"),
 	HARVEST_COMPETE ("Canibalización Completa / Piezas Disponibles: "),
 	ASSET_LOADED ("Usuario Agrega Evidencia"),

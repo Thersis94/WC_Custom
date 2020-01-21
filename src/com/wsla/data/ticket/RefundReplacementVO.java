@@ -324,6 +324,7 @@ public class RefundReplacementVO extends BeanDataVO {
 	 * @return the shipment
 	 */
 	public ShipmentVO getShipment() {
+		if (shipments == null) return null;
 		return shipments.get(ShipmentType.UNIT_MOVEMENT.name());
 	}
 
