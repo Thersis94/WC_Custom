@@ -1582,7 +1582,7 @@ public class ProductManagementAction extends ManagementAction {
 			
 			putModuleData(new String[]{"Product Successfully Duplicated", ids.get(productId)});
 		} catch (Exception e) {
-			throw new ActionException(e);
+			putModuleData(new String[]{"Product Duplication Failed", ""});
 		} finally {
 			try {
 				dbConn.setAutoCommit(formerAutoCommit);
