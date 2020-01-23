@@ -6,7 +6,9 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.stream.Collectors;
 
@@ -38,6 +40,7 @@ import com.siliconmtn.util.UUIDGenerator;
 import com.smt.sitebuilder.common.PageVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
+import com.smt.sitebuilder.util.RecordDuplicatorUtility;
 
 /****************************************************************************
  * <b>Title</b>: ProductManagementAction.java <p/>
@@ -1507,6 +1510,8 @@ public class ProductManagementAction extends ManagementAction {
 				return;
 			} else if("bulkLinkUpdate".equals(buildAction)) {
 				new ManagementActionUtil(dbConn, attributes).bulkUpdateAttributeLinks(req);
+			} else if ("duplicateProfile".equals(buildAction)) {
+				duplicateProfile(req.getParameter("productId"));
 			}
 		} catch (Exception e) {
 			log.error("Error attempting to build: ", e);
@@ -1524,6 +1529,106 @@ public class ProductManagementAction extends ManagementAction {
 		
 		if (!Convert.formatBoolean(req.getParameter("json")))
 			redirectRequest(msg, buildAction, req);
+	}
+
+	/**
+	 * Create a copy of the supplied product profile
+	 * @param parameter
+	 */
+	private void duplicateProfile(String productId) throws ActionException{
+		Map<String, Object> replaceVals = new HashMap<>();
+		attributes.put(RecordDuplicatorUtility.REPLACE_VALS, replaceVals);
+		String customDb = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
+		boolean formerAutoCommit = true;
+		try {
+			formerAutoCommit = dbConn.getAutoCommit();
+			dbConn.setAutoCommit(false);
+			RecordDuplicatorUtility rdu = new RecordDuplicatorUtility(attributes, dbConn, customDb + "biomedgps_product", "product_id", true);
+			rdu.addWhereClause("product_id", productId);
+			Map<String, String> ids;
+			ids = rdu.copy();
+			replaceVals.put("product_id", ids);
+
+			// Copy all attributes
+			rdu = new RecordDuplicatorUtility(attributes, dbConn, customDb + "biomedgps_product_attribute_xr", "product_attribute_id", true);
+			rdu.setWhereSQL("(status_no = 'P' or status_no is null) and " +rdu.buildWhereListClause("product_id",true));
+			rdu.returnGeneratedKeys(false);
+			rdu.copy();
+
+			// Copy all product sections
+			rdu = new RecordDuplicatorUtility(attributes, dbConn, customDb + "biomedgps_product_section", "product_section_xr_id", true);
+			rdu.addWhereListClause("product_id");
+			rdu.returnGeneratedKeys(false);
+			rdu.copy();
+
+			// Copy all product alliances
+			rdu = new RecordDuplicatorUtility(attributes, dbConn, customDb + "biomedgps_product_alliance_xr", "product_alliance_xr_id", true);
+			rdu.addWhereListClause("product_id");
+			rdu.returnGeneratedKeys(false);
+			rdu.copy();
+
+			// Copy all product regulations
+			rdu = new RecordDuplicatorUtility(attributes, dbConn, customDb + "biomedgps_product_regulatory", "regulatory_id", true);
+			rdu.addWhereListClause("product_id");
+			rdu.returnGeneratedKeys(false);
+			rdu.copy();
+			
+			// Update the name and status of the new product
+			updateProductCopy(ids.get(productId));
+			
+			updateCopyAttributes(ids.get(productId));
+			
+			dbConn.commit();
+			
+			putModuleData(new String[]{"Product Successfully Duplicated", ids.get(productId)});
+		} catch (Exception e) {
+			throw new ActionException(e);
+		} finally {
+			try {
+				dbConn.setAutoCommit(formerAutoCommit);
+			} catch (SQLException e) {
+				log.error("Failed to return database to previous commit status.");
+			}
+		}
+	}
+
+	
+	/**
+	 * Update attributes for the duplicated product so that they are no longer
+	 * @param productId
+	 * @throws SQLException
+	 */
+	private void updateCopyAttributes(String productId) throws SQLException {
+		StringBuilder sql = new StringBuilder(125);
+		sql.append("update ").append(customDbSchema).append("biomedgps_product_attribute_xr ");
+		sql.append("set product_attribute_group_id = product_attribute_id ");
+		sql.append("where product_id = ? and status_no = ? ");
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, productId);
+			ps.setString(2, Status.P.toString());
+			
+			ps.executeUpdate();
+		}
+	}
+
+	
+	/**
+	 * Update the supplied product so that it is in edit mode
+	 * and has a name indicating its status as a copy.
+	 */
+	private void updateProductCopy(String productId) throws SQLException {
+		StringBuilder sql = new StringBuilder(125);
+		sql.append("update ").append(customDbSchema).append("biomedgps_product ");
+		sql.append("set product_nm = product_nm + ' - Copy', status_no = ? ");
+		sql.append("where product_id = ? ");
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, Status.E.toString());
+			ps.setString(2, productId);
+			
+			ps.executeUpdate();
+		}
 	}
 
 	/**
