@@ -1543,32 +1543,32 @@ public class ProductManagementAction extends ManagementAction {
 		try {
 			formerAutoCommit = dbConn.getAutoCommit();
 			dbConn.setAutoCommit(false);
-			RecordDuplicatorUtility rdu = new RecordDuplicatorUtility(attributes, dbConn, customDb + "biomedgps_product", "product_id", true);
+			RecordDuplicatorUtility rdu = new RecordDuplicatorUtility(attributes, dbConn, StringUtil.join(customDb, "biomedgps_product"), "product_id", true);
 			rdu.addWhereClause("product_id", productId);
 			Map<String, String> ids;
 			ids = rdu.copy();
 			replaceVals.put("product_id", ids);
 
 			// Copy all attributes
-			rdu = new RecordDuplicatorUtility(attributes, dbConn, customDb + "biomedgps_product_attribute_xr", "product_attribute_id", true);
+			rdu = new RecordDuplicatorUtility(attributes, dbConn, StringUtil.join(customDb, "biomedgps_product_attribute_xr"), "product_attribute_id", true);
 			rdu.setWhereSQL("(status_no = 'P' or status_no is null) and " +rdu.buildWhereListClause("product_id",true));
 			rdu.returnGeneratedKeys(false);
 			rdu.copy();
 
 			// Copy all product sections
-			rdu = new RecordDuplicatorUtility(attributes, dbConn, customDb + "biomedgps_product_section", "product_section_xr_id", true);
+			rdu = new RecordDuplicatorUtility(attributes, dbConn, StringUtil.join(customDb, "biomedgps_product_section"), "product_section_xr_id", true);
 			rdu.addWhereListClause("product_id");
 			rdu.returnGeneratedKeys(false);
 			rdu.copy();
 
 			// Copy all product alliances
-			rdu = new RecordDuplicatorUtility(attributes, dbConn, customDb + "biomedgps_product_alliance_xr", "product_alliance_xr_id", true);
+			rdu = new RecordDuplicatorUtility(attributes, dbConn, StringUtil.join(customDb, "biomedgps_product_alliance_xr"), "product_alliance_xr_id", true);
 			rdu.addWhereListClause("product_id");
 			rdu.returnGeneratedKeys(false);
 			rdu.copy();
 
 			// Copy all product regulations
-			rdu = new RecordDuplicatorUtility(attributes, dbConn, customDb + "biomedgps_product_regulatory", "regulatory_id", true);
+			rdu = new RecordDuplicatorUtility(attributes, dbConn, StringUtil.join(customDb, "biomedgps_product_regulatory"), "regulatory_id", true);
 			rdu.addWhereListClause("product_id");
 			rdu.returnGeneratedKeys(false);
 			rdu.copy();
