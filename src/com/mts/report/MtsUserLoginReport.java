@@ -122,7 +122,7 @@ public class MtsUserLoginReport extends UserLoginReport {
 			ps.setString(count, siteId);
 			
 			if(! StringUtil.isEmpty(publicationId)) {
-				ps.setString(++count, "%" + publicationId.toLowerCase()+"%");	
+				ps.setString(++count, StringUtil.join("%",publicationId.toLowerCase(),"%"));	
 			}
 			
 			ps.setString(++count, siteId);
