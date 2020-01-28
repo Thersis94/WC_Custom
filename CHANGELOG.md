@@ -1,5 +1,15 @@
 WC_Custom Changelog (auto-generated)
 
+## [3.42.1](https://github.com/smtadmin/WC_Custom/compare/3.42.0...3.42.1) (2020-01-17)
+
+
+### Bug Fixes
+
+* **ST-261:** Add comments. ([3d53ca2](https://github.com/smtadmin/WC_Custom/commit/3d53ca2))
+* **ST-261:** Cleanup. ([7a8cf0b](https://github.com/smtadmin/WC_Custom/commit/7a8cf0b))
+* **ST-261:** Ensure multivalue items are properly handled. ([24fff03](https://github.com/smtadmin/WC_Custom/commit/24fff03))
+* **ST-262:** Add new marketing info to the user export reports. ([e8e0564](https://github.com/smtadmin/WC_Custom/commit/e8e0564))
+
 # [3.42.0](https://github.com/smtadmin/WC_Custom/compare/3.41.4...3.42.0) (2020-01-15)
 
 
