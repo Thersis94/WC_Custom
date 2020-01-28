@@ -200,7 +200,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		OrgMetadataAction oma = new OrgMetadataAction(getDBConnection(), getAttributes());
 		List<MetadataVO> items = oma.getOrgMetadata("MTS", null, false);
 		String filter = req.getParameter("parentId");
-
+		
 		for (MetadataVO md : items) {
 			if (StringUtil.isEmpty(filter)) data.add(new GenericVO(null, md.getFieldName()));
 			if (! StringUtil.isEmpty(filter) &&  !md.getMetadataId().equals(filter)) continue;
