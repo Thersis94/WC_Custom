@@ -36,6 +36,10 @@ public class SubscriptionUserVO extends BeanDataVO {
 	private String publicationId;
 	private String userId;
 	private Date createDate;
+	private Date expirationDate;
+	
+	// Helpers
+	private String publicationName;
 
 	/**
 	 * 
@@ -86,6 +90,23 @@ public class SubscriptionUserVO extends BeanDataVO {
 	public String getUserId() {
 		return userId;
 	}
+	
+	/**
+	 * Expiration date for a given users publication
+	 * @return
+	 */
+	@Column(name="expiration_dt")
+	public Date getExpirationDate() {
+		return expirationDate;
+	}
+
+	/**
+	 * @return the publicationName
+	 */
+	@Column(name="publication_nm", isReadOnly=true)
+	public String getPublicationName() {
+		return publicationName;
+	}
 
 	/**
 	 * @return the createDate
@@ -117,10 +138,26 @@ public class SubscriptionUserVO extends BeanDataVO {
 	}
 
 	/**
+	 * Expiration date for a given users publication
+	 * @param expirationDate
+	 */
+	public void setExpirationDate(Date expirationDate) {
+		this.expirationDate = expirationDate;
+	}
+
+	
+	/**
 	 * @param createDate the createDate to set
 	 */
 	public void setCreateDate(Date createDate) {
 		this.createDate = createDate;
+	}
+
+	/**
+	 * @param publicationName the publicationName to set
+	 */
+	public void setPublicationName(String publicationName) {
+		this.publicationName = publicationName;
 	}
 
 }

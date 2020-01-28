@@ -8,8 +8,8 @@ import java.util.Arrays;
 
 // MTS Libs
 import com.mts.common.MTSConstants;
-import com.mts.subscriber.action.SubscriptionAction;
 import com.mts.subscriber.data.MTSUserVO;
+import com.mts.subscriber.data.SubscriptionUserVO;
 
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
@@ -89,42 +89,36 @@ public class UserAction extends UserBaseWidget {
 
 		// Get the columns to be updated and store the user info
 		String[] cols = null;
-		boolean updateSubscription = false;
 		try {
 			if (req.getBooleanParameter("isAuthor")) {
 				cols = getAuthorUserColumns();
 			} else if (req.getBooleanParameter("isSubscriber")) {
 				cols = getSubscriberUserColumns();
-				updateSubscription = true;
+			} else if (req.getBooleanParameter("isSubDate")) {
+				updateSubscriptionExpiration(new SubscriptionUserVO(req));
+				return;
 			} else {
 				cols = getCoreUserColumns();
 				saveUser((SiteVO) req.getAttribute(Constants.SITE_DATA), user, true);
 			}
 
 			updateUser(user, cols);
-			if (updateSubscription) updateSubscriptions(req, user);
 			setModuleData(user);
 		} catch(Exception e) {
 			setModuleData(user, 1, e.getLocalizedMessage());
 			log.error("unable to save author info", e);
 		}
 	}
-
+	
 	/**
-	 * Updates the subscriptions for a given user
-	 * @param req
-	 * @param user
+	 * Updates the subscription date for a given user and publication
+	 * @param vo
+	 * @throws InvalidDataException
 	 * @throws DatabaseException
 	 */
-	private void updateSubscriptions(ActionRequest req, MTSUserVO user) 
-			throws DatabaseException {
-		List<String> subs = new ArrayList<>();
-		String[] subscriptions = req.getParameterValues("subscriptions");
-		if (subscriptions != null && subscriptions.length > 0)
-			subs = Arrays.asList(subscriptions);
-
-		SubscriptionAction sa = new SubscriptionAction(getDBConnection(), getAttributes());
-		sa.assignSubscriptions(user.getUserId(), subs);
+	public void updateSubscriptionExpiration(SubscriptionUserVO vo) throws InvalidDataException, DatabaseException {
+		DBProcessor db = new DBProcessor(getDBConnection(), (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
+		db.save(vo);
 	}
 
 	/**
@@ -145,7 +139,7 @@ public class UserAction extends UserBaseWidget {
 	private String[] getSubscriberUserColumns() {
 		return new String[]{ 
 				"user_id", "sec_user_id", "subscription_type_cd", "update_dt",
-				"print_copy_flg", "expiration_dt", "note_txt"
+				"print_copy_flg", "note_txt"
 		};
 	}
 
@@ -227,6 +221,8 @@ public class UserAction extends UserBaseWidget {
 				setModuleData(userExists(req.getParameter("email")));
 			} else if (req.getBooleanParameter("isProfile")) {
 				setModuleData(getUserProfile(req.getParameter("userId")));
+			} else if (req.getBooleanParameter("isSubscriber")) {
+				setModuleData(getUserSubscriptions(req.getParameter("userId")));
 			} else {
 				BSTableControlVO bst = new BSTableControlVO(req, MTSUserVO.class);
 				setModuleData(getAllUsers(bst, req.getParameter("roleId"), null, req.getParameter("publicationId")));
@@ -234,6 +230,24 @@ public class UserAction extends UserBaseWidget {
 		} catch (Exception e) {
 			setModuleData(null, 0, e.getLocalizedMessage());
 		}
+	}
+	
+	/**
+	 * Gets the publication info for a user
+	 * @param userId
+	 * @return
+	 */
+	public List<SubscriptionUserVO> getUserSubscriptions(String userId) {
+		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
+		StringBuilder sql = new StringBuilder();
+		sql.append("select p.publication_id, publication_nm, x.expiration_dt, user_id,subscription_publication_id ");
+		sql.append("from ").append(schema).append("mts_publication p ");
+		sql.append("left outer join ").append(schema).append("mts_subscription_publication_xr x ");
+		sql.append("on p.publication_id = x.publication_id and user_id = ? ");
+		sql.append("where public_flg = 0 ");
+		
+		DBProcessor db = new DBProcessor(getDBConnection());
+		return db.executeSelect(sql.toString(), Arrays.asList(userId), new SubscriptionUserVO(), "publication_nm");
 	}
 
 	/**
