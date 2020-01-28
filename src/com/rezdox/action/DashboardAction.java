@@ -200,6 +200,8 @@ public class DashboardAction extends SimpleActionAdapter {
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("rezdox_connection_quota_view where business_id=? ");
 		sql.append("order by slug_txt ");
 
+		log.info( sql );
+		
 		// Add the attributes to the business
 		DBProcessor db = new DBProcessor(getDBConnection(), schema);
 		List<Object> vals = Arrays.asList(bId,bId,bId,bId,bId,bId,bId,bId,bId,bId,bId);
@@ -295,7 +297,14 @@ public class DashboardAction extends SimpleActionAdapter {
 		sql.append(DBUtil.LEFT_OUTER_JOIN);
 		sql.append("(select a.residence_id, sum(project_cost+material_cost) as project_total, sum(b.project_valuation) as project_valuation ");
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("rezdox_residence_member_xr a ");
-		sql.append(DBUtil.INNER_JOIN).append(schema).append(PROJECT_COST_VIEW).append(" b on a.residence_id=b.residence_id ");
+		sql.append(DBUtil.INNER_JOIN).append(" ( ");
+		
+		sql.append("SELECT residence_id, business_id, project_id, residence_view_flg, business_view_flg, create_dt, ");
+		sql.append("project_cost, sum(material_cost) as material_cost, project_valuation, is_improvement ");
+		sql.append("from ").append(schema).append(PROJECT_COST_VIEW);
+		sql.append("group by residence_id, business_id, project_id, residence_view_flg, business_view_flg, create_dt, project_cost, project_valuation, is_improvement ");
+		sql.append(" ) as b on a.residence_id=b.residence_id  ");
+		
 		sql.append("and b.is_improvement=1 and b.residence_view_flg=1 ");
 		sql.append("where a.member_id=? and a.status_flg=1 ");
 		sql.append("group by a.residence_id ");
@@ -313,7 +322,10 @@ public class DashboardAction extends SimpleActionAdapter {
 
 		DBProcessor db = new DBProcessor(getDBConnection());
 		List<Object> params = Arrays.asList(memberId, memberId, memberId);
-		return db.executeSelect(sql.toString(), params, new ResidenceVO(), "residence_id");
+		List<ResidenceVO> data = db.executeSelect(sql.toString(), params, new ResidenceVO(), "residence_id");
+		if(data != null && ! data.isEmpty())
+		log.debug("Res " + data.get(0));
+		return data;
 	}
 
 	/**
