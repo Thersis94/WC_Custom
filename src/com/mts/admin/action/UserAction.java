@@ -95,7 +95,9 @@ public class UserAction extends UserBaseWidget {
 			} else if (req.getBooleanParameter("isSubscriber")) {
 				cols = getSubscriberUserColumns();
 			} else if (req.getBooleanParameter("isSubDate")) {
-				updateSubscriptionExpiration(new SubscriptionUserVO(req));
+				SubscriptionUserVO vo = new SubscriptionUserVO(req);
+				updateSubscriptionExpiration(vo);
+				setModuleData(vo);
 				return;
 			} else {
 				cols = getCoreUserColumns();

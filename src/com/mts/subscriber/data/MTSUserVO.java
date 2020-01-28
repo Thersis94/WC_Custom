@@ -57,7 +57,6 @@ public class MTSUserVO extends UserVO {
 
 	// Other Members
 	private SubscriptionType subscriptionType;
-	private Date expirationDate;
 	private String ssoId;
 
 	// Sub Beans
@@ -106,8 +105,9 @@ public class MTSUserVO extends UserVO {
 
 		if (StringUtil.isEmpty(publicationId)) return false;
 
+		Date now = new Date();
 		for(SubscriptionUserVO sub : subscriptions) {
-			if(publicationId.equalsIgnoreCase(sub.getPublicationId())) return true;
+			if(publicationId.equalsIgnoreCase(sub.getPublicationId()) && now.before(sub.getExpirationDate())) return true;
 		}
 
 		return false;
@@ -225,14 +225,6 @@ public class MTSUserVO extends UserVO {
 	@Column(name="subscription_type_cd")
 	public SubscriptionType getSubscriptionType() {
 		return subscriptionType;
-	}
-
-	/**
-	 * @return the expirationDate
-	 */
-	@Column(name="expiration_dt")
-	public Date getExpirationDate() {
-		return expirationDate;
 	}
 	
 	/**
@@ -369,13 +361,6 @@ public class MTSUserVO extends UserVO {
 	 */
 	public void setSubscriptionType(SubscriptionType subscriptionType) {
 		this.subscriptionType = subscriptionType;
-	}
-
-	/**
-	 * @param expirationDate the expirationDate to set
-	 */
-	public void setExpirationDate(Date expirationDate) {
-		this.expirationDate = expirationDate;
 	}
 
 	/**
