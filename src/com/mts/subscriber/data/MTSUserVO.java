@@ -48,6 +48,7 @@ public class MTSUserVO extends UserVO {
 	private String twitterName;
 	private String linkedinName;
 	private String notes;
+	private String publicationText;
 
 	// Numeric Members
 	private int activeFlag;
@@ -232,6 +233,19 @@ public class MTSUserVO extends UserVO {
 	@Column(name="expiration_dt")
 	public Date getExpirationDate() {
 		return expirationDate;
+	}
+	
+	/**
+	 * 
+	 * @return
+	 */
+	@Column(name="pub_txt", isReadOnly= true)
+	public String getPublicationText() {
+		return publicationText;
+	}
+
+	public void setPublicationText(String publicationText) {
+		this.publicationText = publicationText;
 	}
 
 	/**

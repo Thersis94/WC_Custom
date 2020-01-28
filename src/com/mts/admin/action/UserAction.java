@@ -282,7 +282,7 @@ public class UserAction extends UserBaseWidget {
 		StringBuilder sql = new StringBuilder(768);
 		sql.append("select a.email_address_txt, last_login_dt, a.user_id, a.first_nm, a.last_nm, a.sso_id, d.profile_id, ");
 		sql.append("a.company_nm, a.expiration_dt, a.active_flg, c.role_nm, b.profile_role_id, subscription_type_cd, cv_desc, ");
-		sql.append("d.authentication_id, a.create_dt, string_agg(f.publication_nm, ',') as note_txt, b.role_id, a.pro_title_nm, a.sec_user_id, a.note_txt ");
+		sql.append("d.authentication_id, a.create_dt, string_agg(f.publication_nm, ',') as pub_txt, b.role_id, a.pro_title_nm, a.print_copy_flg , a.sec_user_id, a.note_txt ");
 		sql.append(DBUtil.FROM_CLAUSE).append(getCustomSchema()).append("mts_user a ");
 		sql.append(DBUtil.INNER_JOIN).append("profile d on a.profile_id = d.profile_id ");
 		sql.append(DBUtil.INNER_JOIN).append("profile_role b on a.profile_id = b.profile_id and site_id =? ");
@@ -333,14 +333,14 @@ public class UserAction extends UserBaseWidget {
 
 		sql.append("group by last_login_dt, a.user_id, a.first_nm, a.last_nm, a.company_nm, ");
 		sql.append("a.expiration_dt, a.pro_title_nm, c.role_nm, b.profile_role_id, d.authentication_id, ");
-		sql.append("a.create_dt, a.active_flg, a.email_address_txt, b.role_id, a.sso_id, d.profile_id, a.sec_user_id, a.note_txt  ");
+		sql.append("a.create_dt, a.active_flg, a.email_address_txt, b.role_id, a.sso_id, d.profile_id, a.print_copy_flg, a.sec_user_id, a.note_txt  ");
 
 		if ("lastLogin".equals(bst.getSort())) {
 			sql.append("order by coalesce(last_login_dt, '2000-01-01') ").append(bst.getOrder()).append(", a.last_nm ");
 		} else {
 			sql.append(bst.getSQLOrderBy("a.last_nm", "asc"));
 		}
-		log.debug(sql.length() + "|" + sql + "|" + bst.getLikeSearch());
+		log.debug(sql.length() + "|" + sql + "|" + bst.getLikeSearch() + "|"+ vals );
 
 		// Query
 		DBProcessor db = new DBProcessor(getDBConnection());
