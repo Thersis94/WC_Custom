@@ -200,7 +200,7 @@ public class DashboardAction extends SimpleActionAdapter {
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("rezdox_connection_quota_view where business_id=? ");
 		sql.append("order by slug_txt ");
 
-		log.info( sql );
+		log.debug( sql );
 		
 		// Add the attributes to the business
 		DBProcessor db = new DBProcessor(getDBConnection(), schema);
