@@ -1,6 +1,7 @@
 package com.wsla.action.ticket.transaction;
 
 import java.sql.SQLException;
+import java.util.ArrayList;
 // JDK 1.8.x
 import java.util.Arrays;
 import java.util.Date;
@@ -193,6 +194,8 @@ public class TicketCloneTransaction extends BaseTransactionAction {
 		// Clone the old ticket to the new ticket
 		TicketVO newTicket = cloneTicket(ticketIdText, user);
 		newTicket.setUnitLocation(UnitLocation.WSLA);
+	
+		removeNewTicketCasAssignment(newTicket.getTicketId());
 		
 		// Create a new ticket assignment, setting WSLA as the CAS on the new ticket
 		TicketAssignmentVO assignment = new TicketAssignmentVO();
@@ -201,7 +204,7 @@ public class TicketCloneTransaction extends BaseTransactionAction {
 		assignment.setTicketId(newTicket.getTicketId());
 		assignment.setOwnerFlag(1);
 		assignment.setTypeCode(TypeCode.CAS);
-		
+
 		try {
 			// Save updated ticket data
 			DBProcessor dbp = new DBProcessor(getDBConnection(), getCustomSchema());
@@ -225,6 +228,33 @@ public class TicketCloneTransaction extends BaseTransactionAction {
 		return newTicket;
 	}
 	
+	/**
+	 * used to remove the old record from the orginal clone to make way for the new custom wsla cas record
+	 * @param ticketId
+	 */
+	private void removeNewTicketCasAssignment(String ticketId) {
+		
+		//check to make sure there isnt already a relationship for this attribute and role
+		StringBuilder sb = new StringBuilder(120);
+		sb.append("delete from ").append(getCustomSchema()).append("wsla_ticket_assignment wta where ticket_id = ? and assg_type_cd = 'CAS' " );
+		List<String> fields = new ArrayList<>();
+		fields.add("ticket_id");
+		
+		
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		
+		TicketAssignmentVO tsVo = new TicketAssignmentVO();
+		tsVo.setTicketId(ticketId);
+		
+		try {
+			db.executeSqlUpdate(sb.toString(), tsVo, fields);
+		} catch (DatabaseException e1) {
+			log.error("could not delete old records",e1);
+		}
+		
+		
+	}
+
 	/**
 	 * Clones the core ticket information.  The original ticket id is assigned to 
 	 * the parent id and a new ticket id text is assigned.  The unit location is 
