@@ -53,6 +53,7 @@ public class CreditMemoVO extends BeanDataVO {
 	private Date updateDate;
 	private Date authorizationDate;
 	private int endUserRefundFlag;
+	private int creditMemoVoidFlag;
 	
 	// Sub-beans
 	private TicketDataVO asset = new TicketDataVO();
@@ -462,6 +463,22 @@ public class CreditMemoVO extends BeanDataVO {
 		this.productName = productName;
 	}
 
+	/**
+	 * 
+	 */
+	public void setCreditMemoVoidFlag(int creditMemoVoidFlag) {
+		this.creditMemoVoidFlag = creditMemoVoidFlag;
+	}
+
+	/**
+	 * 
+	 * @return
+	 */
+	@Column(name="credit_memo_void_flg")
+	public int getCreditMemoVoidFlag() {
+		return creditMemoVoidFlag;
+	}
+	
 	/**
 	 * @return the debitMemoCode
 	 */

@@ -259,7 +259,7 @@ public class DiagnosticTransaction extends BaseTransactionAction {
 			String notes = req.getParameter("attr_partsNotes", "");
 			String summary = StringUtil.join(LedgerSummary.REPAIR_STATUS_CHANGED.summary, ": ", notes);
 			
-			if (nextStatus == StatusCode.PENDING_UNIT_RETURN) {
+			if (nextStatus == StatusCode.PENDING_UNIT_RETURN || nextStatus == StatusCode.REPAIRABLE) {
 				//set the status to pending return if its not repair able under warranty
 				ledger = changeStatus(td.getTicketId(), user.getUserId(), nextStatus, summary, null);
 			}else {
