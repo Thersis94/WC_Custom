@@ -323,8 +323,9 @@ public class DashboardAction extends SimpleActionAdapter {
 		DBProcessor db = new DBProcessor(getDBConnection());
 		List<Object> params = Arrays.asList(memberId, memberId, memberId);
 		List<ResidenceVO> data = db.executeSelect(sql.toString(), params, new ResidenceVO(), "residence_id");
-		if(data != null && ! data.isEmpty())
-		log.debug("Res " + data.get(0));
+		
+		if(data != null && ! data.isEmpty())log.debug( data.get(0));
+		
 		return data;
 	}
 
