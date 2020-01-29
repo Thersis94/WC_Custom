@@ -25,7 +25,6 @@ import com.siliconmtn.util.StringUtil;
  ****************************************************************************/
 @Table(name="mts_subscription_publication_xr")
 public class SubscriptionUserVO extends BeanDataVO {
-
 	/**
 	 * 
 	 */
@@ -35,6 +34,7 @@ public class SubscriptionUserVO extends BeanDataVO {
 	private String subscriptionPublicationId;
 	private String publicationId;
 	private String userId;
+	private int trialFlag;
 	private Date createDate;
 	private Date expirationDate;
 	
@@ -109,6 +109,14 @@ public class SubscriptionUserVO extends BeanDataVO {
 	}
 
 	/**
+	 * @return the trialFlag
+	 */
+	@Column(name="trial_flg")
+	public int getTrialFlag() {
+		return trialFlag;
+	}
+
+	/**
 	 * @return the createDate
 	 */
 	@Column(name="create_dt", isInsertOnly=true, isAutoGen=true)
@@ -158,6 +166,13 @@ public class SubscriptionUserVO extends BeanDataVO {
 	 */
 	public void setPublicationName(String publicationName) {
 		this.publicationName = publicationName;
+	}
+
+	/**
+	 * @param trialFlag the trialFlag to set
+	 */
+	public void setTrialFlag(int trialFlag) {
+		this.trialFlag = trialFlag;
 	}
 
 }
