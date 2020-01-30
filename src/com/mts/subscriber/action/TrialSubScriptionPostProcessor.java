@@ -83,7 +83,7 @@ public class TrialSubScriptionPostProcessor extends SBActionAdapter {
 	public List<SubscriptionUserVO> getExistingSubscriptions(String userId) {
 		StringBuilder sql = new StringBuilder(128);
 		sql.append("select * from ").append(getCustomSchema());
-		sql.append("mts_mts_subscription_publication_xr where user_id = ? ");
+		sql.append("mts_subscription_publication_xr where user_id = ? ");
 		
 		DBProcessor db = new DBProcessor(getDBConnection());
 		return db.executeSelect(sql.toString(), Arrays.asList(userId), new SubscriptionUserVO());
