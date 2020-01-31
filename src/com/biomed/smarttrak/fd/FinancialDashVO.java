@@ -11,6 +11,7 @@ import java.util.List;
 import org.apache.log4j.Logger;
 
 import com.biomed.smarttrak.fd.FinancialDashAction.DashType;
+import com.biomed.smarttrak.fd.FinancialDashColumnSet.DisplayType;
 import com.biomed.smarttrak.util.SmarttrakTree;
 import com.biomed.smarttrak.vo.SectionVO;
 import com.siliconmtn.action.ActionRequest;
@@ -206,7 +207,12 @@ public class FinancialDashVO extends SBModuleVO {
 		} else {
 			setPublishedQtr(section.getFdPubQtr());
 		}
-		setPublishedYear(section.getFdPubYr());
+		
+		if (dispType == DisplayType.FOURYR.toString() && section.getFdPubQtr() == 4) {
+			setPublishedYear(section.getFdPubYr() - 1);
+		} else {
+			setPublishedYear(section.getFdPubYr());
+		}
 	}
 
 	/**
