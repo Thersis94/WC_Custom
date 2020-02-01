@@ -65,14 +65,20 @@ public class TrialSubscriptionValidator extends SBActionAdapter {
 		int count = 0;
 		for (int i = 0; user != null && i < user.getSubscriptions().size(); i++) {
 			SubscriptionUserVO vo = user.getSubscriptions().get(i);
-			if (publication.equalsIgnoreCase(vo.getPublicationId())) count++; 
+			if (publication.equalsIgnoreCase(vo.getPublicationId()) && vo.getExpirationDate() != null) {
+				count++; 
+			}
 		}
 		
 		
 		this.setModuleData("VALIDATION_SUBMITTED", 0, count == 0 ? null : "USER_NOT_AUTHORIZED");
 	}
 	
-	
+	/**
+	 * 
+	 * @param email
+	 * @return
+	 */
 	public MTSUserVO getUserData(String email) {
 		
 		StringBuilder sql = new StringBuilder(128);

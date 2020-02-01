@@ -309,6 +309,21 @@ public class MTSUserVO extends UserVO {
 	public List<SubscriptionUserVO> getSubscriptions() {
 		return subscriptions;
 	}
+	
+	/**
+	 * Returns the subscription for the specified publication
+	 * @param publicationId
+	 * @return
+	 */
+	public SubscriptionUserVO getSubscription(String publicationId) {
+		if (StringUtil.isEmpty(publicationId) || subscriptions.isEmpty()) return null;
+		
+		for (SubscriptionUserVO vo : subscriptions) {
+			if (publicationId.equalsIgnoreCase(vo.getPublicationId())) return vo;
+		}
+		
+		return null;
+	}
 
 	/**
 	 * @param subscriptions the subscriptions to set
