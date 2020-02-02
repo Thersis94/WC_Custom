@@ -91,15 +91,17 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 	/**
 	 * minimum rows in EXP file we're willing to consider a "a good file"
 	 */
-	private static final int MIN_EXP_ROWS = 2500;
+	protected int MIN_EXP_ROWS = 2500;
 
 	/**
 	 * debug mode runs individual insert queries instead of a batch query, to be able to track row failures.
 	 */
 	protected boolean debugMode = false; 
 
-	// Get the type (Intl (2) or US(1))
+	// Get the type (Intl (2) or US(1) or Int-private (3) or Int-Cerenovus (4))
 	protected int type = 1;
+	
+	protected String emailSubjectSuffix = "";
 
 	/**
 	 * List of errors 
@@ -129,7 +131,11 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 		
 		schema = props.getProperty(Constants.CUSTOM_DB_SCHEMA);
 
-		if (type == 2) limeLightUrl = MediaBinLinkAction.INT_BASE_URL;
+		// non-US uses the Intl folder of assets
+		if (type != 1) limeLightUrl = MediaBinLinkAction.INT_BASE_URL;
+		
+		emailSubjectSuffix = type == 1 ? " US" : " EMEA";
+		if (3 == type) emailSubjectSuffix = " EMEA Private Assets";
 	}
 
 
@@ -138,9 +144,7 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 	 * @throws Exception 
 	 */
 	public static void main(String[] args) throws Exception {
-		//Create an instance of the MedianBinImporter
-		DSMediaBinImporterV2 dmb = new DSMediaBinImporterV2(args);
-		dmb.run();
+		new DSMediaBinImporterV2(args).run();
 	}
 
 
@@ -307,8 +311,10 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 		String baseUrl = props.getProperty(Constants.SOLR_BASE_URL);
 		String collection = props.getProperty(Constants.SOLR_COLLECTION_NAME);
 
+		//fail fast if the script doesn't use/define Solr
+		if (StringUtil.isEmpty(baseUrl)) return;
+		
 		SolrClient server = SolrClientBuilder.build(baseUrl, collection);
-
 		pushToSolr(masterRecords.values(), server);
 
 		//ask for a count of records in Solr using a typical query
@@ -581,7 +587,7 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 	 * @param f
 	 * @return
 	 */
-	private boolean fileOnDiskChanged(MediaBinDeltaVO vo, File f) {
+	protected boolean fileOnDiskChanged(MediaBinDeltaVO vo, File f) {
 		String checksum = vo.getChecksum();
 		if (StringUtil.isEmpty(checksum)) fileOnLLChanged(vo); //if the checksum is empty go out to LL for the header (only)
 
@@ -662,7 +668,7 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 	 * @param vo
 	 * @param fileNm
 	 */
-	private boolean fileOnLLChanged(MediaBinDeltaVO vo) {
+	protected boolean fileOnLLChanged(MediaBinDeltaVO vo) {
 		log.info("checking headers on " + vo.getLimeLightUrl());
 		boolean changed = false;
 		try {
@@ -813,7 +819,7 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 	 * @return
 	 * @throws IOException
 	 */
-	private BufferedWriter makeArchiveWriter() throws IOException {
+	protected BufferedWriter makeArchiveWriter() throws IOException {
 		String archivePath = props.getProperty("expArchivePath");
 		if (archivePath == null || archivePath.isEmpty()) {
 			OutputStream nullOS = new OutputStream() { @Override public void write(int b) {/* does nothing */} };
@@ -1164,7 +1170,7 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 	 * @param type
 	 * @return
 	 */
-	private String parseLanguage(String lang) {
+	protected String parseLanguage(String lang) {
 		if (lang == null) return null;
 		return languages.get(lang.toUpperCase());
 	}
@@ -1251,18 +1257,19 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 	 */
 	private void sendEmail(long startNano, Map<String, MediaBinDeltaVO> masterRecords) {
 		try {
+			//support a run-specific email subject...fallback to legacy behavior...then a default
+			String subjectBase = props.getProperty("emailSubject" + type, props.getProperty("emailSubject"));
+			if (StringUtil.isEmpty(subjectBase)) subjectBase = "SMT MediaBin Import -";
+			
 			// Build the email message
 			EmailMessageVO msg = new EmailMessageVO(); 
 			msg.addRecipients(props.getProperty("adminEmail" + type).split(","));
-			String subjectBase = StringUtil.checkVal(props.getProperty("emailSubject"), "SMT MediaBin Import -"); //allow the config file to override the default subject
-			String opCo = type == 1 ? " US" : " EMEA";
-			if (3 == type) opCo = " EMEA Private Assets";
-			msg.setSubject(subjectBase + opCo);
+			msg.setSubject(subjectBase + emailSubjectSuffix);
 			msg.setFrom("appsupport@siliconmtn.com");
 
 			StringBuilder html= new StringBuilder(1000);
 			html.append("<h3>Import File Name: " + importFile + "</h3><h4>");
-			html.append("EXP rows: ").append(dataCounts.get("exp-raw")).append("<br/>");
+			html.append("Source file rows: ").append(dataCounts.get("exp-raw")).append("<br/>");
 			html.append("Eligible: ").append(dataCounts.get("exp-eligible")).append("<br/><br/>");
 			html.append("Existing: ").append(dataCounts.get("existing")).append("<br/>");
 			html.append("Added: ").append(dataCounts.get("inserted")).append("<br/>");
@@ -1274,10 +1281,10 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 
 			long timeSpent = System.nanoTime()-startNano;
 			double millis = timeSpent / (double) 1000000;
-			if (millis > (60*1000)) {
-				html.append("Execution Time: ").append(Math.round(millis / (60*1000))).append(" minutes");
+			if (millis > (60000)) {
+				html.append("Execution Time: ").append(Math.round(millis / (60000))).append(" minutes");
 			} else {
-				html.append("Execution Time: ").append(millis / 1000).append(" seconds");
+				html.append("Execution Time: ").append(Math.round(millis / 1000)).append(" seconds");
 			}
 			html.append("</h4>");
 
