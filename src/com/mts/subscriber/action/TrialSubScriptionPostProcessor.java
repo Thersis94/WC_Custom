@@ -5,12 +5,15 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
 
-import com.mts.common.MTSConstants.MTSRole;
 // MTS Libs
+import com.mts.common.MTSConstants.MTSRole;
 import com.mts.subscriber.action.SubscriptionAction.SubscriptionType;
 import com.mts.subscriber.data.MTSUserVO;
 import com.mts.subscriber.data.SubscriptionUserVO;
+
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -21,9 +24,11 @@ import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
+
 // WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.registration.SubmittalAction;
+import com.smt.sitebuilder.action.registration.SubmittalDataVO;
 
 
 /****************************************************************************
@@ -40,6 +45,14 @@ import com.smt.sitebuilder.action.registration.SubmittalAction;
  * @updates:
  ****************************************************************************/
 public class TrialSubScriptionPostProcessor extends SBActionAdapter {
+	
+	private static final Set<String> publications = new TreeSet<String>() {
+		private static final long serialVersionUID = 1L; {
+			add("MEDTECH-STRATEGIST");
+			add("MARKET-PATHWAYS");
+		}
+		
+	};
 
 	/**
 	 * 
@@ -58,23 +71,46 @@ public class TrialSubScriptionPostProcessor extends SBActionAdapter {
 	
 	@Override
 	public void build(ActionRequest req) throws ActionException {
+		// Get the user's profile
 		UserDataVO user = (UserDataVO)req.getAttribute(SubmittalAction.REGISTRATION_USER_DATA);
-		String pubId = StringUtil.checkVal(req.getParameter("publication"));
-		log.info("Adding MTS info for trial: " + user);
+
+		// Get the form data
+		String pubId = getFormData(req, true);
+		String company = getFormData(req, false);
+		log.info("Form Data: " + pubId + "|" + company);
 		
 		// Look for an existing account and update / add
 		MTSUserVO mtsUser = checkMTSUser(user);
 		try {
-			updateMTSUser(mtsUser, req.getParameter("company"));
+			updateMTSUser(mtsUser, company);
 			mtsUser.setSubscriptions(getExistingSubscriptions(mtsUser.getUserId()));
 			
 			// Update/Assign the publication permissions
 			assignPublication(mtsUser, pubId);
 			
 		} catch (InvalidDataException | DatabaseException e) {
-			log.info("unabe to update MTS User", e);
+			log.info("Unable to update MTS User", e);
 			return;
 		}
+	}
+	
+	/**
+	 * Generically parses the company and publication info
+	 * @param req
+	 * @param isPub
+	 * @return
+	 */
+	@SuppressWarnings("unchecked")
+	public String getFormData(ActionRequest req, boolean isPub) {
+		for ( SubmittalDataVO data : (List<SubmittalDataVO>)req.getAttribute(SubmittalAction.REGISTRATION_EXT_DATA)) {
+			if (isPub && publications.contains(data.getUserValue())) {
+				return data.getUserValue();
+			} else if (! isPub && !publications.contains(data.getUserValue())){
+				return data.getUserValue();
+			}
+		}
+		
+		return "";
 	}
 	
 	/**

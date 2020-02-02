@@ -302,10 +302,10 @@ public class UserAction extends UserBaseWidget {
 		sql.append("d.authentication_id, a.create_dt, pub_txt, b.role_id, a.pro_title_nm, a.print_copy_flg , a.sec_user_id, a.note_txt ");
 		sql.append(DBUtil.FROM_CLAUSE).append(getCustomSchema()).append("mts_user a ");
 		sql.append(DBUtil.INNER_JOIN).append("profile d on a.profile_id = d.profile_id ");
-		sql.append(DBUtil.INNER_JOIN).append("profile_role b on a.profile_id = b.profile_id and site_id =? ");
-		sql.append(DBUtil.INNER_JOIN).append("role c on b.role_id = c.role_id ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append("profile_role b on a.profile_id = b.profile_id and site_id =? ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append("role c on b.role_id = c.role_id ");
 		sql.append("left outer join ( ");
-		sql.append("select user_id, string_agg(publication_nm + '|' + cast(trial_flg as varchar), ',') as pub_txt ");
+		sql.append("select user_id, string_agg(publication_nm + '|' + cast(trial_flg as varchar) + '|' + to_char(expiration_dt, 'mm/dd/yyyy'), ',') as pub_txt ");
 		sql.append("from custom.mts_subscription_publication_xr xr ");
 		sql.append("inner join custom.mts_publication p ");
 		sql.append("on xr.publication_id = p.publication_id group by user_id ");

@@ -62,6 +62,7 @@ public class TrialSubscriptionValidator extends SBActionAdapter {
 		String publication = StringUtil.checkVal(req.getParameter("publication"));
 		
 		MTSUserVO user = getUserData(email);
+		log.info(user);
 		int count = 0;
 		for (int i = 0; user != null && i < user.getSubscriptions().size(); i++) {
 			SubscriptionUserVO vo = user.getSubscriptions().get(i);
