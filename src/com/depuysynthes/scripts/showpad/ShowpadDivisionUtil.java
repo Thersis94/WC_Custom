@@ -213,7 +213,7 @@ public class ShowpadDivisionUtil {
 		//add any Link objects (Tags) we need to have attached to this asset
 		StringBuilder header = new StringBuilder(200);
 		try {
-			tagMgr.addTags(vo, header);
+			tagMgr.saveTags(vo, header);
 		} catch (InvalidDataException e1) {
 			failures.add(e1);
 			log.warn("asset not found on Showpad: " + vo.getDpySynMediaBinId());
