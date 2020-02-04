@@ -1,5 +1,12 @@
 WC_Custom Changelog (auto-generated)
 
+# [3.44.0](https://github.com/smtadmin/WC_Custom/compare/3.43.0...3.44.0) (2020-02-04)
+
+
+### Features
+
+* **feature-rezdox-350:** make home history project match my res page ([6bb385a](https://github.com/smtadmin/WC_Custom/commit/6bb385a))
+
 # [3.43.0](https://github.com/smtadmin/WC_Custom/compare/3.42.1...3.43.0) (2020-01-31)
 
 
