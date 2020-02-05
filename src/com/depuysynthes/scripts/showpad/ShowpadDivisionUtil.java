@@ -63,6 +63,7 @@ public class ShowpadDivisionUtil {
 	protected String divisionUrl;
 	protected String showpadApiUrl;
 	protected Connection dbConn;
+	private boolean isEOSRun = false;
 
 	protected ShowpadTagManager tagMgr;
 
@@ -190,7 +191,7 @@ public class ShowpadDivisionUtil {
 		params.put("isDivisionShared", "false");
 
 		//distinguish some values for EMEA private assets only - trigger off the tag passed from that script marking them as 'internal'
-		if (DSPrivateAssetsImporter.INTERNAL_TAG.equals(tagMgr.getSourceConstant())) {
+		if (DSPrivateAssetsImporter.INTERNAL_TAG.equals(tagMgr.getSourceConstant()) || (isEOSRun() && vo.isInternal())) {
 			params.put("isSensitive", "true");
 			params.put("isShareable", "false");
 			params.put("isDownloadable", "false");
@@ -599,20 +600,24 @@ public class ShowpadDivisionUtil {
 		}
 
 		//append "- INTERNAL" to internal assets only
-		if (DSPrivateAssetsImporter.INTERNAL_TAG.equals(tagMgr.getSourceConstant())) {
+		if (DSPrivateAssetsImporter.INTERNAL_TAG.equals(tagMgr.getSourceConstant()) || (isEOSRun() && vo.isInternal())) {
 			name.append("INTERNAL - ");
 		}
 
 		//add tracking number
-		String trackingNo = vo.getTrackingNoTxt();
-		if (!StringUtil.isEmpty(trackingNo)) {
-			//remove all non-alphanumerics
-			trackingNo = StringUtil.removeNonAlphaNumeric(trackingNo);
-			//remove LR, low, high keywords
-			trackingNo = trackingNo.replaceAll("LR", "");
-			trackingNo = trackingNo.replaceAll("low", "");
-			trackingNo = trackingNo.replaceAll("high", "");
-			name.append(trackingNo);
+		if (isEOSRun()) {
+			name.append(vo.getEcopyTrackingNo());
+		} else {
+			String trackingNo = vo.getTrackingNoTxt();
+			if (!StringUtil.isEmpty(trackingNo)) {
+				//remove all non-alphanumerics
+				trackingNo = StringUtil.removeNonAlphaNumeric(trackingNo);
+				//remove LR, low, high keywords
+				trackingNo = trackingNo.replaceAll("LR", "");
+				trackingNo = trackingNo.replaceAll("low", "");
+				trackingNo = trackingNo.replaceAll("high", "");
+				name.append(trackingNo);
+			}
 		}
 
 		log.debug("title: " + name);
@@ -668,5 +673,15 @@ public class ShowpadDivisionUtil {
 	}
 	public void setFailCount(int failCount) {
 		this.failCount = failCount;
+	}
+
+
+	public boolean isEOSRun() {
+		return isEOSRun;
+	}
+
+
+	public void setEOSRun(boolean isEOSRun) {
+		this.isEOSRun = isEOSRun;
 	}
 }

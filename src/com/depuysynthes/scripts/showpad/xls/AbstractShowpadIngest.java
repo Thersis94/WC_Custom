@@ -96,7 +96,9 @@ public abstract class AbstractShowpadIngest extends DSMediaBinImporterV2 {
 		String[] divs = props.getProperty("showpadDivisions" + type).split(",");
 		for (String d : divs) {
 			String[] div = d.split("=");
-			divisions.add(new ShowpadDivisionUtil(props, div[1], div[0], showpadApi, dbConn));
+			ShowpadDivisionUtil util = new ShowpadDivisionUtil(props, div[1], div[0], showpadApi, dbConn);
+			util.setEOSRun(true); //affects how files are named
+			divisions.add(util);
 			log.debug("created division " + div[0] + " with id " + div[1]);
 		}
 		log.info("loaded " + divisions.size() + " showpad divisions");
@@ -129,6 +131,8 @@ public abstract class AbstractShowpadIngest extends DSMediaBinImporterV2 {
 
 
 		if (fileOnLLChanged(vo) || !todaysDate.equals(lastFullDate)) {
+			vo.setFileChanged(true); //either of the above yields a true here
+			
 			// If there's no checksum that means we got a non-200 http response. 
 			// We don't want to process any farther - exit quietly and let the script continue trying (on schedule) until the file becomes available
 			if (StringUtil.isEmpty(vo.getChecksum()))
