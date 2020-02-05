@@ -13,6 +13,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 import com.depuysynthes.action.MediaBinAssetVO;
 import com.depuysynthes.scripts.DSMediaBinImporterV2;
@@ -44,6 +45,7 @@ public abstract class AbstractShowpadIngest extends DSMediaBinImporterV2 {
 
 	static final String BR = "<br/>";
 	static final String HR_NL = "<hr/>\r\n";
+	private static final Pattern EOS_REGEX = Pattern.compile("^[0-9]{1,6}\\-[0-9]{1,6}$");
 
 	protected ShowpadApiUtil showpadApi;
 	protected List<ShowpadDivisionUtil> divisions = new ArrayList<>();
@@ -94,7 +96,9 @@ public abstract class AbstractShowpadIngest extends DSMediaBinImporterV2 {
 		String[] divs = props.getProperty("showpadDivisions" + type).split(",");
 		for (String d : divs) {
 			String[] div = d.split("=");
-			divisions.add(new ShowpadDivisionUtil(props, div[1], div[0], showpadApi, dbConn));
+			ShowpadDivisionUtil util = new ShowpadDivisionUtil(props, div[1], div[0], showpadApi, dbConn);
+			util.setEOSRun(true); //affects how files are named
+			divisions.add(util);
 			log.debug("created division " + div[0] + " with id " + div[1]);
 		}
 		log.info("loaded " + divisions.size() + " showpad divisions");
@@ -127,6 +131,8 @@ public abstract class AbstractShowpadIngest extends DSMediaBinImporterV2 {
 
 
 		if (fileOnLLChanged(vo) || !todaysDate.equals(lastFullDate)) {
+			vo.setFileChanged(true); //either of the above yields a true here
+			
 			// If there's no checksum that means we got a non-200 http response. 
 			// We don't want to process any farther - exit quietly and let the script continue trying (on schedule) until the file becomes available
 			if (StringUtil.isEmpty(vo.getChecksum()))
@@ -505,16 +511,18 @@ public abstract class AbstractShowpadIngest extends DSMediaBinImporterV2 {
 				if (StringUtil.isEmpty(tn))
 					throw new Exception("Tracking number missing for " + row.get("Title"));
 
-				//don't accept duplicates
-				if (records.containsKey(tn))
-					failures.add(new Exception("A duplicate record exists in the EXP file for " + tn));
-
 				vo = new MediaBinDeltaVO();
-				vo.setImportFileCd(type);
-				vo.setRecordState(State.Insert);
 				vo.setTrackingNoTxt(tn);
 				vo.setEcopyTrackingNo(tn); //this is only used for reporting file-related issues in the admin email
-				vo.setDpySynMediaBinId(tn); //this gets turned into a combinedKey later, during reconcile
+				cleanupEOSNumbers(vo);
+				vo.setDpySynMediaBinId(vo.getTrackingNoTxt()); //this gets turned into a combinedKey later, during reconcile
+
+				//don't accept duplicates
+				if (records.containsKey(vo.getTrackingNoTxt()))
+					failures.add(new Exception("A duplicate record exists in the EXP file for " + tn));
+
+				vo.setImportFileCd(type);
+				vo.setRecordState(State.Insert);
 				vo.setAssetNm(StringUtil.checkVal(row.get("Asset URL")).replace('\\','/'));
 				vo.setFileNm(getFileName(row.get("Asset URL")));
 				Date expirationDt = Convert.formatDate(Convert.DATE_LONG_DAY_OF_WEEK_PATTERN, row.get("Expiration Date"));
@@ -554,6 +562,22 @@ public abstract class AbstractShowpadIngest extends DSMediaBinImporterV2 {
 
 		dataCounts.put("exp-eligible", records.size());
 		return records;
+	}
+
+
+	/**
+	 * if the tracking# format matches EOS, separate the tracking# from the revision level.
+	 * @param vo
+	 */
+	private void cleanupEOSNumbers(MediaBinDeltaVO vo) {
+		//ensure we're only working against the EOS formatted numbers
+		if (!EOS_REGEX.matcher(vo.getTrackingNoTxt()).matches()) return;
+
+		String[] parts = vo.getTrackingNoTxt().split("-");
+		if (parts.length == 2) {
+			vo.setTrackingNoTxt(parts[0]);
+			vo.seteCopyRevisionLvl(parts[1]);
+		}
 	}
 
 

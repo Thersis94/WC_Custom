@@ -1345,7 +1345,11 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 		msg.append("<h4>").append(st.toString()).append(" Summary</h4>");
 		msg.append("<table border='1' width='95%' align='center'><thead><tr>");
 		msg.append("<th>SMT Tracking Number</th>");
-		msg.append("<th>eCopy Tracking Number</th>");
+		if (type < 4) {
+			msg.append("<th>eCopy Tracking Number</th>");
+		} else {
+			msg.append("<th>EOS Tracking Number</th>");
+		}
 		msg.append("<th>File Name</th>");
 		if (State.Update == st) msg.append("<th>Changes</th>");
 		msg.append("</tr></thead>\r<tbody>");
