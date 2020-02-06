@@ -183,7 +183,8 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 			ps.setString(1, Status.P.toString());
 			ps.setString(2, Status.E.toString());
 			ps.setString(3, Status.P.toString());
-			if (id != null) ps.setString(4, id);
+			ps.setString(4, Status.P.toString());
+			if (id != null) ps.setString(5, id);
 
 			ResultSet rs = ps.executeQuery();
 			String currentCompany = "";
@@ -525,14 +526,19 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 	 * @return
 	 */
 	private String buildRetrieveSql(String id) {
-		StringBuilder sql = new StringBuilder(1250);
+		StringBuilder sql = new StringBuilder(1350);
 		String customDb = config.getProperty(Constants.CUSTOM_DB_SCHEMA);
 		sql.append("SELECT c.COMPANY_ID, a.SECTION_ID, c.COMPANY_NM, c.stock_abbr_txt, c.PUBLIC_FLG, c.SHORT_NM_TXT, ");
 		sql.append("c2.COMPANY_NM as PARENT_NM, COUNT(p.COMPANY_ID) as PRODUCT_NO, c.CREATE_DT, c.UPDATE_DT, c.alias_nm, ");
-		sql.append("case when c.status_no = ? and count(p.company_id) = 0 then ? else c.STATUS_NO end as STATUS_NO ");
+		sql.append("case when c.status_no = ? and count(p.company_id) = 0 and count(pa.company_id) = 0 then ? else ");
+		sql.append("c.STATUS_NO end as STATUS_NO ");
 		sql.append(DBUtil.FROM_CLAUSE).append(customDb).append("BIOMEDGPS_COMPANY c ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(customDb).append("BIOMEDGPS_PRODUCT p ");
 		sql.append("ON p.COMPANY_ID = c.COMPANY_ID and p.status_no = ? ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(customDb).append("BIOMEDGPS_PRODUCT_ALLIANCE_XR pxr ");
+		sql.append("ON pxr.COMPANY_ID = c.COMPANY_ID ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(customDb).append("BIOMEDGPS_PRODUCT pa ");
+		sql.append("ON pa.PRODUCT_ID = pxr.PRODUCT_ID and pa.status_no = ? ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(customDb).append("BIOMEDGPS_COMPANY_ATTRIBUTE_XR xr ");
 		sql.append("ON xr.COMPANY_ID = c.COMPANY_ID ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(customDb).append("BIOMEDGPS_COMPANY_ATTRIBUTE a ");
