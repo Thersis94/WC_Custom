@@ -115,7 +115,7 @@ public class MtsUserLoginReport extends UserLoginReport {
 		log.debug(sb + "|" + siteId + "|" + start + "|" + end+"|"+roleOrderNo);
 
 		List<GenericVO> data = new ArrayList<>();
-		DateFormat df = new SimpleDateFormat("MM/dd/yy HH:mm a");
+		DateFormat df = new SimpleDateFormat("MM/dd/yy HH:mm ");
 		StringEncrypter se = StringEncrypter.getInstance((String) attributes.get(Constants.ENCRYPT_KEY));
 		try (PreparedStatement ps = dbConn.prepareStatement(sb.toString())) {
 			int count = 1;
