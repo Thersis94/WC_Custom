@@ -40,21 +40,22 @@ public class TrialSubscriptionValidator extends SBActionAdapter {
 	
 	
 	/**
-	 * 
+	 * Base constructor
 	 */
 	public TrialSubscriptionValidator() {
 		super();
 	}
 
 	/**
+	 * Initializing constructor
 	 * @param actionInit
 	 */
 	public TrialSubscriptionValidator(ActionInitVO actionInit) {
 		super(actionInit);
 	}
 	
-	/*
-	 * 
+	/**
+	 * Determines whether a user registering has permission to receive a 1 week membership
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
@@ -62,7 +63,6 @@ public class TrialSubscriptionValidator extends SBActionAdapter {
 		String publication = StringUtil.checkVal(req.getParameter("publication"));
 		
 		MTSUserVO user = getUserData(email);
-		log.info(user);
 		int count = 0;
 		for (int i = 0; user != null && i < user.getSubscriptions().size(); i++) {
 			SubscriptionUserVO vo = user.getSubscriptions().get(i);
@@ -76,7 +76,7 @@ public class TrialSubscriptionValidator extends SBActionAdapter {
 	}
 	
 	/**
-	 * 
+	 * Retrieves the user's data by email address
 	 * @param email
 	 * @return
 	 */

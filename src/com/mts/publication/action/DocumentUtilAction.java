@@ -142,7 +142,6 @@ public class DocumentUtilAction extends SBActionAdapter {
 		doc.setPublishDate(null);
 		doc.setUniqueCode(RandomAlphaNumeric.generateRandom(6, true).toUpperCase());
 		db.insert(doc);
-		log.info("New Document ID: " + doc.getDocumentId());
 		
 		return doc;
 	}

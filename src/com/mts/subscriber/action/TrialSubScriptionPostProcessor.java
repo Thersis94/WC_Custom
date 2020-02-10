@@ -45,7 +45,9 @@ import com.smt.sitebuilder.action.registration.SubmittalDataVO;
  * @updates:
  ****************************************************************************/
 public class TrialSubScriptionPostProcessor extends SBActionAdapter {
-	
+	/**
+	 * Collection of the publications to subscribe
+	 */
 	private static final Set<String> publications = new TreeSet<String>() {
 		private static final long serialVersionUID = 1L; {
 			add("MEDTECH-STRATEGIST");
@@ -68,7 +70,9 @@ public class TrialSubScriptionPostProcessor extends SBActionAdapter {
 		super(actionInit);
 	}
 	
-	
+	/*
+	 * Code to call the post processing needed for the registration
+	 */
 	@Override
 	public void build(ActionRequest req) throws ActionException {
 		// Get the user's profile
@@ -77,7 +81,6 @@ public class TrialSubScriptionPostProcessor extends SBActionAdapter {
 		// Get the form data
 		String pubId = getFormData(req, true);
 		String company = getFormData(req, false);
-		log.info("Form Data: " + pubId + "|" + company);
 		
 		// Look for an existing account and update / add
 		MTSUserVO mtsUser = checkMTSUser(user);
@@ -89,7 +92,7 @@ public class TrialSubScriptionPostProcessor extends SBActionAdapter {
 			assignPublication(mtsUser, pubId);
 			
 		} catch (InvalidDataException | DatabaseException e) {
-			log.info("Unable to update MTS User", e);
+			log.error("Unable to update MTS User", e);
 			return;
 		}
 	}
@@ -172,7 +175,7 @@ public class TrialSubScriptionPostProcessor extends SBActionAdapter {
 	}
 	
 	/**
-	 * 
+	 * Retrieves a collection of existing subscriptions
 	 * @param userId
 	 * @return
 	 */

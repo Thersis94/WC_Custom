@@ -186,7 +186,7 @@ public class IssueAction extends SBActionAdapter {
 		DBProcessor db = new DBProcessor(getDBConnection(), schema);
 		db.setGenerateExecutedSQL(log.isDebugEnabled());
 		List<IssueVO> issues = db.executeSelect(sql.toString(), vals, new IssueVO());
-		log.info(issues);
+		
 		if (issues.isEmpty()) return null;
 
 		IssueVO issue = issues.get(0);
