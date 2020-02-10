@@ -1,5 +1,34 @@
 WC_Custom Changelog (auto-generated)
 
+# [3.44.0](https://github.com/smtadmin/WC_Custom/compare/3.43.0...3.44.0) (2020-02-04)
+
+
+### Features
+
+* **feature-rezdox-350:** make home history project match my res page ([6bb385a](https://github.com/smtadmin/WC_Custom/commit/6bb385a))
+
+# [3.43.0](https://github.com/smtadmin/WC_Custom/compare/3.42.1...3.43.0) (2020-01-31)
+
+
+### Bug Fixes
+
+* **ST-227:** Ensure pending/reporting is shown as soon as sales are published. ([c5bdca9](https://github.com/smtadmin/WC_Custom/commit/c5bdca9))
+* **ST-227:** Ensure that pending/reporting is displaye donly when new data has been entered. ([06aad93](https://github.com/smtadmin/WC_Custom/commit/06aad93))
+* **ST-252:** Change four year comparison to only use complete years. ([920ca36](https://github.com/smtadmin/WC_Custom/commit/920ca36))
+* **ST-252:** Ensure full years are used in four year comparison. ([d8c160d](https://github.com/smtadmin/WC_Custom/commit/d8c160d))
+* **ST-252:** Ensure full years are used. ([a537c9a](https://github.com/smtadmin/WC_Custom/commit/a537c9a))
+* **ST-252:** Fix column name ([827ed59](https://github.com/smtadmin/WC_Custom/commit/827ed59))
+* **ST-275:** Change tech team list to use database instead of proeprties value. ([45af747](https://github.com/smtadmin/WC_Custom/commit/45af747))
+* **WC-Tasks:** Move reusable resource bundle code to superclass level ([da79ac7](https://github.com/smtadmin/WC_Custom/commit/da79ac7))
+
+
+### Features
+
+* **feature-wsla-i100:** add local inside warehouse transfer option for shipments ([8c91453](https://github.com/smtadmin/WC_Custom/commit/8c91453))
+* **feature-wsla-i100:** Add option to send SO to RAR or repair after OEM rejects refund ([0cdc2e9](https://github.com/smtadmin/WC_Custom/commit/0cdc2e9))
+* **feature-wsla-i100:** close ticket from credit memo, fix bug in cloning duplicates. ([ea38df6](https://github.com/smtadmin/WC_Custom/commit/ea38df6))
+* **feature-wsla-i100:** feature remove sn experation date on bulk uploaded Sn. ([1ed71da](https://github.com/smtadmin/WC_Custom/commit/1ed71da))
+
 ## [3.42.1](https://github.com/smtadmin/WC_Custom/compare/3.42.0...3.42.1) (2020-01-17)
 
 
