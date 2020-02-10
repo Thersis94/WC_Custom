@@ -17,6 +17,7 @@ import com.mts.admin.action.SSOProviderAction;
 import com.mts.admin.action.UserAction;
 import com.mts.publication.action.AssetAction;
 import com.mts.publication.action.CategoryAction;
+import com.mts.publication.action.DocumentUtilAction;
 import com.mts.publication.action.IssueAction;
 import com.mts.publication.action.IssueArticleAction;
 import com.mts.publication.action.MTSDocumentAction;
@@ -81,6 +82,7 @@ public class AjaxControllerFacadeAction extends FacadeActionAdapter {
 		actionMap.put(MTSApprovalAction.AJAX_KEY, MTSApprovalAction.class);
 		actionMap.put(IPSecurityAction.AJAX_KEY, IPSecurityAction.class);
 		actionMap.put("ssoProviders", SSOProviderAction.class);
+		actionMap.put(DocumentUtilAction.AJAX_KEY, DocumentUtilAction.class);
 	}
 
 	/*
