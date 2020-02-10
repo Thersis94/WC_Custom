@@ -109,6 +109,7 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 		FinancialDashVO dash = new FinancialDashVO();
 		SectionVO latest = getLatestPublish(req.getParameter(REQ_SECTION_ID));
 		dash.setCurrentQtrYear(dashType, latest);
+		dash.setReportedQtr(getLastReportedQtr());
 		dash.setData(req, sections, dashType);
 		dash.setBehindLatest(latest);
 
@@ -210,6 +211,14 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 	protected SectionVO getLatestPublish(String sectionId) {
 		SectionHierarchyAction sha = getHierarchyAction();
 		return sha.getLatestFdPublish(sectionId);
+	}
+	
+	/**
+	 * Get the latest reported quarter for the most recent year.
+	 */
+	protected int getLastReportedQtr() {
+		SectionHierarchyAction sha = getHierarchyAction();
+		return sha.getLatestFdReported();
 	}
 
 	/**
