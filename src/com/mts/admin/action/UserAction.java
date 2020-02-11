@@ -22,6 +22,7 @@ import com.siliconmtn.db.orm.*;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
+import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 
 //WC Libs
@@ -227,7 +228,7 @@ public class UserAction extends UserBaseWidget {
 				setModuleData(getUserSubscriptions(req.getParameter("userId")));
 			} else {
 				BSTableControlVO bst = new BSTableControlVO(req, MTSUserVO.class);
-				setModuleData(getAllUsers(bst, req.getParameter("roleId"), null, req.getParameter("publicationId")));
+				setModuleData(getAllUsers(bst, req.getParameter("roleId"), null, req.getParameter("publicationId"), req.getParameter("trialFlag")));
 			}
 		} catch (Exception e) {
 			setModuleData(null, 0, e.getLocalizedMessage());
@@ -291,23 +292,23 @@ public class UserAction extends UserBaseWidget {
 	 * 
 	 * @return
 	 */
-	public GridDataVO<MTSUserVO> getAllUsers(BSTableControlVO bst, String roleId, String subType, String pubId) {
+	public GridDataVO<MTSUserVO> getAllUsers(BSTableControlVO bst, String roleId, String subType, String pubId, String tf) {
 		// Add the params
 		List<Object> vals = new ArrayList<>();
 
 		StringBuilder sql = new StringBuilder(768);
 		sql.append("select a.email_address_txt, last_login_dt, a.user_id, a.first_nm, a.last_nm, a.sso_id, d.profile_id, ");
 		sql.append("a.company_nm, a.expiration_dt, a.active_flg, c.role_nm, b.profile_role_id, subscription_type_cd, cv_desc, ");
-		sql.append("d.authentication_id, a.create_dt, string_agg(f.publication_nm, ',') as pub_txt, b.role_id, a.pro_title_nm, a.print_copy_flg , a.sec_user_id, a.note_txt ");
+		sql.append("d.authentication_id, a.create_dt, pub_txt, b.role_id, a.pro_title_nm, a.print_copy_flg , a.sec_user_id, a.note_txt ");
 		sql.append(DBUtil.FROM_CLAUSE).append(getCustomSchema()).append("mts_user a ");
 		sql.append(DBUtil.INNER_JOIN).append("profile d on a.profile_id = d.profile_id ");
-		sql.append(DBUtil.INNER_JOIN).append("profile_role b on a.profile_id = b.profile_id and site_id =? ");
-		sql.append(DBUtil.INNER_JOIN).append("role c on b.role_id = c.role_id ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append("profile_role b on a.profile_id = b.profile_id and site_id =? ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append("role c on b.role_id = c.role_id ");
 		sql.append("left outer join ( ");
-		sql.append("select p.publication_id, xr.user_id, publication_nm ");
+		sql.append("select user_id, string_agg(publication_nm + '|' + cast(trial_flg as varchar) + '|' + to_char(expiration_dt, 'mm/dd/yyyy'), ',') as pub_txt ");
 		sql.append("from custom.mts_subscription_publication_xr xr ");
 		sql.append("inner join custom.mts_publication p ");
-		sql.append("on xr.publication_id = p.publication_id ");
+		sql.append("on xr.publication_id = p.publication_id group by user_id ");
 		sql.append(") as f on a.user_id = f.user_id ");
 		sql.append("left outer join ( ");
 		sql.append("select authentication_id, max(login_dt) as last_login_dt ");
@@ -331,6 +332,12 @@ public class UserAction extends UserBaseWidget {
 			sql.append("and f.publication_id = ? ");
 			vals.add(pubId);
 		}
+		
+		// Filter by publication
+		if (! StringUtil.isEmpty(tf)) {
+			sql.append("and a.user_id in (select user_id from custom.mts_subscription_publication_xr where trial_flg = ?) ");
+			vals.add(Convert.formatInteger(tf));
+		}
 
 		// Filter by subscription Type
 		if (!StringUtil.isEmpty(subType)) {
@@ -346,10 +353,6 @@ public class UserAction extends UserBaseWidget {
 			vals.add(bst.getLikeSearch().toLowerCase());
 			vals.add(bst.getLikeSearch().toLowerCase());
 		}
-
-		sql.append("group by last_login_dt, a.user_id, a.first_nm, a.last_nm, a.company_nm, ");
-		sql.append("a.expiration_dt, a.pro_title_nm, c.role_nm, b.profile_role_id, d.authentication_id, ");
-		sql.append("a.create_dt, a.active_flg, a.email_address_txt, b.role_id, a.sso_id, d.profile_id, a.print_copy_flg, a.sec_user_id, a.note_txt  ");
 
 		if ("lastLogin".equals(bst.getSort())) {
 			sql.append("order by coalesce(last_login_dt, '2000-01-01') ").append(bst.getOrder()).append(", a.last_nm ");
