@@ -126,7 +126,7 @@ public abstract class AbstractShowpadIngest extends DSMediaBinImporterV2 {
 		}
 
 		MediaBinDeltaVO vo = new MediaBinDeltaVO();
-		vo.setLimeLightUrl(importFile);
+		vo.setLimeLightUrl(importFile + "?t=" + Math.random());
 		vo.setChecksum(lastChecksum);
 
 
