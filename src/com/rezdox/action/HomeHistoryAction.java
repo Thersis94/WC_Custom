@@ -125,9 +125,9 @@ public class HomeHistoryAction extends ProjectAction {
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(" ( ");
 		
 		sql.append("SELECT residence_id, business_id, project_id, residence_view_flg, business_view_flg, create_dt, ");
-		sql.append("project_cost, sum(material_cost) as material_cost, project_valuation, is_improvement ");
+		sql.append("sum(project_cost) as project_cost, sum(material_cost) as material_cost, sum(project_valuation) as project_valuation, is_improvement ");
 		sql.append("from ").append(schema).append("rezdox_project_cost_view ");
-		sql.append("group by residence_id, business_id, project_id, residence_view_flg, business_view_flg, create_dt, project_cost, project_valuation, is_improvement ");
+		sql.append("group by residence_id, business_id, project_id, residence_view_flg, business_view_flg, create_dt, is_improvement ");
 		sql.append(" ) as pc on a.project_id=pc.project_id ");
 		
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("REZDOX_PHOTO ph on a.project_id=ph.project_id ");
@@ -147,7 +147,7 @@ public class HomeHistoryAction extends ProjectAction {
 		sql.append("b.attribute_id, b.slug_txt, b.value_txt, c.category_nm, d.type_nm, ");
 		sql.append("r.residence_nm, rr.room_nm, m.member_id, m.profile_id, biz.main_phone_txt ");
 		sql.append("order by a.end_dt desc, a.project_nm");
-		log.debug(sql);
+		log.debug(sql + "|" + params);
 
 		DBProcessor db = new DBProcessor(getDBConnection(), schema);
 		return db.executeSelect(sql.toString(), params, new ProjectVO());

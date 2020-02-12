@@ -231,22 +231,22 @@ public class FinancialDashDataRowVO implements Serializable {
 	 * If there is no revenue for the current quarter, then the term "Pending" is displayed.
 	 *
 	 * @param tree
-	 * @param currentQtr
+	 * @param reportedQtr
 	 * @param currentYear
 	 */
-	protected void setReportingPending(SmarttrakTree tree, int currentQtr, int currentYear) {
+	protected void setReportingPending(SmarttrakTree tree, int reportedQtr, int currentQtr, int currentYear) {
 		Node node = tree.findNode(primaryKey);
 
 		// If node isn't found, this is a company row, and the value will be displayed
 		if (node != null) {
 			SectionVO section = (SectionVO) node.getUserObject();
-
 			/*
-			 * If all sections are of the same quarter, label over the next Quarter.
-			 * Otherwise if a sections Published Qtr/Year is behind the current, label over currentQtr for that section. 
+			 * If the current quarter is less than or equal to the latest quarter
+			 * with reporter sales or the current section's published year is earlier
+			 * the currently published year mark the column as reporting or pending
 			 */
-			if (section.getFdPubQtr() < currentQtr || section.getFdPubYr() < currentYear) {
-				markColumnReportingPending(currentQtr, currentYear);
+			if (currentQtr < reportedQtr || section.getFdPubYr() < currentYear) {
+				markColumnReportingPending(reportedQtr, currentYear);
 			}
 		}
 	}
