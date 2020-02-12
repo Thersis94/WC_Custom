@@ -8,8 +8,8 @@ import java.util.Arrays;
 
 // MTS Libs
 import com.mts.common.MTSConstants;
-import com.mts.subscriber.action.SubscriptionAction;
 import com.mts.subscriber.data.MTSUserVO;
+import com.mts.subscriber.data.SubscriptionUserVO;
 
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
@@ -22,6 +22,7 @@ import com.siliconmtn.db.orm.*;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
+import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 
 //WC Libs
@@ -89,42 +90,38 @@ public class UserAction extends UserBaseWidget {
 
 		// Get the columns to be updated and store the user info
 		String[] cols = null;
-		boolean updateSubscription = false;
 		try {
 			if (req.getBooleanParameter("isAuthor")) {
 				cols = getAuthorUserColumns();
 			} else if (req.getBooleanParameter("isSubscriber")) {
 				cols = getSubscriberUserColumns();
-				updateSubscription = true;
+			} else if (req.getBooleanParameter("isSubDate")) {
+				SubscriptionUserVO vo = new SubscriptionUserVO(req);
+				updateSubscriptionExpiration(vo);
+				setModuleData(vo);
+				return;
 			} else {
 				cols = getCoreUserColumns();
 				saveUser((SiteVO) req.getAttribute(Constants.SITE_DATA), user, true);
 			}
 
 			updateUser(user, cols);
-			if (updateSubscription) updateSubscriptions(req, user);
 			setModuleData(user);
 		} catch(Exception e) {
 			setModuleData(user, 1, e.getLocalizedMessage());
 			log.error("unable to save author info", e);
 		}
 	}
-
+	
 	/**
-	 * Updates the subscriptions for a given user
-	 * @param req
-	 * @param user
+	 * Updates the subscription date for a given user and publication
+	 * @param vo
+	 * @throws InvalidDataException
 	 * @throws DatabaseException
 	 */
-	private void updateSubscriptions(ActionRequest req, MTSUserVO user) 
-			throws DatabaseException {
-		List<String> subs = new ArrayList<>();
-		String[] subscriptions = req.getParameterValues("subscriptions");
-		if (subscriptions != null && subscriptions.length > 0)
-			subs = Arrays.asList(subscriptions);
-
-		SubscriptionAction sa = new SubscriptionAction(getDBConnection(), getAttributes());
-		sa.assignSubscriptions(user.getUserId(), subs);
+	public void updateSubscriptionExpiration(SubscriptionUserVO vo) throws InvalidDataException, DatabaseException {
+		DBProcessor db = new DBProcessor(getDBConnection(), (String)getAttribute(Constants.CUSTOM_DB_SCHEMA));
+		db.save(vo);
 	}
 
 	/**
@@ -145,7 +142,7 @@ public class UserAction extends UserBaseWidget {
 	private String[] getSubscriberUserColumns() {
 		return new String[]{ 
 				"user_id", "sec_user_id", "subscription_type_cd", "update_dt",
-				"print_copy_flg", "expiration_dt", "note_txt"
+				"print_copy_flg", "note_txt"
 		};
 	}
 
@@ -227,13 +224,33 @@ public class UserAction extends UserBaseWidget {
 				setModuleData(userExists(req.getParameter("email")));
 			} else if (req.getBooleanParameter("isProfile")) {
 				setModuleData(getUserProfile(req.getParameter("userId")));
+			} else if (req.getBooleanParameter("isSubscriber")) {
+				setModuleData(getUserSubscriptions(req.getParameter("userId")));
 			} else {
 				BSTableControlVO bst = new BSTableControlVO(req, MTSUserVO.class);
-				setModuleData(getAllUsers(bst, req.getParameter("roleId"), null, req.getParameter("publicationId")));
+				setModuleData(getAllUsers(bst, req.getParameter("roleId"), null, req.getParameter("publicationId"), req.getParameter("trialFlag")));
 			}
 		} catch (Exception e) {
 			setModuleData(null, 0, e.getLocalizedMessage());
 		}
+	}
+	
+	/**
+	 * Gets the publication info for a user
+	 * @param userId
+	 * @return
+	 */
+	public List<SubscriptionUserVO> getUserSubscriptions(String userId) {
+		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
+		StringBuilder sql = new StringBuilder();
+		sql.append("select p.publication_id, publication_nm, x.expiration_dt, user_id,subscription_publication_id ");
+		sql.append("from ").append(schema).append("mts_publication p ");
+		sql.append("left outer join ").append(schema).append("mts_subscription_publication_xr x ");
+		sql.append("on p.publication_id = x.publication_id and user_id = ? ");
+		sql.append("where public_flg = 0 ");
+		
+		DBProcessor db = new DBProcessor(getDBConnection());
+		return db.executeSelect(sql.toString(), Arrays.asList(userId), new SubscriptionUserVO(), "publication_nm");
 	}
 
 	/**
@@ -275,23 +292,23 @@ public class UserAction extends UserBaseWidget {
 	 * 
 	 * @return
 	 */
-	public GridDataVO<MTSUserVO> getAllUsers(BSTableControlVO bst, String roleId, String subType, String pubId) {
+	public GridDataVO<MTSUserVO> getAllUsers(BSTableControlVO bst, String roleId, String subType, String pubId, String tf) {
 		// Add the params
 		List<Object> vals = new ArrayList<>();
 
 		StringBuilder sql = new StringBuilder(768);
 		sql.append("select a.email_address_txt, last_login_dt, a.user_id, a.first_nm, a.last_nm, a.sso_id, d.profile_id, ");
 		sql.append("a.company_nm, a.expiration_dt, a.active_flg, c.role_nm, b.profile_role_id, subscription_type_cd, cv_desc, ");
-		sql.append("d.authentication_id, a.create_dt, string_agg(f.publication_nm, ',') as note_txt, b.role_id, a.pro_title_nm, a.sec_user_id, a.note_txt ");
+		sql.append("d.authentication_id, a.create_dt, pub_txt, b.role_id, a.pro_title_nm, a.print_copy_flg , a.sec_user_id, a.note_txt ");
 		sql.append(DBUtil.FROM_CLAUSE).append(getCustomSchema()).append("mts_user a ");
 		sql.append(DBUtil.INNER_JOIN).append("profile d on a.profile_id = d.profile_id ");
-		sql.append(DBUtil.INNER_JOIN).append("profile_role b on a.profile_id = b.profile_id and site_id =? ");
-		sql.append(DBUtil.INNER_JOIN).append("role c on b.role_id = c.role_id ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append("profile_role b on a.profile_id = b.profile_id and site_id =? ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append("role c on b.role_id = c.role_id ");
 		sql.append("left outer join ( ");
-		sql.append("select p.publication_id, xr.user_id, publication_nm ");
+		sql.append("select user_id, string_agg(publication_nm + '|' + cast(trial_flg as varchar) + '|' + to_char(expiration_dt, 'mm/dd/yyyy'), ',') as pub_txt ");
 		sql.append("from custom.mts_subscription_publication_xr xr ");
 		sql.append("inner join custom.mts_publication p ");
-		sql.append("on xr.publication_id = p.publication_id ");
+		sql.append("on xr.publication_id = p.publication_id group by user_id ");
 		sql.append(") as f on a.user_id = f.user_id ");
 		sql.append("left outer join ( ");
 		sql.append("select authentication_id, max(login_dt) as last_login_dt ");
@@ -315,6 +332,12 @@ public class UserAction extends UserBaseWidget {
 			sql.append("and f.publication_id = ? ");
 			vals.add(pubId);
 		}
+		
+		// Filter by publication
+		if (! StringUtil.isEmpty(tf)) {
+			sql.append("and a.user_id in (select user_id from custom.mts_subscription_publication_xr where trial_flg = ?) ");
+			vals.add(Convert.formatInteger(tf));
+		}
 
 		// Filter by subscription Type
 		if (!StringUtil.isEmpty(subType)) {
@@ -331,16 +354,12 @@ public class UserAction extends UserBaseWidget {
 			vals.add(bst.getLikeSearch().toLowerCase());
 		}
 
-		sql.append("group by last_login_dt, a.user_id, a.first_nm, a.last_nm, a.company_nm, ");
-		sql.append("a.expiration_dt, a.pro_title_nm, c.role_nm, b.profile_role_id, d.authentication_id, ");
-		sql.append("a.create_dt, a.active_flg, a.email_address_txt, b.role_id, a.sso_id, d.profile_id, a.sec_user_id, a.note_txt  ");
-
 		if ("lastLogin".equals(bst.getSort())) {
 			sql.append("order by coalesce(last_login_dt, '2000-01-01') ").append(bst.getOrder()).append(", a.last_nm ");
 		} else {
 			sql.append(bst.getSQLOrderBy("a.last_nm", "asc"));
 		}
-		log.debug(sql.length() + "|" + sql + "|" + bst.getLikeSearch());
+		log.debug(sql.length() + "|" + sql + "|" + bst.getLikeSearch() + "|"+ vals );
 
 		// Query
 		DBProcessor db = new DBProcessor(getDBConnection());

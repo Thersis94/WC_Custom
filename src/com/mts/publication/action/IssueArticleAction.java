@@ -234,7 +234,7 @@ public class IssueArticleAction extends SBActionAdapter {
 		sql.append(") m on c.action_id = m.action_id ");
 
 		if (! useLatest && ! StringUtil.isEmpty(catId)) {
-			sql.append("where b.approval_flg = 1 and p.publication_id = ? and widget_meta_data_id = ? ");
+			sql.append("where b.approval_flg = 1 and p.publication_id = ? ");
 		} else {
 			sql.append("where issue_dt in ( ");
 			sql.append("select max(issue_dt) as latest ");
@@ -250,7 +250,6 @@ public class IssueArticleAction extends SBActionAdapter {
 
 			if (! useLatest && ! StringUtil.isEmpty(catId)) {
 				ps.setString(1, pubId);
-				ps.setString(2, catId);
 			} else {
 				ps.setString(1, pubId);
 				ps.setString(2, pubId);

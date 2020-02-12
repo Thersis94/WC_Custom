@@ -7,9 +7,14 @@ import com.mts.action.SelectLookupAction;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.db.orm.DBProcessor;
+import com.siliconmtn.db.util.DatabaseException;
+import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.util.Convert;
+
 // WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
+import com.smt.sitebuilder.action.metadata.MetadataVO;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
 
@@ -52,17 +57,38 @@ public class PublicationDisplayAction extends SBActionAdapter {
 		super.retrieve(req);
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		String publicationId = (String) mod.getAttribute(ModuleVO.ATTRIBUTE_1);
-		String categoryId = (String) mod.getAttribute(ModuleVO.ATTRIBUTE_2);
+		String categoryCode = (String) mod.getAttribute(ModuleVO.ATTRIBUTE_2);
+		String parentCode = getParentCode(categoryCode);
+		
 		boolean useLatest = Convert.formatBoolean(mod.getIntroText());
 		IssueArticleAction iac = new IssueArticleAction(getDBConnection(), getAttributes());
-		setModuleData(iac.getArticleTeasers(publicationId, categoryId, useLatest));
+		setModuleData(iac.getArticleTeasers(publicationId, categoryCode, useLatest));
 		
 		// Get the categories from the list
 		SelectLookupAction sla = new SelectLookupAction(getDBConnection(), getAttributes());
-		req.setParameter("parentId", "CHANNELS");
-		req.setAttribute("mtsCats", sla.getCategories(req));
+		req.setParameter("parentId", parentCode);
+		req.setAttribute("mtsCats_" + getActionInit().getActionId(), sla.getCategories(req));
 	}
 	
+	/**
+	 * Gets the parent code of the category
+	 * @param categoryCode
+	 * @return
+	 */
+	private String getParentCode(String categoryCode) {
+		MetadataVO cat = new MetadataVO();
+		cat.setMetadataId(categoryCode);
+		DBProcessor db = new DBProcessor(getDBConnection());
+		try {
+			db.getByPrimaryKey(cat);
+			
+		} catch (InvalidDataException | DatabaseException e) {
+			log.error("Unable to get cat", e);
+			return null;
+		}
+		
+		return cat.getParentId();
+	}
 	/*
 	 * (non-Javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#list(com.siliconmtn.action.ActionRequest)
@@ -77,7 +103,7 @@ public class PublicationDisplayAction extends SBActionAdapter {
 		req.setAttribute("mts_publications", sla.getPublications(req));
 		
 		// Add the categories
-		req.setParameter("parentId", "CHANNELS");
+		//req.setParameter("parentId", "CHANNELS");
 		req.setAttribute("mts_channels", sla.getCategories(req));
 		
 	}

@@ -14,7 +14,6 @@ import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.db.util.DatabaseException;
 import com.siliconmtn.security.UserDataVO;
-import com.siliconmtn.util.Convert;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.common.constants.Constants;
 
@@ -145,12 +144,20 @@ public class SubscriptionAction extends SBActionAdapter {
 		DBProcessor db = new DBProcessor(dbConn, schema);
 		List<MTSUserVO> userPubs = db.executeSelect(sql.toString(), vals, new MTSUserVO());
 		MTSUserVO user = (!userPubs.isEmpty()) ? userPubs.get(0) : new MTSUserVO();
-
-		// If the user is an author or admion assign.  Otherwise only assign
+		
+		// If the user is an author or admin assign.  Otherwise only assign
 		// if expiration date is in the future
 		if (user.getActiveFlag() == 0) return;
-		if (user.getExpirationDate() == null) user.setExpirationDate(Convert.formatDate("01/01/2000"));
-		if ("100".equals(user.getRoleId()) || "AUTHOR".equals(user.getRoleId()) || new Date().before(user.getExpirationDate()))
+		if ("100".equals(user.getRoleId()) || "AUTHOR".equals(user.getRoleId()))
 			authUser.setUserExtendedInfo(user);
+		else {
+			Date now = new Date();
+			for (SubscriptionUserVO vo : user.getSubscriptions()) {
+				if (now.before(vo.getExpirationDate())) {
+					authUser.setUserExtendedInfo(user);
+					break;
+				}
+			}
+		}
 	}
 }
