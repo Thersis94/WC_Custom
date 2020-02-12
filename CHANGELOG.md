@@ -1,5 +1,13 @@
 WC_Custom Changelog (auto-generated)
 
+## [3.44.1](https://github.com/smtadmin/WC_Custom/compare/3.44.0...3.44.1) (2020-02-12)
+
+
+### Bug Fixes
+
+* **NLT Bot Submissions:** Add check for Captcha prior to sending email ([3a209a1](https://github.com/smtadmin/WC_Custom/commit/3a209a1))
+* **ST-307:** Ensure that only header rows are left as is. ([2e9afeb](https://github.com/smtadmin/WC_Custom/commit/2e9afeb))
+
 # [3.44.0](https://github.com/smtadmin/WC_Custom/compare/3.43.0...3.44.0) (2020-02-04)
 
 
