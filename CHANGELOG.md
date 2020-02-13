@@ -1,5 +1,14 @@
 WC_Custom Changelog (auto-generated)
 
+## [3.44.2](https://github.com/smtadmin/WC_Custom/compare/3.44.1...3.44.2) (2020-02-13)
+
+
+### Bug Fixes
+
+* **ST-9:** Add ability to clone product profiles. ([73216bb](https://github.com/smtadmin/WC_Custom/commit/73216bb))
+* **ST-9:** Add proper fail condition. ([b647c2b](https://github.com/smtadmin/WC_Custom/commit/b647c2b))
+* **ST-9:** Change to use StringUtil.join. ([49b4747](https://github.com/smtadmin/WC_Custom/commit/49b4747))
+
 ## [3.44.1](https://github.com/smtadmin/WC_Custom/compare/3.44.0...3.44.1) (2020-02-12)
 
 
