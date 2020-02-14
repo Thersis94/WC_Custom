@@ -1,5 +1,12 @@
 WC_Custom Changelog (auto-generated)
 
+## [3.44.3](https://github.com/smtadmin/WC_Custom/compare/3.44.2...3.44.3) (2020-02-14)
+
+
+### Bug Fixes
+
+* **ST-313:** Add series label to json on creation instead of on front end. ([913529e](https://github.com/smtadmin/WC_Custom/commit/913529e))
+
 ## [3.44.2](https://github.com/smtadmin/WC_Custom/compare/3.44.1...3.44.2) (2020-02-13)
 
 
