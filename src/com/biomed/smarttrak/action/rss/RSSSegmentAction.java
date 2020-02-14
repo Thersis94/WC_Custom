@@ -5,6 +5,7 @@ import java.util.List;
 
 import com.biomed.smarttrak.action.rss.vo.RSSFeedSegment;
 import com.biomed.smarttrak.admin.AccountAction;
+import com.biomed.smarttrak.admin.SectionHierarchyAction;
 import com.biomed.smarttrak.vo.UserVO.AssigneeSection;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -86,6 +87,12 @@ public class RSSSegmentAction extends SBActionAdapter {
 
 	@Override
 	public void list(ActionRequest req) throws ActionException {
+		SectionHierarchyAction hierarchyAction = new SectionHierarchyAction();
+		hierarchyAction.setDBConnection(getDBConnection());
+		hierarchyAction.setAttributes(getAttributes());
+		
+		hierarchyAction.loadFullTree(req);
+		
 		if(req.hasParameter(SEGMENT_ID) && "ADD".equals(req.getParameter(SEGMENT_ID)))
 			return;
 		this.putModuleData(loadSegments(req.getParameter(SEGMENT_ID)));
