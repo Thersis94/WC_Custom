@@ -35,7 +35,9 @@ public class NLTAutoIngestPostProcessor extends SBActionAdapter {
 		log.info("starting NLT post processor");
 		
 		String rcpt = req.getParameter("pfl_EMAIL_ADDRESS_TXT");
-		if (!StringUtil.isValidEmail(rcpt)) return;  //can't send an email to an invalid address!
+		//2nd field is set on ContactFacadeAction after Captcha validation.  No captcha, no email! - Added 02.09.2020 - JM
+		if (!StringUtil.isValidEmail(rcpt) || !req.hasParameter("con_6f000001567b18842a834a598cdeafa")) 
+			return;  //can't send an email to an invalid address!
 		
 		SMTMail mail = new SMTMail((String)getAttribute(Constants.CFG_SMTP_SERVER));
 		mail.setUser((String)getAttribute(Constants.CFG_SMTP_USER));

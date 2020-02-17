@@ -19,6 +19,7 @@ import com.biomed.smarttrak.admin.report.GridClipboardReport;
 import com.biomed.smarttrak.admin.vo.GridDetailVO;
 import com.biomed.smarttrak.admin.vo.GridUsageVO;
 import com.biomed.smarttrak.admin.vo.GridVO;
+import com.biomed.smarttrak.admin.vo.GridVO.RowStyle;
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -522,9 +523,11 @@ public class GridChartAction extends SBActionAdapter {
 				String gridDetailId = StringUtil.checkVal(detail.getGridDetailId());
 				if (gridDetailId.startsWith("BIO_")) detail.setGridDetailId(null);
 				
-				for (int i = 0; i < grid.getSeriesTxtFlg().length; i++) {
-					if ( grid.getSeriesTxtFlg()[i] == 1) continue;
-					detail.getValues()[i] = prepareThousands(detail.getValues()[i]);
+				if (!RowStyle.HEADING.toString().equals(detail.getDetailType())) {
+					for (int i = 0; i < grid.getSeriesTxtFlg().length; i++) {
+						if ( grid.getSeriesTxtFlg()[i] == 1) continue;
+						detail.getValues()[i] = prepareThousands(detail.getValues()[i]);
+					}
 				}
 
 				// Save the data.  If the data is an insert, add to the column xref
