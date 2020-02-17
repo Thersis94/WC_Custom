@@ -60,7 +60,7 @@ public class PublicationDisplayAction extends SBActionAdapter {
 		String categoryCode = (String) mod.getAttribute(ModuleVO.ATTRIBUTE_2);
 		String parentCode = getParentCode(categoryCode);
 		
-		boolean useLatest = Convert.formatBoolean(mod.getIntroText());
+		int useLatest = Convert.formatInteger(mod.getIntroText());
 		IssueArticleAction iac = new IssueArticleAction(getDBConnection(), getAttributes());
 		setModuleData(iac.getArticleTeasers(publicationId, categoryCode, useLatest));
 		
