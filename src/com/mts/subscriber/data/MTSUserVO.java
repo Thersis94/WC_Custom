@@ -67,6 +67,10 @@ public class MTSUserVO extends UserVO {
 
 	// Helpers
 	private Date lastLogin;
+	private int statusCode;
+	private int pageViews;
+	private String sessionId;
+	
 
 
 	public MTSUserVO() {
@@ -355,6 +359,32 @@ public class MTSUserVO extends UserVO {
 	 */
 	public void setLastLogin(Date lastLogin) {
 		this.lastLogin = lastLogin;
+	}
+	
+	@Column(name="pageviews_no", isReadOnly=true)
+	public int getPageViews() {
+		return pageViews;
+	}
+
+	public void setPageViews(int pageViews) {
+		this.pageViews = pageViews;
+	}
+
+	@Column(name="status_cd", isReadOnly=true)
+	public int getStatusCode() {
+		return statusCode;
+	}
+	@Column(name="session_id", isReadOnly=true)
+	public String getSessionId() {
+		return sessionId;
+	}
+
+	public void setSessionId(String sessionId) {
+		this.sessionId = sessionId;
+	}
+
+	public void setStatusCode(int statusCode) {
+		this.statusCode = statusCode;
 	}
 
 	/**
