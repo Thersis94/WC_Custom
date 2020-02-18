@@ -1,5 +1,21 @@
 WC_Custom Changelog (auto-generated)
 
+# [3.45.0](https://github.com/smtadmin/WC_Custom/compare/3.44.3...3.45.0) (2020-02-18)
+
+
+### Bug Fixes
+
+* **Showpad-EMEA:** Apply business rules per client spec ([f08d1a6](https://github.com/smtadmin/WC_Custom/commit/f08d1a6))
+* **Showpad-EMEA:** Ensure file checker gets passed http proxies ([ce46155](https://github.com/smtadmin/WC_Custom/commit/ce46155))
+* **Showpad-EMEA:** Transpose EOS tracking#s per client biz rules ([faf0f38](https://github.com/smtadmin/WC_Custom/commit/faf0f38))
+* **ST-305:** Add hierarchy to the segments. ([df72139](https://github.com/smtadmin/WC_Custom/commit/df72139))
+
+
+### Features
+
+* **biomedgpscompanyindexer:** altered Company Indexer to display allied companies in searches ([c730202](https://github.com/smtadmin/WC_Custom/commit/c730202))
+* **Showpad-EMEA:** Support new Excel model for pushing assets to Showpad ([86c54bd](https://github.com/smtadmin/WC_Custom/commit/86c54bd))
+
 ## [3.44.3](https://github.com/smtadmin/WC_Custom/compare/3.44.2...3.44.3) (2020-02-14)
 
 
