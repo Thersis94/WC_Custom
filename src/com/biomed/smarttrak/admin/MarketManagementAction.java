@@ -17,7 +17,6 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 
-import com.biomed.smarttrak.action.AdminControllerAction;
 import com.biomed.smarttrak.action.AdminControllerAction.Section;
 import com.biomed.smarttrak.action.AdminControllerAction.Status;
 import com.biomed.smarttrak.action.MarketAction;
@@ -1510,19 +1509,7 @@ public class MarketManagementAction extends ManagementAction {
 	protected void writeToSolr(String marketId, String status) {
 		MarketIndexer idx = MarketIndexer.makeInstance(getAttributes());
 		idx.setDBConnection(dbConn);
-
-		//if status is archived or deleted, remove this market from Solr
-		if ("A".equals(status) || "D".equals(status)) {
-			try {
-				if (marketId.length() < AdminControllerAction.DOC_ID_MIN_LEN)
-					marketId = Section.MARKET.name() + "_" +marketId;
-				idx.purgeSingleItem(marketId, false);
-			} catch (IOException e) {
-				log.warn("could not delete market from solr " + marketId, e);
-			}
-		} else {
-			idx.indexItems(marketId);
-		}
+		idx.indexItems(marketId);
 	}
 	
 	

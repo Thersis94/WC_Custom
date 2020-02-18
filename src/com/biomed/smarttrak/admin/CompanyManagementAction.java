@@ -1,6 +1,5 @@
 package com.biomed.smarttrak.admin;
 
-import java.io.IOException;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -12,7 +11,6 @@ import java.util.Properties;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.solr.common.SolrDocument;
 
-import com.biomed.smarttrak.action.AdminControllerAction;
 import com.biomed.smarttrak.action.AdminControllerAction.Section;
 import com.biomed.smarttrak.action.AdminControllerAction.Status;
 import com.biomed.smarttrak.action.CompanyAction;
@@ -1516,17 +1514,7 @@ public class CompanyManagementAction extends ManagementAction {
 		props.putAll(getAttributes());
 		BiomedCompanyIndexer indexer = new BiomedCompanyIndexer(props);
 		indexer.setDBConnection(dbConn);
-		try {
-			if ("D".equals(status) || "A".equals(status) || "I".equals(status)) {
-				if (companyId.length() < AdminControllerAction.DOC_ID_MIN_LEN)
-					companyId = Section.COMPANY.name() + "_" +companyId;
-				indexer.purgeSingleItem(companyId, false);
-			} else {
-				indexer.indexItems(companyId);
-			}
-		} catch (IOException e) {
-			throw new ActionException(e);
-		}
+		indexer.indexItems(companyId);
 	}
 
 
