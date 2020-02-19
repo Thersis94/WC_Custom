@@ -1,5 +1,29 @@
 WC_Custom Changelog (auto-generated)
 
+## [3.44.3](https://github.com/smtadmin/WC_Custom/compare/3.44.2...3.44.3) (2020-02-14)
+
+
+### Bug Fixes
+
+* **ST-313:** Add series label to json on creation instead of on front end. ([913529e](https://github.com/smtadmin/WC_Custom/commit/913529e))
+
+## [3.44.2](https://github.com/smtadmin/WC_Custom/compare/3.44.1...3.44.2) (2020-02-13)
+
+
+### Bug Fixes
+
+* **ST-9:** Add ability to clone product profiles. ([73216bb](https://github.com/smtadmin/WC_Custom/commit/73216bb))
+* **ST-9:** Add proper fail condition. ([b647c2b](https://github.com/smtadmin/WC_Custom/commit/b647c2b))
+* **ST-9:** Change to use StringUtil.join. ([49b4747](https://github.com/smtadmin/WC_Custom/commit/49b4747))
+
+## [3.44.1](https://github.com/smtadmin/WC_Custom/compare/3.44.0...3.44.1) (2020-02-12)
+
+
+### Bug Fixes
+
+* **NLT Bot Submissions:** Add check for Captcha prior to sending email ([3a209a1](https://github.com/smtadmin/WC_Custom/commit/3a209a1))
+* **ST-307:** Ensure that only header rows are left as is. ([2e9afeb](https://github.com/smtadmin/WC_Custom/commit/2e9afeb))
+
 # [3.44.0](https://github.com/smtadmin/WC_Custom/compare/3.43.0...3.44.0) (2020-02-04)
 
 

@@ -1026,7 +1026,7 @@ public class GridVO extends BeanDataVO {
 		column.put("class", "bs-header");
 		column.put("field", FIELD_LABEL + "0");
 		column.put("fieldIndex", "0");
-		column.put("title", "");
+		column.put("title", getSeriesLabel());
 		column.put("txtFlg", "0");
 		columns.add(column);
 		for (int x = 1; x < getNumberColumns()+1; x++) {
