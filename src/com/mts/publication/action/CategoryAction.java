@@ -81,7 +81,11 @@ public class CategoryAction extends SBActionAdapter {
 	public void build(ActionRequest req) throws ActionException {
 		
 		MetadataVO mdvo = new MetadataVO(req);
-		if (StringUtil.isEmpty(mdvo.getParentId())) mdvo.setParentId(null);
+		if (StringUtil.isEmpty(mdvo.getParentId())) {
+			mdvo.setParentId(null);
+			mdvo.setGroupId(mdvo.getMetadataId());
+		}
+		
 		mdvo.setFieldDesc(mdvo.getFieldName());
 		
 		try {
