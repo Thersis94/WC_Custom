@@ -1,5 +1,6 @@
 package com.mts.publication.action;
 
+import java.util.List;
 // JDK 1.8.x
 import java.util.Map;
 
@@ -69,7 +70,7 @@ public class CategoryAction extends SBActionAdapter {
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
 		OrgMetadataAction oma = new OrgMetadataAction(getDBConnection(), getAttributes());
-		setModuleData(oma.getOrgMetadata("MTS", null, false));
+		setModuleData(oma.getOrgMetadata("MTS", null, false, false));
 	}
 
 	/*

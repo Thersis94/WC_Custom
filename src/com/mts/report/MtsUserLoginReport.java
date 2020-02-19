@@ -85,14 +85,13 @@ public class MtsUserLoginReport extends UserLoginReport {
 		sb.append("from site a inner join authentication_log b on a.site_id = b.site_id ");
 		sb.append("inner join authentication c on b.authentication_id = c.authentication_id ");
 		sb.append("inner join profile d on b.authentication_id = d.authentication_id ");
-		
 		sb.append("inner join ").append(getCustomSchema()).append("mts_user u on d.profile_id = u.profile_id ");
-		
 		sb.append("left join (select profile_id, phone_country_cd, array_agg(phone_number_txt) as phone_number_txt from "); 
 		sb.append("phone_number group by profile_id, phone_country_cd) as g on d.PROFILE_ID = g.PROFILE_ID ");
 		sb.append("left join PROFILE_ROLE e on d.PROFILE_ID = e.PROFILE_ID and e.SITE_ID = a.SITE_ID ");
 		sb.append("left join ROLE f on e.role_id = f.role_id ");
 		sb.append("where a.site_id=? and login_dt between ? and ? ");
+		
 		if (excludeGlobalAdmins) {
 			sb.append("and (c.user_nm is null or d.global_admin_flg = 0) ");
 		} else if (roleOrderNo != null) {

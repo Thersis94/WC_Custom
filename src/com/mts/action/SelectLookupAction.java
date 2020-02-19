@@ -198,7 +198,7 @@ public class SelectLookupAction extends SBActionAdapter {
 	public List<GenericVO> getCategories(ActionRequest req) {
 		List<GenericVO> data = new ArrayList<>(64);
 		OrgMetadataAction oma = new OrgMetadataAction(getDBConnection(), getAttributes());
-		List<MetadataVO> items = oma.getOrgMetadata("MTS", null, false);
+		List<MetadataVO> items = oma.getOrgMetadata("MTS", null, false, false);
 		String filter = req.getParameter("parentId");
 		
 		for (MetadataVO md : items) {
