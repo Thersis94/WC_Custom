@@ -176,11 +176,19 @@ public class DashboardAction extends SimpleActionAdapter {
 		sql.append("select 'all_projects_count', 'all_projects_count', count(*)::text "); 
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append(PROJECT_TABLE);
 		sql.append(WHERE_BUSINESS_ID).append(BUS_ID_GROUP);
+		//get the grand total of the projects
 		sql.append(DBUtil.UNION);
-		sql.append("select 'all_projects_value', 'all_projects_value', sum(project_cost+material_cost)::text "); 
-		sql.append(DBUtil.FROM_CLAUSE).append(schema).append(PROJECT_COST_VIEW);
+		sql.append("select 'all_projects_value', 'all_projects_value', sum(gt.grand_total)::text "); 
+		sql.append(DBUtil.FROM_CLAUSE).append(" ( ");
+		
+		sql.append("select project_id, max(project_cost), sum(material_cost), (max(project_cost) + sum(material_cost)) as grand_total, business_id ");
+		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("rezdox_project_cost_view rpcv ");
+		sql.append("where business_view_flg = '1' group by project_id, business_id ");
+		
+		sql.append(") as gt  ");
 		sql.append(WHERE_BUSINESS_ID).append(BUS_ID_GROUP);
-		sql.append(DBUtil.UNION);
+		sql.append(DBUtil.UNION);		
+		
 		sql.append("select 'recent_projects_count', 'recent_projects_count', count(*)::text "); 
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append(PROJECT_TABLE);
 		sql.append(WHERE_BUSINESS_ID).append(RECENT_SQL).append(BUS_ID_GROUP);
@@ -200,12 +208,12 @@ public class DashboardAction extends SimpleActionAdapter {
 		sql.append("select 'bus_connections_lic', 'bus_connections_lic', quota_no::text "); 
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("rezdox_connection_quota_view where business_id=? ");
 		sql.append("order by slug_txt ");
-
-		log.debug( sql );
 		
 		// Add the attributes to the business
 		DBProcessor db = new DBProcessor(getDBConnection(), schema);
 		List<Object> vals = Arrays.asList(bId,bId,bId,bId,bId,bId,bId,bId,bId,bId,bId);
+		log.debug(sql +"|"+vals );
+		db.setGenerateExecutedSQL(log.isDebugEnabled());
 		bus.addAttributes(db.executeSelect(sql.toString(), vals, new BusinessAttributeVO()));
 	}
 
