@@ -105,6 +105,8 @@ public class TicketTransaction extends BaseTransactionAction {
 				putModuleData("SUCCESS");
 			} else if (req.hasParameter("perfecoStatus")) {
 				changePerfecoStatus(ticket);
+			} else if (req.hasParameter("TicketTypeChange")) {
+				changeTicketType(ticket);
 			}
 			
 		} catch (DatabaseException | InvalidDataException e) {
@@ -113,6 +115,18 @@ public class TicketTransaction extends BaseTransactionAction {
 		}
 	}
 	
+	/**
+	 * saves only a change ot ticket type
+	 * @param ticket
+	 * @throws DatabaseException 
+	 * @throws InvalidDataException 
+	 */
+	private void changeTicketType(TicketVO ticket) throws InvalidDataException, DatabaseException {
+		
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		db.update(ticket, Arrays.asList("ticket_id", "ticket_type_cd"));
+	}
+
 	/**
 	 * Changes the perfeco status of the ticket
 	 * @param ticket

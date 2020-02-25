@@ -75,6 +75,7 @@ import com.wsla.data.ticket.StatusCodeVO;
 import com.wsla.data.ticket.TicketAssignmentVO;
 import com.wsla.data.ticket.TicketAssignmentVO.TypeCode;
 import com.wsla.data.ticket.TicketScheduleVO;
+import com.wsla.data.ticket.TicketVO;
 import com.wsla.data.ticket.TicketVO.Standing;
 import com.wsla.data.ticket.UserVO;
 
@@ -155,6 +156,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		keyMap.put("acShipLocation", new GenericVO("getAcShippingLocation", Boolean.TRUE));
 		keyMap.put("surveyResults", new GenericVO("getSurveyResults", Boolean.TRUE));
 		keyMap.put("shipmentInvoiceTypes", new GenericVO("getShipmentInvoiceTypes", Boolean.TRUE));
+		keyMap.put("ticketType", new GenericVO("getTicketTypes", Boolean.TRUE));
 		keyMap.put("profeco", new GenericVO("getProfecoList", Boolean.TRUE));
 	}
 
@@ -824,6 +826,21 @@ public class SelectLookupAction extends SBActionAdapter {
 		List<GenericVO> data = new ArrayList<>();
 		for (ShipmentVO.ShipmentInvoiceType type : ShipmentVO.ShipmentInvoiceType.values()) {
 			data.add(new GenericVO(type.getCodeValue(), bundle.getString("wsla.ticket.schedule.invoice." + type.getCodeValue())));
+		}
+		
+		return data;
+	}
+	
+	/**
+	 * Return a distinct list of ticket type codes from an enum in the ticket vo
+	 * @return
+	 */
+	public List<GenericVO> getTicketTypes(ActionRequest req) {
+		ResourceBundle bundle = new BasePortalAction().getResourceBundle(req);
+
+		List<GenericVO> data = new ArrayList<>();
+		for (TicketVO.TicketType type : TicketVO.TicketType.values()) {
+			data.add(new GenericVO(type.name(), bundle.getString("wsla.ticket.type.code." + type.name())));
 		}
 		
 		return data;
