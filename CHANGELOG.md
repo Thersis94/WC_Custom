@@ -1,5 +1,12 @@
 WC_Custom Changelog (auto-generated)
 
+# [3.46.0](https://github.com/smtadmin/WC_Custom/compare/3.45.0...3.46.0) (2020-02-26)
+
+
+### Features
+
+* **hotfix-wsla-i107:** add field to hold ticket type ([d7a7971](https://github.com/smtadmin/WC_Custom/commit/d7a7971))
+
 # [3.45.0](https://github.com/smtadmin/WC_Custom/compare/3.44.3...3.45.0) (2020-02-18)
 
 
