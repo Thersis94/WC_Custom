@@ -13,14 +13,17 @@ import com.smt.sitebuilder.common.constants.AdminConstants;
 
 //WC Custom
 import com.mts.admin.action.MTSApprovalAction;
+import com.mts.admin.action.PublicationActivityReportAction;
 import com.mts.admin.action.SSOProviderAction;
 import com.mts.admin.action.UserAction;
 import com.mts.publication.action.AssetAction;
 import com.mts.publication.action.CategoryAction;
+import com.mts.publication.action.DocumentUtilAction;
 import com.mts.publication.action.IssueAction;
 import com.mts.publication.action.IssueArticleAction;
 import com.mts.publication.action.MTSDocumentAction;
 import com.mts.publication.action.PublicationAction;
+import com.mts.report.MtsUserLoginReport;
 import com.mts.security.IPSecurityAction;
 
 /****************************************************************************
@@ -80,7 +83,10 @@ public class AjaxControllerFacadeAction extends FacadeActionAdapter {
 		actionMap.put(MTSDocumentAction.AJAX_KEY, MTSDocumentAction.class);
 		actionMap.put(MTSApprovalAction.AJAX_KEY, MTSApprovalAction.class);
 		actionMap.put(IPSecurityAction.AJAX_KEY, IPSecurityAction.class);
+		actionMap.put(MtsUserLoginReport.AJAX_KEY, MtsUserLoginReport.class);
+		actionMap.put(PublicationActivityReportAction.AJAX_KEY, PublicationActivityReportAction.class);
 		actionMap.put("ssoProviders", SSOProviderAction.class);
+		actionMap.put(DocumentUtilAction.AJAX_KEY, DocumentUtilAction.class);
 	}
 
 	/*

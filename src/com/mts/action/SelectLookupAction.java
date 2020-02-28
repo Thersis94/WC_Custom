@@ -198,9 +198,9 @@ public class SelectLookupAction extends SBActionAdapter {
 	public List<GenericVO> getCategories(ActionRequest req) {
 		List<GenericVO> data = new ArrayList<>(64);
 		OrgMetadataAction oma = new OrgMetadataAction(getDBConnection(), getAttributes());
-		List<MetadataVO> items = oma.getOrgMetadata("MTS", null, false);
+		List<MetadataVO> items = oma.getOrgMetadata("MTS", null, false, false);
 		String filter = req.getParameter("parentId");
-
+		
 		for (MetadataVO md : items) {
 			if (StringUtil.isEmpty(filter)) data.add(new GenericVO(null, md.getFieldName()));
 			if (! StringUtil.isEmpty(filter) &&  !md.getMetadataId().equals(filter)) continue;
@@ -227,7 +227,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		bst.setLimit(1000);
 
 		UserAction ua = new UserAction(getDBConnection(), getAttributes());
-		GridDataVO<MTSUserVO> users = ua.getAllUsers(bst, roleId, subType, null);
+		GridDataVO<MTSUserVO> users = ua.getAllUsers(bst, roleId, subType, null, null);
 
 		for (MTSUserVO user : users.getRowData()) {
 			data.add(new GenericVO(user.getUserId(), user.getFullName()));
