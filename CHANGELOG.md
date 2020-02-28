@@ -1,5 +1,13 @@
 WC_Custom Changelog (auto-generated)
 
+## [3.46.1](https://github.com/smtadmin/WC_Custom/compare/3.46.0...3.46.1) (2020-02-28)
+
+
+### Bug Fixes
+
+* **ST-311:** Hide 'No Division' section in report. ([ab1f4bb](https://github.com/smtadmin/WC_Custom/commit/ab1f4bb))
+* **ST-319:** Ensure all product acls are properly added to the company. ([d2fdfad](https://github.com/smtadmin/WC_Custom/commit/d2fdfad))
+
 # [3.46.0](https://github.com/smtadmin/WC_Custom/compare/3.45.0...3.46.0) (2020-02-26)
 
 
