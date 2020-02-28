@@ -1,22 +1,25 @@
 package com.mts.report;
 
+import java.io.Serializable;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
-import com.mts.subscriber.data.MTSUserVO;
-import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
-import com.siliconmtn.common.html.BSTableControlVO;
-import com.siliconmtn.db.DBUtil;
-import com.siliconmtn.db.orm.DBProcessor;
-import com.siliconmtn.db.orm.GridDataVO;
+import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.db.pool.SMTDBConnection;
+import com.siliconmtn.security.StringEncrypter;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.user.UserLoginReport;
+import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
  * <b>Title</b>: MtsUserLoginReport.java
@@ -33,7 +36,6 @@ import com.smt.sitebuilder.action.user.UserLoginReport;
 public class MtsUserLoginReport extends UserLoginReport {
 
 	private static final long serialVersionUID = 8190916348145371293L;
-	public static final String AJAX_KEY = "loginReport";
 
 
 	/**
@@ -48,7 +50,7 @@ public class MtsUserLoginReport extends UserLoginReport {
 	public MtsUserLoginReport(ActionInitVO actionInit) {
 		super(actionInit);
 	}
-	
+
 	/**
 	 * @param dbConn
 	 * @param attributes
@@ -58,85 +60,127 @@ public class MtsUserLoginReport extends UserLoginReport {
 	}
 	
 	
-	/*
-	 * (non-Javadoc)
-	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.action.ActionRequest)
+	/**
+	 * gathers the data adding the custom fields needed 
+	 * @param req
+	 * @return
 	 */
 	@Override
-	public void retrieve(ActionRequest req) throws ActionException {
-		BSTableControlVO bst = new BSTableControlVO(req, MTSUserVO.class);
+	public List<GenericVO> detailReport(ActionRequest req) { 
 		String site = StringUtil.checkVal(req.getParameter("siteData"));
+		if (site.isEmpty()) return Collections.emptyList();
+
 		int index = site.indexOf('|');
 		String siteId = site.substring(0,index);
+		String siteNm = site.substring(++index);
+		boolean excludeGlobalAdmins = Convert.formatBoolean(req.getParameter("excludeGlobalAdmins"));
 		Date start = Convert.formatStartDate(req.getParameter("startDate"), "1/1/2000");
 		Date end = Convert.formatEndDate(req.getParameter("endDate"));
-		String publicationId = StringUtil.checkVal(req.getParameter("publicationId"));
+		Integer roleOrderNo = req.getIntegerParameter("roleLevel");
+		String publicationId = req.getParameter("publicationId");
 
+		StringBuilder sb = new StringBuilder(750);
 		
-		setModuleData(getUserLoginReport(bst, start, end, siteId, publicationId));
+		sb.append("select m.page_views, d.profile_Id, d.first_nm, d.last_nm, d.email_address_txt,  b.login_dt, b.status_cd, b.session_id, ");
+		sb.append("b.authentication_id, a.site_nm, c.user_nm, f.role_nm, g.phone_number_txt, g.phone_country_cd, ");
+		sb.append("u.company_nm ");
+		sb.append("from site a inner join authentication_log b on a.site_id = b.site_id ");
+		sb.append("inner join authentication c on b.authentication_id = c.authentication_id ");
+		sb.append("inner join profile d on b.authentication_id = d.authentication_id ");
+		
+		sb.append("inner join ").append(getCustomSchema()).append("mts_user u on d.profile_id = u.profile_id ");
+		
+		
+		sb.append("inner join (select count(*) as page_views, profile_id, session_id from pageview_user pu ");
+		sb.append("where site_id = ? and request_uri_txt not like '/portal%' ");
+		
+		if(! StringUtil.isEmpty(publicationId)) {
+			sb.append("and request_uri_txt like ? ");
+		}
+		
+		sb.append("group by session_id, profile_id )as m on d.PROFILE_ID = m.PROFILE_ID and b.session_id = m.session_id ");
+		
+		sb.append("left join (select profile_id, phone_country_cd, array_agg(phone_number_txt) as phone_number_txt from "); 
+		sb.append("phone_number group by profile_id, phone_country_cd) as g on d.PROFILE_ID = g.PROFILE_ID ");
+		
+		sb.append("left join PROFILE_ROLE e on d.PROFILE_ID = e.PROFILE_ID and e.SITE_ID = a.SITE_ID ");
+		sb.append("left join ROLE f on e.role_id = f.role_id ");
+		sb.append("where a.site_id=? and login_dt between ? and ? ");
+		if (excludeGlobalAdmins) {
+			sb.append("and (c.user_nm is null or d.global_admin_flg = 0) ");
+		} else if (roleOrderNo != null) {
+			sb.append("and f.role_order_no=? ");
+		}
+		sb.append("order by c.user_nm, b.login_dt");
+		log.debug(sb + "|" + siteId + "|" + start + "|" + end+"|"+roleOrderNo);
+
+		List<GenericVO> data = new ArrayList<>();
+		DateFormat df = new SimpleDateFormat("MM/dd/yy HH:mm ");
+		StringEncrypter se = StringEncrypter.getInstance((String) attributes.get(Constants.ENCRYPT_KEY));
+		try (PreparedStatement ps = dbConn.prepareStatement(sb.toString())) {
+			int count = 1;
+			ps.setString(count, siteId);
+			
+			if(! StringUtil.isEmpty(publicationId)) {
+				ps.setString(++count, StringUtil.join("%",publicationId.toLowerCase(),"%"));	
+			}
+			
+			ps.setString(++count, siteId);
+			ps.setDate(++count, Convert.formatSQLDate(start));
+			ps.setDate(++count, Convert.formatSQLDate(end));
+			if (roleOrderNo != null)
+				ps.setInt(++count, roleOrderNo);
+			ResultSet rs = ps.executeQuery();
+			while (rs.next())
+				data.add(new GenericVO("hi", new MtsProfileReportVO(rs, df, se)));
+
+		} catch(Exception e) {
+			log.error("Unable to retrieve user login detail report", e);
+		}
+
+		//set the site name for the report on the request.
+		req.setAttribute("siteName", siteNm);
+		log.debug("Size: " + data.size());
+		return data;
 	}
 	
 	
 	/**
-	 * this method gathers all the data for the mts user log in report and wraps it in the bootstrap table vo
-	 * @param bst
-	 * @param start
-	 * @param end
-	 * @param siteId
-	 * @param order 
-	 * @param sort 
-	 * @return 
+	 * Bean class to send data back to view.
+	 * @author smt_user
+	 *
 	 */
-	private GridDataVO<MTSUserVO> getUserLoginReport(BSTableControlVO bst, Date start, Date end, String siteId, String publicationId) {
-		// Add the params
-		List<Object> vals = new ArrayList<>();
+	public class MtsProfileReportVO extends UserLoginReport.ProfileReportVO implements Serializable {
+		private static final long serialVersionUID = 6022640754286679825L;
+		String companyName;
+		int pageViewsNumber;
 
-		StringBuilder sql = new StringBuilder(1000);
-		sql.append("select mu.user_id, mu.first_nm, mu.last_nm, mu.email_address_txt, company_nm, ");
-		sql.append("p.authentication_id, status_cd, al.login_dt as last_login_dt, cast (coalesce(ses.pageviews, 0) as int )as pageviews_no, al.session_id ");
-		sql.append(DBUtil.FROM_CLAUSE).append(getCustomSchema()).append("mts_user mu ");
-		sql.append(DBUtil.INNER_JOIN).append("profile p on mu.profile_id = p.profile_id ");
-		sql.append(DBUtil.INNER_JOIN).append("authentication_log al on p.authentication_id = al.authentication_id ");
-		sql.append(DBUtil.INNER_JOIN).append(" ( ").append("select session_id, count(*) as pageviews ").append("from pageview_user pu ");
-		sql.append("where site_id = ? and request_uri_txt not like '/portal%' ");
-		
-		vals.add(siteId);
-		
-		if(! StringUtil.isEmpty(publicationId)) {
-			sql.append("and request_uri_txt like ? ");  
-			vals.add(StringUtil.join("%",publicationId.toLowerCase(),"%"));
+		public MtsProfileReportVO(ResultSet rs, DateFormat df, StringEncrypter se) {
+			super(rs, df, se);
+			try {
+				companyName = rs.getString("company_nm");
+				pageViewsNumber = rs.getInt("page_views");
+			} catch (Exception e) {
+				log.error("could not parse login row", e);
+			}
 		}
 		
-		sql.append(" group by session_id ");
-		sql.append(" ) as ses on al.session_id = ses.session_id ");
-		sql.append("where mu.role_id = 'SUBSCRIBER' and al.site_id = ? ");
-		
-		vals.add(siteId);
-		
-		if(start != null && end != null) {
-			sql.append("and al.login_dt between ? and ? ");
-			vals.add(start);
-			vals.add(end);
+		public int getPageViewsNumber() {
+			return pageViewsNumber;
 		}
 		
-		// Filter by the search box
-		if (bst.hasSearch()) {
-			sql.append("and (lower(mu.last_nm) like ? or lower(mu.first_nm) like ? ");
-			sql.append("or lower(mu.email_address_txt) like ?) ");
-			vals.add(bst.getLikeSearch().toLowerCase());
-			vals.add(bst.getLikeSearch().toLowerCase());
-			vals.add(bst.getLikeSearch().toLowerCase());
+		public void setPageViewsNumber(int pageViewsNumber) {
+			this.pageViewsNumber = pageViewsNumber;
 		}
-		
-		sql.append(bst.getSQLOrderBy("al.login_dt", "desc"));
-		
-		
-		log.debug(sql + "|" + vals);
-		
-		// Query
-		DBProcessor db = new DBProcessor(getDBConnection());
-		return db.executeSQLWithCount(sql.toString(), vals, new MTSUserVO(), "last_login_dt", bst);
-		
+
+		public String getCompanyName() {
+			return companyName;
+		}
+		public void setCompanyName(String companyName) {
+			this.companyName = companyName;
+		}
+
 	}
+	
 
 }
