@@ -607,7 +607,7 @@ public class CompanyManagementAction extends ManagementAction {
 		//Override Status Filter on Public Side.
 		fq.add(StringUtil.join(STATUS_S, Status.P.toString()));
 		fq.add(StringUtil.join(STATUS_S, Status.E.toString()));
-		fq.add(StringUtil.join(STATUS_S, "I"));
+		fq.add(StringUtil.join(STATUS_S, Status.I.toString()));
 		if (Convert.formatBoolean(req.getParameter("inactive"))) {
 			fq.add(StringUtil.join(STATUS_S, Status.A.toString()));
 			fq.add(StringUtil.join(STATUS_S, Status.D.toString()));
