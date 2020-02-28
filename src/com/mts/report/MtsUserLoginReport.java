@@ -36,7 +36,11 @@ import com.smt.sitebuilder.common.constants.Constants;
 public class MtsUserLoginReport extends UserLoginReport {
 
 	private static final long serialVersionUID = 8190916348145371293L;
-
+	
+	/**
+	 * Ajax Controller key for this action
+	 */
+	public static final String AJAX_KEY = "loginReport";
 
 	/**
 	 * 
