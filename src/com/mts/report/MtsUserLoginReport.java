@@ -77,9 +77,11 @@ public class MtsUserLoginReport extends UserLoginReport {
 		Date start = Convert.formatStartDate(req.getParameter("startDate"), "1/1/2000");
 		Date end = Convert.formatEndDate(req.getParameter("endDate"));
 		Integer roleOrderNo = req.getIntegerParameter("roleLevel");
+		String publicationId = req.getParameter("publicationId");
 
 		StringBuilder sb = new StringBuilder(750);
-		sb.append("select d.profile_Id, d.first_nm, d.last_nm, d.email_address_txt,  b.login_dt, b.status_cd, b.session_id, ");
+		
+		sb.append("select m.page_views, d.profile_Id, d.first_nm, d.last_nm, d.email_address_txt,  b.login_dt, b.status_cd, b.session_id, ");
 		sb.append("b.authentication_id, a.site_nm, c.user_nm, f.role_nm, g.phone_number_txt, g.phone_country_cd, ");
 		sb.append("u.company_nm ");
 		sb.append("from site a inner join authentication_log b on a.site_id = b.site_id ");
@@ -88,8 +90,19 @@ public class MtsUserLoginReport extends UserLoginReport {
 		
 		sb.append("inner join ").append(getCustomSchema()).append("mts_user u on d.profile_id = u.profile_id ");
 		
+		
+		sb.append("inner join (select count(*) as page_views, profile_id, session_id from pageview_user pu ");
+		sb.append("where site_id = ? and request_uri_txt not like '/portal%' ");
+		
+		if(! StringUtil.isEmpty(publicationId)) {
+			sb.append("and request_uri_txt like ? ");
+		}
+		
+		sb.append("group by session_id, profile_id )as m on d.PROFILE_ID = m.PROFILE_ID and b.session_id = m.session_id ");
+		
 		sb.append("left join (select profile_id, phone_country_cd, array_agg(phone_number_txt) as phone_number_txt from "); 
 		sb.append("phone_number group by profile_id, phone_country_cd) as g on d.PROFILE_ID = g.PROFILE_ID ");
+		
 		sb.append("left join PROFILE_ROLE e on d.PROFILE_ID = e.PROFILE_ID and e.SITE_ID = a.SITE_ID ");
 		sb.append("left join ROLE f on e.role_id = f.role_id ");
 		sb.append("where a.site_id=? and login_dt between ? and ? ");
@@ -99,17 +112,24 @@ public class MtsUserLoginReport extends UserLoginReport {
 			sb.append("and f.role_order_no=? ");
 		}
 		sb.append("order by c.user_nm, b.login_dt");
-		log.info(sb + "|" + siteId + "|" + start + "|" + end);
+		log.debug(sb + "|" + siteId + "|" + start + "|" + end+"|"+roleOrderNo);
 
 		List<GenericVO> data = new ArrayList<>();
-		DateFormat df = new SimpleDateFormat("MM/dd/yy HH:mm a");
+		DateFormat df = new SimpleDateFormat("MM/dd/yy HH:mm ");
 		StringEncrypter se = StringEncrypter.getInstance((String) attributes.get(Constants.ENCRYPT_KEY));
 		try (PreparedStatement ps = dbConn.prepareStatement(sb.toString())) {
-			ps.setString(1, siteId);
-			ps.setDate(2, Convert.formatSQLDate(start));
-			ps.setDate(3, Convert.formatSQLDate(end));
+			int count = 1;
+			ps.setString(count, siteId);
+			
+			if(! StringUtil.isEmpty(publicationId)) {
+				ps.setString(++count, StringUtil.join("%",publicationId.toLowerCase(),"%"));	
+			}
+			
+			ps.setString(++count, siteId);
+			ps.setDate(++count, Convert.formatSQLDate(start));
+			ps.setDate(++count, Convert.formatSQLDate(end));
 			if (roleOrderNo != null)
-				ps.setInt(4, roleOrderNo);
+				ps.setInt(++count, roleOrderNo);
 			ResultSet rs = ps.executeQuery();
 			while (rs.next())
 				data.add(new GenericVO("hi", new MtsProfileReportVO(rs, df, se)));
@@ -133,14 +153,24 @@ public class MtsUserLoginReport extends UserLoginReport {
 	public class MtsProfileReportVO extends UserLoginReport.ProfileReportVO implements Serializable {
 		private static final long serialVersionUID = 6022640754286679825L;
 		String companyName;
+		int pageViewsNumber;
 
 		public MtsProfileReportVO(ResultSet rs, DateFormat df, StringEncrypter se) {
 			super(rs, df, se);
 			try {
 				companyName = rs.getString("company_nm");
+				pageViewsNumber = rs.getInt("page_views");
 			} catch (Exception e) {
 				log.error("could not parse login row", e);
 			}
+		}
+		
+		public int getPageViewsNumber() {
+			return pageViewsNumber;
+		}
+		
+		public void setPageViewsNumber(int pageViewsNumber) {
+			this.pageViewsNumber = pageViewsNumber;
 		}
 
 		public String getCompanyName() {
