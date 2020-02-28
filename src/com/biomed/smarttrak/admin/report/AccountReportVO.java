@@ -435,6 +435,7 @@ public class AccountReportVO extends AbstractSBReportVO {
 	protected void addDivisions(StringBuilder sb, 
 			AccountUsersVO acct, Map<String,String> divMap) {
 		for (Map.Entry<String,List<UserVO>> division : acct.getDivisions().entrySet()) {
+			if ("No Division".equals(division.getKey())) continue;
 			startDiv(sb,CSS_DIVISION_WRAPPER);
 			startSpan(sb,CSS_DIVISION_NAME);
 			sb.append(StringUtil.checkVal(division.getKey()));
