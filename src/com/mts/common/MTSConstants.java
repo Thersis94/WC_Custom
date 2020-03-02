@@ -1,5 +1,8 @@
 package com.mts.common;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /****************************************************************************
  * <b>Title</b>: MTSConstants.java
  * <b>Project</b>: WC_Custom
@@ -31,6 +34,18 @@ public class MTSConstants {
 		public String getRoleId() {	return roleId; }
 		public String getRoleName() {	return roleName; }
 	}
+	
+	/**
+	 * Mapping for the subscribe buttons
+	 */
+	public static Map<String, String> SUBSCRIBE_LINKS = new HashMap<String, String>() {
+		private static final long serialVersionUID = -742000646346933617L; {
+			put("MEDTECH-STRATEGIST", "https://www.medtechstrategist.com/mts-publication");
+			put("MARKET-PATHWAYS", "https://www.medtechstrategist.com/market-pathways");
+			put("BLOG", "https://www.medtechstrategist.com/store?category=Publications");
+		}
+	};
+	
 	
 	/**
 	 * Organiztion ID
