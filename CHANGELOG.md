@@ -1,5 +1,31 @@
 WC_Custom Changelog (auto-generated)
 
+# [3.47.0](https://github.com/smtadmin/WC_Custom/compare/3.46.1...3.47.0) (2020-03-02)
+
+
+### Bug Fixes
+
+* **adding cat:** when adding a category, the group ID must be updated ([e172fb4](https://github.com/smtadmin/WC_Custom/commit/e172fb4))
+* **category:** fixed missing Group ID, which was causing issues on display" ([4cc1257](https://github.com/smtadmin/WC_Custom/commit/4cc1257))
+* **feature-mts-i50:** fix how data moves from bootstrap to excel, dates should appear as dates and n ([1c48c96](https://github.com/smtadmin/WC_Custom/commit/1c48c96))
+* **feature-rezdox-i355:** make the same adjustments to code that we did in homes to businesses ([c049e2f](https://github.com/smtadmin/WC_Custom/commit/c049e2f))
+* **merge:** fixed merge issue ([5437449](https://github.com/smtadmin/WC_Custom/commit/5437449))
+
+
+### Features
+
+* **admin:** added exp date to subscriptions ([dae0de5](https://github.com/smtadmin/WC_Custom/commit/dae0de5))
+* **categories:** modified the categories display and slection to include other types ([574a3df](https://github.com/smtadmin/WC_Custom/commit/574a3df))
+* **feature-mts-i50:** add page view column and publication filter to report ([f1a9fe6](https://github.com/smtadmin/WC_Custom/commit/f1a9fe6))
+* **marathon-mts-p2:** add feature to allow article teaser by category, latest or current issue ([cd0a7e1](https://github.com/smtadmin/WC_Custom/commit/cd0a7e1))
+* **marathon-mts-p2:** rebuild mts user login reports and publication page view reports ([adb2074](https://github.com/smtadmin/WC_Custom/commit/adb2074))
+* **misc:** added misc features for the mTS phase 2 project ([cb3a317](https://github.com/smtadmin/WC_Custom/commit/cb3a317))
+* **security:** updated permissions on login to use subscription expiration date ([c5e5984](https://github.com/smtadmin/WC_Custom/commit/c5e5984))
+* **trails:** adding ability to verify if a user is authorized to receive a trial ([d25b0e9](https://github.com/smtadmin/WC_Custom/commit/d25b0e9))
+* **trial:** adding trial subscription post processor ([ad5a366](https://github.com/smtadmin/WC_Custom/commit/ad5a366))
+* **trial:** updating the trial membership feature of MTS ([fcd7000](https://github.com/smtadmin/WC_Custom/commit/fcd7000))
+* **trial sub:** addig in the trial subscription code ([bad7259](https://github.com/smtadmin/WC_Custom/commit/bad7259))
+
 ## [3.46.1](https://github.com/smtadmin/WC_Custom/compare/3.46.0...3.46.1) (2020-02-28)
 
 
