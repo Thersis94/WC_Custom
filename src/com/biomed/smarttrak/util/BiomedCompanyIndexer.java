@@ -30,6 +30,7 @@ import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
+import com.siliconmtn.util.UUIDGenerator;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SMTAbstractIndex;
 import com.smt.sitebuilder.security.SecurityController;
@@ -308,6 +309,9 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 				addAcl(sectionId, hierarchies, p);
 			}
 
+			if (p != null)
+				addAllProducts(p, acls);
+
 		} catch (SQLException e) {
 			log.error(e);
 		}
@@ -321,9 +325,9 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 	 */
 	private void addAllProducts(ProductVO p, Map<String, List<ProductVO>> acls) {
 		if (p == null) return;
-		addProduct(p, DOCUMENT_PREFIX + p.getCompanyId(), acls);
+		addProduct(p, p.getCompanyId(), acls);
 		for (ProductAllianceVO a : p.getAlliances())
-			addProduct(p, DOCUMENT_PREFIX + a.getAllyId(), acls);
+			addProduct(p, a.getAllyId(), acls);
 	}
 
 	/**
@@ -333,6 +337,9 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 	 * @param products
 	 */
 	private void addProduct(ProductVO p, String companyId, Map<String, List<ProductVO>> products) {
+		if (!UUIDGenerator.isUUID(companyId))
+			companyId = DOCUMENT_PREFIX + companyId;
+
 		if (!products.containsKey(companyId))
 			products.put(companyId, new ArrayList<>());
 

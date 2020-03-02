@@ -20,5 +20,10 @@
 		"@semantic-release/git",
 		"@semantic-release/github"
 	  ]
-	}
+	},
+	"config": {
+    "commitizen": {
+      "path": "cz-conventional-changelog"
+    }
+  }
 }

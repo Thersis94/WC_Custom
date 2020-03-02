@@ -48,6 +48,7 @@ public class MTSUserVO extends UserVO {
 	private String twitterName;
 	private String linkedinName;
 	private String notes;
+	private String publicationText;
 
 	// Numeric Members
 	private int activeFlag;
@@ -56,7 +57,6 @@ public class MTSUserVO extends UserVO {
 
 	// Other Members
 	private SubscriptionType subscriptionType;
-	private Date expirationDate;
 	private String ssoId;
 
 	// Sub Beans
@@ -67,6 +67,10 @@ public class MTSUserVO extends UserVO {
 
 	// Helpers
 	private Date lastLogin;
+	private int statusCode;
+	private int pageViews;
+	private String sessionId;
+	
 
 
 	public MTSUserVO() {
@@ -105,8 +109,9 @@ public class MTSUserVO extends UserVO {
 
 		if (StringUtil.isEmpty(publicationId)) return false;
 
+		Date now = new Date();
 		for(SubscriptionUserVO sub : subscriptions) {
-			if(publicationId.equalsIgnoreCase(sub.getPublicationId())) return true;
+			if(publicationId.equalsIgnoreCase(sub.getPublicationId()) && now.before(sub.getExpirationDate())) return true;
 		}
 
 		return false;
@@ -225,13 +230,18 @@ public class MTSUserVO extends UserVO {
 	public SubscriptionType getSubscriptionType() {
 		return subscriptionType;
 	}
-
+	
 	/**
-	 * @return the expirationDate
+	 * 
+	 * @return
 	 */
-	@Column(name="expiration_dt")
-	public Date getExpirationDate() {
-		return expirationDate;
+	@Column(name="pub_txt", isReadOnly= true)
+	public String getPublicationText() {
+		return publicationText;
+	}
+
+	public void setPublicationText(String publicationText) {
+		this.publicationText = publicationText;
 	}
 
 	/**
@@ -303,6 +313,21 @@ public class MTSUserVO extends UserVO {
 	public List<SubscriptionUserVO> getSubscriptions() {
 		return subscriptions;
 	}
+	
+	/**
+	 * Returns the subscription for the specified publication
+	 * @param publicationId
+	 * @return
+	 */
+	public SubscriptionUserVO getSubscription(String publicationId) {
+		if (StringUtil.isEmpty(publicationId) || subscriptions.isEmpty()) return null;
+		
+		for (SubscriptionUserVO vo : subscriptions) {
+			if (publicationId.equalsIgnoreCase(vo.getPublicationId())) return vo;
+		}
+		
+		return null;
+	}
 
 	/**
 	 * @param subscriptions the subscriptions to set
@@ -335,6 +360,32 @@ public class MTSUserVO extends UserVO {
 	public void setLastLogin(Date lastLogin) {
 		this.lastLogin = lastLogin;
 	}
+	
+	@Column(name="pageviews_no", isReadOnly=true)
+	public int getPageViews() {
+		return pageViews;
+	}
+
+	public void setPageViews(int pageViews) {
+		this.pageViews = pageViews;
+	}
+
+	@Column(name="status_cd", isReadOnly=true)
+	public int getStatusCode() {
+		return statusCode;
+	}
+	@Column(name="session_id", isReadOnly=true)
+	public String getSessionId() {
+		return sessionId;
+	}
+
+	public void setSessionId(String sessionId) {
+		this.sessionId = sessionId;
+	}
+
+	public void setStatusCode(int statusCode) {
+		this.statusCode = statusCode;
+	}
 
 	/**
 	 * @param notes the notes to set
@@ -355,13 +406,6 @@ public class MTSUserVO extends UserVO {
 	 */
 	public void setSubscriptionType(SubscriptionType subscriptionType) {
 		this.subscriptionType = subscriptionType;
-	}
-
-	/**
-	 * @param expirationDate the expirationDate to set
-	 */
-	public void setExpirationDate(Date expirationDate) {
-		this.expirationDate = expirationDate;
 	}
 
 	/**

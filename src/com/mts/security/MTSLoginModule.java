@@ -122,7 +122,6 @@ public class MTSLoginModule extends SAMLLoginModule {
 		MTSUserVO mtsUser = new MTSUserVO(origUser);
 		mtsUser.setSubscriptionType(SubscriptionType.SSO);
 		mtsUser.setRoleId(provider.getRoleId());
-		mtsUser.setExpirationDate(provider.getExpirationDate());
 		mtsUser.setSsoId(provider.getSsoId());
 		mtsUser.setRoleId(provider.getRoleId());
 		mtsUser.setActiveFlag(1);

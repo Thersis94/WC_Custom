@@ -1,6 +1,8 @@
 package com.mts.admin.action;
 
+import com.siliconmtn.data.parser.BeanDataVO;
 import com.siliconmtn.db.orm.Column;
+import com.siliconmtn.db.orm.Table;
 
 /****************************************************************************
  * <p><b>Title:</b> PageviewArticleVO.java</p>
@@ -13,8 +15,10 @@ import com.siliconmtn.db.orm.Column;
  * @since Nov 4, 2019
  * <b>Changes:</b>
  ****************************************************************************/
-public class PageviewArticleVO {
+@Table(name="document")
+public class PageviewArticleVO extends BeanDataVO {
 
+	private static final long serialVersionUID = 9161568649936110414L;
 	private String publicationId;
 	private String publicationNm;
 	private String issueId;
