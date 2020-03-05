@@ -4,6 +4,8 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -62,6 +64,17 @@ public class ProjectAction extends SimpleActionAdapter {
 	protected static final String REQ_PROJECT_ID = "projectId";
 	protected static final String FILTER_DATA_LST = "filterListData";
 
+	/**
+	 * The coefficients used based on how old a project is to calculate 
+	 */
+	public enum ValuationCoefficient {
+		YEAR_2020(0.611), YEAR_2019(0.572), LESS_THEN_FOUR_YEARS(0.537), 
+		MORE_THEN_FOUR_LESS_THEN_TWENTY(0.147), MORE_THEN_TWENTY(0.00) ;
+
+		private double coefficient;
+		private ValuationCoefficient(double coefficient) { this.coefficient = coefficient; }
+		public double getCoefficient() {return coefficient; }
+	}
 
 	public ProjectAction() {
 		super();
@@ -128,11 +141,123 @@ public class ProjectAction extends SimpleActionAdapter {
 		double improvementTotal = 0;
 		for (ProjectVO proj : data) {
 			total += proj.getInvoiceSubTotal();
-			if ("IMPROVEMENT".equals(proj.getProjectCategoryCd()))
-				improvementTotal += proj.getProjectValuation();
+			if ("IMPROVEMENT".equals(proj.getProjectCategoryCd())) {
+				improvementTotal += calculateProjectValuation(proj);
+			}	
 		}
 		mod.setAttribute("totalValue", total);
 		mod.setAttribute("totalValueImprovements", improvementTotal);
+	}
+	
+	/**
+	 * takes all the projects and returns the project valuation total
+	 * @param data
+	 * @return
+	 */
+	public double calculateTotalProjectValuation( List<ProjectVO> data) {
+		double improvementTotal = 0;
+		for (ProjectVO proj : data) {
+			
+			processMaterials(proj);
+			
+			if ("IMPROVEMENT".equals(proj.getProjectCategoryCd())) {
+				improvementTotal += calculateProjectValuation(proj);
+			}	
+		}
+		log.debug("project total valuation: "  + improvementTotal);
+
+		return improvementTotal;
+	}
+	
+	
+	/**
+	 * sets each project materials cost and returns the materials total cost
+	 * @param proj
+	 */
+	private double processMaterials(ProjectVO proj) {
+		double meterialTotal = 0.0;
+		if(proj.getMaterials() != null) {
+			
+			for (ProjectMaterialVO mrt : proj.getMaterials()) {
+				if(proj.getProjectId().equals(mrt.getProjectId())) {
+					meterialTotal += mrt.getCostNo() * mrt.getQuantityNo();
+				}
+			}
+			proj.setMaterialSubtotal(meterialTotal);
+		}
+		
+		return meterialTotal;
+	}
+
+	/**
+	 * takes all the projects and returns the project total cost
+	 * @param data
+	 * @return
+	 */
+	public double calculateTotalProjectValue( List<ProjectVO> data) {
+		double total = 0;
+		
+		for (ProjectVO proj : data) {		
+			total += proj.getInvoiceSubTotal()+ processMaterials(proj);	
+		}
+		return total;
+	}
+	
+	/**
+	 * gets a lits of projects
+	 * @param ResId
+	 * @return
+	 */
+	public List<ProjectVO> getProjectsByResId(String resId){
+		
+		String schema = getCustomSchema();
+		List<Object> vals = new ArrayList<>();
+
+		StringBuilder sql = new StringBuilder(173);
+		
+		sql.append(DBUtil.SELECT_FROM_STAR).append(schema).append("rezdox_project p ");
+		sql.append(DBUtil.INNER_JOIN).append(schema).append("rezdox_project_material pm  on p.project_id = pm.project_id ");
+		sql.append(DBUtil.WHERE_CLAUSE).append("residence_id = ? ");
+		vals.add(resId);
+		
+		DBProcessor db = new DBProcessor(getDBConnection(), schema);
+		return db.executeSelect(sql.toString(), vals, new ProjectVO());
+	}
+	
+	/**
+	 * a utility method that calculates a project valuation 
+	 * @param pvo
+	 * @return
+	 */
+	public double calculateProjectValuation(ProjectVO pvo) {
+		//start and end dates for 2020
+		Date start2020 = Convert.formatStartDate("01/01/2020");
+		Date end2020 = Convert.formatEndDate("12/31/2020");
+		//start and end dates for 2019
+		Date start2019 = Convert.formatStartDate("01/01/2019");
+		Date end2019 = Convert.formatEndDate("12/13/2019");
+		
+		//set a calendar to 4 years ago
+		Calendar cal = Calendar.getInstance();
+		cal.add(Calendar.YEAR, -4);
+		//get the date
+		Date fourYearsAgo = cal.getTime();
+		//set the calendear to 20 years ago 
+		cal.add(Calendar.YEAR, -16);
+		//get the date
+		Date twentyYearsAgo =  cal.getTime();
+		
+		if(pvo.getEndDate().after(start2020) && pvo.getEndDate().before(end2020) ) {
+			return pvo.getInvoiceTotal() * ValuationCoefficient.YEAR_2020.getCoefficient();
+		}else if(pvo.getEndDate().after(start2019) && pvo.getEndDate().before(end2019)) {
+			return pvo.getInvoiceTotal() * ValuationCoefficient.YEAR_2019.getCoefficient();
+		}else if(pvo.getEndDate().before(start2019) && pvo.getEndDate().after(fourYearsAgo) ){
+			return pvo.getInvoiceTotal() * ValuationCoefficient.LESS_THEN_FOUR_YEARS.getCoefficient();
+		}else if(pvo.getEndDate().before(twentyYearsAgo)){
+			return pvo.getInvoiceTotal() * ValuationCoefficient.MORE_THEN_TWENTY.getCoefficient();
+		}else {
+			return pvo.getInvoiceTotal() * ValuationCoefficient.MORE_THEN_FOUR_LESS_THEN_TWENTY.getCoefficient();
+		}
 	}
 
 	/**

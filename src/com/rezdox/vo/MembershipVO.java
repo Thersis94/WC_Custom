@@ -39,7 +39,7 @@ public class MembershipVO implements Serializable  {
 	private Date updateDate;
 
 	public enum Group {
-		HO("Residence"), BU("Business");
+		HO("Residence"), BU("Business"), ALL("All");
 
 		private String label;
 		
