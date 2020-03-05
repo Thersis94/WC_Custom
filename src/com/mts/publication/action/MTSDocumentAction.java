@@ -114,6 +114,9 @@ public class MTSDocumentAction extends SimpleActionAdapter {
 			MTSDocumentVO doc = iac.getDocument(null, req.getParameter("reqParam_1"), pagePreview, userId);
 			if (StringUtil.isEmpty(doc.getActionId())) throw new Exception("Unable to locate article");
 
+			// Update the page data
+			page.setTitleName(doc.getPublicationName() + " - " + doc.getActionName());
+			
 			// Get the Related Articles
 			doc.setRelatedArticles(getRelatedArticles(doc.getActionGroupId(), pagePreview));
 
