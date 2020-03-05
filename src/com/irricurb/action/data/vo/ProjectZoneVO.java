@@ -116,7 +116,7 @@ public class ProjectZoneVO extends BeanDataVO {
 	/**
 	 * @return the updateDate
 	 */
-	@Column(name="udpate_dt", isUpdateOnly=true, isAutoGen=true)
+	@Column(name="update_dt", isUpdateOnly=true, isAutoGen=true)
 	public Date getUpdateDate() {
 		return updateDate;
 	}

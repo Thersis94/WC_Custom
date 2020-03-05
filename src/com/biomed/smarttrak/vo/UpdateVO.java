@@ -115,6 +115,7 @@ public class UpdateVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc
 	private String siteAliasUrl;
 	private int announcementType;
 	private List<String> sectionIds;
+	private int archiveFlg;
 
 	public UpdateVO() {
 		super(UpdateIndexer.INDEX_TYPE);
@@ -369,6 +370,7 @@ public class UpdateVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc
 	 * @return the creatorProfileId
 	 */
 	@Override
+	@SolrField(name=SearchDocumentHandler.AUTHOR)
 	@Column(name="creator_profile_id")
 	public String getCreatorProfileId() {
 		return creatorProfileId;
@@ -476,6 +478,12 @@ public class UpdateVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc
 	public int getOrderNo() {
 		return orderNo;
 	}
+
+	@Column(name="archive_flg")
+	public int getArchiveFlg() {
+		return archiveFlg;
+	}
+
 	/**
 	 * @return the sections
 	 */
@@ -805,5 +813,9 @@ public class UpdateVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc
 
 	public void setSectionIds(List<String> sectionIds) {
 		this.sectionIds = sectionIds;
+	}
+
+	public void setArchiveFlg(int archiveFlg) {
+		this.archiveFlg = archiveFlg;
 	}
 }

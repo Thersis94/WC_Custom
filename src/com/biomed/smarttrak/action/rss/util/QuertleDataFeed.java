@@ -155,9 +155,6 @@ public class QuertleDataFeed extends AbstractSmarttrakRSSFeed {
 			applyFilters(article, articleGuids);
 			log.info("article filters took " + (System.currentTimeMillis()-start) + "ms");
 
-			// Remove the Full Article Text to lessen memory overhead.
-			article.setFullArticleTxt(null);
-
 			/*
 			 * Determine if we need to store results or remove article data if
 			 * nothing matched.
@@ -228,6 +225,7 @@ public class QuertleDataFeed extends AbstractSmarttrakRSSFeed {
 			}
 		}
 
+		article.calcDataSize();
 		return article;
 	}
 

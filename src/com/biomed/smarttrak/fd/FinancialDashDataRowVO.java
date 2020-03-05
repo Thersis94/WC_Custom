@@ -158,7 +158,7 @@ public class FinancialDashDataRowVO implements Serializable {
 
 		ResultSetMetaData rsmd = rs.getMetaData();
 		int colCount = rsmd.getColumnCount();
-		
+		int pubQtr = dashboard.isSimulatedQuarter()? dashboard.getPublishedQtr() : rs.getInt("fd_pub_qtr");
 		for (int i=1; i <= colCount; i++) {
 			String colName = rsmd.getColumnName(i).toUpperCase();
 			String qtr = colName.substring(0,2);
@@ -166,16 +166,15 @@ public class FinancialDashDataRowVO implements Serializable {
 
 			if (FinancialDashBaseAction.QTR_PATTERN.matcher(qtr).matches()) {
 				int yearIdx = Convert.formatInteger(colName.substring(colName.length() - 1, colName.length()));
-				String quarterString = null;
 				// If we are in the current year always compar the the current year
 				// so that unreported quarters don't get used for the year to date comparison.
-				if (year == maxYear && yearIdx == 0 && currQtr > dashboard.getCurrentQtr()) {
-					quarterString = qtr + "-" + maxYear;
-				}
-				addColumn(qtr, yearIdx, maxYear, util, rs, quarterString == null);
+				boolean addPrevious = (year != maxYear || yearIdx != 0 || currQtr <= pubQtr) && (dashboard.getColHeaders().getDisplayType().getShowAll() || currQtr <= pubQtr);
+				boolean addSummation = (!dashboard.getColHeaders().getDisplayType().getShowAll() && currQtr <= pubQtr) ||
+						(dashboard.getColHeaders().getDisplayType().getShowAll() && (year != maxYear || yearIdx != 0 || currQtr <= pubQtr));
+				addColumn(qtr, yearIdx, maxYear, util, rs, addPrevious, true);
 
-				addSummaryColumn(util, qtr, maxYear, yearIdx, rs, FinancialDashBaseAction.CALENDAR_YEAR, quarterString == null);
-				addSummaryColumn(util, qtr, maxYear, yearIdx, rs, FinancialDashBaseAction.YEAR_TO_DATE, quarterString == null);
+				addSummaryColumn(util, qtr, maxYear, yearIdx, rs, FinancialDashBaseAction.CALENDAR_YEAR, addPrevious, addSummation);
+				addSummaryColumn(util, qtr, maxYear, yearIdx, rs, FinancialDashBaseAction.YEAR_TO_DATE, addPrevious, addSummation);
 				calculateInactivity(qtr, yearIdx, util, rs, dashboard.getColHeaders(), qtr + "-" + (maxYear-yearIdx), dashboard.showEmpty());
 			}
 		}
@@ -191,10 +190,10 @@ public class FinancialDashDataRowVO implements Serializable {
 	 * @param columnPrefix
 	 * @param adjust
 	 */
-	private void addSummaryColumn(DBUtil util, String qtr, int maxYear,  int yearIdx, ResultSet rs, String columnPrefix, boolean adjust) {
+	private void addSummaryColumn(DBUtil util, String qtr, int maxYear,  int yearIdx, ResultSet rs, String columnPrefix, boolean addPrevious, boolean addCurrent) {
 		int dollarValue = util.getIntVal(qtr + "_" + yearIdx, rs);
 		int pyDollarValue = util.getIntVal(qtr + "_" + (yearIdx + 1), rs);
-		addColumn(columnPrefix + "-" + (maxYear - yearIdx), dollarValue, pyDollarValue, util.getStringVal("REVENUE_ID_" + yearIdx, rs), adjust);
+		addColumn(columnPrefix + "-" + (maxYear - yearIdx), dollarValue, pyDollarValue, util.getStringVal("REVENUE_ID_" + yearIdx, rs), addPrevious, addCurrent);
 	}
 
 	/**
@@ -227,31 +226,27 @@ public class FinancialDashDataRowVO implements Serializable {
 
 	/**
 	 * Per the defined business rules:
-	 * If all Sections are of the same Quarter then apply labeling rules to the next.
 	 * Otherwise if a Section is behind the current published level, apply labeling to those only.
 	 * If any revenue data exists, then the term "Reporting" is displayed.
 	 * If there is no revenue for the current quarter, then the term "Pending" is displayed.
 	 *
 	 * @param tree
-	 * @param currentQtr
+	 * @param reportedQtr
 	 * @param currentYear
-	 * @param allSameQuarter 
 	 */
-	protected void setReportingPending(SmarttrakTree tree, int currentQtr, int currentYear, boolean allSameQuarter) {
+	protected void setReportingPending(SmarttrakTree tree, int reportedQtr, int currentQtr, int currentYear) {
 		Node node = tree.findNode(primaryKey);
 
 		// If node isn't found, this is a company row, and the value will be displayed
 		if (node != null) {
 			SectionVO section = (SectionVO) node.getUserObject();
-
 			/*
-			 * If all sections are of the same quarter, label over the next Quarter.
-			 * Otherwise if a sections Published Qtr/Year is behind the current, label over currentQtr for that section. 
+			 * If the current quarter is less than or equal to the latest quarter
+			 * with reporter sales or the current section's published year is earlier
+			 * the currently published year mark the column as reporting or pending
 			 */
-			if(allSameQuarter) {
-				markColumnReportingPending(currentQtr + 1, currentYear);
-			} else if (section.getFdPubQtr() < currentQtr || section.getFdPubYr() < currentYear) {
-				markColumnReportingPending(currentQtr, currentYear);
+			if (currentQtr < reportedQtr || section.getFdPubYr() < currentYear) {
+				markColumnReportingPending(reportedQtr, currentYear);
 			}
 		}
 	}
@@ -284,22 +279,17 @@ public class FinancialDashDataRowVO implements Serializable {
 	 * @param colId
 	 * @param pk
 	 * @param val
-	 * @param pctDiff
 	 */
-	public void addColumn(String colId, int val, int pVal, String revenueId, boolean adjustImcomplete) {
+	public void addColumn(String colId, int val, int pVal, String revenueId, boolean addPrevious, boolean addCurrent) {
 		FinancialDashDataColumnVO col;
 		if (columns.containsKey(colId)) {
 			col =columns.get(colId);
-			col.setDollarValue(col.getDollarValue() + val);
-			if (adjustImcomplete || val != 0) {
-				col.setPDollarValue(col.getPDollarValue() +pVal);
-			}
+			if (addCurrent) col.setDollarValue(col.getDollarValue() + val);
+			if (addPrevious) col.setPDollarValue(col.getPDollarValue() +pVal);
 		} else {
 			col = new FinancialDashDataColumnVO();
-			col.setDollarValue(val);
-			if (adjustImcomplete || val != 0) {
-				col.setPDollarValue(pVal);
-			}
+			if (addCurrent) col.setDollarValue(val);
+			if (addPrevious) col.setPDollarValue(pVal);
 			col.setColId(colId);
 			col.setRevenueId(revenueId);
 		}
@@ -326,7 +316,7 @@ public class FinancialDashDataRowVO implements Serializable {
 	 * @param rs
 	 * @param b 
 	 */
-	private void addColumn(String qtr, int yearIdx, int maxYear, DBUtil util, ResultSet rs, boolean adjustImcomplete) {
+	private void addColumn(String qtr, int yearIdx, int maxYear, DBUtil util, ResultSet rs, boolean addPrevious, boolean addCurrent) {
 		int dollarValue = util.getIntVal(qtr + "_" + yearIdx, rs);
 		int pyDollarValue = util.getIntVal(qtr + "_" + (yearIdx + 1), rs);
 
@@ -334,7 +324,7 @@ public class FinancialDashDataRowVO implements Serializable {
 		// gives the year for that column. One row in the returned data could
 		// represent data from more than one year.
 		String columnId = qtr + "-" + (maxYear - yearIdx);
-		addColumn(columnId, dollarValue, pyDollarValue, util.getStringVal("REVENUE_ID_" + yearIdx, rs), adjustImcomplete);
+		addColumn(columnId, dollarValue, pyDollarValue, util.getStringVal("REVENUE_ID_" + yearIdx, rs), addPrevious, addCurrent);
 
 		// Checks for potential delta between overlay and base data 
 		checkOverlayDelta(columnId, qtr, yearIdx, rs);

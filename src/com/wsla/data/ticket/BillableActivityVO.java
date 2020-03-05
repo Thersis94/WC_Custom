@@ -51,6 +51,8 @@ public class BillableActivityVO extends BeanDataVO {
 	private int activeFlag;
 	private String parentId;
 	private Date createDate;
+	private double defaultCost;
+	private double defaultInvoiceAmount;
 	
 	/**
 	 * 
@@ -122,6 +124,22 @@ public class BillableActivityVO extends BeanDataVO {
 	}
 
 	/**
+	 * @return the defaultCost
+	 */
+	@Column(name="default_cost_no")
+	public double getDefaultCost() {
+		return defaultCost;
+	}
+
+	/**
+	 * @return the defaultInvoiceAmount
+	 */
+	@Column(name="default_invoice_amt_no")
+	public double getDefaultInvoiceAmount() {
+		return defaultInvoiceAmount;
+	}
+
+	/**
 	 * @param parentId the parentId to set
 	 */
 	public void setParentId(String parentId) {
@@ -161,6 +179,20 @@ public class BillableActivityVO extends BeanDataVO {
 	 */
 	public void setBillableTypeCode(BillableTypeCode billableTypeCode) {
 		this.billableTypeCode = billableTypeCode;
+	}
+
+	/**
+	 * @param defaultCost the defaultCost to set
+	 */
+	public void setDefaultCost(double defaultCost) {
+		this.defaultCost = defaultCost;
+	}
+
+	/**
+	 * @param defaultInvoiceAmount the defaultInvoiceAmount to set
+	 */
+	public void setDefaultInvoiceAmount(double defaultInvoiceAmount) {
+		this.defaultInvoiceAmount = defaultInvoiceAmount;
 	}
 
 }

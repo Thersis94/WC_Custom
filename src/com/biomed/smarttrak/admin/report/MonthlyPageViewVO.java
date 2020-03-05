@@ -1,6 +1,7 @@
 package com.biomed.smarttrak.admin.report;
 
 import java.sql.ResultSet;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -24,6 +25,7 @@ public class MonthlyPageViewVO {
 	private String sectionName;
 	private String pageName;
 	private String pageTitle;
+	private Date publishDate;
 	private Map<String, Integer> pageCounts;
 	
 	public MonthlyPageViewVO() {
@@ -48,6 +50,7 @@ public class MonthlyPageViewVO {
 		this.sectionName = util.getStringVal("section_nm", rs);
 		this.pageName = util.getStringVal("page_nm", rs);
 		this.pageTitle = StringUtil.checkVal(pageName, sectionName);
+		this.publishDate = util.getDateVal("publish_dt", rs);
 		this.addPageCount(util.getStringVal("visit_dt", rs), util.getIntVal("hit_cnt", rs));
 	}
 
@@ -77,6 +80,13 @@ public class MonthlyPageViewVO {
 	 */
 	public String getPageTitle() {
 		return pageTitle;
+	}
+
+	/**
+	 * @return the publishDate
+	 */
+	public Date getPublishDate() {
+		return publishDate;
 	}
 
 	/**
@@ -119,6 +129,14 @@ public class MonthlyPageViewVO {
 	 */
 	public void setPageTitle(String pageTitle) {
 		this.pageTitle = pageTitle;
+	}
+
+	/**
+	 * 
+	 * @param publishDate the publishDate to set
+	 */
+	public void setPublishDate(Date publishDate) {
+		this.publishDate = publishDate;
 	}
 
 	/**

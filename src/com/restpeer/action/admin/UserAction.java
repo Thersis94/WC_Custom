@@ -32,6 +32,8 @@ import com.smt.sitebuilder.action.dealer.LocationProfileVO;
 import com.smt.sitebuilder.action.user.ProfileManager;
 import com.smt.sitebuilder.action.user.ProfileManagerFactory;
 import com.smt.sitebuilder.action.user.UserBaseWidget;
+import com.smt.sitebuilder.common.SiteVO;
+import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
  * <b>Title</b>: UserAction.java
@@ -84,12 +86,15 @@ public class UserAction extends UserBaseWidget {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
+		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
+		String siteId = StringUtil.checkVal(site.getAliasPathParentId(), site.getSiteId());
+
 		try {
 			if (req.hasParameter("profileId")) {
 				setModuleData(getUserProfile(req.getParameter("profileId")));
 			} else {
 				BSTableControlVO bst = new BSTableControlVO(req, RPUserVO.class);
-				setModuleData(getUsers(req.getParameter("dealerLocationId"), bst));
+				setModuleData(getUsers(req.getParameter("dealerLocationId"), siteId, bst));
 			}
 		} catch (Exception e) {
 			setModuleData(null, 0, e.getLocalizedMessage());
@@ -150,20 +155,23 @@ public class UserAction extends UserBaseWidget {
 	 * Loads the list of users.  if a user is already associated to the location
 	 * then do not return them in the list
 	 * @param dlid
+	 * @param siteId
 	 * @param bst
 	 * @return
 	 */
-	public GridDataVO<RPUserVO> getUsers(String dlid, BSTableControlVO bst) {
+	public GridDataVO<RPUserVO> getUsers(String dlid, String siteId, BSTableControlVO bst) {
 		List<Object> vals = new ArrayList<>();
 		StringBuilder sql = new StringBuilder(344);
-		sql.append("select a.*, coalesce(user_total, 0) as member_assoc_no from ");
+		sql.append("select a.*, coalesce(user_total, 0) as member_assoc_no, pr.role_id from ");
 		sql.append(getCustomSchema()).append("rp_user a "); 
 		sql.append("left outer join ( ");
 		sql.append("select profile_id, count(*) as user_total from ");
 		sql.append("dealer_location_profile_xr b ");
 		sql.append("group by profile_id ");
 		sql.append(") as b on a.profile_id = b.profile_id ");
+		sql.append(DBUtil.INNER_JOIN).append("profile_role pr on a.profile_id = pr.profile_id and pr.site_id = ? ");
 		sql.append("where 1=1 ");
+		vals.add(siteId);
 		
 		if (! StringUtil.isEmpty(dlid)) {
 			sql.append("and a.profile_id not in ( "); 
@@ -198,6 +206,7 @@ public class UserAction extends UserBaseWidget {
 	@Override
 	public void build(ActionRequest req) throws ActionException {
 		// Call the base class and process the user. Assign to the RP User
+		req.setParameter("workPhone", req.getParameter("phoneNumber"));
 		super.build(req, "rp_user");
 		
 		RPUserVO user = new RPUserVO(this.extUser);

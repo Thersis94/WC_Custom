@@ -18,7 +18,12 @@ public class WSLAConstants {
 	 * All ticket data attributes will be prefixed with this value
 	 */
 	public static final String ATTRIBUTE_PREFIX = "attr_";
-
+	
+	/**
+	 * the id for the main warehouse for parts, shipping and inv
+	 */
+	public static final String MAIN_WAREHOUSE_ID = "WSLA_020";
+			
 	/**
 	 * Number of random chars for the ticket text 
 	 */
@@ -84,7 +89,7 @@ public class WSLAConstants {
 	 * comes to expose 'source' as a selectable option - which is a phase-2 upgrade.
 	 * TODO change this to the actual WSLA warehouse according to the scripted data import
 	 */
-	public static final String DEFAULT_SHIPPING_SRC = "b89e4d5a3e2c439f879a25aee66bedde";
+	public static final String DEFAULT_SHIPPING_SRC = "WSLA_020";
 
 	/**
 	 * The provider ID for the WSLA CAS

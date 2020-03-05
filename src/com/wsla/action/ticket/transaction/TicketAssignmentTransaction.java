@@ -117,7 +117,7 @@ public class TicketAssignmentTransaction extends BaseTransactionAction {
 		}
 
 		// Save the ledger and the assignment
-		db.save(tAss);
+		if(! isApprovedCAS) db.save(tAss);
 		return getAssignmentData(tAss, db);
 	}
 

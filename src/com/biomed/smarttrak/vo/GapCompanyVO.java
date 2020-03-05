@@ -9,11 +9,18 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
+import com.biomed.smarttrak.action.AdminControllerAction;
 import com.biomed.smarttrak.admin.vo.GapColumnVO;
+import com.biomed.smarttrak.util.GAIndexer;
+import com.siliconmtn.annotations.SolrField;
 import com.siliconmtn.data.Node;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.util.StringUtil;
+import com.smt.sitebuilder.search.SearchDocumentHandler;
+import com.smt.sitebuilder.security.SecurityController;
+import com.smt.sitebuilder.util.solr.SolrDocumentVO;
 
 /****************************************************************************
  * <b>Title</b>: GapCompanyVO.java
@@ -26,7 +33,7 @@ import com.siliconmtn.util.StringUtil;
  * @version 1.0
  * @since Feb 6, 2017
  ****************************************************************************/
-public class GapCompanyVO {
+public class GapCompanyVO extends SolrDocumentVO  {
 
 	//Region Codes
 	public static final String US = "US";
@@ -77,10 +84,15 @@ public class GapCompanyVO {
 	private String companyName;
 	private String shortCompanyName;
 	private String companyId;
+	private String sectionId;
 	private int portfolioNo = -1;
+	private int orderNo;
 
 	public GapCompanyVO() {
+		super(GAIndexer.INDEX_TYPE);
 		regulations = new HashMap<>();
+		addOrganization(AdminControllerAction.BIOMED_ORG_ID);
+		addRole(SecurityController.PUBLIC_ROLE_LEVEL);
 	}
 
 	public GapCompanyVO(ResultSet rs) {
@@ -111,6 +123,7 @@ public class GapCompanyVO {
 	 * Get company name
 	 * @return the companyName
 	 */
+	@SolrField(name=SearchDocumentHandler.TITLE)
 	public String getCompanyName() {
 		return companyName;
 	}
@@ -119,6 +132,7 @@ public class GapCompanyVO {
 	 * Get short company name
 	 * @return the shortCompanyName
 	 */
+	@SolrField(name="shortCompanyName_s")
 	public String getShortCompanyName() {
 		return shortCompanyName;
 	}
@@ -241,6 +255,15 @@ public class GapCompanyVO {
 		return s;
 	}
 
+	@SolrField(name="regulations_ss")
+	public List<String> getParsedRegulations() {
+		List<String> regs = new ArrayList<>();
+		for(Entry<String, StatusVal> e : regulations.entrySet()) {
+			regs.add(StringUtil.join(e.getKey(), SearchDocumentHandler.HIERARCHY_DELIMITER, e.getValue().name()));
+		}
+		return regs;
+	}
+
 	/**
 	 * Build Cell Data and Store on the Company Row.
 	 * @param columns
@@ -285,5 +308,36 @@ public class GapCompanyVO {
 	 */
 	public void setPortfolioNo(int portfolioNo) {
 		this.portfolioNo = portfolioNo;
+	}
+
+	/**
+	 * @return the sectionId
+	 */
+	@SolrField(name=SearchDocumentHandler.SECTION)
+	public String getSectionId() {
+		return sectionId;
+	}
+
+	/**
+	 * @param sectionId the sectionId to set.
+	 */
+	public void setSectionId(String sectionId) {
+		this.sectionId = sectionId;
+		this.setDocumentId(StringUtil.join(sectionId, SearchDocumentHandler.HIERARCHY_DELIMITER, companyId));
+	}
+
+	/**
+	 * @return the orderNo
+	 */
+	@SolrField(name="orderNo_i")
+	public int getOrderNo() {
+		return orderNo;
+	}
+
+	/**
+	 * @param orderNo the orderNo to set.
+	 */
+	public void setOrderNo(int orderNo) {
+		this.orderNo = orderNo;
 	}
 }

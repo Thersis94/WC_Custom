@@ -3,6 +3,9 @@ package com.biomed.smarttrak.action.rss.vo;
 import java.sql.ResultSet;
 import java.util.Date;
 
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+
 import com.biomed.smarttrak.action.AdminControllerAction;
 import com.biomed.smarttrak.action.rss.RSSDataAction.ArticleStatus;
 import com.biomed.smarttrak.util.RSSArticleIndexer;
@@ -11,6 +14,7 @@ import com.siliconmtn.annotations.SolrField;
 import com.siliconmtn.data.parser.AutoPopulateIntfc;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
+import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.security.SecurityController;
 import com.smt.sitebuilder.util.solr.SolrDocumentVO;
 
@@ -46,12 +50,12 @@ public class RSSArticleFilterVO extends SolrDocumentVO implements AutoPopulateIn
 	private String fullArticleTxt;
 	private String titleTxt;
 	private String feedGroupNm;
+	private String affiliationTxt;
 
 	public RSSArticleFilterVO() {
 		super(RSSArticleIndexer.INDEX_TYPE);
 		addOrganization(AdminControllerAction.BIOMED_ORG_ID);
 		addRole(SecurityController.PUBLIC_ROLE_LEVEL);
-		setContentType(RSSArticleIndexer.INDEX_TYPE);
 	}
 
 	public RSSArticleFilterVO(ActionRequest req) {
@@ -174,7 +178,7 @@ public class RSSArticleFilterVO extends SolrDocumentVO implements AutoPopulateIn
 	 */
 	public void setFilterArticleTxt(String filterArticleTxt) {
 		this.filterArticleTxt = filterArticleTxt;
-		super.setContents(filterArticleTxt);
+		appendContents(filterArticleTxt);
 	}
 
 	/**
@@ -182,7 +186,7 @@ public class RSSArticleFilterVO extends SolrDocumentVO implements AutoPopulateIn
 	 */
 	public void setFilterTitleTxt(String filterTitleTxt) {
 		this.filterTitleTxt = filterTitleTxt;
-		this.setTitle(filterTitleTxt);
+		appendContents(filterTitleTxt);
 	}
 
 	/**
@@ -204,7 +208,7 @@ public class RSSArticleFilterVO extends SolrDocumentVO implements AutoPopulateIn
 
 	public void setCreateDt(Date createDt) {
 		this.createDt = createDt;
-		this.setPublishDate(createDt);
+		this.setUpdateDt(createDt);
 	}
 
 	public void setCompleteFlg(int completeFlg) {
@@ -232,6 +236,7 @@ public class RSSArticleFilterVO extends SolrDocumentVO implements AutoPopulateIn
 
 	public void setArticleTxt(String articleTxt) {
 		this.articleTxt = articleTxt;
+		appendContents(articleTxt);
 	}
 
 	/**
@@ -248,12 +253,22 @@ public class RSSArticleFilterVO extends SolrDocumentVO implements AutoPopulateIn
 	/**
 	 * @return
 	 */
+	@Column(name="full_article_txt")
 	public String getFullArticleTxt() {
 		return fullArticleTxt;
 	}
 
 	public void setFullArticleTxt(String fullArticleTxt) {
 		this.fullArticleTxt = fullArticleTxt;
+
+		if(!StringUtil.isEmpty(fullArticleTxt)) {
+			try {
+				Document d = Jsoup.parse(fullArticleTxt);
+				appendContents(d.text());
+			} catch(Exception e) {
+				//Can ignore this error.
+			}
+		}
 	}
 
 	@Column(name="match_no")
@@ -272,5 +287,32 @@ public class RSSArticleFilterVO extends SolrDocumentVO implements AutoPopulateIn
 
 	public void setFeedGroupNm(String feedGroupNm) {
 		this.feedGroupNm = feedGroupNm;
+	}
+
+	@Column(name="affiliation_txt")
+	@SolrField(name="affiliationTxt_s")
+	public String getAffiliationTxt() {
+		return this.affiliationTxt;
+	}
+
+	public void setAffiliationTxt(String affiliationTxt) {
+		this.affiliationTxt = affiliationTxt;
+	}
+
+	/**
+	 * Builds Content Parameter for Solr Indexing.
+	 * @param contents
+	 */
+	private void appendContents(String contents) {
+
+		/*
+		 * Verify contents is not null and fail-fast.
+		 * We set null in other places to ensure no content.
+		 */
+		if(StringUtil.isEmpty(contents)) return;
+
+		StringBuilder s = new StringBuilder(StringUtil.checkVal(getContents()).length() + contents.length() + 1);
+		s.append(getContents()).append(" ").append(contents);
+		super.setContents(s.toString().trim());
 	}
 }

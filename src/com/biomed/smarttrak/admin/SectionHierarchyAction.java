@@ -76,6 +76,7 @@ public class SectionHierarchyAction extends AbstractTreeAction {
 		DBProcessor dbp = new DBProcessor(dbConn, (String)attributes.get(Constants.CUSTOM_DB_SCHEMA));
 		try {
 			dbp.delete(new SectionVO(req));
+			super.clearCacheByKey(CONTENT_HIERARCHY_CACHE_KEY);
 
 		} catch (InvalidDataException | DatabaseException e) {
 			log.error(e);
@@ -88,6 +89,7 @@ public class SectionHierarchyAction extends AbstractTreeAction {
 	@Override
 	public void build(ActionRequest req) throws ActionException {
 		updateSectionVO(req.getParameter("actionPerform"), new SectionVO(req));
+		super.clearCacheByKey(CONTENT_HIERARCHY_CACHE_KEY);
 	}
 
 	/* (non-Javadoc)
@@ -211,6 +213,7 @@ public class SectionHierarchyAction extends AbstractTreeAction {
 	@Override
 	public void update(ActionRequest req) throws ActionException {
 		super.update(req);
+		super.clearCacheByKey(CONTENT_HIERARCHY_CACHE_KEY);
 
 		// Redirect after the update
 		sbUtil.adminRedirect(req, attributes.get(Constants.ACTION_SUCCESS_KEY), (String)getAttribute(AdminConstants.ADMIN_TOOL_PATH));
@@ -257,6 +260,7 @@ public class SectionHierarchyAction extends AbstractTreeAction {
 		// Update the values
 		try {
 			dbp.executeSqlUpdate(sql, section, fields);
+			super.clearCacheByKey(CONTENT_HIERARCHY_CACHE_KEY);
 		} catch(Exception e) {
 			log.error(e);
 		}
@@ -277,25 +281,70 @@ public class SectionHierarchyAction extends AbstractTreeAction {
 
 		return sql.toString();
 	}
+	
+	public SectionVO getLatestFdPublish() {
+		return getLatestFdPublish(null);
+	}
+	
+	
+	/**
+	 * Determine what the latest reported column is.
+	 * @return
+	 */
+	public int getLatestFdReported() {
+		String custom = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
+
+		StringBuilder sql = new StringBuilder(120);
+		sql.append("select case when max(q4_no) is not null then 4 when max(q3_no) is not null then 3 ");
+		sql.append("when max(q2_no) is not null then 2 else 1 end as max_reported ");
+		sql.append("from ").append(custom).append("biomedgps_fd_revenue ");
+		sql.append("where year_no = (select max(fd_pub_yr) from ").append(custom).append("biomedgps_section) ");
+		
+		int reportedQuarter = 1;
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ResultSet rs = ps.executeQuery();
+			
+			if (rs.next())
+				reportedQuarter = rs.getInt("max_reported");
+		} catch (SQLException e) {
+			log.debug("Failed to get latest reported quarter");
+		}
+		
+		return reportedQuarter;
+	}
 
 	/**
 	 * Gets the year and quarter of the most recently published section.
 	 * 
 	 * @return
 	 */
-	public SectionVO getLatestFdPublish() {
+	public SectionVO getLatestFdPublish(String sectionId) {
 		SectionVO data = new SectionVO();
 		String custom = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
 
 		StringBuilder sql = new StringBuilder(250);
-		sql.append("select fd_pub_yr, max(fd_pub_qtr) as fd_pub_qtr ");
-		sql.append("from ").append(custom).append("biomedgps_section ");
-		sql.append("where fd_pub_yr = (select max(fd_pub_yr) from ").append(custom).append("biomedgps_section) ");
-		sql.append("group by fd_pub_yr ");
+		sql.append("select s.fd_pub_yr, greatest(s.fd_pub_qtr, s2.fd_pub_qtr, s3.fd_pub_qtr, s4.fd_pub_qtr) as fd_pub_qtr ");
+		sql.append("from ").append(custom).append("biomedgps_section s ");
+		sql.append("left join ").append(custom).append("biomedgps_section s2 ");
+		sql.append("on s2.parent_id = s.section_id ");
+		sql.append("left join ").append(custom).append("biomedgps_section s3 ");
+		sql.append("on s3.parent_id = s2.section_id ");
+		sql.append("left join ").append(custom).append("biomedgps_section s4 ");
+		sql.append("on s4.parent_id = s3.section_id ");
+		sql.append("where s.fd_pub_yr = (select max(fd_pub_yr) from ").append(custom).append("biomedgps_section) ");
+		if (MASTER_ROOT.equals(sectionId)) {
+			sql.append("and s.parent_id = ? ");
+		}else if (sectionId != null) {
+			sql.append("and s.section_id = ? ");
+		}
+		sql.append("group by s.fd_pub_yr, s.fd_pub_qtr, s2.fd_pub_qtr, s3.fd_pub_qtr, s4.fd_pub_qtr ");
+		sql.append("order by fd_pub_qtr desc ");
 
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			if (sectionId != null) ps.setString(1, sectionId);
+			
 			ResultSet rs = ps.executeQuery();
-
+			
 			if (rs.next()) {
 				data.setFdPubQtr(rs.getInt("fd_pub_qtr"));
 				data.setFdPubYr(rs.getInt("fd_pub_yr"));
@@ -303,7 +352,6 @@ public class SectionHierarchyAction extends AbstractTreeAction {
 		} catch(SQLException sqle) {
 			log.error("Unable to get latest FD publish year & quarter", sqle);
 		}
-
 		return data;
 	}
 

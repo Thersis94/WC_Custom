@@ -542,6 +542,9 @@ public class ProductSerialAction extends BatchImport {
 			vo.setProductId(productId);
 			vo.setValidatedFlag(1); //vendor-provided file (not customer via ticket request), mark these all as validated
 			vo.setRetailerDate(dt); //default to today for retailer issued date.
+			vo.setBatchFlag(1); //set the batch flag to one so the trigger knows to skip this particular type of insert.  updating ts vector 
+								//for tickets on new inserted numbers isnt needed
+			
 		}
 	}
 
@@ -573,16 +576,10 @@ public class ProductSerialAction extends BatchImport {
 		String warrantyId = req.getParameter("warrantyId");
 		if (StringUtil.isEmpty(warrantyId)) return;
 
-		//get the warranty, then calculate expiration date for the product based on the warrantyDays, from today.
-		Calendar today = Calendar.getInstance();
-		WarrantyVO warranty = new WarrantyAction(getAttributes(), getDBConnection()).getWarranty(warrantyId);
-		today.add(Calendar.DATE, warranty.getWarrantyLength()); //e.g. add 90 days to today.
-		Date expDate = today.getTime();
-
 		ArrayList<ProductWarrantyVO> data = new ArrayList<>(entries.size());
 		for (Object obj : entries) {
 			ProductSerialNumberVO vo = (ProductSerialNumberVO) obj;
-			data.add(new ProductWarrantyVO(vo.getProductSerialId(), warrantyId, expDate));
+			data.add(new ProductWarrantyVO(vo.getProductSerialId(), warrantyId, null));
 		}
 		//push these through the same batch-insert logic
 		super.saveBatchImport(req, data);

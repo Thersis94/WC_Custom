@@ -274,7 +274,7 @@ public class CompanyManagementAction extends ManagementAction {
 		CompanyAction ca = new CompanyAction(actionInit);
 		ca.setDBConnection(dbConn);
 		ca.setAttributes(attributes);
-		putModuleData(ca.retrieveCompany(req.getParameter(COMPANY_ID), role, true, true));
+		putModuleData(ca.retrieveCompany(req.getParameter(COMPANY_ID), role, true));
 	}
 
 
@@ -296,12 +296,6 @@ public class CompanyManagementAction extends ManagementAction {
 			retrieveCompanies(req);
 		}else{
 			loadAuthors(req); //load list of BiomedGPS Staff for the "Author" drop-down
-			//TODO Cleanup hierarchy loading/caching code - Zoho SC-230
-			if (req.getSession().getAttribute("hierarchyTree") == null) {
-				// This is a form for a new market make sure that the hierarchy tree is present 
-				Tree t = loadDefaultTree();
-				req.getSession().setAttribute("hierarchyTree", t.preorderList());
-			}
 		}	
 	}
 
@@ -704,11 +698,6 @@ public class CompanyManagementAction extends ManagementAction {
 		params.add(companyId);
 		DBProcessor db = new DBProcessor(dbConn);
 		company = db.executeSelect(sql.toString(), params, new CompanyVO()).get(0);
-
-		if (req.getSession().getAttribute("hierarchyTree") == null) {
-			Tree t = loadDefaultTree();
-			req.getSession().setAttribute("hierarchyTree", t.preorderList());
-		}
 		req.getSession().setAttribute("companyName", company.getCompanyName());
 		req.getSession().setAttribute("shortCompanyName", company.getShortName());
 		req.getSession().setAttribute("companyNameParam", StringEncoder.urlEncode(company.getCompanyName()));
@@ -1558,6 +1547,15 @@ public class CompanyManagementAction extends ManagementAction {
 			url.append("&tab=").append(req.getParameter("tab"));
 		}
 
+		// Add the public preview selected tab and section if present
+		if (req.hasParameter("selTab")) {
+			url.append("&selTab=").append(req.getParameter("selTab"));
+		}
+		
+		if (req.hasParameter("section")) {
+			url.append("&section=").append(req.getParameter("section"));
+		}
+		
 		//if a company is being deleted do not redirect the user to a company page
 		if (!"delete".equals(buildAction) || 
 				ActionType.valueOf(req.getParameter(ACTION_TYPE)) != ActionType.COMPANY) {

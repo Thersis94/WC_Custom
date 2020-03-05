@@ -129,7 +129,7 @@ public class SmartTRAKLoginModule extends DBLoginModule {
 
 		// use profile ID as that is all we have at the moment.
 		StringBuilder sql = new StringBuilder(1100);
-		sql.append("select u.user_id, u.account_id, u.register_submittal_id, u.fd_auth_flg, u.ga_auth_flg, ");
+		sql.append("select u.user_id, u.account_id, u.register_submittal_id, u.fd_auth_flg, u.ga_auth_flg, u.update_dt, u.create_dt, ");
 		sql.append("u.acct_owner_flg, coalesce(u.expiration_dt, a.expiration_dt) as expiration_dt, u.status_cd, u.active_flg, a.type_id, ");
 		sql.append("t.team_id, t.account_id, t.team_nm, t.default_flg, t.private_flg, a.account_nm, p.profile_id as source_id, p.email_address_txt as source_email ");
 		sql.append("from ").append(schema).append("biomedgps_user u ");
@@ -164,6 +164,8 @@ public class SmartTRAKLoginModule extends DBLoginModule {
 					user.setAccountName(rs.getString("account_nm"));
 					user.setSourceId(rs.getString("source_id"));
 					user.setSourceEmail(decrypt(se, rs.getString("source_email")));
+					user.setCreateDate(rs.getDate("create_dt"));
+					user.setUpdateDate(rs.getDate("update_dt"));
 
 					// Account Type - used by the role module to restrict users to Updates Only (role) - just pass the "4" along to it.
 					String type = rs.getString("type_id");

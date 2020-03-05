@@ -60,7 +60,7 @@ public class ManagementAction extends SBActionAdapter {
 	}
 	
 
-	
+
 	
 	/**
 	 * @return
@@ -74,6 +74,17 @@ public class ManagementAction extends SBActionAdapter {
 		t.buildNodePaths();
 		
 		return t;
+	}
+	
+	
+	/**
+	 * Load the full tree into the request
+	 * @return
+	 */
+	public void loadFullTree(ActionRequest req) {
+		//defer loading the action until we need it
+		if (hierarchyAction == null) initHierarchy();
+		hierarchyAction.loadFullTree(req);
 	}
 
 

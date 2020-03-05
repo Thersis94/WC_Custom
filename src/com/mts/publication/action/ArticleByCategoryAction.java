@@ -21,6 +21,8 @@ import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.util.StringUtil;
 // WC Libs
 import com.smt.sitebuilder.action.SimpleActionAdapter;
+import com.smt.sitebuilder.common.PageVO;
+import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
  * <b>Title</b>: ArticleByCategoryAction.java
@@ -39,7 +41,7 @@ public class ArticleByCategoryAction extends SimpleActionAdapter {
 	 * Ajax Controller key for this action
 	 */
 	public static final String AJAX_KEY = "art-by-cat";
-	
+
 	/**
 	 * 
 	 */
@@ -62,51 +64,53 @@ public class ArticleByCategoryAction extends SimpleActionAdapter {
 	public void retrieve(ActionRequest req) throws ActionException {
 		String catId = req.getParameter("catId");
 		String pubId = req.getParameter("publicationId");
-		setModuleData(getArticles(catId, pubId, req.getIntegerParameter("number", 4)));
+		PageVO page = (PageVO) req.getAttribute(Constants.PAGE_DATA);
+		setModuleData(getArticles(catId, pubId, req.getIntegerParameter("number", 4), page.isPreviewMode()));
 	}
-	
+
 	/**
 	 * Gets a list of articles for the 
 	 * @param cat
 	 * @param count
 	 * @return
 	 */
-	public List<MTSDocumentVO> getArticles(String cat, String pubId, int count) {
+	public List<MTSDocumentVO> getArticles(String cat, String pubId, int count, boolean isPagePreview) {
 		// Create the structure
 		List<Object> vals = new ArrayList<>();
 		vals.add(cat);
-		
+
 		StringBuilder sql = new StringBuilder(464);
 		sql.append("select action_nm, action_desc, a.action_id, document_id, ");
 		sql.append("unique_cd, publication_id, direct_access_pth, publish_dt ");
 		sql.append("from widget_meta_data_xr  a ");
 		sql.append("inner join sb_action b on a.action_id = b.action_id and b.pending_sync_flg = 0 ");
 		sql.append("inner join document doc on b.action_id = doc.action_id ");
-		sql.append("inner join ").append(getCustomSchema()).append("mts_document c ");
-		sql.append("on b.action_group_id = c.document_id ");
-		sql.append("inner join ").append(getCustomSchema()).append("mts_issue d ");
-		sql.append("on c.issue_id = d.issue_id ");
-		sql.append("where d.approval_flg = 1 and widget_meta_data_id = ? "); 
-		if (! StringUtil.isEmpty(pubId)) {
+		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("mts_document c on b.action_group_id = c.document_id ");
+		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema()).append("mts_issue d on c.issue_id = d.issue_id ");
+		sql.append("where d.approval_flg=1 and widget_meta_data_id=? "); 
+		if (!isPagePreview) {
+			sql.append(" and (c.publish_dt < CURRENT_TIMESTAMP or c.publish_dt is null) and (d.issue_dt < CURRENT_TIMESTAMP or d.issue_dt is null) ");
+			sql.append("and c.publish_dt > current_date-730 "); //only show articles newer than 2yrs old - MTS-i36
+		}
+		if (!StringUtil.isEmpty(pubId)) {
 			sql.append("and publication_id = ? ");
 			vals.add(pubId);
 		}
-		
 		sql.append("order by random() limit ? ");
 		vals.add(count);
 		log.debug(sql.length() + "|" + sql + "|" + vals);
-		
-		DBProcessor db = new DBProcessor(getDBConnection());
+
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		List<MTSDocumentVO> docs =  db.executeSelect(sql.toString(), vals, new MTSDocumentVO());
 		try {
 			assignDocumentAsset(docs, cat);
 		} catch (SQLException e) {
 			log.error("Unabel to load assets", e);
 		}
-		
+
 		return docs;
 	}
-	
+
 	/**
 	 * Gets an image asset for a given document
 	 * @param docs
@@ -115,7 +119,7 @@ public class ArticleByCategoryAction extends SimpleActionAdapter {
 	 */
 	public void assignDocumentAsset(List<MTSDocumentVO> docs, String cat) throws SQLException {
 		Map<String, AssetVO> assets = new HashMap<>();
-		
+
 		StringBuilder sql = new StringBuilder(256);
 		sql.append("select object_key_id, document_path, document_asset_id, asset_type_cd ");
 		sql.append("from ").append(getCustomSchema()).append("mts_document_asset ");
@@ -124,24 +128,24 @@ public class ArticleByCategoryAction extends SimpleActionAdapter {
 		sql.append(") and asset_type_cd != 'PDF_DOC' ");
 		sql.append("order by random() ");
 		log.debug(sql.length() + "|" + sql);
-		
+
 		// Get the assets for the document ids and category
 		int ctr = 1;
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-	
+
 			for (MTSDocumentVO doc : docs) ps.setString(ctr++, doc.getDocumentId());
 			ps.setString(ctr++, PublicationTeaserVO.DEFAULT_FEATURE_IMG);
 			ps.setString(ctr++, PublicationTeaserVO.DEFAULT_TEASER_IMG);
 			ps.setString(ctr++, cat);
-			
+
 			try (ResultSet rs = ps.executeQuery()) {
 				while(rs.next())
 					assets.put(rs.getString(1), new AssetVO(rs));
 			}
 		}
-		
+
 		log.debug("assets size " + assets.size());
-	
+
 		// Add an asset to the document
 		for (MTSDocumentVO doc : docs) {
 			if (assets.containsKey(doc.getDocumentId())) {
@@ -150,6 +154,6 @@ public class ArticleByCategoryAction extends SimpleActionAdapter {
 				doc.addAsset(assets.get(cat));
 			}
 		}
-		
+
 	}
 }

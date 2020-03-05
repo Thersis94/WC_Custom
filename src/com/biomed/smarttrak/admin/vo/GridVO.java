@@ -123,8 +123,10 @@ public class GridVO extends BeanDataVO {
 	private int numberRows = 0;
 	private int numberColumns = 0;
 	private int abbreviateNumbers;
+	private List<GridUsageVO> usage;
 	private String legacyId;
 	private String legacyName;
+	private int yearNo;
 	
 	// Data containers
 	@Expose(serialize = false, deserialize = false)
@@ -148,6 +150,7 @@ public class GridVO extends BeanDataVO {
 		seriesTxtFlg = new int[10];
 		details = new ArrayList<>(10);
 		deletedRows = new ArrayList<>(10);
+		usage = new ArrayList<>();
 	}
 	
 	/**
@@ -1023,7 +1026,7 @@ public class GridVO extends BeanDataVO {
 		column.put("class", "bs-header");
 		column.put("field", FIELD_LABEL + "0");
 		column.put("fieldIndex", "0");
-		column.put("title", "");
+		column.put("title", getSeriesLabel());
 		column.put("txtFlg", "0");
 		columns.add(column);
 		for (int x = 1; x < getNumberColumns()+1; x++) {
@@ -1096,6 +1099,24 @@ public class GridVO extends BeanDataVO {
 		this.abbreviateNumbers = abbreviateNumbers;
 	}
 
+	/**
+	 * @return the usage
+	 */
+	public List<GridUsageVO> getUsage() {
+		return usage;
+	}
+
+	/**
+	 * @param usage the usage to set
+	 */
+	public void setUsage(List<GridUsageVO> usage) {
+		this.usage = usage;
+	}
+	
+	public void addUsage(GridUsageVO use) {
+		usage.add(use);
+	}
+
 	@Column(name="legacy_id", isReadOnly=true)
 	public String getLegacyId() {
 		return legacyId;
@@ -1112,5 +1133,20 @@ public class GridVO extends BeanDataVO {
 
 	public void setLegacyName(String legacyName) {
 		this.legacyName = legacyName;
+	}
+
+	/**
+	 * @return the yearNo
+	 */
+	@Column(name="year_no")
+	public int getYearNo() {
+		return yearNo;
+	}
+
+	/**
+	 * @param yearNo the yearNo to set
+	 */
+	public void setYearNo(int yearNo) {
+		this.yearNo = yearNo;
 	}
 }

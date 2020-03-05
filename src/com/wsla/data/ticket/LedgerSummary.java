@@ -26,6 +26,7 @@ public enum LedgerSummary {
 	PARTS_REQUEST_REJECTED ("Refacción no Disponible por Parte de Proveedor"),
 	SHIPMENT_CREATED ("Envío Programado"),
 	SHIPMENT_RECEIVED ("Envío Recibido"),
+	SHIPMENT_COST ("Costo de Envío"),
 	VALID_SERIAL_SAVED("El Número de Serie Capturado en la Órden de Servicio es Invalido"),
 	SERIAL_UPDATED("El Número de Serie Capturado en la Órden de Servicio ha sido Actualizado"),
 	INVALID_SERIAL_SAVED("El Número de Serie Capturado en la Órden de Servicio es Invalido"),
@@ -36,6 +37,7 @@ public enum LedgerSummary {
 	CAS_ASSIGNED ("Se Asigna Centro de Servicio"),
 	TICKET_CLONED ("Órden de Servicio Cerrada y Duplicada"),
 	TICKET_CLOSED ("Órden de Servicio Cerrada"),
+	CREDIT_MEMO_TICKET_CLOSED ("Boleto cerrado después de la generación de memo de crédito"),
 	REFUND_REJECTED ("Reembolso o Reemplazo Rechazado"),
 	HARVEST_COMPETE ("Canibalización Completa / Piezas Disponibles: "),
 	ASSET_LOADED ("Usuario Agrega Evidencia"),
@@ -51,7 +53,10 @@ public enum LedgerSummary {
 	CREDIT_MEMO_CREATED("Nota de Cargo Creada"),
 	CREDIT_MEMO_APPROVED("Nota de Cargo Aprobada"),
 	ASSETS_BYPASSED("Sin Evidencias Requeridas"),
-	REFUND_VERIFIED("Reembolso Verificado");
+	REFUND_VERIFIED("Reembolso Verificado"),
+	UNIT_DECOMISSIONED("La unidad ha sido desarmada"),
+	SURVEY_SUBMITTED("El usuario ha enviado una encuesta."),
+	RETURN_REFUSED("La devolución de la unidad fue rechazada");
 	
 	public final String summary;
 	LedgerSummary(String summary) { this.summary = summary; }

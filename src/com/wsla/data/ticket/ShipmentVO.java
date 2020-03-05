@@ -38,9 +38,9 @@ public class ShipmentVO extends BeanDataVO {
 
 	private String shipmentId;
 	private String shippedById; //is-a userId, the person who created the shipment
-	private String fromLocationId; //is-a providerLocationId
-	private String toLocationId; //is-a providerLocationId
-	private String ticketId;
+	private String fromLocationId; //is-a providerLocationId or a user id this was intentionally opened up to allowe shipping to and from the end user
+	private String toLocationId; //is-a providerLocationId or a user id
+	private String ticketId; 
 	private ShipmentStatus status;
 	private CarrierType carrierType;
 	private ShipmentType shipmentType;
@@ -50,8 +50,11 @@ public class ShipmentVO extends BeanDataVO {
 	private double cost;
 	private Date shipmentDate;
 	private Date arrivalDate;
+	private String shippingInvoiceTypeCode;
+	private int inventoryIgnoreFlag;
 	private Date createDate;
 	private Date updateDate;
+	
 	
 	// Bean sub-elements
 	private ProviderLocationVO fromLocation;
@@ -63,9 +66,10 @@ public class ShipmentVO extends BeanDataVO {
 	private String fromLocationName;
 	private String toLocationName;
 	private String ticketIdText;
+	private long numberParts;
 
 	public enum CarrierType {
-		DHL, ESTAFETA, FEDEX, UPS
+		DHL, ESTAFETA, FEDEX, UPS, LOCAL
 	}
 
 	public enum ShipmentStatus {
@@ -74,6 +78,15 @@ public class ShipmentVO extends BeanDataVO {
 	
 	public enum ShipmentType {
 		INVENTORY, PARTS_REQUEST, UNIT_MOVEMENT, REPLACEMENT_UNIT
+	}
+	
+	public enum ShipmentInvoiceType {
+		ENV_ENTODO("ENV-ENTODO"), ENV_INCAS("ENV-INCAS"), ENV_INPROD("ENV-INPROD"), 
+		ENV_OUTCAS("ENV-OUTCAS"), ENV_OUTPRD("ENV-OUTPRD"), ENV_SATODO("ENV-SATODO");
+		private final String value;
+		ShipmentInvoiceType(String value) { this.value = value; }
+		public String getCodeValue() { return this.value; } 
+		
 	}
 
 	public ShipmentVO() {
@@ -269,12 +282,29 @@ public class ShipmentVO extends BeanDataVO {
 	public void setTicketId(String ticketId) {
 		this.ticketId = ticketId;
 	}
-
+	
+	public void setInventoryIgnoreFlag(int inventoryIgnoreFlag) {
+		this.inventoryIgnoreFlag = inventoryIgnoreFlag;
+	}
 	/**
 	 * @return the fromLocation
 	 */
 	public ProviderLocationVO getFromLocation() {
 		return fromLocation;
+	}
+	
+	@Column(name="inventory_ignore_flg")
+	public int getInventoryIgnoreFlag() {
+		return inventoryIgnoreFlag;
+	}
+
+	@Column(name="shipment_invoice_type_cd")
+	public String getShippingInvoiceTypeCode() {
+		return shippingInvoiceTypeCode;
+	}
+
+	public void setShippingInvoiceTypeCode(String shippingInvoiceTypeCode) {
+		this.shippingInvoiceTypeCode = shippingInvoiceTypeCode;
 	}
 
 	/**
@@ -328,5 +358,20 @@ public class ShipmentVO extends BeanDataVO {
 	 */
 	public void setShipmentType(ShipmentType shipmentType) {
 		this.shipmentType = shipmentType;
+	}
+
+	/**
+	 * @return the numberParts
+	 */
+	@Column(name="parts_num", isReadOnly = true)
+	public long getNumberParts() {
+		return numberParts;
+	}
+
+	/**
+	 * @param numberParts the numberParts to set
+	 */
+	public void setNumberParts(long numberParts) {
+		this.numberParts = numberParts;
 	}
 }

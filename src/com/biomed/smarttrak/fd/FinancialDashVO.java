@@ -11,10 +11,10 @@ import java.util.List;
 import org.apache.log4j.Logger;
 
 import com.biomed.smarttrak.fd.FinancialDashAction.DashType;
+import com.biomed.smarttrak.fd.FinancialDashColumnSet.DisplayType;
 import com.biomed.smarttrak.util.SmarttrakTree;
 import com.biomed.smarttrak.vo.SectionVO;
 import com.siliconmtn.action.ActionRequest;
-import com.siliconmtn.data.Node;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -46,10 +46,12 @@ public class FinancialDashVO extends SBModuleVO {
 	private String companyName;
 	private int publishedQtr;
 	private int publishedYear;
+	private int reportedQtr;
 	private int currentQtr;
 	private int currentYear;
 	private boolean behindLatest;
 	private boolean showEmpty;
+	private boolean simulatedQuarter;
 
 	/**
 	 * The month offset from the current date, for the financial dashboard to display as current
@@ -113,7 +115,12 @@ public class FinancialDashVO extends SBModuleVO {
 
 	public FinancialDashVO(ActionRequest req, SmarttrakTree sections) {
 		this();
-		setData(req, sections);
+		setData(req, sections, DashType.COMMON);
+	}
+
+	public FinancialDashVO(ActionRequest req, SmarttrakTree sections, DashType dashType) {
+		this();
+		setData(req, sections, dashType);
 	}
 
 	/**
@@ -124,7 +131,6 @@ public class FinancialDashVO extends SBModuleVO {
 	public void setData(ResultSet rs, SmarttrakTree sections, DashType dashType) {
 		FinancialDashDataRowVO row = null;
 
-		boolean allSameQuarter = checkAllSameQuarter(sections);
 		String rowId = "";
 		DBUtil util = new DBUtil();
 		try {
@@ -136,7 +142,7 @@ public class FinancialDashVO extends SBModuleVO {
 
 					//If this is the Public View, calculate Labels.
 					if(DashType.COMMON.equals(dashType)) {
-						row.setReportingPending(sections, currentQtr, currentYear, allSameQuarter);
+						row.setReportingPending(sections, reportedQtr, currentQtr, currentYear);
 					}
 				} else {
 					row.setColumns(util, rs, this);
@@ -146,24 +152,20 @@ public class FinancialDashVO extends SBModuleVO {
 			log.error("Unable to set financial dashboard row data", sqle);
 		}
 	}
+	
+	
 
 	/**
-	 * Check if all Sections are in the same Published Quarter.
+	 * Set data using request object and defaulting to non admin dash type.
+	 * @param req
 	 * @param sections
-	 * @return
+	 * @param dashType
 	 */
-	public boolean checkAllSameQuarter(SmarttrakTree sections) {
-		for(Node n : sections.preorderList()) {
-			if(n.getUserObject() != null) {
-				SectionVO s = (SectionVO) n.getUserObject();
-				if(s.getFdPubQtr() != currentQtr) {
-					return false;
-				}
-			}
-		}
-
-		return true;
+	public void setData(ActionRequest req, SmarttrakTree sections) {
+		setData(req, sections, DashType.COMMON);
 	}
+	
+	
 	/**
 	 * Processes the request's options needed for generating the
 	 * requested table, chart, or report. Sets defaults where needed.
@@ -171,7 +173,7 @@ public class FinancialDashVO extends SBModuleVO {
 	 * @param req
 	 * @param sections
 	 */
-	public void setData(ActionRequest req, SmarttrakTree sections) {
+	public void setData(ActionRequest req, SmarttrakTree sections, DashType dashType) {
 		// Get the paramters off the request, set defaults where required
 		String dispType = StringUtil.checkVal(req.getParameter("displayType"), FinancialDashColumnSet.DEFAULT_DISPLAY_TYPE);
 		String tblType = StringUtil.checkVal(req.getParameter("tableType"), FinancialDashVO.DEFAULT_TABLE_TYPE);
@@ -181,8 +183,8 @@ public class FinancialDashVO extends SBModuleVO {
 		String scenId = StringUtil.checkVal(req.getParameter("scenarioId"));
 		String compId = StringUtil.checkVal(req.getParameter("companyId"));
 		showEmpty = Convert.formatBoolean(req.getParameter("showEmpty"));
-
 		if (0 == getCurrentYear()) setCurrentQtrYear();
+		
 		Integer calYr = Convert.formatInteger(req.getParameter("calendarYear"), getCurrentYear());
 
 		// Set the parameters
@@ -198,8 +200,19 @@ public class FinancialDashVO extends SBModuleVO {
 
 		// Get the year/quarter of what was most recently published for the section being viewed
 		SectionVO section = (SectionVO) sections.getRootNode().getUserObject();
-		setPublishedQtr(section.getFdPubQtr());
-		setPublishedYear(section.getFdPubYr());
+		int displayQtr = Convert.formatInteger(req.getParameter("displayQtr"));
+		if (displayQtr > 0 && DashType.ADMIN == dashType) {
+			setPublishedQtr(displayQtr);
+			setSimulatedQuarter(true);
+		} else {
+			setPublishedQtr(section.getFdPubQtr());
+		}
+		
+		if (dispType == DisplayType.FOURYR.toString() && section.getFdPubQtr() == 4) {
+			setPublishedYear(section.getFdPubYr() - 1);
+		} else {
+			setPublishedYear(section.getFdPubYr());
+		}
 	}
 
 	/**
@@ -296,6 +309,10 @@ public class FinancialDashVO extends SBModuleVO {
 	 */
 	public int getPublishedYear() {
 		return publishedYear;
+	}
+
+	public int getReportedQtr() {
+		return reportedQtr;
 	}
 
 	/**
@@ -457,8 +474,6 @@ public class FinancialDashVO extends SBModuleVO {
 	 * @param req
 	 */
 	public void setCurrentQtrYear(DashType dashType, SectionVO data) {
-		log.debug("Setting Current Quarter - Dash Type: " + dashType.toString());
-
 		if (DashType.ADMIN == dashType) {
 			setCurrentQtrYear();
 		} else {
@@ -493,6 +508,10 @@ public class FinancialDashVO extends SBModuleVO {
 		setCurrentYear(data.getFdPubYr());
 	}
 
+	public void setReportedQtr(int reportedQtr) {
+		this.reportedQtr = reportedQtr;
+	}
+
 	/**
 	 * @param currentQtr the currentQtr to set
 	 */
@@ -521,7 +540,7 @@ public class FinancialDashVO extends SBModuleVO {
 	 * @param data
 	 */
 	public void setBehindLatest(SectionVO data) {
-		if (getPublishedYear() < data.getFdPubYr() || (getPublishedYear() == data.getFdPubYr() && getPublishedQtr() < data.getFdPubQtr()))
+		if (getCurrentYear() > data.getFdPubYr() || (getCurrentYear() == data.getFdPubYr() && getCurrentQtr() > data.getFdPubQtr()))
 			setBehindLatest(true);
 		else
 			setBehindLatest(false);
@@ -533,5 +552,19 @@ public class FinancialDashVO extends SBModuleVO {
 
 	public void setShowEmpty(boolean showEmpty) {
 		this.showEmpty = showEmpty;
+	}
+
+	/**
+	 * @return the simulatedQuarter
+	 */
+	public boolean isSimulatedQuarter() {
+		return simulatedQuarter;
+	}
+
+	/**
+	 * @param simulatedQuarter the simulatedQuarter to set
+	 */
+	public void setSimulatedQuarter(boolean simulatedQuarter) {
+		this.simulatedQuarter = simulatedQuarter;
 	}
 }

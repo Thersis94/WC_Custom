@@ -107,9 +107,10 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 		DashType dashType = (DashType) req.getAttribute(FinancialDashAction.DASH_TYPE);
 
 		FinancialDashVO dash = new FinancialDashVO();
-		SectionVO latest = getLatestPublish();
+		SectionVO latest = getLatestPublish(req.getParameter(REQ_SECTION_ID));
 		dash.setCurrentQtrYear(dashType, latest);
-		dash.setData(req, sections);
+		dash.setReportedQtr(getLastReportedQtr());
+		dash.setData(req, sections, dashType);
 		dash.setBehindLatest(latest);
 
 		//Load filtered Sections from FinancialDashHierarchyAction
@@ -207,9 +208,17 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 	 * 
 	 * @return
 	 */
-	protected SectionVO getLatestPublish() {
+	protected SectionVO getLatestPublish(String sectionId) {
 		SectionHierarchyAction sha = getHierarchyAction();
-		return sha.getLatestFdPublish();
+		return sha.getLatestFdPublish(sectionId);
+	}
+	
+	/**
+	 * Get the latest reported quarter for the most recent year.
+	 */
+	protected int getLastReportedQtr() {
+		SectionHierarchyAction sha = getHierarchyAction();
+		return sha.getLatestFdReported();
 	}
 
 	/**
@@ -369,6 +378,8 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 		if (TableType.COMPANY == dash.getTableType())
 			sql.append(", c.GRAPH_COLOR ");
 		
+		sql.append(", greatest(s1.fd_pub_qtr, s2.fd_pub_qtr, s3.fd_pub_qtr, s4.fd_pub_qtr, s5.fd_pub_qtr, s6.fd_pub_qtr, s7.fd_pub_qtr) as fd_pub_qtr ");
+		
 		return sql;
 	}
 
@@ -433,7 +444,7 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 
 		sql.append("and r.YEAR_NO = ? ");
 		
-		sql.append("group by ROW_ID, ROW_NM, r.YEAR_NO ");
+		sql.append("group by ROW_ID, ROW_NM, r.YEAR_NO, s1.fd_pub_qtr, s2.fd_pub_qtr, s3.fd_pub_qtr, s4.fd_pub_qtr, s5.fd_pub_qtr, s6.fd_pub_qtr, s7.fd_pub_qtr ");
 
 		if (TableType.COMPANY == dash.getTableType()) {
 			sql.append(", c.GRAPH_COLOR, r.section_id ");

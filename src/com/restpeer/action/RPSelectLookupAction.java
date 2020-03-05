@@ -29,6 +29,8 @@ import com.smt.sitebuilder.action.commerce.EcommAdminVO;
 // WC3
 import com.smt.sitebuilder.action.commerce.SelectLookupAction;
 import com.smt.sitebuilder.action.commerce.product.EcommProductAction;
+import com.smt.sitebuilder.common.SiteVO;
+import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
  * <b>Title</b>: SelectLookupAction.java
@@ -157,8 +159,10 @@ public class RPSelectLookupAction extends SelectLookupAction {
 	public List<GenericVO> getUsers(ActionRequest req) {
 		List<GenericVO> data = new ArrayList<>(10);
 		BSTableControlVO bst = new BSTableControlVO(req, RPUserVO.class);
+		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
+		String siteId = StringUtil.checkVal(site.getAliasPathParentId(), site.getSiteId());
 		UserAction uw = new UserAction(getDBConnection(), getAttributes());
-		GridDataVO<RPUserVO> users = uw.getUsers(req.getParameter("dealerLocationId"), bst);
+		GridDataVO<RPUserVO> users = uw.getUsers(req.getParameter("dealerLocationId"), siteId, bst);
 		
 		for (RPUserVO user : users.getRowData()) {
 			String name = user.getFirstName() + " " + user.getLastName();

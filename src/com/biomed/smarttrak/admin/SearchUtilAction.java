@@ -66,6 +66,7 @@ public class SearchUtilAction extends SBActionAdapter {
 		String companyPath = AdminControllerAction.Section.COMPANY.getPageURL() + qsPath;
 		String marketPath = AdminControllerAction.Section.MARKET.getPageURL() + qsPath;
 		String productPath = AdminControllerAction.Section.PRODUCT.getPageURL() + qsPath;
+		String analysisPath = AdminControllerAction.Section.INSIGHT.getPageURL() + qsPath;
 		log.debug("Company Path: " + companyPath);
 		
 		StringBuilder sql = new StringBuilder(400);
@@ -77,6 +78,9 @@ public class SearchUtilAction extends SBActionAdapter {
 		sql.append("union ");
 		sql.append("select '").append(marketPath).append("' + market_id, market_nm, 'Markets:' as RESULT_TYPE from ").append(schema).append("biomedgps_market ");
 		sql.append("where lower(market_nm) like ? and status_no = 'P' ");
+		sql.append("union ");
+		sql.append("select '").append(analysisPath).append("' + insight_id, title_txt, 'Analyses:' as RESULT_TYPE from ").append(schema).append("biomedgps_insight ");
+		sql.append("where lower(title_txt) like ? and status_cd = 'P' ");
 		sql.append("order by RESULT_TYPE, short_nm_txt ");
 		log.debug("SQL: " + sql + "|" + searchData);
 		
@@ -85,6 +89,7 @@ public class SearchUtilAction extends SBActionAdapter {
 			ps.setString(1, searchData);
 			ps.setString(2, searchData);
 			ps.setString(3, searchData);
+			ps.setString(4, searchData);
 			ResultSet rs = ps.executeQuery();
 			String type = "";
 			while (rs.next()) {

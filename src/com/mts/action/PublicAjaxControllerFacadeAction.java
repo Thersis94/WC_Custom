@@ -5,14 +5,13 @@ import com.mts.publication.action.ArticleByCategoryAction;
 import com.mts.publication.action.DocumentBrowseAction;
 import com.mts.publication.action.DocumentUtilAction;
 import com.mts.security.IPSecurityAction;
+import com.mts.subscriber.action.TrialSubscriptionValidator;
 import com.mts.subscriber.action.UserInfoWidget;
-
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionInterface;
 import com.siliconmtn.action.ActionRequest;
-
 // WC Core
 import com.smt.sitebuilder.action.FacadeActionAdapter;
 import com.smt.sitebuilder.common.ModuleVO;
@@ -39,7 +38,7 @@ public class PublicAjaxControllerFacadeAction extends FacadeActionAdapter {
 	 * Default type if not passed
 	 */
 	public static final String DEFAULT_TYPE = "lookup";
-	
+
 	/**
 	 * Request key utilized top determine widget to call
 	 */
@@ -71,7 +70,7 @@ public class PublicAjaxControllerFacadeAction extends FacadeActionAdapter {
 		actionMap.put(UserInfoWidget.AJAX_KEY, UserInfoWidget.class);
 		actionMap.put(IPSecurityAction.AJAX_KEY, IPSecurityAction.class);
 		actionMap.put(DocumentUtilAction.AJAX_KEY, DocumentUtilAction.class);
-		
+		actionMap.put(TrialSubscriptionValidator.AJAX_KEY, TrialSubscriptionValidator.class);
 	}
 
 	/*

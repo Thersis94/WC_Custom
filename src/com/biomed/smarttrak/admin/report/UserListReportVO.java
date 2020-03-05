@@ -187,13 +187,16 @@ public class UserListReportVO extends AbstractSBReportVO {
 				row.put(RegistrationMap.JOBCATEGORY.name(), user.getJobCategory());
 				row.put(RegistrationMap.JOBLEVEL.name(), user.getJobLevel());
 				row.put(RegistrationMap.INDUSTRY.name(), user.getIndustry());
+				row.put(RegistrationMap.ROLE.name(), user.getChosenRole());
+				row.put(RegistrationMap.FUNCTION.name(), user.getFunction());
+				row.put(RegistrationMap.INTEREST.name(), user.getInterests());
 				
 				rows.add(row);
 			}
 		}
 
 	}
-	
+
 	/**
 	 * Formats the activity color text based on customer requirements
 	 * @param user
@@ -301,6 +304,9 @@ public class UserListReportVO extends AbstractSBReportVO {
 		headerMap.put(RegistrationMap.JOBCATEGORY.name(),"Job Category");
 		headerMap.put(RegistrationMap.JOBLEVEL.name(),"Job Level");
 		headerMap.put(RegistrationMap.INDUSTRY.name(),"Industry");
+		headerMap.put(RegistrationMap.ROLE.name(),"Market Role");
+		headerMap.put(RegistrationMap.FUNCTION.name(),"Market Function");
+		headerMap.put(RegistrationMap.INTEREST.name(),"Market Interests");
 		return headerMap;
 	}
 

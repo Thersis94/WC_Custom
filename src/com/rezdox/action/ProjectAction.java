@@ -129,10 +129,10 @@ public class ProjectAction extends SimpleActionAdapter {
 		for (ProjectVO proj : data) {
 			total += proj.getInvoiceSubTotal();
 			if ("IMPROVEMENT".equals(proj.getProjectCategoryCd()))
-				improvementTotal += proj.getInvoiceSubTotal();
+				improvementTotal += proj.getProjectValuation();
 		}
 		mod.setAttribute("totalValue", total);
-		mod.setAttribute("totalValueImprovements", improvementTotal * RezDoxUtils.IMPROVEMENTS_VALUE_COEF);
+		mod.setAttribute("totalValueImprovements", improvementTotal);
 	}
 
 	/**
@@ -148,7 +148,7 @@ public class ProjectAction extends SimpleActionAdapter {
 		//load a list of businesses.  If there's only one, then choose the 1st as the default if one wasn't provided.
 		List<BusinessVO> bizList = new BusinessAction(getDBConnection(), getAttributes()).loadBusinessList(req);
 		if (bizList == null || bizList.isEmpty()) return;
-		
+
 		if (StringUtil.isEmpty(bizId)) {
 			bizId = bizList.get(0).getBusinessId();
 		}
@@ -252,7 +252,7 @@ public class ProjectAction extends SimpleActionAdapter {
 
 		StringBuilder sql = new StringBuilder(1000);
 		sql.append("select a.*, b.attribute_id, b.slug_txt, b.value_txt, c.category_nm, d.type_nm, ");
-		sql.append("r.residence_nm, rr.room_nm, m.member_id, m.profile_id as homeowner_profile_id, pc.material_cost, ");
+		sql.append("r.residence_nm, rr.room_nm, m.member_id, m.profile_id as homeowner_profile_id, pc.material_cost, pc.project_valuation, ");
 		sql.append("cast(sum(case when ph.photo_id is not null then 1 else 0 end) as integer) as photo_cnt ");
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("REZDOX_PROJECT a ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("REZDOX_PROJECT_ATTRIBUTE b on a.project_id=b.project_id ");
@@ -261,8 +261,15 @@ public class ProjectAction extends SimpleActionAdapter {
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("REZDOX_RESIDENCE r on a.residence_id=r.residence_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("REZDOX_RESIDENCE_MEMBER_XR rm on r.residence_id=rm.residence_id and rm.status_flg=1 ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("REZDOX_MEMBER m on rm.member_id=m.member_id "); //this is the home owner
-		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("REZDOX_ROOM rr on a.room_id=rr.room_id ");
-		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("REZDOX_PROJECT_COST_VIEW pc on a.project_id=pc.project_id ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("REZDOX_ROOM rr on a.room_id=rr.room_id ");		
+		
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(" ( ");
+		sql.append("SELECT residence_id, business_id, project_id, residence_view_flg, business_view_flg, create_dt, ");
+		sql.append("sum(project_cost) as project_cost, sum(material_cost) as material_cost, sum(project_valuation) as project_valuation, is_improvement ");
+		sql.append("from ").append(schema).append("rezdox_project_cost_view ");
+		sql.append("group by residence_id, business_id, project_id, residence_view_flg, business_view_flg, create_dt, is_improvement ");
+		sql.append(" ) as pc on a.project_id=pc.project_id ");
+		
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("REZDOX_PHOTO ph on a.project_id=ph.project_id ");
 		sql.append("where a.business_view_flg != 0 ");// 1=approved, -1=pending
 
@@ -275,11 +282,11 @@ public class ProjectAction extends SimpleActionAdapter {
 		}
 		sql.append("group by a.project_id, a.residence_id, a.room_id, a.business_id, a.project_category_cd, a.project_type_cd, a.project_nm, ");
 		sql.append("a.labor_no, a.total_no, a.residence_view_flg, a.business_view_flg, a.create_dt, a.update_dt, a.end_dt, a.desc_txt, ");
-		sql.append("a.proj_discount_no, a.proj_tax_no, a.mat_discount_no, a.mat_tax_no, pc.material_cost, ");
+		sql.append("a.proj_discount_no, a.proj_tax_no, a.mat_discount_no, a.mat_tax_no, pc.material_cost, pc.project_valuation, ");
 		sql.append("b.attribute_id, b.slug_txt, b.value_txt, c.category_nm, d.type_nm, ");
 		sql.append("r.residence_nm, rr.room_nm, m.member_id, m.profile_id ");
 		sql.append("order by a.end_dt desc, a.project_nm");
-		log.debug(sql);
+		log.debug(sql + "|"+params);
 
 		DBProcessor db = new DBProcessor(getDBConnection(), schema);
 		return db.executeSelect(sql.toString(), params, new ProjectVO());

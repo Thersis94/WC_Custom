@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+import com.mts.common.MTSConstants;
 import com.mts.subscriber.data.MTSUserVO;
 // SMT Base Libs
 import com.siliconmtn.action.ActionRequest;
@@ -45,6 +46,7 @@ public class IssueVO extends BeanDataVO {
 	private String seoPath;
 	private String editorId;
 	private String category;
+	private String issuePdfUrl;
 	
 	// Numeric Members
 	private int approvalFlag;
@@ -81,6 +83,14 @@ public class IssueVO extends BeanDataVO {
 	 */
 	public IssueVO(ResultSet rs) {
 		super(rs);
+	}
+	
+	/**
+	 * Returns the link for the publication
+	 * @return
+	 */
+	public String getSubscribeLink() {
+		return MTSConstants.SUBSCRIBE_LINKS.get(StringUtil.checkVal(publicationId).toUpperCase());
 	}
 
 	/**
@@ -355,6 +365,21 @@ public class IssueVO extends BeanDataVO {
 	 */
 	public void setPublicationName(String publicationName) {
 		this.publicationName = publicationName;
+	}
+
+	/**
+	 * @return the issuePdfUrl
+	 */
+	@Column(name="issue_pdf_url")
+	public String getIssuePdfUrl() {
+		return issuePdfUrl;
+	}
+
+	/**
+	 * @param issuePdfUrl the issuePdfUrl to set
+	 */
+	public void setIssuePdfUrl(String issuePdfUrl) {
+		this.issuePdfUrl = issuePdfUrl;
 	}
 
 }

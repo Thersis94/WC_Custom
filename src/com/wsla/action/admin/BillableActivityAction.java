@@ -78,16 +78,16 @@ public class BillableActivityAction extends SBActionAdapter {
 		BSTableControlVO bst = new BSTableControlVO(req, BillableActivityVO.class);
 		int activityFlag = Convert.formatInteger(req.getParameter("activeFlag"));
 		boolean hasActivityFlag = req.hasParameter("activeFlag");
-		
-		setModuleData(getCodes(activityFlag, hasActivityFlag, req.getParameter("billableTypeCode"), req.getBooleanParameter("isMiscActivites"), bst));
+		String bac = req.getParameter("billableActivityCode");
+		setModuleData(getCodes(activityFlag, hasActivityFlag, req.getParameter("billableTypeCode"), req.getBooleanParameter("isMiscActivites"), bac, bst));
 	}
 	
 	/**
 	 * Gets the complete or filtered list of codes
 	 * @return
 	 */
-	public GridDataVO<BillableActivityVO> getCodes(String btc, boolean isMiscActivites, BSTableControlVO bst) {
-		return getCodes(0, false, btc, isMiscActivites, bst);
+	public GridDataVO<BillableActivityVO> getCodes(String btc, boolean isMiscActivites, String bac, BSTableControlVO bst) {
+		return getCodes(0, false, btc, isMiscActivites, bac, bst);
 	}
 	
 	/**
@@ -96,7 +96,7 @@ public class BillableActivityAction extends SBActionAdapter {
 	 * @param activityFlag 
 	 * @return
 	 */
-	public GridDataVO<BillableActivityVO> getCodes(int activityFlag, boolean hasActivityFlag, String btc, boolean isMiscActivites, BSTableControlVO bst) {
+	public GridDataVO<BillableActivityVO> getCodes(int activityFlag, boolean hasActivityFlag, String btc, boolean isMiscActivites, String bac, BSTableControlVO bst) {
 		List<Object> vals = new ArrayList<>();
 		StringBuilder sql = new StringBuilder(80);
 		sql.append(DBUtil.SELECT_FROM_STAR).append(getCustomSchema()).append("wsla_billable_activity ");
@@ -107,10 +107,9 @@ public class BillableActivityAction extends SBActionAdapter {
 		}
 		if(isMiscActivites) {
 			sql.append("and parent_id = ? ");
-			vals.add(MISC_ACT_CODE);
-		}else {
-			sql.append("and (parent_id != ? or parent_id is null) ");
-			vals.add(MISC_ACT_CODE);
+			vals.add(bac);
+		} else {
+			sql.append("and parent_id is null ");
 		}
 		
 		if(!StringUtil.isEmpty(bst.getSearch())) {
@@ -125,7 +124,7 @@ public class BillableActivityAction extends SBActionAdapter {
 		}
 		
 		sql.append(bst.getSQLOrderBy("activity_nm", "asc"));
-		log.debug(sql.length() + "|" + sql);
+		log.debug(sql.length() + "|" + sql + vals);
 		DBProcessor db = new DBProcessor(getDBConnection());
 		db.setGenerateExecutedSQL(log.isDebugEnabled());
 		

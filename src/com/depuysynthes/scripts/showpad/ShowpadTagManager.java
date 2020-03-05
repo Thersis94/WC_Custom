@@ -13,14 +13,14 @@ import java.util.Set;
 
 import org.apache.log4j.Logger;
 
-import net.sf.json.JSONArray;
-import net.sf.json.JSONObject;
-
 import com.depuysynthes.scripts.DSMediaBinImporterV2;
 import com.depuysynthes.scripts.MediaBinDeltaVO;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.io.FileType;
 import com.siliconmtn.util.StringUtil;
+
+import net.sf.json.JSONArray;
+import net.sf.json.JSONObject;
 
 /****************************************************************************
  * <b>Title</b>: ShowpadTagManager.java<p/>
@@ -117,24 +117,24 @@ public class ShowpadTagManager {
 
 
 	/**
-	 * adds the desired tags to the passed showpad asset (header)
+	 * Saves (adds & removes) the desired tags to the passed showpad asset (header)
 	 * If the desired tag does not exist in Showpad, it must be added there first.
 	 * @param vo
 	 * @throws QuotaException 
 	 */
-	public void addTags(MediaBinDeltaVO vo, StringBuilder header) throws InvalidDataException {
-		Map<String,ShowpadTagVO> assignedTags = loadAssetTags(vo.getShowpadId(), null, true); //suppress404 because the asset may be new
+	public void saveTags(MediaBinDeltaVO vo, StringBuilder header) throws InvalidDataException {
+		Map<String,ShowpadTagVO> existingTags = loadAssetTags(vo.getShowpadId(), null, true); //suppress404 because the asset may be new
 		Set<String> tagsToAdd = getDesiredTags(vo);
 		Set<String> desiredTags = new HashSet<>(tagsToAdd); //preserve this list for deletions
 
 		//loop the tags the asset already has, removing them from the "need to add" list
-		for (String tag : assignedTags.keySet())
+		for (String tag : existingTags.keySet())
 			tagsToAdd.remove(tag);
 
 		//add what's left on the "need to add" list as new tags; both to the Asset, and to the Division in Showpad if they don't already exist
 		for (String tagNm : tagsToAdd) {
 			//do not create or bind empty tags
-			if (StringUtil.checkVal(tagNm).trim().isEmpty()) continue;
+			if (StringUtil.checkVal(tagNm).trim().isEmpty() || "null".equalsIgnoreCase(tagNm)) continue;
 
 			tagNm = tagNm.trim();
 			log.info("asset needs tag " + tagNm);
@@ -154,7 +154,7 @@ public class ShowpadTagManager {
 			header.append("<").append(tagVo.getId()).append(">; rel=\"Tag\"");
 		}
 
-		deleteUnwantedMBTags(vo, assignedTags, desiredTags);
+		deleteUnwantedMBTags(vo, existingTags, desiredTags);
 	}
 
 
@@ -223,7 +223,7 @@ public class ShowpadTagManager {
 	 */
 	protected Set<String> getDesiredTags(MediaBinDeltaVO vo) {
 		Set<String> desiredTags = new HashSet<>();
-		desiredTags.add("mediabin");
+		desiredTags.add("eos");
 		if (!StringUtil.isEmpty(sourceConstant))
 			desiredTags.add(sourceConstant); //an additional static tag for private assets.  This could be turned into a String[] if need be.
 
@@ -237,7 +237,32 @@ public class ShowpadTagManager {
 		if (!StringUtil.isEmpty(vo.getProdNm()))
 			desiredTags.addAll(Arrays.asList(vo.getProdNm().split(DSMediaBinImporterV2.TOKENIZER)));
 
-		return desiredTags;
+		//add any tags assigned from other areas of the application
+		desiredTags.addAll(vo.getDesiredTags());
+
+		return removeFunkyChars(desiredTags);
+	}
+
+
+	/**
+	 * replace any non-breaking spaces with regular spaces - 
+	 * this causes hell on the eyes, and creates duplicates!
+	 * This can't be done in a stream or forEach because it could result in duplicates, which violates the contract of Set.
+	 * @param desiredTags
+	 * @return
+	 */
+	private Set<String> removeFunkyChars(Set<String> desiredTags) {
+		if (desiredTags == null || desiredTags.isEmpty()) return desiredTags;
+		Set<String> tags = new HashSet<>(desiredTags.size());
+
+		for (String tag : desiredTags) {
+			if (tag.indexOf("\u00A0") > -1) {
+				tag = tag.replace("\u00A0","\u0020"); //unicode non-breaking space w/regular space
+			}
+			tags.add(tag);
+		}
+
+		return tags;
 	}
 
 
@@ -314,49 +339,6 @@ public class ShowpadTagManager {
 
 		log.info("created tag " + tag.getName() + " with id=" + tag.getId());
 		return tag;
-	}
-
-
-	/**
-	 * oversees application of product-catalog related tags to mediabin assets at Showpad.
-	 * handles the load, merge, delete, add, and update transactions as applicable.
-	 * Called from ShowpadProductDecorator
-	 * @param mbAsset
-	 * @throws QuotaException
-	 */
-	public void updateProductTags(MediaBinDeltaVO mbAsset) throws InvalidDataException {
-		String showpadId = mbAsset.getShowpadId();
-		if (StringUtil.isEmpty(showpadId)) 
-			throw new InvalidDataException("Asset not found in Showpad: " + mbAsset.getTrackingNoTxt());
-
-		Map<String, ShowpadTagVO> assignedTags = loadAssetTags(showpadId, null, false); //do not suppress404, asset should exist at this point
-		Map<String, ShowpadTagVO> tagsToAdd = new HashMap<>();
-		Map<String, ShowpadTagVO> tagsToDelete = new HashMap<>();
-
-		//put all the tags we want on the 'add' list, then we'll remove the ones that already exist
-		for (ShowpadTagVO tag : mbAsset.getTags())
-			tagsToAdd.put(tag.getName(), tag);
-
-		//make a 'tagsToDelete' list by subtracting what we want (to add) from what we have
-		for (ShowpadTagVO tag : assignedTags.values()) {
-			if (tagsToAdd.containsKey(tag.getName())) {
-				//don't need to add it, it's already there
-				tagsToAdd.remove(tag.getName());
-
-			} else if (SMT_PRODUCT_EXTERNALID.equals(tag.getExternalId())) {
-				//do not delete any that aren't smt-product tags; meaning they 
-				//were created by someone or something else and are not ours to delete.
-				tagsToDelete.put(tag.getName(), tag);
-				log.debug("unlinking product tag: " + tag.getName());
-			}
-		}
-
-		//do the work
-		log.debug("asset=" + mbAsset.getDpySynMediaBinId() + ", previous tags: " + assignedTags.keySet());
-		log.debug("asset=" + mbAsset.getDpySynMediaBinId() + ", unlinking tags: " + tagsToDelete.keySet());
-		log.debug("asset=" + mbAsset.getDpySynMediaBinId() + ", linking tags: " + tagsToAdd.keySet());
-		unlinkAssetFromTags(showpadId, tagsToDelete.values());
-		linkAssetToProductTags(showpadId, tagsToAdd.values());
 	}
 
 
@@ -439,7 +421,7 @@ public class ShowpadTagManager {
 	public void setSourceConstant(String sourceConstant) {
 		this.sourceConstant = sourceConstant;
 	}
-	
+
 	/**
 	 * getting method used by TagUpdater to perform tag maintenance - nothing used by the general workflow
 	 * @return

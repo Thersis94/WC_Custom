@@ -17,7 +17,9 @@ import java.util.Set;
 import com.biomed.smarttrak.action.GridDisplayAction;
 import com.biomed.smarttrak.admin.report.GridClipboardReport;
 import com.biomed.smarttrak.admin.vo.GridDetailVO;
+import com.biomed.smarttrak.admin.vo.GridUsageVO;
 import com.biomed.smarttrak.admin.vo.GridVO;
+import com.biomed.smarttrak.admin.vo.GridVO.RowStyle;
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
@@ -247,8 +249,8 @@ public class GridChartAction extends SBActionAdapter {
 			ps.setString(1, gridId);
 			ps.setString(2, gridId);
 			ResultSet rs = ps.executeQuery();
-			rs.next();
-			numCols = rs.getInt("num_cols");
+			if (rs.next())
+				numCols = rs.getInt("num_cols");
 		} catch(Exception e) {
 			log.error("Unable to retrieve the number of columns", e);
 		}
@@ -283,7 +285,10 @@ public class GridChartAction extends SBActionAdapter {
 				promoteGridCharts(req);
 			} else if(req.hasParameter("tableData")) {
 				buildGridExcel(req);
-			}else {
+			} else if (Convert.formatBoolean(req.getParameter("determineUsage"))) {
+				determineUsage(g);
+				super.putModuleData(g);
+			} else {
 				saveGrid(req);
 			}
 		} catch(Exception e) {
@@ -517,6 +522,13 @@ public class GridChartAction extends SBActionAdapter {
 				// so the table row ids can be updated
 				String gridDetailId = StringUtil.checkVal(detail.getGridDetailId());
 				if (gridDetailId.startsWith("BIO_")) detail.setGridDetailId(null);
+				
+				if (!RowStyle.HEADING.toString().equals(detail.getDetailType())) {
+					for (int i = 0; i < grid.getSeriesTxtFlg().length; i++) {
+						if ( grid.getSeriesTxtFlg()[i] == 1) continue;
+						detail.getValues()[i] = prepareThousands(detail.getValues()[i]);
+					}
+				}
 
 				// Save the data.  If the data is an insert, add to the column xref
 				db.save(detail);
@@ -526,6 +538,21 @@ public class GridChartAction extends SBActionAdapter {
 			log.error("unable to save the grid data", e);
 			throw e;
 		}
+	}
+
+	/**
+	 * Ensure that any value with a known money prefix has thousands seperators
+	 * @param string
+	 */
+	private String prepareThousands(String val) {
+		String nonAlpha = StringUtil.removeNonNumericExceptDecimal(val);
+		// Ensure that we have a value
+		if (StringUtil.isEmpty(nonAlpha) || val.contains(",") ||
+				val.length() - nonAlpha.length() > 10) return val;
+		String prefix = val.substring(0, val.indexOf(nonAlpha.charAt(0)));
+		int decimalIdx = nonAlpha.indexOf('.');
+		String formattedNum = String.format("%,d", Convert.formatInteger(decimalIdx > -1? nonAlpha.substring(0, decimalIdx) : nonAlpha));
+		return prefix + formattedNum + (decimalIdx > -1?nonAlpha.substring(decimalIdx) : "") + val.substring(val.lastIndexOf(nonAlpha.charAt(nonAlpha.length()-1))+1);
 	}
 
 	/**
@@ -696,11 +723,12 @@ public class GridChartAction extends SBActionAdapter {
 		String search = StringUtil.checkVal(req.getParameter("search")).toUpperCase();
 
 		StringBuilder sql = new StringBuilder(250);
-		sql.append("select count(*) from ").append(schema).append("biomedgps_grid ");
+		sql.append("select count(*) over () from ").append(schema).append("biomedgps_grid ");
 		sql.append(DBUtil.WHERE_1_CLAUSE);
 		if (search.length() > 0) sql.append("and (upper(title_nm) like ? or upper(subtitle_nm) like ?) ");
 		if(!req.getBooleanParameter("showArchives"))
 			sql.append("and archive_flg = 'false' ");
+		sql.append("group by grid_group_id");
 
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			if (search.length() > 0) {
@@ -708,10 +736,9 @@ public class GridChartAction extends SBActionAdapter {
 				ps.setString(2, "%" + search + "%");
 			}
 
-			log.debug(ps);
 			ResultSet rs = ps.executeQuery();
-			rs.next();
-			count = rs.getInt(1);
+			if (rs.next())
+				count = rs.getInt(1);
 		}
 
 		return count;
@@ -798,5 +825,63 @@ public class GridChartAction extends SBActionAdapter {
 		}
 
 		return new ArrayList<>(data.values());
+	}
+
+	
+	/**
+	 * Look up usage for this grid in all areas that a chart can appear
+	 * @param g
+	 * @throws SQLException
+	 */
+	private void determineUsage(GridVO g) throws SQLException {
+		
+		StringBuilder sql = new StringBuilder(750);
+
+		sql.append("select xr.market_attribute_id as xr_id, case when g.grid_id = xr.value_1_txt then 'Grid Chart' else xr.title_txt end as xr_nm, m.market_nm as item_nm, m.market_id as item_id, 'MARKET' as type from ").append(getCustomSchema()).append("biomedgps_grid g ");
+		sql.append("left join ").append(getCustomSchema()).append("biomedgps_market_attribute_xr xr on g.grid_id = xr.value_1_txt or (xr.status_no = 'P' and  xr.value_txt like '%data-graph=\"' + g.grid_id + '\"%') ");
+		sql.append("left join ").append(getCustomSchema()).append("biomedgps_market m on m.market_id = xr.market_id ");
+		sql.append("where g.grid_id = ? and m.status_no = 'P' ");
+		sql.append("union ");
+		sql.append("select xr.company_attribute_id as xr_id, xr.title_txt as xr_nm, c.company_nm as item_nm, c.company_id as item_id, 'COMPANY' as type from ").append(getCustomSchema()).append("biomedgps_grid g ");
+		sql.append("left join ").append(getCustomSchema()).append("biomedgps_company_attribute_xr xr on xr.status_no = 'P'and (xr.value_txt like '%data-graph=\"' + g.grid_id + '\"%') ");
+		sql.append("left join ").append(getCustomSchema()).append("biomedgps_company c on c.company_id = xr.company_id ");
+		sql.append("where g.grid_id = ? and c.status_no = 'P' ");
+		sql.append("union ");
+		sql.append("select xr.product_attribute_id as xr_id, xr.title_txt as xr_nm, p.product_nm as item_nm, p.product_id as item_id, 'PRODUCT' as type from ").append(getCustomSchema()).append("biomedgps_grid g ");
+		sql.append("left join ").append(getCustomSchema()).append("biomedgps_product_attribute_xr xr on xr.status_no = 'P'and (xr.value_txt like '%data-graph=\"' + g.grid_id + '\"%') ");
+		sql.append("left join ").append(getCustomSchema()).append("biomedgps_product p on p.product_id = xr.product_id ");
+		sql.append("where g.grid_id = ? and p.status_no = 'P' ");
+		sql.append("union ");
+		sql.append("select 'article' as xr_id, 'Article Body' as xr_nm, i.title_txt as item_nm, i.insight_id as item_id, 'INSIGHT' as type from ").append(getCustomSchema()).append("biomedgps_grid g ");
+		sql.append("left join ").append(getCustomSchema()).append("biomedgps_insight i on i.status_cd = 'P' and i.content_txt like '%data-graph=\"' + g.grid_id + '\"%' ");
+		sql.append("where g.grid_id = ? and i.status_cd = 'P' ");
+		sql.append("union ");
+		sql.append("select 'side' as xr_id, 'Side Content' as xr_nm, i.title_txt as item_nm, i.insight_id as item_id, 'INSIGHT' as type from ").append(getCustomSchema()).append("biomedgps_grid g ");
+		sql.append("left join ").append(getCustomSchema()).append("biomedgps_insight i on i.status_cd = 'P' and i.side_content_txt like  '%data-graph=\"' + g.grid_id + '\"%' ");
+		sql.append("where g.grid_id = ? and i.status_cd = 'P' ");
+		sql.append("union ");
+		sql.append("select 'abstract' as xr_id, 'Abstract Text' as xr_nm, i.title_txt as item_nm, i.insight_id as item_id, 'INSIGHT' as type from ").append(getCustomSchema()).append("biomedgps_grid g ");
+		sql.append("left join ").append(getCustomSchema()).append("biomedgps_insight i on i.status_cd = 'P' and abstract_txt like  '%data-graph=\"' + g.grid_id + '\"%' ");
+		sql.append("where g.grid_id = ? and i.status_cd = 'P' ");
+		log.debug(sql);
+		
+		DBProcessor db = new DBProcessor(dbConn);
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, g.getGridId());
+			ps.setString(2, g.getGridId());
+			ps.setString(3, g.getGridId());
+			ps.setString(4, g.getGridId());
+			ps.setString(5, g.getGridId());
+			ps.setString(6, g.getGridId());
+			
+			ResultSet rs = ps.executeQuery();
+			while (rs.next()) {
+				GridUsageVO use = new GridUsageVO();
+				db.executePopulate(use, rs);
+				if (!StringUtil.isEmpty(use.getItemId()))
+					g.addUsage(use);
+			}
+		}
 	}
 }

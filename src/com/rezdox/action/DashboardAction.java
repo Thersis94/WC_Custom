@@ -133,6 +133,7 @@ public class DashboardAction extends SimpleActionAdapter {
 			sql.append("where coalesce(a.update_dt, a.create_dt) >= CURRENT_DATE-90 and a.business_view_flg != 0 ");
 			sql.append("order by 3 desc"); //most recent first
 			log.debug(sql);
+			dbp.setGenerateExecutedSQL(log.isDebugEnabled());
 			data.addAll(dbp.executeSelect(sql.toString(), params, new GenericVO()));
 			log.debug("datasize=" + data.size());
 		}
@@ -161,7 +162,7 @@ public class DashboardAction extends SimpleActionAdapter {
 	 * @param bus
 	 * @param schema
 	 */
-	protected void getBusinessAttributes(BusinessVO bus, String schema, String memberId) {
+	protected void getBusinessAttributes(BusinessVO bus, String schema) {
 		String bId = bus.getBusinessId();
 		StringBuilder sql = new StringBuilder(1144);
 		sql.append("select 'all_reviews_avg' as attribute_id, 'all_reviews_avg' as slug_txt, avg(rating_no)::text as value_txt ");
@@ -175,11 +176,19 @@ public class DashboardAction extends SimpleActionAdapter {
 		sql.append("select 'all_projects_count', 'all_projects_count', count(*)::text "); 
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append(PROJECT_TABLE);
 		sql.append(WHERE_BUSINESS_ID).append(BUS_ID_GROUP);
+		//get the grand total of the projects
 		sql.append(DBUtil.UNION);
-		sql.append("select 'all_projects_value', 'all_projects_value', sum(project_cost+material_cost)::text "); 
-		sql.append(DBUtil.FROM_CLAUSE).append(schema).append(PROJECT_COST_VIEW);
+		sql.append("select 'all_projects_value', 'all_projects_value', sum(gt.grand_total)::text "); 
+		sql.append(DBUtil.FROM_CLAUSE).append(" ( ");
+		
+		sql.append("select project_id, max(project_cost), sum(material_cost), (max(project_cost) + sum(material_cost)) as grand_total, business_id ");
+		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("rezdox_project_cost_view rpcv ");
+		sql.append("where business_view_flg = '1' group by project_id, business_id ");
+		
+		sql.append(") as gt  ");
 		sql.append(WHERE_BUSINESS_ID).append(BUS_ID_GROUP);
-		sql.append(DBUtil.UNION);
+		sql.append(DBUtil.UNION);		
+		
 		sql.append("select 'recent_projects_count', 'recent_projects_count', count(*)::text "); 
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append(PROJECT_TABLE);
 		sql.append(WHERE_BUSINESS_ID).append(RECENT_SQL).append(BUS_ID_GROUP);
@@ -199,10 +208,12 @@ public class DashboardAction extends SimpleActionAdapter {
 		sql.append("select 'bus_connections_lic', 'bus_connections_lic', quota_no::text "); 
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("rezdox_connection_quota_view where business_id=? ");
 		sql.append("order by slug_txt ");
-
+		
 		// Add the attributes to the business
 		DBProcessor db = new DBProcessor(getDBConnection(), schema);
 		List<Object> vals = Arrays.asList(bId,bId,bId,bId,bId,bId,bId,bId,bId,bId,bId);
+		log.debug(sql +"|"+vals );
+		db.setGenerateExecutedSQL(log.isDebugEnabled());
 		bus.addAttributes(db.executeSelect(sql.toString(), vals, new BusinessAttributeVO()));
 	}
 
@@ -222,7 +233,7 @@ public class DashboardAction extends SimpleActionAdapter {
 		DBProcessor db = new DBProcessor(getDBConnection());
 		List<BusinessVO> businesses = db.executeSelect(sql.toString(), Arrays.asList(memberId), new BusinessVO());
 		for(BusinessVO business : businesses) 
-			getBusinessAttributes(business, schema, memberId);
+			getBusinessAttributes(business, schema);
 
 		return businesses;
 	}
@@ -283,7 +294,8 @@ public class DashboardAction extends SimpleActionAdapter {
 	 */
 	protected List<ResidenceVO> getResidenceInfo(String memberId, String schema) {
 		StringBuilder sql = new StringBuilder(768);
-		sql.append("select c.*, d.*, coalesce(p.project_total, 0) as projects_total, coalesce(i.inventory_total, 0) as inventory_total ");
+		sql.append("select c.*, d.*, coalesce(gt.grand_total, 0) as projects_total, coalesce(p.project_valuation, 0) as projects_valuation, ");
+		sql.append("coalesce(i.inventory_total, 0) as inventory_total ");
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("rezdox_residence_member_xr b ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("rezdox_residence c on b.residence_id = c.residence_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("rezdox_residence_attribute d ");
@@ -292,9 +304,16 @@ public class DashboardAction extends SimpleActionAdapter {
 		sql.append("'RESIDENCE_TRANSIT_SCORE', 'RESIDENCE_SUN_NUMBER') ");
 		//join projects for IMPROVEMENT projects total
 		sql.append(DBUtil.LEFT_OUTER_JOIN);
-		sql.append("(select a.residence_id, sum(project_cost+material_cost) as project_total ");
+		sql.append("(select a.residence_id, sum(project_cost+material_cost) as project_total, sum(b.project_valuation) as project_valuation ");
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("rezdox_residence_member_xr a ");
-		sql.append(DBUtil.INNER_JOIN).append(schema).append("rezdox_project_cost_view b on a.residence_id=b.residence_id ");
+		sql.append(DBUtil.INNER_JOIN).append(" ( ");
+		
+		sql.append("SELECT residence_id, business_id, project_id, residence_view_flg, business_view_flg, create_dt, ");
+		sql.append("project_cost, sum(material_cost) as material_cost, project_valuation, is_improvement ");
+		sql.append("from ").append(schema).append(PROJECT_COST_VIEW);
+		sql.append("group by residence_id, business_id, project_id, residence_view_flg, business_view_flg, create_dt, project_cost, project_valuation, is_improvement ");
+		sql.append(" ) as b on a.residence_id=b.residence_id  ");
+		
 		sql.append("and b.is_improvement=1 and b.residence_view_flg=1 ");
 		sql.append("where a.member_id=? and a.status_flg=1 ");
 		sql.append("group by a.residence_id ");
@@ -307,12 +326,26 @@ public class DashboardAction extends SimpleActionAdapter {
 		sql.append("where a.member_id=? and a.status_flg=1 ");
 		sql.append("group by a.residence_id ");
 		sql.append(") as i on c.residence_id=i.residence_id ");
+		//get the grand total of the projects
+		sql.append(DBUtil.LEFT_OUTER_JOIN);
+		sql.append("(select sum(m.grand_total) as grand_total, residence_id ");
+		sql.append(DBUtil.FROM_CLAUSE).append("( select project_id, max(project_cost), sum(material_cost), (max(project_cost) + sum(material_cost)) as grand_total,	residence_id ");
+		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("rezdox_project_cost_view rpcv ");
+		sql.append("where residence_view_flg = '1' 	group by project_id, residence_id ");
+		sql.append(") as m group by residence_id ) as gt on c.residence_id = gt.residence_id  ");
+		
 		sql.append("where b.member_id=? and b.status_flg=1 order by c.create_dt");
-		log.debug(sql);
+		
 
 		DBProcessor db = new DBProcessor(getDBConnection());
 		List<Object> params = Arrays.asList(memberId, memberId, memberId);
-		return db.executeSelect(sql.toString(), params, new ResidenceVO(), "residence_id");
+		log.debug(sql +"|"+params);
+		db.setGenerateExecutedSQL(log.isDebugEnabled());
+		List<ResidenceVO> data = db.executeSelect(sql.toString(), params, new ResidenceVO(), "residence_id");
+		
+		if(data != null && ! data.isEmpty())log.debug( data.get(0));
+		
+		return data;
 	}
 
 	/**

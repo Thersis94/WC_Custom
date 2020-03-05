@@ -157,6 +157,13 @@ public class DefectVO extends BeanDataVO {
 	/**
 	 * @param activeFlag the activeFlag to set
 	 */
+	public void setActiveFlag(int activeFlag) {
+		this.activeFlag = activeFlag;
+	}
+	
+	/**
+	 * @param activeFlag the activeFlag to set
+	 */
 	public void setActiveFlag(Integer activeFlag) {
 		this.activeFlag = activeFlag;
 	}

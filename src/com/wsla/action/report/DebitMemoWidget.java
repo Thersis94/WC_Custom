@@ -65,7 +65,8 @@ public class DebitMemoWidget extends SBActionAdapter {
 			String oemId = req.getParameter("oemId");
 			String retailerId = req.getParameter("retailerId");
 			String complete = req.getParameter("complete");
-			setModuleData(getDebitMemos(new BSTableControlVO(req, DebitMemoVO.class), oemId, retailerId, complete));
+			String dmType = req.getParameter("dmType");
+			setModuleData(getDebitMemos(new BSTableControlVO(req, DebitMemoVO.class), oemId, retailerId, complete, dmType));
 		}
 	}
 	
@@ -102,7 +103,7 @@ public class DebitMemoWidget extends SBActionAdapter {
 		
 		StringBuilder sql = new StringBuilder(376);
 		sql.append("select d.value_txt as file_path_url, c.ticket_no, a.* ");
-		sql.append("from wsla_credit_memo a ");
+		sql.append("from ").append(getCustomSchema()).append("wsla_credit_memo a ");
 		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema());
 		sql.append("wsla_ticket_ref_rep b on a.ticket_ref_rep_id = b.ticket_ref_rep_id ");
 		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema());
@@ -121,36 +122,34 @@ public class DebitMemoWidget extends SBActionAdapter {
 	 * @param bst
 	 * @return
 	 */
-	public GridDataVO<DebitMemoVO> getDebitMemos(BSTableControlVO bst, String oemId, String retId, String complete) {
+	public GridDataVO<DebitMemoVO> getDebitMemos(BSTableControlVO bst, String oemId, String retId, String complete, String dmType) {
 		List<Object> params = new ArrayList<>();
 		if (! StringUtil.isEmpty(bst.getSearch())) bst.setSearch(bst.getSearch().toLowerCase());
 		
 		StringBuilder sql = new StringBuilder(896);
-		sql.append("select retailer_nm, provider_nm as oem_nm, cm.*, dm.* from ");
+		sql.append("select coalesce(first_nm || ' ' || last_nm, r.provider_nm) as retailer_nm, ");
+		sql.append("o.provider_nm as oem_nm, dm.* from ");
 		sql.append(getCustomSchema()).append("wsla_debit_memo dm ");
-		sql.append(DBUtil.INNER_JOIN).append(" ( select debit_memo_id, ");
-		sql.append("sum(a.refund_amount_no) as total_credit_memo, ");
-		sql.append("count(*) as credit_memo_no, oem_id, retailer_id ");
-		sql.append("from ").append(getCustomSchema()).append("wsla_credit_memo a ");
 		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema());
-		sql.append("wsla_ticket_ref_rep b on a.ticket_ref_rep_id = b.ticket_ref_rep_id ");
-		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema());
-		sql.append("wsla_ticket c on b.ticket_id = c.ticket_id ");
-		sql.append("group by debit_memo_id, oem_id, retailer_id ");
-		sql.append(") as cm on dm.debit_memo_id = cm.debit_memo_id ");
-		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema());
-		sql.append("wsla_provider p on cm.oem_id = p.provider_id ");
-		sql.append(DBUtil.INNER_JOIN).append("( select location_id, ");
-		sql.append("provider_nm as retailer_nm from ");
-		sql.append(getCustomSchema()).append("wsla_provider a ");
-		sql.append(DBUtil.INNER_JOIN).append(getCustomSchema());
-		sql.append("wsla_provider_location b on a.provider_id = b.provider_id ");
-		sql.append(") as r on cm.retailer_id = r.location_id where 1=1 ");
+		sql.append("wsla_provider o on dm.oem_id = o.provider_id ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(getCustomSchema());
+		sql.append("wsla_provider r on dm.retail_id = r.provider_id ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(getCustomSchema());
+		sql.append("wsla_user u on dm.user_id = u.user_id ");
 		
+		sql.append("where debit_memo_id != 'LEGACY_DEBIT_MEMO' ");
 		// Add the oem Filter
 		if (! StringUtil.isEmpty(oemId)) {
 			params.add(oemId);
 			sql.append("and dm.oem_id = ? ");
+		}
+		
+		// Add the debit memo type Filter
+		if (! StringUtil.isEmpty(dmType)) {
+			if ("user".equalsIgnoreCase(dmType))
+				sql.append("and dm.user_id is not null ");
+			if ("retailer".equalsIgnoreCase(dmType))
+				sql.append("and dm.user_id is null ");
 		}
 		
 		// Add the Retailer Filter

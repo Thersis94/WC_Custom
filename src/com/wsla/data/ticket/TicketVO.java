@@ -61,6 +61,19 @@ public class TicketVO extends BeanDataVO {
 	public enum UnitLocation {
 		CALLER, OEM, RETAILER, COURIER, WSLA, DECOMMISSIONED, CAS;
 	}
+	
+	/**
+	 * Definition of the profeco status
+	 */
+	public enum ProfecoStatus {
+		NO_PROFECO, IN_PROFECO, PROFECO_COMPLETE;
+	}
+	
+	public enum TicketType {
+		 REFUND, ACC_MISSNG, ACC_DEFECT, HARVEST, REFURBISH, REC_FAIL_1, REC_FAIL_2,
+		 CONFIG, ACC_SALE, PART_SALE, PART_DISTY, RTV, PRO, REC_TV, ENCUESTA,
+		 VISITA_TDA, WSLAREFUND, INFO, SHIP_CLAIM;
+	}
 		
 	// String Member Variables
 	private String ticketId;
@@ -72,6 +85,7 @@ public class TicketVO extends BeanDataVO {
 	private String productSerialId;
 	private String lockedBy;
 	private String lockedByName;
+	private String ticketTypeCode;
 	private StatusCode statusCode;
 	private String phoneNumber;
 	private int historicalFlag;
@@ -89,13 +103,17 @@ public class TicketVO extends BeanDataVO {
 	// Enum Members
 	private Standing standingCode = Standing.GOOD;
 	private UnitLocation unitLocation;
+	private ProfecoStatus profecoStatus = ProfecoStatus.NO_PROFECO;
 
 	// Helper Variables
 	private String retailerId;
 	private String oemId;
-	private String userId;
+	private String originatorUserId;
 	private String statusName;
+	private String casName;
+	private String casLocation;
 	private boolean ticketLocked;
+	private long statusAge;
 
 	// Bean Sub-Element
 	private List<TicketDataVO> ticketData = new ArrayList<>(32);
@@ -156,7 +174,7 @@ public class TicketVO extends BeanDataVO {
 			}
 		}
 	}
-
+	
 	/**
 	 * Assigns any request parameters with the appropriate attribute prefix
 	 * to the ticket attribute collection.  Note, on new ticket create, the ticketId 
@@ -185,12 +203,27 @@ public class TicketVO extends BeanDataVO {
 	 * @return
 	 */
 	public TicketAssignmentVO getCas() {
-
+		if(assignments == null ) return new TicketAssignmentVO();
+		
 		for (TicketAssignmentVO ta : assignments) {
 			if (TicketAssignmentVO.TypeCode.CAS.equals(ta.getTypeCode())) return ta;
 		}
 
 		return new TicketAssignmentVO();
+	}
+	
+	/**
+	 * Helper method to return the assigned CALLER
+	 * @return
+	 */
+	public UserVO getCaller() {
+        if(assignments == null ) return new UserVO();
+        
+		for (TicketAssignmentVO ta : assignments) {
+			if (TicketAssignmentVO.TypeCode.CALLER.equals(ta.getTypeCode())) return ta.getUser();
+		}
+
+		return new UserVO();
 	}
 
 	/**
@@ -213,7 +246,9 @@ public class TicketVO extends BeanDataVO {
 	 */
 	public Map<String, TicketDataVO> getTicketDataMap() {
 		Map<String, TicketDataVO> data = new HashMap<>();
+		if(ticketData == null)return data;
 		for (TicketDataVO td : ticketData) data.put(td.getAttributeCode(), td);
+		
 		return data;
 	}
 
@@ -223,6 +258,7 @@ public class TicketVO extends BeanDataVO {
 	 */
 	public Map<String, TicketDataVO> getLatestDataMap() {
 		Map<String, TicketDataVO> data = new HashMap<>();
+		
 		for (TicketDataVO td : getTicketData()) {
 			if (data.containsKey(td.getAttributeCode())) {
 				if(data.get(td.getAttributeCode()).getCreateDate().before(td.getCreateDate())) {
@@ -332,6 +368,7 @@ public class TicketVO extends BeanDataVO {
 	 * @return the data
 	 */
 	public List<TicketDataVO> getTicketData() {
+		if(ticketData == null) return new ArrayList<>() ;
 		return ticketData;
 	}
 
@@ -402,8 +439,8 @@ public class TicketVO extends BeanDataVO {
 	 * @return the userId
 	 */
 	@Column(name="originator_user_id")
-	public String getUserId() {
-		return userId;
+	public String getOriginatorUserId() {
+		return originatorUserId;
 	}
 
 	/**
@@ -514,6 +551,15 @@ public class TicketVO extends BeanDataVO {
 	 */
 	public StatusCodeVO getStatus() {
 		return status;
+	}
+
+	/**
+	 * @return the profecoStatus
+	 */
+	@Column(name="profeco_status_cd")
+	public ProfecoStatus getProfecoStatus() {
+		if (profecoStatus == null) return ProfecoStatus.NO_PROFECO;
+		return profecoStatus;
 	}
 
 	/**
@@ -724,8 +770,8 @@ public class TicketVO extends BeanDataVO {
 	/**
 	 * @param userId the userId to set
 	 */
-	public void setUserId(String userId) {
-		this.userId = userId;
+	public void setOriginatorUserId(String originatorUserId) {
+		this.originatorUserId = originatorUserId;
 	}
 
 	/**
@@ -865,5 +911,79 @@ public class TicketVO extends BeanDataVO {
 	 */
 	public void setPhoneNumber(String phoneNumber) {
 		this.phoneNumber = phoneNumber;
+	}
+
+	/**
+	 * @return the statusAge
+	 */
+	@Column(name="status_age_no", isReadOnly=true)
+	public long getStatusAge() {
+		return statusAge;
+	}
+
+	/**
+	 * @param statusAge the statusAge to set
+	 */
+	public void setStatusAge(long statusAge) {
+		this.statusAge = statusAge;
+	}
+
+	/**
+	 * @return the casName
+	 */
+	@Column(name="cas_nm", isReadOnly=true)
+	public String getCasName() {
+		return casName;
+	}
+
+	/**
+	 * @return the casLocation
+	 */
+	@Column(name="cas_loc_nm", isReadOnly=true)
+	public String getCasLocation() {
+		return casLocation;
+	}
+
+	/**
+	 * @param casName the casName to set
+	 */
+	public void setCasName(String casName) {
+		this.casName = casName;
+	}
+
+	/**
+	 * @param casLocation the casLocation to set
+	 */
+	public void setCasLocation(String casLocation) {
+		this.casLocation = casLocation;
+	}
+
+	/**
+	 * @param ticketLocked the ticketLocked to set
+	 */
+	public void setTicketLocked(boolean ticketLocked) {
+		this.ticketLocked = ticketLocked;
+	}
+
+	/**
+	 * @param profecoStatus the profecoStatus to set
+	 */
+	public void setProfecoStatus(ProfecoStatus profecoStatus) {
+		this.profecoStatus = profecoStatus;
+	}
+
+	/**
+	 * @return
+	 */
+	@Column(name="ticket_type_cd")
+	public String getTicketTypeCode() {
+		return ticketTypeCode;
+	}
+
+	/**
+	 * @param ticketTypeCode
+	 */
+	public void setTicketTypeCode(String ticketTypeCode) {
+		this.ticketTypeCode = ticketTypeCode;
 	}
 }

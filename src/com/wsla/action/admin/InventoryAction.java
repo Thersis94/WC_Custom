@@ -183,8 +183,8 @@ public class InventoryAction extends SBActionAdapter {
 		String schema = getCustomSchema();
 		List<Object> params = new ArrayList<>();
 		StringBuilder sql = new StringBuilder(200);
-		sql.append("select lim.item_master_Id, lim.actual_qnty_no, lim.desired_qnty_no, pm.product_nm, ");
-		sql.append("pm.product_id, pm.cust_product_id, lcn.location_id, lcn.location_nm, p.provider_nm ");
+		sql.append("select lim.item_master_Id, lim.location_txt, lim.actual_qnty_no, lim.desired_qnty_no, pm.product_nm, ");
+		sql.append("pm.product_id, pm.cust_product_id, pm.sec_cust_product_id, lcn.location_id, lcn.location_nm, p.provider_nm ");
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("wsla_location_item_master lim ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("wsla_product_master pm on lim.product_id=pm.product_id ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("wsla_provider_location lcn on lim.location_id=lcn.location_id ");
@@ -195,7 +195,8 @@ public class InventoryAction extends SBActionAdapter {
 		//fuzzy keyword search
 		String term = bst.getLikeSearch().toLowerCase();
 		if (!StringUtil.isEmpty(term)) {
-			sql.append("and (lower(p.provider_nm) like ? or lower(lcn.location_nm) like ? or lower(pm.product_nm) like ?) ");
+			sql.append("and (lower(p.provider_nm) like ? or lower(lcn.location_nm) like ? or lower(pm.product_nm) like ? or lower(pm.cust_product_id) like ? ) ");
+			params.add(term);
 			params.add(term);
 			params.add(term);
 			params.add(term);
@@ -210,7 +211,7 @@ public class InventoryAction extends SBActionAdapter {
 			orderBy = "order by p.provider_nm, lcn.location_nm, pm.product_nm";
 
 		sql.append(orderBy);
-		log.debug(sql);
+		log.debug(sql+ "|" + params);
 
 		DBProcessor db = new DBProcessor(getDBConnection(), schema);
 		return db.executeSQLWithCount(sql.toString(), params, new LocationItemMasterVO(), bst);

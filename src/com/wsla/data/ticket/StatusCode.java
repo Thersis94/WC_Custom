@@ -37,6 +37,7 @@ public enum StatusCode {
 	CAS_PARTS_ORDERED ("CAS Ordered PARTS"),
 	PARTS_SHIPPED_CAS ("Parts Shipped to CAS"),
 	PARTS_RCVD_CAS ("Parts Received by CAS"),
+	CC_CONFIG ("A technical review must occure at the call center before sending to cas"),
 	CAS_IN_REPAIR ("In Repair by CAS"),
 	CAS_REPAIR_COMPLETE ("CAS Repair Complete"),
 	PENDING_UNIT_RETURN ("Pending Equipment Return"),

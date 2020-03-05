@@ -3,15 +3,23 @@ package com.mts.subscriber.action;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
-import com.mts.subscriber.data.SubscriptionUserVO;
 import com.siliconmtn.action.ActionInitVO;
+import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.db.util.DatabaseException;
+import com.siliconmtn.security.UserDataVO;
 import com.smt.sitebuilder.action.SBActionAdapter;
+import com.smt.sitebuilder.common.constants.Constants;
+
+//WC Custom
+import com.mts.subscriber.data.MTSUserVO;
+import com.mts.subscriber.data.SubscriptionUserVO;
 
 /****************************************************************************
  * <b>Title</b>: SubscriptionAction.java
@@ -34,16 +42,17 @@ public class SubscriptionAction extends SBActionAdapter {
 		USER("End User"),
 		CORPORATE("Corporate Account"),
 		IP("IP Address"),
-		MULTIPLE("Multi-User Account");
-		
+		MULTIPLE("Multi-User Account"),
+		SSO("Single Sign-on");
+
 		private String typeName;
 		SubscriptionType(String typeName) {  
 			this.typeName = typeName;
 		}
-		
+
 		public String getTypeName() {	return typeName; }
 	}
-	
+
 	/**
 	 * 
 	 */
@@ -57,7 +66,7 @@ public class SubscriptionAction extends SBActionAdapter {
 	public SubscriptionAction(ActionInitVO actionInit) {
 		super(actionInit);
 	}
-	
+
 	/**
 	 * 
 	 * @param dbConn
@@ -76,9 +85,9 @@ public class SubscriptionAction extends SBActionAdapter {
 	 * @throws DatabaseException
 	 */
 	public void assignSubscriptions(String userId, List<String> publications) 
-	throws DatabaseException {
+			throws DatabaseException {
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
-		
+
 		// Create the new list of subscriptions
 		List<SubscriptionUserVO> subs = new ArrayList<>();
 		for (String publicationId : publications) {
@@ -87,7 +96,7 @@ public class SubscriptionAction extends SBActionAdapter {
 			suvo.setPublicationId(publicationId);
 			subs.add(suvo);			
 		}
-		
+
 		// Delete the existing subscriptions and add the new set
 		try {
 			deleteSubscriptions(userId);
@@ -96,7 +105,7 @@ public class SubscriptionAction extends SBActionAdapter {
 			throw new DatabaseException("Unable to update subscriptions", e);
 		}
 	}
-	
+
 	/**
 	 * Deletes the existing subscriptions for a user
 	 * @param userId
@@ -107,10 +116,48 @@ public class SubscriptionAction extends SBActionAdapter {
 		s.append("delete from ").append(getCustomSchema());
 		s.append("mts_subscription_publication_xr ");
 		s.append("where user_id = ?");
-		
+
 		try (PreparedStatement ps = dbConn.prepareStatement(s.toString())) {
 			ps.setString(1, userId);
 			ps.execute();
+		}
+	}
+
+
+	/**
+	 * Gets the extended user and subscriber info.  Called from the login modules.
+	 * @param authUser
+	 */
+	public void loadSubscriptions(UserDataVO authUser) {
+		String schema = (String) getAttribute(Constants.CUSTOM_DB_SCHEMA);
+		List<Object> vals = Arrays.asList(authUser.getProfileId());
+
+		// Build the sql
+		StringBuilder sql = new StringBuilder(128);
+		sql.append(DBUtil.SELECT_FROM_STAR).append(schema).append("mts_user a "); 
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema);
+		sql.append("mts_subscription_publication_xr b on a.user_id=b.user_id ");
+		sql.append("where a.profile_id=? and a.active_flg=1");
+		log.debug(sql.length() + "|" + sql + "|" + vals);
+
+		// Get the user extended info and assign it to the user object 
+		DBProcessor db = new DBProcessor(dbConn, schema);
+		List<MTSUserVO> userPubs = db.executeSelect(sql.toString(), vals, new MTSUserVO());
+		MTSUserVO user = (!userPubs.isEmpty()) ? userPubs.get(0) : new MTSUserVO();
+		
+		// If the user is an author or admin assign.  Otherwise only assign
+		// if expiration date is in the future
+		if (user.getActiveFlag() == 0) return;
+		if ("100".equals(user.getRoleId()) || "AUTHOR".equals(user.getRoleId()))
+			authUser.setUserExtendedInfo(user);
+		else {
+			Date now = new Date();
+			for (SubscriptionUserVO vo : user.getSubscriptions()) {
+				if (now.before(vo.getExpirationDate())) {
+					authUser.setUserExtendedInfo(user);
+					break;
+				}
+			}
 		}
 	}
 }

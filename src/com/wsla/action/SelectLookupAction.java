@@ -69,11 +69,13 @@ import com.wsla.data.provider.ProviderPhoneVO;
 import com.wsla.data.provider.ProviderType;
 import com.wsla.data.ticket.BillableActivityVO;
 import com.wsla.data.ticket.BillableActivityVO.BillableTypeCode;
+import com.wsla.data.ticket.ShipmentVO;
 import com.wsla.data.ticket.StatusCode;
 import com.wsla.data.ticket.StatusCodeVO;
 import com.wsla.data.ticket.TicketAssignmentVO;
 import com.wsla.data.ticket.TicketAssignmentVO.TypeCode;
 import com.wsla.data.ticket.TicketScheduleVO;
+import com.wsla.data.ticket.TicketVO;
 import com.wsla.data.ticket.TicketVO.Standing;
 import com.wsla.data.ticket.UserVO;
 
@@ -152,6 +154,10 @@ public class SelectLookupAction extends SBActionAdapter {
 		keyMap.put("refRepDispostionType", new GenericVO("getRefRepDispostionType", Boolean.TRUE));
 		keyMap.put("standing", new GenericVO("getStanding", Boolean.TRUE));
 		keyMap.put("acShipLocation", new GenericVO("getAcShippingLocation", Boolean.TRUE));
+		keyMap.put("surveyResults", new GenericVO("getSurveyResults", Boolean.TRUE));
+		keyMap.put("shipmentInvoiceTypes", new GenericVO("getShipmentInvoiceTypes", Boolean.TRUE));
+		keyMap.put("ticketType", new GenericVO("getTicketTypes", Boolean.TRUE));
+		keyMap.put("profeco", new GenericVO("getProfecoList", Boolean.TRUE));
 	}
 
 	/**
@@ -445,11 +451,13 @@ public class SelectLookupAction extends SBActionAdapter {
 	 */
 	public List<GenericVO> getRetailerACList(ActionRequest req) {
 		StringBuilder term = new StringBuilder(32);
-		String[] terms = StringUtil.checkVal(req.getParameter(REQ_SEARCH)).split(" ");
+		String[] terms = StringUtil.checkVal(req.getParameter(REQ_SEARCH)).replaceAll("[^\\w\\s]+", "").split(" ");
 		for (int i=0; i < terms.length; i++) {
-			if (i > 0) term.append(" & ");
-			term.append(terms[i]).append(":*");
+			if (i > 0 && terms[i].length() > 0 ) term.append(" & ");
+			
+			if (terms[i].length() > 0 )term.append(terms[i]).append(":*");
 		}
+
 		log.debug("Search Term: " + term);
 
 		StringBuilder sql = new StringBuilder(512);
@@ -522,12 +530,12 @@ public class SelectLookupAction extends SBActionAdapter {
 		if("harvestCas".equalsIgnoreCase(req.getStringParameter(SELECT_KEY))) {
 			sql.append("and b.location_id in (select location_id from ").append(getCustomSchema());
 			sql.append("wsla_ticket_assignment where assg_type_cd = 'CAS' and ticket_id in ");
-			sql.append("( SELECT ticket_id FROM ").append(getCustomSchema()).append("wsla_ticket where status_cd = 'HARVEST_APPROVED' )");
-			sql.append("order by ticket_id, location_id asc ) ");
+			sql.append("( SELECT ticket_id FROM ").append(getCustomSchema());
+			sql.append("wsla_ticket_data where attribute_cd = 'attr_harvest_status' and value_txt = 'HARVEST_APPROVED') ");
 		}
 
-		sql.append("order by provider_nm");
-		log.debug(" sql " + sql +"|" + vals);
+		sql.append(") order by provider_nm");
+		log.info(" sql " + sql +"|" + vals);
 
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		List<GenericVO> data = db.executeSelect(sql.toString(), vals, new GenericVO());
@@ -575,13 +583,14 @@ public class SelectLookupAction extends SBActionAdapter {
 		String ticketId = req.getParameter(TicketEditAction.TICKET_ID);
 		if (!StringUtil.isEmpty(ticketId)) {
 			sql.append(DBUtil.UNION);
-			sql.append(DBUtil.SELECT_CLAUSE).append("user_id as key, first_nm || ' ' || last_nm ");
-			sql.append("|| ' - ' || coalesce(city_nm, '') || ', ' || coalesce(state_cd, '') as value");
+			sql.append(DBUtil.SELECT_CLAUSE).append("ta.user_id as key, first_nm || ' ' || last_nm ");
+			sql.append("|| ' - ' || coalesce(city_nm, '') || ', ' || coalesce(state_cd, '') as value ");
 			sql.append(DBUtil.FROM_CLAUSE).append(schema).append("wsla_ticket t");
-			sql.append(DBUtil.INNER_JOIN).append(schema).append("wsla_user u on t.originator_user_id = u.user_id");
-			sql.append(DBUtil.INNER_JOIN).append("profile_address pa on u.profile_id = pa.profile_id");
-			sql.append(DBUtil.WHERE_CLAUSE).append("(lower(first_nm || ' ' || last_nm) like ? or lower(city_nm) like ?)");
-			sql.append("and ticket_id = ? ");
+			sql.append(DBUtil.INNER_JOIN).append(schema).append("wsla_ticket_assignment ta on t.ticket_id = ta.ticket_id and ta.assg_type_cd = 'CALLER' ");
+			sql.append(DBUtil.INNER_JOIN).append(schema).append("wsla_user u on ta.user_id = u.user_id ");
+			sql.append(DBUtil.LEFT_OUTER_JOIN).append("profile_address pa on u.profile_id = pa.profile_id ");
+			sql.append(DBUtil.WHERE_CLAUSE).append("(lower(first_nm || ' ' || last_nm) like ? or lower(city_nm) like ?) ");
+			sql.append("and t.ticket_id = ? ");
 			vals.add(term);
 			vals.add(term);
 			vals.add(ticketId);
@@ -714,11 +723,12 @@ public class SelectLookupAction extends SBActionAdapter {
 		bst.setOffset(0);
 		String providerId = req.getParameter(REQ_PROVIDER_ID);
 		Integer setFlag = req.getIntegerParameter("setFlag");
-		GridDataVO<ProductVO> products = ai.getProducts(null, providerId, setFlag, null, bst);
+		GridDataVO<ProductVO> products = ai.getProducts(null, providerId, setFlag, 1, bst);
 
 		List<GenericVO> data = new ArrayList<>(products.getTotal());
 		for (ProductVO product : products.getRowData()) {
-			data.add(new GenericVO(product.getProductId(), product.getProductName()	));
+			String name = product.getCustomerProductId() + " : " + product.getProductName();
+			data.add(new GenericVO(product.getProductId(), name	));
 		}
 
 		return data;
@@ -805,6 +815,36 @@ public class SelectLookupAction extends SBActionAdapter {
 		return new ProductCategoryAction(getAttributes(), getDBConnection()).getGroupList();
 	}
 
+	
+	/**
+	 * Return a distinct list of shipment invoice codes values from an enum in the shipment vo
+	 * @return
+	 */
+	public List<GenericVO> getShipmentInvoiceTypes(ActionRequest req) {
+		ResourceBundle bundle = new BasePortalAction().getResourceBundle(req);
+
+		List<GenericVO> data = new ArrayList<>();
+		for (ShipmentVO.ShipmentInvoiceType type : ShipmentVO.ShipmentInvoiceType.values()) {
+			data.add(new GenericVO(type.getCodeValue(), bundle.getString("wsla.ticket.schedule.invoice." + type.getCodeValue())));
+		}
+		
+		return data;
+	}
+	
+	/**
+	 * Return a distinct list of ticket type codes from an enum in the ticket vo
+	 * @return
+	 */
+	public List<GenericVO> getTicketTypes(ActionRequest req) {
+		ResourceBundle bundle = new BasePortalAction().getResourceBundle(req);
+
+		List<GenericVO> data = new ArrayList<>();
+		for (TicketVO.TicketType type : TicketVO.TicketType.values()) {
+			data.add(new GenericVO(type.name(), bundle.getString("wsla.ticket.type.code." + type.name())));
+		}
+		
+		return data;
+	}
 
 	/**
 	 * Return a list of ticket assignments for the given ticket
@@ -836,7 +876,8 @@ public class SelectLookupAction extends SBActionAdapter {
 	 */
 	public List<GenericVO> getTickets(ActionRequest req) {
 		TicketListAction tla = new TicketListAction(getAttributes(), getDBConnection());
-		return tla.getTickets(EnumUtil.safeValueOf(StatusCode.class, req.getParameter("statusCode")));
+		String search = StringUtil.checkVal(req.getParameter("search"));
+		return tla.getTickets(EnumUtil.safeValueOf(StatusCode.class, req.getParameter("statusCode")), search );
 	}
 
 
@@ -905,7 +946,7 @@ public class SelectLookupAction extends SBActionAdapter {
 
 		List<GenericVO> products = new ArrayList<>(data.getRowData().size());
 		for (LocationItemMasterVO lim : data.getRowData()) {
-			products.add(new GenericVO(lim.getProductId(), lim.getProductName()));
+			products.add(new GenericVO(lim.getProductId(), lim.getProductName() + " : " + lim.getCustomerProductId()));
 		}
 
 
@@ -936,13 +977,14 @@ public class SelectLookupAction extends SBActionAdapter {
 	 */
 	public List<GenericVO> getBillableCodes(ActionRequest req) {
 		String btc = req.getParameter("billableTypeCode");
+		String bac = req.getParameter("billableActivityCode");
 		boolean isMisc = req.getBooleanParameter("isMiscActivites");
 		BSTableControlVO bst = new BSTableControlVO(req, BillableActivityVO.class);
 		bst.setLimit(1000);
-
+		
 		// Get the codes
 		BillableActivityAction ba = new BillableActivityAction(dbConn, attributes);
-		GridDataVO<BillableActivityVO> codes = ba.getCodes(btc, isMisc, bst);
+		GridDataVO<BillableActivityVO> codes = ba.getCodes(btc, isMisc, bac, bst);
 		List<GenericVO> data = new ArrayList<>();
 
 		// Loop the codes and convert to Generic
@@ -1037,5 +1079,25 @@ public class SelectLookupAction extends SBActionAdapter {
 		Collections.sort(data, (a, b) -> ((String)a.getValue()).compareTo(((String)b.getValue())));
 
 		return data;
+	}
+	
+	/**
+	 * Gets the questions and responses for the survey
+	 * @param req - Need "fsi" req parameter
+	 * @return
+	 */
+	public List<GenericVO> getSurveyResults(ActionRequest req) {
+		String fsi = req.getParameter("fsi");
+		StringBuilder sql = new StringBuilder(384);
+		sql.append("select b.field_label_nm as key, d.label_txt as value ");
+		sql.append("from form_data a ");
+		sql.append("inner join form_field b on a.form_field_group_id = b.form_field_group_id ");
+		sql.append("left outer join form_field_attr c on b.form_field_id = c.form_field_id and attr_key = 'srcList' ");
+		sql.append("left outer join list_data d on c.attr_val = d.list_id and a.value_txt = d.value_txt ");
+		sql.append("where form_submittal_id = ? order by a.value_txt");
+		log.debug(sql.length() + "|" + sql + "|" + fsi);
+		
+		DBProcessor db = new DBProcessor(getDBConnection());
+		return db.executeSelect(sql.toString(), Arrays.asList(fsi), new GenericVO());
 	}
 }
