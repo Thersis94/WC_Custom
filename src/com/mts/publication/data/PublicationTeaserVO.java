@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.mts.common.MTSConstants;
 // SMT Base Libs
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.parser.BeanDataVO;
@@ -32,7 +33,6 @@ import com.smt.sitebuilder.action.metadata.WidgetMetadataVO;
  * @updates:
  ****************************************************************************/
 public class PublicationTeaserVO extends BeanDataVO {
-
 	/**
 	 * 
 	 */
@@ -81,6 +81,14 @@ public class PublicationTeaserVO extends BeanDataVO {
 	}
 	
 	/**
+	 * Returns the link for the publication
+	 * @return
+	 */
+	public String getSubscribeLink() {
+		return MTSConstants.SUBSCRIBE_LINKS.get(StringUtil.checkVal(publication.getPublicationId()).toUpperCase());
+	}
+	
+	/**
 	 * Gets the featured article randomly.  Shuffles the list of documents 
 	 * and grabs the first one
 	 * @return
@@ -117,6 +125,7 @@ public class PublicationTeaserVO extends BeanDataVO {
 		int num = (documents.size() - 1 < NUM_TEASER_ARTICLES) ? documents.size() - 1 : NUM_TEASER_ARTICLES;
 		List<MTSDocumentVO> teasers = new ArrayList<>(num);
 		Set<String> ids = new HashSet<>(num);
+		
 		for (MTSDocumentVO doc : documents) {
 			// Do not use the featured article in the teasers
 			if (featuredArticleId.equals(doc.getDocumentId())) continue;
