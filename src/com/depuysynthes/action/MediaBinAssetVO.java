@@ -288,6 +288,14 @@ public class MediaBinAssetVO extends SBModuleVO {
 	public void setDownloadTypeTxt(String downloadTypeTxt) {
 		this.downloadTypeTxt = downloadTypeTxt;
 	}
+	
+	/**
+	 * added for EOS (Excel) feeds...which is where we set downloadTypeTxt=[Internal|External]
+	 * @return
+	 */
+	public boolean isInternal() {
+		return !"External".equals(getDownloadTypeTxt());
+	}
 
 
 	/**

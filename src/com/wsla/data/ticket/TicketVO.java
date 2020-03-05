@@ -68,6 +68,12 @@ public class TicketVO extends BeanDataVO {
 	public enum ProfecoStatus {
 		NO_PROFECO, IN_PROFECO, PROFECO_COMPLETE;
 	}
+	
+	public enum TicketType {
+		 REFUND, ACC_MISSNG, ACC_DEFECT, HARVEST, REFURBISH, REC_FAIL_1, REC_FAIL_2,
+		 CONFIG, ACC_SALE, PART_SALE, PART_DISTY, RTV, PRO, REC_TV, ENCUESTA,
+		 VISITA_TDA, WSLAREFUND, INFO, SHIP_CLAIM;
+	}
 		
 	// String Member Variables
 	private String ticketId;
@@ -79,6 +85,7 @@ public class TicketVO extends BeanDataVO {
 	private String productSerialId;
 	private String lockedBy;
 	private String lockedByName;
+	private String ticketTypeCode;
 	private StatusCode statusCode;
 	private String phoneNumber;
 	private int historicalFlag;
@@ -963,5 +970,20 @@ public class TicketVO extends BeanDataVO {
 	 */
 	public void setProfecoStatus(ProfecoStatus profecoStatus) {
 		this.profecoStatus = profecoStatus;
+	}
+
+	/**
+	 * @return
+	 */
+	@Column(name="ticket_type_cd")
+	public String getTicketTypeCode() {
+		return ticketTypeCode;
+	}
+
+	/**
+	 * @param ticketTypeCode
+	 */
+	public void setTicketTypeCode(String ticketTypeCode) {
+		this.ticketTypeCode = ticketTypeCode;
 	}
 }

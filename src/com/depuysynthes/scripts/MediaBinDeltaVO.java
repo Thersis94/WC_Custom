@@ -2,13 +2,14 @@ package com.depuysynthes.scripts;
 
 import java.sql.ResultSet;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Set;
 
 import com.depuysynthes.action.MediaBinAssetVO;
-import com.depuysynthes.scripts.showpad.ShowpadTagVO;
 import com.siliconmtn.db.DBUtil;
+import com.siliconmtn.util.StringUtil;
 
 import net.sf.json.JSONObject;
 
@@ -39,7 +40,7 @@ public class MediaBinDeltaVO extends MediaBinAssetVO {
 	 */
 	private Date productUpdateDt;
 
-	private List<ShowpadTagVO> tags;
+	private List<String> tags;
 
 	//added for Showpad support; all the other fields are reuseable
 	private String showpadId;
@@ -122,20 +123,13 @@ public class MediaBinDeltaVO extends MediaBinAssetVO {
 		this.showpadId = showpadId;
 	}
 
-	public List<ShowpadTagVO> getTags() {
+	public List<String> getDesiredTags() {
 		return tags;
 	}
 
-	public void setTags(List<ShowpadTagVO> tags) {
-		this.tags = tags;
-	}
-
-	public void addTag(ShowpadTagVO tag) {
-		tags.add(tag);
-	}
-
-	public void addTag(String id, String name, String division, String externalId) {
-		tags.add(new ShowpadTagVO(id, name, division, externalId));
+	public void addDesiredTag(String tag) {
+		if (!StringUtil.isEmpty(tag))
+			tags.addAll(Arrays.asList(tag.split(DSMediaBinImporterV2.TOKENIZER)));
 	}
 
 	public Date getProductUpdateDt() {
