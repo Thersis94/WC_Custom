@@ -30,6 +30,7 @@ import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
+import com.siliconmtn.util.UUIDGenerator;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SMTAbstractIndex;
 import com.smt.sitebuilder.security.SecurityController;
@@ -183,7 +184,8 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 			ps.setString(1, Status.P.toString());
 			ps.setString(2, Status.E.toString());
 			ps.setString(3, Status.P.toString());
-			if (id != null) ps.setString(4, id);
+			ps.setString(4, Status.P.toString());
+			if (id != null) ps.setString(5, id);
 
 			ResultSet rs = ps.executeQuery();
 			String currentCompany = "";
@@ -307,6 +309,9 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 				addAcl(sectionId, hierarchies, p);
 			}
 
+			if (p != null)
+				addAllProducts(p, acls);
+
 		} catch (SQLException e) {
 			log.error(e);
 		}
@@ -320,9 +325,9 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 	 */
 	private void addAllProducts(ProductVO p, Map<String, List<ProductVO>> acls) {
 		if (p == null) return;
-		addProduct(p, DOCUMENT_PREFIX + p.getCompanyId(), acls);
+		addProduct(p, p.getCompanyId(), acls);
 		for (ProductAllianceVO a : p.getAlliances())
-			addProduct(p, DOCUMENT_PREFIX + a.getAllyId(), acls);
+			addProduct(p, a.getAllyId(), acls);
 	}
 
 	/**
@@ -332,6 +337,9 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 	 * @param products
 	 */
 	private void addProduct(ProductVO p, String companyId, Map<String, List<ProductVO>> products) {
+		if (!UUIDGenerator.isUUID(companyId))
+			companyId = DOCUMENT_PREFIX + companyId;
+
 		if (!products.containsKey(companyId))
 			products.put(companyId, new ArrayList<>());
 
@@ -525,14 +533,19 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 	 * @return
 	 */
 	private String buildRetrieveSql(String id) {
-		StringBuilder sql = new StringBuilder(1250);
+		StringBuilder sql = new StringBuilder(1350);
 		String customDb = config.getProperty(Constants.CUSTOM_DB_SCHEMA);
 		sql.append("SELECT c.COMPANY_ID, a.SECTION_ID, c.COMPANY_NM, c.stock_abbr_txt, c.PUBLIC_FLG, c.SHORT_NM_TXT, ");
 		sql.append("c2.COMPANY_NM as PARENT_NM, COUNT(p.COMPANY_ID) as PRODUCT_NO, c.CREATE_DT, c.UPDATE_DT, c.alias_nm, ");
-		sql.append("case when c.status_no = ? and count(p.company_id) = 0 then ? else c.STATUS_NO end as STATUS_NO ");
+		sql.append("case when c.status_no = ? and count(p.company_id) = 0 and count(pa.company_id) = 0 then ? else ");
+		sql.append("c.STATUS_NO end as STATUS_NO ");
 		sql.append(DBUtil.FROM_CLAUSE).append(customDb).append("BIOMEDGPS_COMPANY c ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(customDb).append("BIOMEDGPS_PRODUCT p ");
 		sql.append("ON p.COMPANY_ID = c.COMPANY_ID and p.status_no = ? ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(customDb).append("BIOMEDGPS_PRODUCT_ALLIANCE_XR pxr ");
+		sql.append("ON pxr.COMPANY_ID = c.COMPANY_ID ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(customDb).append("BIOMEDGPS_PRODUCT pa ");
+		sql.append("ON pa.PRODUCT_ID = pxr.PRODUCT_ID and pa.status_no = ? ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(customDb).append("BIOMEDGPS_COMPANY_ATTRIBUTE_XR xr ");
 		sql.append("ON xr.COMPANY_ID = c.COMPANY_ID ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(customDb).append("BIOMEDGPS_COMPANY_ATTRIBUTE a ");

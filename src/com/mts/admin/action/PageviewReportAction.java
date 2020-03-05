@@ -31,7 +31,7 @@ public class PageviewReportAction extends SimpleActionAdapter {
 	 * These tie us to the ", schema, "mts_publication table.  Entries will need to be added
 	 * over time.  Ideally there continues to be correlation between publicationId and pageAlias.
 	 */
-	enum Publication {
+	public enum Publication {
 		MEDTECH_STRATEGIST,
 		MARKET_PATHWAYS,
 		BLOG

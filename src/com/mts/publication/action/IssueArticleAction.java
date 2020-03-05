@@ -213,7 +213,7 @@ public class IssueArticleAction extends SBActionAdapter {
 	 * @param pubId
 	 * @return
 	 */
-	public PublicationTeaserVO getArticleTeasers(String pubId, String catId, boolean useLatest) {
+	public PublicationTeaserVO getArticleTeasers(String pubId, String catId, int useLatest) {
 		StringBuilder sql = new StringBuilder(1088);
 		String schema = getCustomSchema();
 
@@ -233,9 +233,14 @@ public class IssueArticleAction extends SBActionAdapter {
 		sql.append("where organization_id = 'MTS' and parent_id = 'CHANNELS' ");
 		sql.append(") m on c.action_id = m.action_id ");
 
-		if (! useLatest && ! StringUtil.isEmpty(catId)) {
+		if ( useLatest == 0 ) {
+			//no use the latest ten
+			sql.append("where b.approval_flg = 1 and p.publication_id = ? ");
+		} else if  (useLatest == 2 && ! StringUtil.isEmpty(catId)){ 
+			//no use the latest 10 from category
 			sql.append("where b.approval_flg = 1 and p.publication_id = ? and widget_meta_data_id = ? ");
-		} else {
+		}else {
+			//yes, use the latest issue
 			sql.append("where issue_dt in ( ");
 			sql.append("select max(issue_dt) as latest ");
 			sql.append(DBUtil.FROM_CLAUSE).append(schema).append("mts_issue ");
@@ -243,15 +248,17 @@ public class IssueArticleAction extends SBActionAdapter {
 			sql.append("and p.publication_id = ? ");
 		}
 		sql.append("order by a.publish_dt desc, document_id limit 10");
-		log.debug(sql + "|" + pubId + "|" + catId);
+		log.debug( sql + "|" + pubId + "|" + catId);
 
 		PublicationTeaserVO ptvo = null;
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 
-			if (! useLatest && ! StringUtil.isEmpty(catId)) {
+			if (useLatest == 0 ) {
+				ps.setString(1, pubId);
+			} else if(useLatest == 2 && ! StringUtil.isEmpty(catId)){
 				ps.setString(1, pubId);
 				ps.setString(2, catId);
-			} else {
+			}else {
 				ps.setString(1, pubId);
 				ps.setString(2, pubId);
 			}

@@ -151,6 +151,9 @@ public class BiomedProductIndexer  extends SMTAbstractIndex {
 		SmarttrakTree hierarchies = createHierarchies();
 
 		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
+			// todo: ST-303 the ps statement has a number of variables equal to the number of IDs given,
+			// but this only fills the first id.  Replacing this with a while-loop would likely create
+			// the intended behavior
 			int i = 1;
 			if (ids != null && ids.length > 0) {
 				ps.setString(i++, ids[i - 2]);
