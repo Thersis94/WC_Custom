@@ -16,6 +16,7 @@ import com.rezdox.action.RewardsAction.Reward;
 import com.rezdox.action.RezDoxNotifier.Message;
 import com.rezdox.data.InvoiceReportPDF;
 import com.rezdox.data.ProjectFormProcessor;
+import com.rezdox.util.ValuationCoefficientUtil;
 import com.rezdox.vo.BusinessVO;
 import com.rezdox.vo.MemberVO;
 import com.rezdox.vo.PhotoVO;
@@ -63,18 +64,6 @@ public class ProjectAction extends SimpleActionAdapter {
 
 	protected static final String REQ_PROJECT_ID = "projectId";
 	protected static final String FILTER_DATA_LST = "filterListData";
-
-	/**
-	 * The coefficients used based on how old a project is to calculate 
-	 */
-	public enum ValuationCoefficient {
-		YEAR_2020(0.611), YEAR_2019(0.572), LESS_THEN_FOUR_YEARS(0.537), 
-		MORE_THEN_FOUR_LESS_THEN_TWENTY(0.147), MORE_THEN_TWENTY(0.00) ;
-
-		private double coefficient;
-		private ValuationCoefficient(double coefficient) { this.coefficient = coefficient; }
-		public double getCoefficient() {return coefficient; }
-	}
 
 	public ProjectAction() {
 		super();
@@ -230,34 +219,7 @@ public class ProjectAction extends SimpleActionAdapter {
 	 * @return
 	 */
 	public double calculateProjectValuation(ProjectVO pvo) {
-		//start and end dates for 2020
-		Date start2020 = Convert.formatStartDate("01/01/2020");
-		Date end2020 = Convert.formatEndDate("12/31/2020");
-		//start and end dates for 2019
-		Date start2019 = Convert.formatStartDate("01/01/2019");
-		Date end2019 = Convert.formatEndDate("12/13/2019");
-		
-		//set a calendar to 4 years ago
-		Calendar cal = Calendar.getInstance();
-		cal.add(Calendar.YEAR, -4);
-		//get the date
-		Date fourYearsAgo = cal.getTime();
-		//set the calendear to 20 years ago 
-		cal.add(Calendar.YEAR, -16);
-		//get the date
-		Date twentyYearsAgo =  cal.getTime();
-		
-		if(pvo.getEndDate().after(start2020) && pvo.getEndDate().before(end2020) ) {
-			return pvo.getInvoiceTotal() * ValuationCoefficient.YEAR_2020.getCoefficient();
-		}else if(pvo.getEndDate().after(start2019) && pvo.getEndDate().before(end2019)) {
-			return pvo.getInvoiceTotal() * ValuationCoefficient.YEAR_2019.getCoefficient();
-		}else if(pvo.getEndDate().before(start2019) && pvo.getEndDate().after(fourYearsAgo) ){
-			return pvo.getInvoiceTotal() * ValuationCoefficient.LESS_THEN_FOUR_YEARS.getCoefficient();
-		}else if(pvo.getEndDate().before(twentyYearsAgo)){
-			return pvo.getInvoiceTotal() * ValuationCoefficient.MORE_THEN_TWENTY.getCoefficient();
-		}else {
-			return pvo.getInvoiceTotal() * ValuationCoefficient.MORE_THEN_FOUR_LESS_THEN_TWENTY.getCoefficient();
-		}
+		return pvo.getInvoiceTotal() * ValuationCoefficientUtil.getValueCoefficient(pvo.getEndDate());
 	}
 
 	/**
