@@ -1,10 +1,14 @@
 package com.rezdox.util;
 
+//java 1.8
 import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.Map;
+
+//wc base lib
+import org.apache.log4j.Logger;
 
 import com.siliconmtn.util.Convert;
 
@@ -21,6 +25,8 @@ import com.siliconmtn.util.Convert;
  * @updates:
  ****************************************************************************/
 public class ValuationCoefficientUtil {
+	
+	private static final Logger log = Logger.getLogger(ValuationCoefficientUtil.class);
 	
 	private static Map<Integer, Double> yearMapping = new HashMap<>();
 	private static Date startDay;
@@ -39,21 +45,22 @@ public class ValuationCoefficientUtil {
 		public double getCoefficient() {return coefficient; }
 	}
 	
-	
-	
 	/**
 	 * included a main method to test that the right coefficient is returned
 	 * @param args
 	 */
 	public static void main(String[] args) {
-		System.out.println("Curr Year: " + getValueCoefficient(Convert.formatDate("2020-03-06")));
-		System.out.println("Last Year: " + getValueCoefficient(Convert.formatDate("2019-03-06")));
-		System.out.println("2018: " + getValueCoefficient(Convert.formatDate("2018-03-06")));
-		System.out.println("6 Years: " + getValueCoefficient(Convert.formatDate("2014-03-06")));
-		System.out.println("20 Year: " + getValueCoefficient(Convert.formatDate("1990-03-06")));
+		log.debug("Curr Year: " + getValueCoefficient(Convert.formatDate("2020-03-06")));
+		log.debug("Last Year: " + getValueCoefficient(Convert.formatDate("2019-03-06")));
+		log.debug("2018: " + getValueCoefficient(Convert.formatDate("2018-03-06")));
+		log.debug("6 Years: " + getValueCoefficient(Convert.formatDate("2014-03-06")));
+		log.debug("20 Year: " + getValueCoefficient(Convert.formatDate("1990-03-06")));
 		
 	}
 	
+	/**
+	 * loads the map and sets the end dates
+	 */
 	private static void loadMappings() {
 		Calendar c = new GregorianCalendar();
 		yearMapping.put(c.get(Calendar.YEAR), ValuationCoefficient.YEAR_2020.getCoefficient());
@@ -64,8 +71,11 @@ public class ValuationCoefficientUtil {
 		twentyYearDay = Convert.formatDate(startDay, Calendar.YEAR, -20);
 	}
 	
-	
-	
+	/**
+	 * does some short logic and returned the expected coefficient
+	 * @param projectDate
+	 * @return
+	 */
 	public static double getValueCoefficient(Date projectDate) {
 		if (yearMapping.isEmpty() || Convert.formatStartDate(startDay).after(Convert.formatStartDate(new Date()))) {
 			loadMappings();
