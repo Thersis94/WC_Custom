@@ -558,7 +558,7 @@ public class CompanyManagementAction extends ManagementAction {
 	 * @throws ActionException 
 	 */
 	private void getFilteredCompanies(ActionRequest req) throws ActionException {
-		//parse the requet object
+		//parse the request object
 		setSolrParams(req);
 
 		String solrActionId = WCConfigUtil.getActionConfig(dbConn, actionInit.getActionId()).get(COMPANY_SOLR_KEY);
@@ -575,7 +575,7 @@ public class CompanyManagementAction extends ManagementAction {
 	}
 
 	/**
-	 * Set all paramters neccesary for solr to be able to properly search for the desired documents.
+	 * Set all parameters necessary for solr to be able to properly search for the desired documents.
 	 * @param req
 	 * @param dir 
 	 * @param order
@@ -605,11 +605,11 @@ public class CompanyManagementAction extends ManagementAction {
 		//Override Status Filter on Public Side.
 		fq.add(StringUtil.join(STATUS_S, Status.P.toString()));
 		fq.add(StringUtil.join(STATUS_S, Status.E.toString()));
+		fq.add(StringUtil.join(STATUS_S, Status.I.toString()));
 		if (Convert.formatBoolean(req.getParameter("inactive"))) {
 			fq.add(StringUtil.join(STATUS_S, Status.A.toString()));
 			fq.add(StringUtil.join(STATUS_S, Status.D.toString()));
 			fq.add(StringUtil.join(STATUS_S, "C"));
-			fq.add(StringUtil.join(STATUS_S, "I"));
 		}
 
 		// If this is a request for the dashboard an author id will be provided
