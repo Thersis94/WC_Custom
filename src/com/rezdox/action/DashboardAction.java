@@ -11,6 +11,7 @@ import com.rezdox.vo.BusinessAttributeVO;
 import com.rezdox.vo.BusinessVO;
 // WC Custom Libs
 import com.rezdox.vo.MemberVO;
+import com.rezdox.vo.ProjectVO;
 import com.rezdox.vo.ResidenceVO;
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
@@ -344,6 +345,17 @@ public class DashboardAction extends SimpleActionAdapter {
 		List<ResidenceVO> data = db.executeSelect(sql.toString(), params, new ResidenceVO(), "residence_id");
 		
 		if(data != null && ! data.isEmpty())log.debug( data.get(0));
+		
+		ProjectAction pa = new ProjectAction();
+		pa.setAttributes(attributes);
+		pa.setDBConnection(getDBConnection());
+		
+		for (ResidenceVO res : data) {
+			log.debug("Res " + res.getResidenceName());
+			List<ProjectVO> projects = pa.getProjectsByResId(res.getResidenceId());
+			res.setProjectsTotal(pa.calculateTotalProjectValue(projects));
+			res.setProjectsValuation(pa.calculateTotalProjectValuation(projects));
+		}
 		
 		return data;
 	}

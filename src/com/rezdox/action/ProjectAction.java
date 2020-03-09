@@ -14,6 +14,7 @@ import com.rezdox.action.RewardsAction.Reward;
 import com.rezdox.action.RezDoxNotifier.Message;
 import com.rezdox.data.InvoiceReportPDF;
 import com.rezdox.data.ProjectFormProcessor;
+import com.rezdox.util.ValuationCoefficientUtil;
 import com.rezdox.vo.BusinessVO;
 import com.rezdox.vo.MemberVO;
 import com.rezdox.vo.PhotoVO;
@@ -61,7 +62,6 @@ public class ProjectAction extends SimpleActionAdapter {
 
 	protected static final String REQ_PROJECT_ID = "projectId";
 	protected static final String FILTER_DATA_LST = "filterListData";
-
 
 	public ProjectAction() {
 		super();
@@ -128,11 +128,99 @@ public class ProjectAction extends SimpleActionAdapter {
 		double improvementTotal = 0;
 		for (ProjectVO proj : data) {
 			total += proj.getInvoiceSubTotal();
-			if ("IMPROVEMENT".equals(proj.getProjectCategoryCd()))
-				improvementTotal += proj.getProjectValuation();
+			if ("IMPROVEMENT".equals(proj.getProjectCategoryCd())) {
+				improvementTotal += calculateProjectValuation(proj);
+			}	
 		}
 		mod.setAttribute("totalValue", total);
 		mod.setAttribute("totalValueImprovements", improvementTotal);
+	}
+	
+	/**
+	 * takes all the projects and returns the project valuation total
+	 * @param data
+	 * @return
+	 */
+	public double calculateTotalProjectValuation( List<ProjectVO> data) {
+		double improvementTotal = 0;
+		for (ProjectVO proj : data) {
+			
+			processMaterials(proj);
+			
+			if ("IMPROVEMENT".equals(proj.getProjectCategoryCd())) {
+				improvementTotal += calculateProjectValuation(proj);
+			}	
+		}
+		log.debug("project total valuation: "  + improvementTotal);
+
+		return improvementTotal;
+	}
+	
+	
+	/**
+	 * sets each project materials cost and returns the materials total cost
+	 * @param proj
+	 */
+	private double processMaterials(ProjectVO proj) {
+		double meterialTotal = 0.0;
+		if(proj.getMaterials() != null) {
+			
+			for (ProjectMaterialVO mrt : proj.getMaterials()) {
+				if(proj.getProjectId().equals(mrt.getProjectId())) {
+					meterialTotal += mrt.getCostNo() * mrt.getQuantityNo();
+				}
+			}
+			proj.setMaterialSubtotal(meterialTotal);
+		}
+		
+		return meterialTotal;
+	}
+
+	/**
+	 * takes all the projects and returns the project total cost
+	 * @param data
+	 * @return
+	 */
+	public double calculateTotalProjectValue( List<ProjectVO> data) {
+		double total = 0;
+		
+		for (ProjectVO proj : data) {		
+			total += proj.getInvoiceSubTotal()+ processMaterials(proj);	
+		}
+		return total;
+	}
+	
+	/**
+	 * gets a lits of projects
+	 * @param ResId
+	 * @return
+	 */
+	public List<ProjectVO> getProjectsByResId(String resId){
+		
+		String schema = getCustomSchema();
+		List<Object> vals = new ArrayList<>();
+
+		StringBuilder sql = new StringBuilder(173);
+		
+		sql.append(DBUtil.SELECT_FROM_STAR).append(schema).append("rezdox_project p ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("rezdox_project_material pm  on p.project_id = pm.project_id ");
+		sql.append(DBUtil.WHERE_CLAUSE).append("residence_id = ? ");
+		vals.add(resId);
+		
+		log.debug("sql " + sql.toString()+ "|" +vals);
+		 
+		DBProcessor db = new DBProcessor(getDBConnection(), schema);
+		return db.executeSelect(sql.toString(), vals, new ProjectVO());
+	}
+	
+	/**
+	 * a utility method that calculates a project valuation 
+	 * @param pvo
+	 * @return
+	 */
+	public double calculateProjectValuation(ProjectVO pvo) {
+			//dont apply any discounts or tax to a valuation total
+		return (pvo.getTotalNo() + pvo.getMaterialSubtotal() ) * ValuationCoefficientUtil.getValueCoefficient(pvo.getEndDate());
 	}
 
 	/**

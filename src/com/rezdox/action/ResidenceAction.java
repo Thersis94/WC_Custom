@@ -21,6 +21,7 @@ import com.rezdox.api.WalkScoreAPIManager;
 import com.rezdox.api.ZillowAPIManager;
 import com.rezdox.data.ResidenceFormProcessor;
 import com.rezdox.vo.MemberVO;
+import com.rezdox.vo.ProjectVO;
 import com.rezdox.vo.ResidenceAttributeVO;
 import com.rezdox.vo.ResidenceVO;
 import com.rezdox.vo.SunNumberVO;
@@ -246,6 +247,17 @@ public class ResidenceAction extends SBActionAdapter {
 		DBProcessor dbp = new DBProcessor(dbConn, getCustomSchema());
 		List<ResidenceVO> residences = dbp.executeSelect(sql.toString(), params, new ResidenceVO());
 
+		ProjectAction pa = new ProjectAction();
+		pa.setAttributes(attributes);
+		pa.setDBConnection(getDBConnection());
+		
+		for (ResidenceVO res : residences) {
+			List<ProjectVO> projects = pa.getProjectsByResId(res.getResidenceId());
+			res.setProjectsTotal(pa.calculateTotalProjectValue(projects));
+			res.setProjectsValuation(pa.calculateTotalProjectValuation(projects));
+		}
+		
+		
 		// Prevent an unsupported operation exception when trying to add a residence to an empty list
 		return residences.isEmpty() ? new ArrayList<>() : residences;
 	}
