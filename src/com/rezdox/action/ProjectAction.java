@@ -203,10 +203,12 @@ public class ProjectAction extends SimpleActionAdapter {
 		StringBuilder sql = new StringBuilder(173);
 		
 		sql.append(DBUtil.SELECT_FROM_STAR).append(schema).append("rezdox_project p ");
-		sql.append(DBUtil.INNER_JOIN).append(schema).append("rezdox_project_material pm  on p.project_id = pm.project_id ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("rezdox_project_material pm  on p.project_id = pm.project_id ");
 		sql.append(DBUtil.WHERE_CLAUSE).append("residence_id = ? ");
 		vals.add(resId);
 		
+		log.debug("sql " + sql.toString()+ "|" +vals);
+		 
 		DBProcessor db = new DBProcessor(getDBConnection(), schema);
 		return db.executeSelect(sql.toString(), vals, new ProjectVO());
 	}
@@ -217,7 +219,8 @@ public class ProjectAction extends SimpleActionAdapter {
 	 * @return
 	 */
 	public double calculateProjectValuation(ProjectVO pvo) {
-		return pvo.getInvoiceTotal() * ValuationCoefficientUtil.getValueCoefficient(pvo.getEndDate());
+			//dont apply any discounts or tax to a valuation total
+		return (pvo.getTotalNo() + pvo.getMaterialSubtotal() ) * ValuationCoefficientUtil.getValueCoefficient(pvo.getEndDate());
 	}
 
 	/**
