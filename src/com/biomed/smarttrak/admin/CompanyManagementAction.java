@@ -310,7 +310,6 @@ public class CompanyManagementAction extends ManagementAction {
 		String solrActionId = WCConfigUtil.getActionConfig(dbConn, actionInit.getActionId()).get(COMPANY_SOLR_KEY);
 		// Pass along the proper information for a search to be done.
 		ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
-		log.debug(solrActionId);
 		actionInit.setActionId(solrActionId);
 		req.setParameter("pmid", mod.getPageModuleId());
 
@@ -325,7 +324,6 @@ public class CompanyManagementAction extends ManagementAction {
 		StringBuilder sections = new StringBuilder();
 		for (Count hierarchy : resp.getFacetByName("hierarchy")) {
 			String name = getFacetSection(hierarchy.getName());
-			log.debug("Modded to " + name);
 			sections.append(name).append(",");
 		}
 
@@ -334,7 +332,6 @@ public class CompanyManagementAction extends ManagementAction {
 
 
 	private String getFacetSection(String name) {
-		log.debug(name);
 		if (name.indexOf('~') == -1) return name;
 		
 		return name.substring(name.lastIndexOf('~')+1);
