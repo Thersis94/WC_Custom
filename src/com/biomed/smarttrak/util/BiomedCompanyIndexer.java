@@ -139,7 +139,7 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 	private void populateAndSaveCompanies(List<SecureSolrDocumentVO> temp, Map<String, LocationVO> locationMap, SmarttrakTree hierarchies, SolrActionUtil util) throws SQLException, ActionException {
 
 		//Load content for Companies
-		buildContent(temp, null);
+		buildContent(temp, null, hierarchies);
 
 		//Populate Location Data for Companies.
 		buildLocationInformation(temp, locationMap);
@@ -195,9 +195,6 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 					addCompany(companies, company);
 					company = buildSolrDocument(rs);
 					currentCompany = rs.getString(COMPANY_ID);
-				}
-				if (!StringUtil.isEmpty(rs.getString("SECTION_ID")) && company != null) {
-					addSection(company, hierarchies.findNode(rs.getString("SECTION_ID")));
 				}
 
 			}
@@ -406,12 +403,13 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 	 * them into a single contents field.
 	 * @param companies
 	 * @param id
+	 * @param hierarchies 
 	 * @throws SQLException
 	 */
-	protected void buildContent(List<SecureSolrDocumentVO> companies, String id) throws SQLException {
+	protected void buildContent(List<SecureSolrDocumentVO> companies, String id, SmarttrakTree hierarchies) throws SQLException {
 		StringBuilder sql = new StringBuilder(275);
 		String customDb = config.getProperty(Constants.CUSTOM_DB_SCHEMA);
-		sql.append("SELECT x.COMPANY_ID, x.VALUE_TXT FROM ").append(customDb).append("BIOMEDGPS_COMPANY_ATTRIBUTE_XR x ");
+		sql.append("SELECT x.COMPANY_ID, x.VALUE_TXT, a.section_id FROM ").append(customDb).append("BIOMEDGPS_COMPANY_ATTRIBUTE_XR x ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(customDb).append("BIOMEDGPS_COMPANY_ATTRIBUTE a on a.ATTRIBUTE_ID = x.ATTRIBUTE_ID ");
 		sql.append("WHERE a.TYPE_NM = 'HTML' ");
 		if (!StringUtil.isEmpty(id)) sql.append("and x.COMPANY_ID = ? ");
@@ -425,6 +423,7 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 		StringBuilder content = new StringBuilder(1024);
 		String currentCompany = "";
 		Map<String, StringBuilder> contentMap = new HashMap<>();
+		Map<String, List<Node>> sectionMap = new HashMap<>();
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			int i = 1;
 			if (!StringUtil.isEmpty(id)) ps.setString(i++, id);
@@ -442,13 +441,21 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 				}
 				if (content.length() > 1) content.append("\n");
 				content.append(rs.getString("VALUE_TXT"));
+				
+				if (rs.getString("SECTION_ID") != null) addSectionNode(currentCompany, sectionMap, hierarchies.findNode(rs.getString("SECTION_ID")));
 			}
 			addContent(currentCompany, content, contentMap);
 		}
 
 		for (SecureSolrDocumentVO company : companies) {
-			if (contentMap.get(company.getDocumentId()) == null) continue;
-			company.setContents(contentMap.get(company.getDocumentId()).toString());
+			if (contentMap.get(company.getDocumentId()) != null) {
+				company.setContents(contentMap.get(company.getDocumentId()).toString());
+			}
+			if (sectionMap.get(company.getDocumentId()) != null) {
+				for (Node n : sectionMap.get(company.getDocumentId())) {
+					addSection(n, company);
+				}
+			}
 		}
 	}
 
@@ -467,10 +474,28 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 	}
 
 	/**
+	 * Add the current node to the the company's list of valid sections
+	 * @param currentCompany
+	 * @param sectionMap
+	 * @param findNode
+	 */
+	protected void addSectionNode(String currentCompany, Map<String, List<Node>> sectionMap, Node findNode) {
+		if (findNode == null) return;
+		if (!sectionMap.containsKey(DOCUMENT_PREFIX + currentCompany))
+			sectionMap.put(DOCUMENT_PREFIX + currentCompany, new ArrayList<Node>());
+		// If node already added return
+		if (sectionMap.get(DOCUMENT_PREFIX + currentCompany).contains(findNode))
+			return;
+		
+		sectionMap.get(DOCUMENT_PREFIX + currentCompany).add(findNode);
+	}
+	
+
+	/**
 	 * Add section id, name, and acl to document
 	 */
 	@SuppressWarnings("unchecked")
-	protected void addSection(SecureSolrDocumentVO company, Node n) {
+	private void addSection(Node n, SecureSolrDocumentVO company) {
 		SectionVO sec = (SectionVO)n.getUserObject();
 		company.addHierarchies(n.getFullPath());
 		company.addSection(sec.getSectionNm());
@@ -535,7 +560,7 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 	private String buildRetrieveSql(String id) {
 		StringBuilder sql = new StringBuilder(1350);
 		String customDb = config.getProperty(Constants.CUSTOM_DB_SCHEMA);
-		sql.append("SELECT c.COMPANY_ID, a.SECTION_ID, c.COMPANY_NM, c.stock_abbr_txt, c.PUBLIC_FLG, c.SHORT_NM_TXT, ");
+		sql.append("SELECT c.COMPANY_ID, c.COMPANY_NM, c.stock_abbr_txt, c.PUBLIC_FLG, c.SHORT_NM_TXT, ");
 		sql.append("c2.COMPANY_NM as PARENT_NM, COUNT(p.COMPANY_ID) as PRODUCT_NO, c.CREATE_DT, c.UPDATE_DT, c.alias_nm, ");
 		sql.append("case when c.status_no = ? and count(p.company_id) = 0 and count(pa.company_id) = 0 then ? else ");
 		sql.append("c.STATUS_NO end as STATUS_NO ");
@@ -546,17 +571,11 @@ public class BiomedCompanyIndexer  extends SMTAbstractIndex {
 		sql.append("ON pxr.COMPANY_ID = c.COMPANY_ID ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(customDb).append("BIOMEDGPS_PRODUCT pa ");
 		sql.append("ON pa.PRODUCT_ID = pxr.PRODUCT_ID and pa.status_no = ? ");
-		sql.append(DBUtil.LEFT_OUTER_JOIN).append(customDb).append("BIOMEDGPS_COMPANY_ATTRIBUTE_XR xr ");
-		sql.append("ON xr.COMPANY_ID = c.COMPANY_ID ");
-		sql.append(DBUtil.LEFT_OUTER_JOIN).append(customDb).append("BIOMEDGPS_COMPANY_ATTRIBUTE a ");
-		sql.append("ON a.ATTRIBUTE_ID = xr.ATTRIBUTE_ID and a.SECTION_ID is not null ");
-		sql.append(DBUtil.LEFT_OUTER_JOIN).append(customDb).append("BIOMEDGPS_COMPANY_SECTION cs ");
-		sql.append("ON cs.COMPANY_ID = c.COMPANY_ID ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(customDb).append("BIOMEDGPS_COMPANY c2 ");
 		sql.append("ON c2.COMPANY_ID = c.PARENT_ID ");
 		sql.append("WHERE 1=1 ");
 		if (id != null) sql.append("and c.COMPANY_ID = ? ");
-		sql.append("GROUP BY c.COMPANY_ID, c.COMPANY_NM, a.SECTION_ID, c.STATUS_NO, ");
+		sql.append("GROUP BY c.COMPANY_ID, c.COMPANY_NM, c.STATUS_NO, ");
 		sql.append("c.stock_abbr_txt, p.COMPANY_ID, c2.COMPANY_NM, c.CREATE_DT, c.UPDATE_DT, p.status_no ");
 		sql.append("order by c.company_id ");
 		log.debug(sql);
