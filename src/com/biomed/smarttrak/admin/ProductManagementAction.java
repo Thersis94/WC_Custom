@@ -1,6 +1,5 @@
 package com.biomed.smarttrak.admin;
 
-import java.io.IOException;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -13,7 +12,6 @@ import java.util.Properties;
 import java.util.stream.Collectors;
 
 import com.biomed.smarttrak.action.AdminControllerAction;
-import com.biomed.smarttrak.action.AdminControllerAction.Section;
 import com.biomed.smarttrak.action.AdminControllerAction.Status;
 import com.biomed.smarttrak.action.ProductAction;
 import com.biomed.smarttrak.util.BiomedProductIndexer;
@@ -1750,18 +1748,7 @@ public class ProductManagementAction extends ManagementAction {
 		props.putAll(getAttributes());
 		BiomedProductIndexer indexer = new BiomedProductIndexer(props);
 		indexer.setDBConnection(dbConn);
-		
-		try {
-			if ("D".equals(status) || "A".equals(status)) {
-				if (productId.length() < AdminControllerAction.DOC_ID_MIN_LEN)
-					productId = Section.PRODUCT.name() + "_" +productId;
-				indexer.purgeSingleItem(productId, false);
-			} else {
-				indexer.indexItems(productId);
-			}
-		} catch (IOException e) {
-			throw new ActionException(e);
-		}
+		indexer.indexItems(productId);
 	}
 
 

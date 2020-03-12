@@ -1,5 +1,26 @@
 WC_Custom Changelog (auto-generated)
 
+## [3.48.1](https://github.com/smtadmin/WC_Custom/compare/3.48.0...3.48.1) (2020-03-09)
+
+
+### Bug Fixes
+
+* **hotfix-rezdox-344:** minor adjustments to valuation math based on new input. ([0c5a5ef](https://github.com/smtadmin/WC_Custom/commit/0c5a5ef))
+* **hotfix-rezdox-344:** moved the valuation business logic to a reusable and centeralized location s ([d04d709](https://github.com/smtadmin/WC_Custom/commit/d04d709))
+
+# [3.48.0](https://github.com/smtadmin/WC_Custom/compare/3.47.0...3.48.0) (2020-03-09)
+
+
+### Bug Fixes
+
+* **ST-312:** Make all changes get pushed to solr properly. ([b4dacf0](https://github.com/smtadmin/WC_Custom/commit/b4dacf0))
+* **ST-337:** Tighten user restrictions for activity report. ([ab5954f](https://github.com/smtadmin/WC_Custom/commit/ab5954f))
+
+
+### Features
+
+* **company management:** changed Company Management to show Investor companies as active ([d804fb8](https://github.com/smtadmin/WC_Custom/commit/d804fb8))
+
 # [3.47.0](https://github.com/smtadmin/WC_Custom/compare/3.46.1...3.47.0) (2020-03-02)
 
 

@@ -8,6 +8,7 @@ import java.sql.SQLException;
 
 //WC Custom libs
 import com.biomed.smarttrak.action.AdminControllerAction;
+import com.biomed.smarttrak.vo.UserVO.LicenseType;
 //SB libs
 import com.smt.sitebuilder.util.PageViewRetriever;
 import com.smt.sitebuilder.util.PageViewVO;
@@ -62,9 +63,15 @@ public class SmarttrakPageViewRetriever extends PageViewRetriever {
 		sql.append("(select product_nm from ").append(customSchema).append("biomedgps_product where product_id = query_str_txt) ");
 		sql.append("ELSE b.page_display_nm END) as page_title_nm ");
 		sql.append("from pageview_user a left outer join page b on a.page_id = b.page_id ");
-		if(isSiteAdmin) sql.append("inner join profile_role c on a.profile_id = c.profile_id inner join role d on c.role_id = d.role_id ");
+		if(isSiteAdmin) {
+			sql.append("inner join profile_role c on a.profile_id = c.profile_id inner join role d on c.role_id = d.role_id ");
+			sql.append("left join ").append(customSchema).append("biomedgps_user u on u.profile_id = a.profile_id ");
+		}
 		formatCommonQuery(sql);
-		if(isSiteAdmin) sql.append(" and d.role_id != ? "); //if this is a site admin, filter out staff roles
+		if(isSiteAdmin) {
+			sql.append(" and d.role_order_no < ? ");
+			sql.append(" and u.status_cd != ? "); //if this is a site admin, filter out staff roles
+		}
 		sql.append("order by a.visit_dt ");
 		
 		log.debug("Smarttrak page view query: " + sql);
@@ -81,7 +88,10 @@ public class SmarttrakPageViewRetriever extends PageViewRetriever {
 		int currentIdx = super.formatPreparedStatement(ps);
 		
 		//if this is a site admin, set the id for staff
-		if(getProfileId() == null) ps.setString(currentIdx++, AdminControllerAction.STAFF_ROLE_ID);
+		if(getProfileId() == null) {
+			ps.setInt(currentIdx++, AdminControllerAction.STAFF_ROLE_LEVEL);
+			ps.setString(currentIdx++, LicenseType.STAFF.getCode());
+		}
 		
 		return currentIdx;
 	}

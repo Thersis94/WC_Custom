@@ -1,6 +1,5 @@
 package com.biomed.smarttrak.admin;
 
-import java.io.IOException;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -12,7 +11,6 @@ import java.util.Properties;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.solr.common.SolrDocument;
 
-import com.biomed.smarttrak.action.AdminControllerAction;
 import com.biomed.smarttrak.action.AdminControllerAction.Section;
 import com.biomed.smarttrak.action.AdminControllerAction.Status;
 import com.biomed.smarttrak.action.CompanyAction;
@@ -560,7 +558,7 @@ public class CompanyManagementAction extends ManagementAction {
 	 * @throws ActionException 
 	 */
 	private void getFilteredCompanies(ActionRequest req) throws ActionException {
-		//parse the requet object
+		//parse the request object
 		setSolrParams(req);
 
 		String solrActionId = WCConfigUtil.getActionConfig(dbConn, actionInit.getActionId()).get(COMPANY_SOLR_KEY);
@@ -577,7 +575,7 @@ public class CompanyManagementAction extends ManagementAction {
 	}
 
 	/**
-	 * Set all paramters neccesary for solr to be able to properly search for the desired documents.
+	 * Set all parameters necessary for solr to be able to properly search for the desired documents.
 	 * @param req
 	 * @param dir 
 	 * @param order
@@ -607,11 +605,11 @@ public class CompanyManagementAction extends ManagementAction {
 		//Override Status Filter on Public Side.
 		fq.add(StringUtil.join(STATUS_S, Status.P.toString()));
 		fq.add(StringUtil.join(STATUS_S, Status.E.toString()));
+		fq.add(StringUtil.join(STATUS_S, Status.I.toString()));
 		if (Convert.formatBoolean(req.getParameter("inactive"))) {
 			fq.add(StringUtil.join(STATUS_S, Status.A.toString()));
 			fq.add(StringUtil.join(STATUS_S, Status.D.toString()));
 			fq.add(StringUtil.join(STATUS_S, "C"));
-			fq.add(StringUtil.join(STATUS_S, "I"));
 		}
 
 		// If this is a request for the dashboard an author id will be provided
@@ -1516,17 +1514,7 @@ public class CompanyManagementAction extends ManagementAction {
 		props.putAll(getAttributes());
 		BiomedCompanyIndexer indexer = new BiomedCompanyIndexer(props);
 		indexer.setDBConnection(dbConn);
-		try {
-			if ("D".equals(status) || "A".equals(status) || "I".equals(status)) {
-				if (companyId.length() < AdminControllerAction.DOC_ID_MIN_LEN)
-					companyId = Section.COMPANY.name() + "_" +companyId;
-				indexer.purgeSingleItem(companyId, false);
-			} else {
-				indexer.indexItems(companyId);
-			}
-		} catch (IOException e) {
-			throw new ActionException(e);
-		}
+		indexer.indexItems(companyId);
 	}
 
 
