@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Properties;
 
 import org.apache.commons.lang.ArrayUtils;
+import org.apache.solr.client.solrj.response.FacetField.Count;
 import org.apache.solr.common.SolrDocument;
 
 import com.biomed.smarttrak.action.AdminControllerAction.Section;
@@ -294,7 +295,44 @@ public class CompanyManagementAction extends ManagementAction {
 			retrieveCompanies(req);
 		}else{
 			loadAuthors(req); //load list of BiomedGPS Staff for the "Author" drop-down
+			loadSectionCounts(req);
 		}	
+	}
+
+
+	/**
+	 * Load all sections with valid results for the market filter on the list page.
+	 */
+	private void loadSectionCounts(ActionRequest req) throws ActionException {
+
+		String solrActionId = WCConfigUtil.getActionConfig(dbConn, actionInit.getActionId()).get(COMPANY_SOLR_KEY);
+		// Pass along the proper information for a search to be done.
+		ModuleVO mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
+		actionInit.setActionId(solrActionId);
+		req.setParameter("pmid", mod.getPageModuleId());
+
+		// Build the solr action
+		ActionInterface sa = new SolrAction(actionInit);
+		sa.setDBConnection(dbConn);
+		sa.setAttributes(attributes);
+		sa.retrieve(req);
+
+		mod = (ModuleVO) attributes.get(Constants.MODULE_DATA);
+		SolrResponseVO resp = (SolrResponseVO)mod.getActionData();
+		StringBuilder sections = new StringBuilder();
+		for (Count hierarchy : resp.getFacetByName("hierarchy")) {
+			String name = getFacetSection(hierarchy.getName());
+			sections.append(name).append(",");
+		}
+
+		req.setAttribute("hierarchyCounts", sections.toString());
+	}
+
+
+	private String getFacetSection(String name) {
+		if (name.indexOf('~') == -1) return name;
+		
+		return name.substring(name.lastIndexOf('~')+1);
 	}
 
 
