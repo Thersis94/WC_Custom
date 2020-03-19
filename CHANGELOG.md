@@ -1,5 +1,12 @@
 WC_Custom Changelog (auto-generated)
 
+## [3.48.2](https://github.com/smtadmin/WC_Custom/compare/3.48.1...3.48.2) (2020-03-17)
+
+
+### Bug Fixes
+
+* **hotfix-rezdox-344:** when a project is deleted a flag is set to not display that project.  code c ([4e25155](https://github.com/smtadmin/WC_Custom/commit/4e25155))
+
 ## [3.48.1](https://github.com/smtadmin/WC_Custom/compare/3.48.0...3.48.1) (2020-03-09)
 
 
