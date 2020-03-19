@@ -178,7 +178,7 @@ public class AdminControllerAction extends SimpleActionAdapter {
 	 * Statuses used in companies, markets, and products.
 	 */
 	public enum Status {
-		E("Edit"), P("Published"), A("Archived"), D("Delete");
+		E("Edit"), P("Published"), A("Archived"), D("Delete"), I("Investor"), C("Inactive Test");
 		
 		private String title;
 		

@@ -258,6 +258,15 @@ public class ProjectVO {
 		this.businessViewFlg = businessViewFlg;
 	}
 
+	@BeanSubElement
+	public void addMaterial(ProjectMaterialVO mvo) {
+		if (this.materials == null)
+			this.materials = new ArrayList<>();
+		
+		if (mvo != null)
+			this.materials.add(mvo);
+	}
+	
 	public void setMaterials(List<ProjectMaterialVO> materials) {
 		this.materials = materials;
 	}
@@ -448,6 +457,8 @@ public class ProjectVO {
 
 	@Column(name="project_valuation", isReadOnly=true)
 	public double getProjectValuation() {
+		
+		
 		return projectValuation;
 	}
 
