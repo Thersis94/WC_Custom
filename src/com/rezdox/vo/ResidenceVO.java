@@ -316,11 +316,11 @@ public class ResidenceVO extends GeocodeLocation implements Serializable {
 	}
 
 	/**
-	 * returns a business-decision calculation of  zestimate + improvements (fractal math occurs in the SQL query)
+	 * returns a business-decision calculation of  zestimate + valuation of improvements valuation math no longer occurs in sql.  business logic belongs to java and is now done in projects action.
 	 * @return
 	 */
 	public double getRealMarketValue() {
-		return Convert.formatDouble(getZestimateNo()) + getProjectsTotal();
+		return Convert.formatDouble(getZestimateNo()) + getProjectsValuation();
 	}
 
 	/**
