@@ -116,6 +116,8 @@ public class MTSDocumentAction extends SimpleActionAdapter {
 
 			// Update the page data
 			page.setTitleName(doc.getPublicationName() + " - " + doc.getActionName());
+			page.setMetaDesc(doc.getMetaDataItem("META_DESC").getValueText());
+			page.setMetaKeyword(doc.getMetaDataItem("META_KEYWD").getValueText());
 			
 			// Get the Related Articles
 			doc.setRelatedArticles(getRelatedArticles(doc.getActionGroupId(), pagePreview));
@@ -232,7 +234,9 @@ public class MTSDocumentAction extends SimpleActionAdapter {
 				cats = StringUtil.checkVal(req.getParameter("categories")).split("\\,");
 			}
 
-			updateMetadata(sbActionId, cats, userId);
+			// Update the metadata
+			updateCatMetadata(sbActionId, cats, userId);
+			updateMetaInfo(sbActionId, userId, req.getParameter("metaDesc"), req.getParameter("metaKeywords"));
 
 			//Remove the redirects from the admin actions and return the data
 			req.removeAttribute(Constants.REDIRECT_REQUEST);
@@ -274,10 +278,12 @@ public class MTSDocumentAction extends SimpleActionAdapter {
 	 * @param categories
 	 * @throws DatabaseException
 	 */
-	public void updateMetadata(String actionId, String[] categories, String userId) 
+	public void updateCatMetadata(String actionId, String[] categories, String userId) 
 			throws DatabaseException {
 		// Delete any existing entries
 		deleteCategories(actionId);
+		
+		// Update the meta desc and keyword
 
 		try {
 			// Loop the cats and create a VO for each
@@ -299,6 +305,41 @@ public class MTSDocumentAction extends SimpleActionAdapter {
 			log.error("unable to update categories", e);
 			throw new DatabaseException(e.getLocalizedMessage(), e);
 		}
+	}
+	
+	/**
+	 * Updates the article meta keyword and desc
+	 * @param actionId
+	 * @param userId
+	 * @param desc
+	 * @param keyword
+	 */
+	public void updateMetaInfo(String actionId, String userId, String desc, String keyword) {
+		// Assign the meta desc
+		WidgetMetadataVO metaDesc = new WidgetMetadataVO();
+		metaDesc.setSbActionId(actionId);
+		metaDesc.setValueText(desc);
+		metaDesc.setWidgetMetadataId("META_DESC");
+		metaDesc.setCreateById(userId);
+		metaDesc.setCreateDate(new Date());
+		
+		// Assign the meta keywords
+		WidgetMetadataVO metaKeywords = new WidgetMetadataVO();
+		metaKeywords.setSbActionId(actionId);
+		metaKeywords.setValueText(keyword);
+		metaKeywords.setWidgetMetadataId("META_KEYWD");
+		metaKeywords.setCreateById(userId);
+		metaKeywords.setCreateDate(new Date());
+		
+		try {
+			DBProcessor db = new DBProcessor(getDBConnection());
+			db.insert(metaDesc);
+			db.insert(metaKeywords);
+			
+		} catch (Exception e) {
+			log.error("Unable to save meta info", e);
+		}
+		
 	}
 
 	/**

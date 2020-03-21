@@ -62,7 +62,7 @@ public class PublicationDisplayAction extends SBActionAdapter {
 		
 		int useLatest = Convert.formatInteger(mod.getIntroText());
 		IssueArticleAction iac = new IssueArticleAction(getDBConnection(), getAttributes());
-		setModuleData(iac.getArticleTeasers(publicationId, categoryCode, useLatest));
+		setModuleData(iac.getArticleTeasers(publicationId, categoryCode, useLatest, 10));
 		
 		// Get the categories from the list
 		SelectLookupAction sla = new SelectLookupAction(getDBConnection(), getAttributes());
