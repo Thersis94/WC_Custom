@@ -649,7 +649,7 @@ public class AccountUserAction extends SBActionAdapter {
 		StringBuilder sql = new StringBuilder(300);
 		sql.append("select u.account_id, u.profile_id, u.user_id, u.register_submittal_id, u.status_cd, u.acct_owner_flg, ");
 		sql.append("u.expiration_dt, p.first_nm, p.last_nm, p.email_address_txt, max(al.login_dt) as login_dt, ");
-		sql.append("u.fd_auth_flg, u.ga_auth_flg, u.mkt_auth_flg, u.active_flg, u.create_dt, ");
+		sql.append("u.fd_auth_flg, u.ga_auth_flg, u.mkt_auth_flg, u.active_flg, u.create_dt, u.entry_source, ");
 		sql.append("title.value_txt as title_txt, notes.value_txt as notes_txt, division.value_txt as division_txt ");
 		sql.append("from profile p ");
 		sql.append("left join ").append(schema).append("biomedgps_user u on u.profile_id=p.profile_id ");
@@ -718,6 +718,9 @@ public class AccountUserAction extends SBActionAdapter {
 		// If this is a new user add them to the default account.
 		if (StringUtil.isEmpty(req.getParameter(USER_ID)))
 			addToDefaultTeam(user);
+		
+		if (Convert.formatBoolean(req.getParameter("passProfile")))
+			req.setParameter("profileId", user.getProfileId());
 		
 		addSkippedMarkets(user);
 
