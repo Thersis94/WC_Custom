@@ -1,5 +1,6 @@
 package com.mts.subscriber.action;
 
+import java.util.ArrayList;
 // JDK 1.8.x
 import java.util.Arrays;
 import java.util.Calendar;
@@ -79,7 +80,7 @@ public class TrialSubScriptionPostProcessor extends SBActionAdapter {
 		UserDataVO user = (UserDataVO)req.getAttribute(SubmittalAction.REGISTRATION_USER_DATA);
 
 		// Get the form data
-		String pubId = getFormData(req, true);
+		List<String> pubIds = getFormPubs(req);
 		String company = getFormData(req, false);
 		
 		// Look for an existing account and update / add
@@ -89,12 +90,17 @@ public class TrialSubScriptionPostProcessor extends SBActionAdapter {
 			mtsUser.setSubscriptions(getExistingSubscriptions(mtsUser.getUserId()));
 			
 			// Update/Assign the publication permissions
-			assignPublication(mtsUser, pubId);
+			for (String pubId : pubIds) {
+				assignPublication(mtsUser, pubId);
+			}
 			
 		} catch (InvalidDataException | DatabaseException e) {
 			log.error("Unable to update MTS User", e);
 			return;
 		}
+		
+		// Update the pmid to the login module for password reset
+		req.setParameter("pmid", "909e37c5v2f86e5dac107870794c4e91");
 	}
 	
 	/**
@@ -108,12 +114,29 @@ public class TrialSubScriptionPostProcessor extends SBActionAdapter {
 		for ( SubmittalDataVO data : (List<SubmittalDataVO>)req.getAttribute(SubmittalAction.REGISTRATION_EXT_DATA)) {
 			if (isPub && publications.contains(data.getUserValue())) {
 				return data.getUserValue();
-			} else if (! isPub && !publications.contains(data.getUserValue())){
+			} else if ((! isPub) && !publications.contains(data.getUserValue())){
 				return data.getUserValue();
 			}
 		}
 		
 		return "";
+	}
+	
+	/**
+	 * Gets the list of publications selected
+	 * @param req
+	 * @return
+	 */
+	@SuppressWarnings("unchecked")
+	public List<String> getFormPubs(ActionRequest req) {
+		List<String> pubs = new ArrayList<>();
+		for ( SubmittalDataVO data : (List<SubmittalDataVO>)req.getAttribute(SubmittalAction.REGISTRATION_EXT_DATA)) {
+			if (publications.contains(data.getUserValue())) {
+				pubs.add(data.getUserValue());
+			}
+		}
+		
+		return pubs;
 	}
 	
 	/**
