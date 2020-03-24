@@ -116,7 +116,7 @@ public class SmarttrakTrialRegistrationAction extends SBActionAdapter {
 		StringBuilder sql = new StringBuilder(300);
 		sql.append("select account_id, trial_expiration_dt, campaign_title_txt from ");
 		sql.append(attributes.get(Constants.CUSTOM_DB_SCHEMA)).append("biomedgps_account ");
-		sql.append("where domains_txt like ? ");
+		sql.append("where domains_txt like ? and trial_expiration_dt > current_timestamp ");
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, "%"+email.substring(email.indexOf('@'))+"%");
 			
