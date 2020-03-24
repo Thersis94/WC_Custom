@@ -204,7 +204,7 @@ public class ProjectAction extends SimpleActionAdapter {
 		
 		sql.append(DBUtil.SELECT_FROM_STAR).append(schema).append("rezdox_project p ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append(schema).append("rezdox_project_material pm  on p.project_id = pm.project_id ");
-		sql.append(DBUtil.WHERE_CLAUSE).append("residence_id = ? ");
+		sql.append(DBUtil.WHERE_CLAUSE).append("residence_id = ? and p.residence_view_flg = '1' ");
 		vals.add(resId);
 		
 		log.debug("sql " + sql.toString()+ "|" +vals);

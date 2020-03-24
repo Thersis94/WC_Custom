@@ -1,5 +1,31 @@
 WC_Custom Changelog (auto-generated)
 
+# [3.49.0](https://github.com/smtadmin/WC_Custom/compare/3.48.2...3.49.0) (2020-03-24)
+
+
+### Bug Fixes
+
+* **Sc-1587:** Account for blank values when determining chart name. ([24fd42d](https://github.com/smtadmin/WC_Custom/commit/24fd42d))
+* **ST-280:** Add checks for which market sections actually have results. ([c251322](https://github.com/smtadmin/WC_Custom/commit/c251322))
+* **ST-296:** Prevent default admin date behavior for four year comparisons. ([418ff1f](https://github.com/smtadmin/WC_Custom/commit/418ff1f))
+* **ST-342:** Shift where attribute section ids are gotten for the company. ([3abcdea](https://github.com/smtadmin/WC_Custom/commit/3abcdea))
+* **ST-345:** Add ability to automatically set up trail accounts based on email address. ([982272e](https://github.com/smtadmin/WC_Custom/commit/982272e))
+* **ST-345:** Add entry source to user report. ([dfb45c6](https://github.com/smtadmin/WC_Custom/commit/dfb45c6))
+* **ST-345:** Ensure only active trials can be used to create accounts and fix password reset flag bu ([3f9ed5e](https://github.com/smtadmin/WC_Custom/commit/3f9ed5e))
+* **ST-345:** Prevent bug on second page submittal. ([46b0e10](https://github.com/smtadmin/WC_Custom/commit/46b0e10))
+
+
+### Features
+
+* **smarttrak links:** changed script that modifies relative links to ignore links to binary folders ([b2f37b7](https://github.com/smtadmin/WC_Custom/commit/b2f37b7))
+
+## [3.48.2](https://github.com/smtadmin/WC_Custom/compare/3.48.1...3.48.2) (2020-03-17)
+
+
+### Bug Fixes
+
+* **hotfix-rezdox-344:** when a project is deleted a flag is set to not display that project.  code c ([4e25155](https://github.com/smtadmin/WC_Custom/commit/4e25155))
+
 ## [3.48.1](https://github.com/smtadmin/WC_Custom/compare/3.48.0...3.48.1) (2020-03-09)
 
 
