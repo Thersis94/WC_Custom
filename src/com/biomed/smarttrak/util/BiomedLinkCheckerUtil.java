@@ -126,7 +126,7 @@ public class BiomedLinkCheckerUtil {
 	 */
 	public String modifyPlainURL(String url) {
 		//ensure not empty and we are dealing with a URL path
-		if(StringUtil.isEmpty(url) || url.indexOf('/') == -1) return url;
+		if(StringUtil.isEmpty(url) || url.indexOf('/') == -1 || url.startsWith("/binary") || url.startsWith("/secBinary")) return url;
 		log.debug("Checking plain url...");
 		
 		//determine the type of URL, if absolute ensure it's an aliases for the site
