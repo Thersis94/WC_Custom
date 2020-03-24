@@ -473,8 +473,8 @@ public class FinancialDashVO extends SBModuleVO {
 	 * 
 	 * @param req
 	 */
-	public void setCurrentQtrYear(DashType dashType, SectionVO data) {
-		if (DashType.ADMIN == dashType) {
+	public void setCurrentQtrYear(DashType dashType, SectionVO data, DisplayType display) {
+		if (DashType.ADMIN == dashType && display != DisplayType.FOURYR) {
 			setCurrentQtrYear();
 		} else {
 			setCurrentQtrYear(data);
