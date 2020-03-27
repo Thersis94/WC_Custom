@@ -72,6 +72,7 @@ public class UserListReportVO extends AbstractSBReportVO {
 	private static final String HAS_FD = "HAS_FD";
 	private static final String USER_ID = "USER_ID";
 	private static final String ACCT_OWNER_FLAG = "ACCT_OWNER_FLAG";
+	private static final String ENTRY_SROUCE = "ENTRY_SROUCE";
 	
 	// other fields
 	private static final String DATE_JOINED = "DATE_JOINED";
@@ -190,6 +191,7 @@ public class UserListReportVO extends AbstractSBReportVO {
 				row.put(RegistrationMap.ROLE.name(), user.getChosenRole());
 				row.put(RegistrationMap.FUNCTION.name(), user.getFunction());
 				row.put(RegistrationMap.INTEREST.name(), user.getInterests());
+				row.put(ENTRY_SROUCE, user.getEntrySource());
 				
 				rows.add(row);
 			}
@@ -307,6 +309,7 @@ public class UserListReportVO extends AbstractSBReportVO {
 		headerMap.put(RegistrationMap.ROLE.name(),"Market Role");
 		headerMap.put(RegistrationMap.FUNCTION.name(),"Market Function");
 		headerMap.put(RegistrationMap.INTEREST.name(),"Market Interests");
+		headerMap.put(ENTRY_SROUCE,"Entry Source");
 		return headerMap;
 	}
 

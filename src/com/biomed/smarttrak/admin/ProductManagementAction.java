@@ -490,9 +490,31 @@ public class ProductManagementAction extends ManagementAction {
 		} else {
 			loadAuthors(req); //load list of BiomedGPS Staff for the "Author" drop-down
 			loadFullTree(req);
+			loadValidSections(req);
 		}
 	}
 
+
+	/**
+	 * Load all sections that should be shown in the market filter on the list page.
+	 */
+	private void loadValidSections(ActionRequest req) throws ActionException {
+		StringBuilder sql = new StringBuilder(150);
+		sql.append("select distinct s.section_nm, s2.section_nm as parent_nm from ").append(customDbSchema).append("biomedgps_product p "); 
+		sql.append("left join ").append(customDbSchema).append("biomedgps_product_section ps on ps.product_id = p.product_id "); 
+		sql.append("left join ").append(customDbSchema).append("biomedgps_section s on s.section_id = ps.section_id ");
+		sql.append("left join ").append(customDbSchema).append("biomedgps_section s2 on s2.section_id = s.parent_id");
+		StringBuilder sectionList = new StringBuilder();
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ResultSet rs = ps.executeQuery();
+			
+			while (rs.next())
+				sectionList.append(rs.getString("section_nm")).append(",").append(rs.getString("parent_nm")).append(",");
+		} catch (SQLException e) {
+			throw new ActionException(e);
+		}
+		req.setAttribute("hierarchyCounts", sectionList.toString());
+	}
 
 	/**
 	 * get a particular product attribute from the database for editing
