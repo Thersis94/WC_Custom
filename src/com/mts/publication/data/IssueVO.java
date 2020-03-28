@@ -63,6 +63,7 @@ public class IssueVO extends BeanDataVO {
 	
 	// Helpers
 	private String publicationName;
+	private List<MTSDocumentVO> documents = new ArrayList<>();
 	
 	/**
 	 * 
@@ -380,6 +381,20 @@ public class IssueVO extends BeanDataVO {
 	 */
 	public void setIssuePdfUrl(String issuePdfUrl) {
 		this.issuePdfUrl = issuePdfUrl;
+	}
+
+	/**
+	 * @return the documents
+	 */
+	public List<MTSDocumentVO> getDocuments() {
+		return documents;
+	}
+
+	/**
+	 * @param documents the documents to set
+	 */
+	public void setDocuments(List<MTSDocumentVO> documents) {
+		this.documents = documents;
 	}
 
 }
