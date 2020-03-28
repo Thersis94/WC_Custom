@@ -1,5 +1,20 @@
 WC_Custom Changelog (auto-generated)
 
+# [3.50.0](https://github.com/smtadmin/WC_Custom/compare/3.49.0...3.50.0) (2020-03-28)
+
+
+### Bug Fixes
+
+* **remove:** removed unneeded line of code ([c43125f](https://github.com/smtadmin/WC_Custom/commit/c43125f))
+
+
+### Features
+
+* **email:** started adding the email embed widget for MTS email campaigns ([2f851b9](https://github.com/smtadmin/WC_Custom/commit/2f851b9))
+* **metadata:** added meta desc and keywords to the article admin and display ([611b848](https://github.com/smtadmin/WC_Custom/commit/611b848))
+* **subscriptions:** changed the ui to allow multiselect Postprocessor assigns both pubs if selected ([feec8d4](https://github.com/smtadmin/WC_Custom/commit/feec8d4))
+* **title:** updated the page title with the pbu namr amd article title ([ea85bdf](https://github.com/smtadmin/WC_Custom/commit/ea85bdf))
+
 # [3.49.0](https://github.com/smtadmin/WC_Custom/compare/3.48.2...3.49.0) (2020-03-24)
 
 
