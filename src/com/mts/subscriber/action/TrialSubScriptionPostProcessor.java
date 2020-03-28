@@ -98,9 +98,6 @@ public class TrialSubScriptionPostProcessor extends SBActionAdapter {
 			log.error("Unable to update MTS User", e);
 			return;
 		}
-		
-		// Update the pmid to the login module for password reset
-		req.setParameter("pmid", "909e37c5v2f86e5dac107870794c4e91");
 	}
 	
 	/**
