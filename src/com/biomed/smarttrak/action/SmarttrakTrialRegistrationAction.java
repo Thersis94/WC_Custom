@@ -7,12 +7,14 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 
 import com.biomed.smarttrak.admin.AccountUserAction;
+import com.biomed.smarttrak.vo.UserVO;
 import com.siliconmtn.action.ActionControllerFactoryImpl;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.registration.RegistrationFacadeAction;
+import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
 
 /*****************************************************************************
@@ -54,12 +56,17 @@ public class SmarttrakTrialRegistrationAction extends SBActionAdapter {
 		}
 
 		if (!Convert.formatBoolean(req.getParameter("stepTwo"))) {
+			// The user should not have a profileId here. If one has been provided
+			// skip everything so as to prevent letting random people log into other accounts
+			if (req.hasParameter("profileId")) return;
+			
 			AccountUserAction acc = new AccountUserAction();
 			acc.setActionInit(actionInit);
 			acc.setAttributes(attributes);
 			acc.setDBConnection(dbConn);
 			acc.build(req);
-			req.setParameter("loginAs", req.getParameter("profileId"));
+			ModuleVO mod = getModuleVO();
+			req.setParameter("loginAs", ((UserVO)mod.getActionData()).getProfileId());
 			acc.retrieve(req);
 			req.setAttribute(Constants.REDIRECT_REQUEST, Boolean.TRUE);
 			req.setAttribute(Constants.REDIRECT_URL, req.getRequestURI() + "?hideMenu=true");
