@@ -193,6 +193,31 @@ public class IssueAction extends SBActionAdapter {
 		issue.setAssets(getFeatureAssets(issueId));
 		return issue;
 	}
+	
+	/**
+	 * Gets the latest issue for the given publication
+	 * @param publicationId
+	 * @return
+	 */
+	public IssueVO getLatestIssue(String publicationId) {
+		StringBuilder sql = new StringBuilder(128);
+		sql.append("select * from ").append(getCustomSchema()).append("mts_issue a ");
+		sql.append("inner join ").append(getCustomSchema()).append("mts_publication b "); 
+		sql.append("on a.publication_id = b.publication_id ");
+		sql.append("where issue_dt in (select max(issue_dt) from custom.mts_issue where publication_id = ? ");
+		sql.append("and issue_dt is not null and approval_flg = 1)");
+		log.debug(sql + "|" + publicationId);
+		
+		DBProcessor db = new DBProcessor(getDBConnection());
+		List<IssueVO> issues = db.executeSelect(sql.toString(), Arrays.asList(publicationId), new IssueVO());
+		IssueVO issue = new IssueVO();
+		if (! issues.isEmpty()) {
+			issue = issues.get(0);
+			issue.setAssets(getFeatureAssets(issue.getIssueId()));
+		}
+		
+		return issue;
+	}
 
 	/**
 	 * Gets the feature assets for the issue

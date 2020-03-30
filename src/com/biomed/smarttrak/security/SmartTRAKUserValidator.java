@@ -1,6 +1,7 @@
 package com.biomed.smarttrak.security;
 
 import com.biomed.smarttrak.vo.UserVO;
+import com.biomed.smarttrak.vo.UserVO.LicenseType;
 import com.siliconmtn.http.SMTServletRequest;
 import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.StringUtil;
@@ -34,6 +35,8 @@ public class SmartTRAKUserValidator implements UserValidatorInterface {
 	
 	public boolean isValidUser(UserDataVO user) {
 		UserVO smarttrakUser = (UserVO) user;
+		// Complimentary users are always considered valid
+		if (LicenseType.TRIAL.getCode().equals(smarttrakUser.getLicenseType())) return true;
 		if (StringUtil.isEmpty(smarttrakUser.getFirstName())) return false;
 		if (StringUtil.isEmpty(smarttrakUser.getLastName())) return false;
 		if (StringUtil.isEmpty(smarttrakUser.getEmailAddress())) return false;
