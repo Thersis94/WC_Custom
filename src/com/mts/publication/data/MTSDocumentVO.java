@@ -57,6 +57,7 @@ public class MTSDocumentVO extends DocumentVO {
 	private String authorId;
 	private String sbActionId;
 	private String infoBar;
+	private String sponsorId;
 	private int dataFeedProcessedFlag;
 	
 	// Sub-Beans
@@ -566,6 +567,21 @@ public class MTSDocumentVO extends DocumentVO {
 	 */
 	public void setBookmarkFlag(int bookmarkFlag) {
 		this.bookmarkFlag = bookmarkFlag;
+	}
+
+	/**
+	 * @return the sponsorId
+	 */
+	@Column(name="sponsor_id")
+	public String getSponsorId() {
+		return sponsorId;
+	}
+
+	/**
+	 * @param sponsorId the sponsorId to set
+	 */
+	public void setSponsorId(String sponsorId) {
+		this.sponsorId = sponsorId;
 	}
 }
 

@@ -1,6 +1,5 @@
 package com.mts.publication.action;
 
-import java.util.List;
 // JDK 1.8.x
 import java.util.Map;
 
