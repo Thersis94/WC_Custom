@@ -42,6 +42,7 @@ public class AccountVO implements HumanNameIntfc, Serializable {
 	private String statusNo;
 	private Date startDate;
 	private Date expirationDate;
+	private Date trialExpirationDate;
 	private Date createDate;
 	private Date updateDate;
 	private String firstName;
@@ -49,6 +50,8 @@ public class AccountVO implements HumanNameIntfc, Serializable {
 	private String leadFirstName;
 	private String leadLastName;
 	private String leadEmail;
+	private String domains;
+	private String campaignTitle;
 
 	private String title;
 	private int fdAuthFlg;
@@ -161,6 +164,9 @@ public class AccountVO implements HumanNameIntfc, Serializable {
 		setSeatsNo(Convert.formatInteger(req.getParameter("seatsNo")));
 		setCompFlg(Convert.formatInteger(req.getParameter("compFlg")));
 		setEnterpriseFlg(Convert.formatInteger(req.getParameter("enterpriseFlg")));
+		setTrialExpirationDate(Convert.formatDate(Convert.DATE_SLASH_PATTERN, req.getParameter("trialExpirationDate")));
+		setDomains(req.getParameter("domains"));
+		setCampaignTitle(req.getParameter("campaignTitle"));
 	}
 
 
@@ -392,6 +398,15 @@ public class AccountVO implements HumanNameIntfc, Serializable {
 		this.expirationDate = expirationDate;
 	}
 
+	@Column(name="trial_expiration_dt")
+	public Date getTrialExpirationDate() {
+		return trialExpirationDate;
+	}
+
+	public void setTrialExpirationDate(Date trialExpirationDate) {
+		this.trialExpirationDate = trialExpirationDate;
+	}
+
 	/**
 	 * @return the createDate
 	 */
@@ -614,5 +629,23 @@ public class AccountVO implements HumanNameIntfc, Serializable {
 
 	public void setLeadEmail(String leadEmail) {
 		this.leadEmail = leadEmail;
+	}
+
+	@Column(name="domains_txt")
+	public String getDomains() {
+		return domains;
+	}
+
+	public void setDomains(String domains) {
+		this.domains = domains;
+	}
+
+	@Column(name="campaign_title_txt")
+	public String getCampaignTitle() {
+		return campaignTitle;
+	}
+
+	public void setCampaignTitle(String campaignTitle) {
+		this.campaignTitle = campaignTitle;
 	}
 }

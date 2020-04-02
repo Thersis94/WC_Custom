@@ -55,6 +55,7 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 	private List<String> skippedMarkets;
 	private String sourceId;
 	private String sourceEmail;
+	private String entrySource;
 
 	/**
 	 * Smarttrak status dropdowns - stored in the DB using code, label displayed on user mgmt screens.
@@ -231,6 +232,7 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 		setGaAuthFlg(Convert.formatInteger(req.getParameter("gaAuthFlg")));
 		setMktAuthFlg(Convert.formatInteger(req.getParameter("mktAuthFlg")));
 		setAcctOwnerFlg(Convert.formatInteger(req.getParameter("acctOwnerFlg")));
+		setEntrySource(req.getParameter("entrySource"));
 		if (req.hasParameter("skippedMarkets"))
 			setSkippedMarkets(req.getParameter("skippedMarkets").split("\\|"));
 	}
@@ -777,5 +779,14 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 
 	public void setSourceEmail(String sourceEmail) {
 		this.sourceEmail = sourceEmail;
+	}
+
+	@Column(name="entry_source")
+	public String getEntrySource() {
+		return entrySource;
+	}
+
+	public void setEntrySource(String entrySource) {
+		this.entrySource = entrySource;
 	}
 }

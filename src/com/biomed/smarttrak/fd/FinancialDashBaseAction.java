@@ -108,7 +108,7 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 
 		FinancialDashVO dash = new FinancialDashVO();
 		SectionVO latest = getLatestPublish(req.getParameter(REQ_SECTION_ID));
-		dash.setCurrentQtrYear(dashType, latest);
+		dash.setCurrentQtrYear(dashType, latest, DisplayType.valueOf(StringUtil.checkVal(req.getParameter("displayType"), FinancialDashColumnSet.DEFAULT_DISPLAY_TYPE)));
 		dash.setReportedQtr(getLastReportedQtr());
 		dash.setData(req, sections, dashType);
 		dash.setBehindLatest(latest);

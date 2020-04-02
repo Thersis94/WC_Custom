@@ -33,6 +33,7 @@ import com.siliconmtn.util.StringUtil;
 //WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.content.DocumentAction;
+import com.smt.sitebuilder.action.metadata.MetadataVO;
 import com.smt.sitebuilder.action.metadata.WidgetMetadataVO;
 import com.smt.sitebuilder.approval.ApprovalController;
 import com.smt.sitebuilder.common.PageVO;
@@ -100,7 +101,8 @@ public class IssueArticleAction extends SBActionAdapter {
 
 			} else if (req.hasParameter(REQ_DOCUMENT_ID)) {
 				String userId = AppUtil.getMTSUserId(req);
-				setModuleData(getDocument(req.getParameter(REQ_DOCUMENT_ID), null, false, userId));
+				MTSDocumentVO doc = getDocument(req.getParameter(REQ_DOCUMENT_ID), null, false, userId);
+				setModuleData(doc);
 
 			} else {
 				setModuleData(getArticles(new BSTableControlVO(req, MTSDocumentVO.class), req));
@@ -146,6 +148,7 @@ public class IssueArticleAction extends SBActionAdapter {
 	 */
 	public MTSDocumentVO getDocument(String documentId, String directPath, boolean pagePreview, String userId) 
 			throws SQLException {
+		
 		if (StringUtil.isEmpty(documentId) && StringUtil.isEmpty(directPath)) 
 			throw new SQLException("No identifier passed for the document");
 
@@ -188,10 +191,37 @@ public class IssueArticleAction extends SBActionAdapter {
 			}
 		}
 
-		if (isFound) doc.setCategories(getCategories(doc.getActionId()));
+		if (isFound) {
+			doc.setCategories(getCategories(doc.getActionId()));
+			getMetaData(doc);
+		}
+		
 		return doc;
 	}
 
+	/**
+	 * Retrieves the meta keywords and desc for the article
+	 * @param doc
+	 * @throws SQLException
+	 */
+	public void getMetaData(MTSDocumentVO doc) throws SQLException {
+		
+		StringBuilder sql = new StringBuilder(128);
+		sql.append("select * from widget_meta_data_xr where action_id = ? ");
+		sql.append("and widget_meta_data_id in ('META_DESC', 'META_KEYWD') ");
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, doc.getActionId());
+			
+			try (ResultSet rs = ps.executeQuery()) {
+				while(rs.next()) {
+					MetadataVO vo = new MetadataVO(rs);
+					doc.addMetaDataItem(vo.getMetadataId(), vo);
+				}
+			}
+		}
+	}
+	
 	/**
 	 * Gets the categories for the given action id
 	 * @param actionId
@@ -213,7 +243,7 @@ public class IssueArticleAction extends SBActionAdapter {
 	 * @param pubId
 	 * @return
 	 */
-	public PublicationTeaserVO getArticleTeasers(String pubId, String catId, int useLatest) {
+	public PublicationTeaserVO getArticleTeasers(String pubId, String catId, int useLatest, int limit) {
 		StringBuilder sql = new StringBuilder(1088);
 		String schema = getCustomSchema();
 
@@ -247,7 +277,8 @@ public class IssueArticleAction extends SBActionAdapter {
 			sql.append("where publication_id = ? and approval_flg = 1 ) and publish_dt is not null ");
 			sql.append("and p.publication_id = ? ");
 		}
-		sql.append("order by a.publish_dt desc, document_id limit 10");
+		sql.append("order by a.publish_dt desc, document_id ");
+		if (limit > 0) sql.append("limit " + limit);
 		log.debug( sql + "|" + pubId + "|" + catId);
 
 		PublicationTeaserVO ptvo = null;
