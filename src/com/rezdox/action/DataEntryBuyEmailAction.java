@@ -77,6 +77,7 @@ public class DataEntryBuyEmailAction extends SimpleActionAdapter {
 	}
 
 	/**
+	 * sends the email email informing rezdox they have a new data entry to complete.
 	 * @param s
 	 */
 	public void sendEmail(SubscriptionVO s) {
@@ -105,6 +106,7 @@ public class DataEntryBuyEmailAction extends SimpleActionAdapter {
 	}
 
 	/**
+	 * gets the member that paid for a data entry by member id
 	 * @param memberId
 	 * @return
 	 */
