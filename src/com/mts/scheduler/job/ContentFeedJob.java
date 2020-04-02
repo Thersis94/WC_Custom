@@ -81,7 +81,7 @@ public class ContentFeedJob extends AbstractSMTJob {
 		// Run the job
 		StringBuilder msg = new StringBuilder(500);
 		cfj.processDocuments(msg);
-		cfj.log.info(msg);
+		ContentFeedJob.log.info(msg);
 	}
 
 	/**

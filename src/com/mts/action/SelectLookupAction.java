@@ -12,9 +12,11 @@ import java.util.Map;
 import com.mts.admin.action.UserAction;
 import com.mts.publication.action.IssueAction;
 import com.mts.publication.action.PublicationAction;
+import com.mts.publication.action.SponsorAction;
 import com.mts.publication.data.AssetVO.AssetType;
 import com.mts.publication.data.IssueVO;
 import com.mts.publication.data.PublicationVO;
+import com.mts.publication.data.SponsorVO;
 import com.mts.subscriber.action.SubscriptionAction.SubscriptionType;
 import com.mts.subscriber.data.MTSUserVO;
 // SMT Base Libs
@@ -77,12 +79,13 @@ public class SelectLookupAction extends SBActionAdapter {
 		keyMap.put("category", new GenericVO("getCategories", Boolean.TRUE));
 		keyMap.put("users", new GenericVO("getUsers", Boolean.TRUE));
 		keyMap.put("editors", new GenericVO("getEditors", Boolean.FALSE));
-		keyMap.put("assetTypes", new GenericVO("getAssetTypes", Boolean.FALSE));
+		keyMap.put("assetTypes", new GenericVO("getAssetTypes", Boolean.TRUE));
 		keyMap.put("publications", new GenericVO("getPublications", Boolean.TRUE));
 		keyMap.put("issues", new GenericVO("getIssues", Boolean.TRUE));
 		keyMap.put("subscriptions", new GenericVO("getSubscriptions", Boolean.FALSE));
 		keyMap.put("articles", new GenericVO("getArticles", Boolean.FALSE));
 		keyMap.put("searchAC", new GenericVO("getArticlesAC", Boolean.TRUE));
+		keyMap.put("sponsors", new GenericVO("getSponsors", Boolean.FALSE));
 	}
 
 	/**
@@ -256,11 +259,19 @@ public class SelectLookupAction extends SBActionAdapter {
 	 * gets a lit of asset types for uploading of assets
 	 * @return
 	 */
-	public List<GenericVO> getAssetTypes() {
+	public List<GenericVO> getAssetTypes(ActionRequest req) {
+		boolean filter = req.getBooleanParameter("filter");
+		AssetType fat = null;
+		if (filter && req.hasParameter("filterType")) fat = AssetType.valueOf(req.getParameter("filterType"));
 		List<GenericVO> data = new ArrayList<>(16);
 
 		for (AssetType at : AssetType.values()) {
-			data.add(new GenericVO(at.name(), at.getAssetName()));
+			if (filter && fat != null) {
+				if (at.equals(fat)) data.add(new GenericVO(at.name(), at.getAssetName()));
+			} else {
+				data.add(new GenericVO(at.name(), at.getAssetName()));
+			}
+			
 		}
 
 		Collections.sort(data, (a, b) -> ((String)a.getValue()).compareTo((String)b.getValue()));
@@ -345,6 +356,21 @@ public class SelectLookupAction extends SBActionAdapter {
 
 		DBProcessor db = new DBProcessor(getDBConnection());
 		return db.executeSelect(sql.toString(), null, new GenericVO());
+	}
+	
+	/**
+	 * Gets a lit of articles.  supports type ahead and full list
+	 * @return
+	 */
+	public List<GenericVO> getSponsors() {
+		SponsorAction sa = new SponsorAction(getDBConnection(), getAttributes());
+		List<SponsorVO> sponsors = sa.getSponsors();
+		List<GenericVO> data = new ArrayList<>();
+		
+		for (SponsorVO sponsor : sponsors) 
+			data.add(new GenericVO(sponsor.getSponsorId(), sponsor.getName()));
+		
+		return data;
 	}
 
 	/**
