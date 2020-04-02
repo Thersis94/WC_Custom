@@ -9,18 +9,14 @@ import java.util.Map;
 import com.rezdox.vo.MemberVO;
 import com.rezdox.vo.MembershipVO;
 import com.rezdox.vo.SubscriptionVO;
-import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
-import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.io.mail.EmailRecipientVO;
 import com.siliconmtn.sb.email.util.EmailCampaignBuilderUtil;
-import com.siliconmtn.security.UserDataVO;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.SimpleActionAdapter;
-import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
  * <b>Title</b>: DataEntryBuyEmailAction.java
@@ -89,16 +85,20 @@ public class DataEntryBuyEmailAction extends SimpleActionAdapter {
 		String membershipId = StringUtil.checkVal(s.getMemberId());
 		String membershipName = StringUtil.checkVal(getMembershipName(membershipId));
 		MemberVO user = getUserByMemberId(s.getMemberId());
+		if(user == null) {
+			log.debug("null user for memeber id: " + s.getMemberId() + " no email is sent: " );
+			return;
+		}
 		
 		Map<String, Object> emailParams = new HashMap<>();
 		emailParams.put("firstName", user.getFirstName());
 		emailParams.put("lastName", user.getLastName());
-		emailParams.put("emailAddressText", user.getEmailAddress());
+		emailParams.put("emailAddress", user.getEmailAddress());
 		emailParams.put("membershipId", membershipId);
 		emailParams.put("membershipName", membershipName);
 		
 		List<EmailRecipientVO> recipients = new ArrayList<>();
-		recipients.add(new EmailRecipientVO(null, "info@rezdox.com", EmailRecipientVO.TO));
+		recipients.add(new EmailRecipientVO(null, "dataentry@rezdox.com", EmailRecipientVO.TO));
 	
 		ecbu.sendMessage(emailParams, recipients, REZDOX_DATA_ENTRY_BUY);
 		
