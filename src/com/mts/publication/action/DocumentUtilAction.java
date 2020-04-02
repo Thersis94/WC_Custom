@@ -116,6 +116,8 @@ public class DocumentUtilAction extends SBActionAdapter {
 			ps.setString(1, docId);
 			ps.setString(2, origDocId);
 			ps.executeUpdate();
+			
+			log.debug(ps.toString());
 		}
 	}
 	
