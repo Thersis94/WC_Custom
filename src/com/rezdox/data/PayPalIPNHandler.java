@@ -193,10 +193,10 @@ public class PayPalIPNHandler extends SimpleActionAdapter {
 		dataEntryCodes.add("DATA_ENTRY50");
 		dataEntryCodes.add("DATA_ENTRY100");
 		
-		for (SubscriptionVO s : subscriptions) {
-			if(dataEntryCodes.contains(s.getMemberId())) {
+		for (SubscriptionVO svo : subscriptions) {
+			if(dataEntryCodes.contains(svo.getMembershipId())) {
 				DataEntryBuyEmailAction dataEntryEmail = new DataEntryBuyEmailAction(getDBConnection(),getAttributes());
-				dataEntryEmail.sendEmail(s);
+				dataEntryEmail.sendEmail(svo);
 			}
 		}
 	}
