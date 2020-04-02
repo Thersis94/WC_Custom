@@ -37,6 +37,7 @@ public class SmartTRAKUserValidator implements UserValidatorInterface {
 		UserVO smarttrakUser = (UserVO) user;
 		// Complimentary users are always considered valid
 		if (LicenseType.TRIAL.getCode().equals(smarttrakUser.getLicenseType())) return true;
+		if (LicenseType.UPDATES.getCode().equals(smarttrakUser.getLicenseType())) return true;
 		if (StringUtil.isEmpty(smarttrakUser.getFirstName())) return false;
 		if (StringUtil.isEmpty(smarttrakUser.getLastName())) return false;
 		if (StringUtil.isEmpty(smarttrakUser.getEmailAddress())) return false;
