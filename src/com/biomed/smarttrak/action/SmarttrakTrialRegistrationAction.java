@@ -121,7 +121,7 @@ public class SmarttrakTrialRegistrationAction extends SBActionAdapter {
 		if (email.indexOf('@') == -1) return false;
 		
 		StringBuilder sql = new StringBuilder(300);
-		sql.append("select account_id, trial_expiration_dt, campaign_title_txt from ");
+		sql.append("select account_id, trial_expiration_dt, campaign_title_txt, type_id from ");
 		sql.append(attributes.get(Constants.CUSTOM_DB_SCHEMA)).append("biomedgps_account ");
 		sql.append("where domains_txt like ? and trial_expiration_dt > current_timestamp ");
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
@@ -134,6 +134,7 @@ public class SmarttrakTrialRegistrationAction extends SBActionAdapter {
 				req.setParameter("expirationDate", formatter.format(rs.getDate("trial_expiration_dt").getTime()));
 				req.setParameter("entrySource", rs.getString("campaign_title_txt"));
 				req.setParameter("statusFlg", "1");
+				req.setParameter("licenseType", rs.getInt("type_id") == 3? "U":"K");
 				req.setParameter("passProfile", "true");
 				return true;
 			}
