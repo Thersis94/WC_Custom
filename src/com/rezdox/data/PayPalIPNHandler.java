@@ -9,6 +9,7 @@ import java.util.Set;
 
 // PayPal Core 1.7.2
 import com.paypal.ipn.IPNMessage;
+import com.rezdox.action.DataEntryBuyEmailAction;
 // WC_Custom
 import com.rezdox.action.MembershipAction;
 import com.rezdox.vo.MembershipVO;
@@ -183,6 +184,20 @@ public class PayPalIPNHandler extends SimpleActionAdapter {
 			new DBProcessor(dbConn, getCustomSchema()).executeBatch(subscriptions);
 		} catch (Exception e) {
 			log.error("Unable to save paid RezDox subscription data. ", e);
+		}
+		
+		List<String> dataEntryCodes = new ArrayList<>();
+		dataEntryCodes.add("DATA_ENTRY5");
+		dataEntryCodes.add("DATA_ENTRY15");
+		dataEntryCodes.add("DATA_ENTRY25");
+		dataEntryCodes.add("DATA_ENTRY50");
+		dataEntryCodes.add("DATA_ENTRY100");
+		
+		for (SubscriptionVO svo : subscriptions) {
+			if(dataEntryCodes.contains(svo.getMembershipId())) {
+				DataEntryBuyEmailAction dataEntryEmail = new DataEntryBuyEmailAction(getDBConnection(),getAttributes());
+				dataEntryEmail.sendEmail(svo);
+			}
 		}
 	}
 }
