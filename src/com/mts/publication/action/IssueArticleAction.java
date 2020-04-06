@@ -97,7 +97,7 @@ public class IssueArticleAction extends SBActionAdapter {
 
 		try {
 			if (req.hasParameter("related")) {
-				setModuleData(getRelatedArticles(req.getParameter("actionGroupId"), ("ajax_ctrl".equals(req.getParameter("amid")) || page.isPreviewMode())));
+				setModuleData(getRelatedArticles(req.getParameter(REQ_DOCUMENT_ID), ("ajax_ctrl".equals(req.getParameter("amid")) || page.isPreviewMode())));
 
 			} else if (req.hasParameter(REQ_DOCUMENT_ID)) {
 				String userId = AppUtil.getMTSUserId(req);
@@ -117,7 +117,7 @@ public class IssueArticleAction extends SBActionAdapter {
 	 * @param groupId
 	 * @return
 	 */
-	public List<RelatedArticleVO> getRelatedArticles(String groupId, boolean isPagePreview) {
+	public List<RelatedArticleVO> getRelatedArticles(String documentId, boolean isPagePreview) {
 		String schema = getCustomSchema();
 		StringBuilder sql = new StringBuilder(408);
 		sql.append("select d.action_id, action_nm, publish_dt, first_nm, last_nm, ");
@@ -134,10 +134,10 @@ public class IssueArticleAction extends SBActionAdapter {
 			sql.append("and (b.publish_dt < CURRENT_TIMESTAMP or b.publish_dt is null) "); //the article released
 
 		sql.append("order by action_nm, related_article_id ");
-		log.debug(sql.length() + "|" + sql + "|" + groupId);
+		log.info(sql.length() + "|" + sql + "|" + documentId);
 
 		DBProcessor db = new DBProcessor(getDBConnection()); 
-		return db.executeSelect(sql.toString(), Arrays.asList(groupId), new RelatedArticleVO());
+		return db.executeSelect(sql.toString(), Arrays.asList(documentId), new RelatedArticleVO());
 	}
 
 	/**

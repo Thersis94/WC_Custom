@@ -6,6 +6,7 @@ import java.sql.SQLException;
 //Java 8
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -435,9 +436,15 @@ public class AccountUserAction extends SBActionAdapter {
 		try {
 			WCUtil.logout(req.getSession());
 			SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
-			String encKey = (String)getAttribute(Constants.ENCRYPT_KEY);
+			String encKey = (String)attributes.get(Constants.ENCRYPT_KEY);
 			StringEncrypter se = new StringEncrypter(encKey);
-			String encProfileId = StringEncoder.urlEncode(se.encrypt(req.getParameter("loginAs")));
+			String encProfileId = se.encrypt(req.getParameter("loginAs"));
+			
+			long timestamp = (new Date()).getTime();
+			String token = AdminControllerAction.PUBLIC_SITE_ID + "|" + timestamp;
+			String encToken = se.encrypt(token);
+			req.setParameter("userProxyKey", encProfileId);
+			req.setParameter("userProxyToken", encToken);
 
 			SecurityController sc = new SecurityController(site.getLoginModules(), site.getRoleModule(), getAttributes());
 			sc.processCookieLogin(encProfileId, dbConn, req, site);
@@ -719,8 +726,9 @@ public class AccountUserAction extends SBActionAdapter {
 		if (StringUtil.isEmpty(req.getParameter(USER_ID)))
 			addToDefaultTeam(user);
 		
-		if (Convert.formatBoolean(req.getParameter("passProfile")))
-			req.setParameter("profileId", user.getProfileId());
+		if (Convert.formatBoolean(req.getParameter("passProfile"))) {
+			putModuleData(user);
+		}
 		
 		addSkippedMarkets(user);
 

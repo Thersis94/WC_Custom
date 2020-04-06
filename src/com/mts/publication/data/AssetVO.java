@@ -35,7 +35,9 @@ public class AssetVO extends BeanDataVO {
 		COVER_IMG("Cover Image"),
 		PDF_DOC("PDF Document"),
 		EXCEL_DOC("Excel Document"),
-		GEN_IMAGE("General Image");
+		GEN_IMAGE("General Image"),
+		LOGO_IMAGE("Logo Image"),
+		SPONSOR_IMG("Sponsor Image");
 		
 		private String assetName;
 		private AssetType(String assetName)  { this.assetName = assetName; }

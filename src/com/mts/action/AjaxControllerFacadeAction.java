@@ -23,6 +23,7 @@ import com.mts.publication.action.IssueAction;
 import com.mts.publication.action.IssueArticleAction;
 import com.mts.publication.action.MTSDocumentAction;
 import com.mts.publication.action.PublicationAction;
+import com.mts.publication.action.SponsorAction;
 import com.mts.report.MtsUserLoginReport;
 import com.mts.security.IPSecurityAction;
 
@@ -87,6 +88,8 @@ public class AjaxControllerFacadeAction extends FacadeActionAdapter {
 		actionMap.put(PublicationActivityReportAction.AJAX_KEY, PublicationActivityReportAction.class);
 		actionMap.put("ssoProviders", SSOProviderAction.class);
 		actionMap.put(DocumentUtilAction.AJAX_KEY, DocumentUtilAction.class);
+		actionMap.put(SponsorAction.AJAX_KEY, SponsorAction.class);
+		
 	}
 
 	/*

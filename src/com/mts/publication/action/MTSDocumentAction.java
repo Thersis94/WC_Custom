@@ -216,6 +216,7 @@ public class MTSDocumentAction extends SimpleActionAdapter {
 
 		// If its a new document, add the group id.
 		MTSDocumentVO doc = new MTSDocumentVO(req);
+		
 		if (! StringUtil.isEmpty((String)req.getAttribute("DIRECT_ACCCESS_PATH")))
 			doc.setDirectAccessPath((String)req.getAttribute("DIRECT_ACCCESS_PATH"));
 
@@ -264,8 +265,8 @@ public class MTSDocumentAction extends SimpleActionAdapter {
 				db.insert(doc);
 			} else {
 				db.update(doc, Arrays.asList(
-						"document_id", "unique_cd", "publish_dt", "update_dt", "author_id"
-						));
+						"document_id", "unique_cd", "publish_dt", "update_dt", "author_id", "sponsor_id"
+				));
 			}
 		} catch (Exception e) {
 			throw new DatabaseException("Unable to save document", e);
