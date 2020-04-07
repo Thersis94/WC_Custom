@@ -61,7 +61,8 @@ public class MembershipAction extends SBActionAdapter {
 	 */
 	@Override
 	public void list(ActionRequest req) throws ActionException {
-		List<MembershipVO> memberships = retrieveMemberships(req);
+		log.debug("list called");
+		List<MembershipVO> memberships = retrieveMemberships(req, true);
 		putModuleData(memberships, memberships.size(), true);
 	}
 
@@ -75,13 +76,22 @@ public class MembershipAction extends SBActionAdapter {
 
 		ses.setAttribute(RD_STORE, retrieveMemberships(req));
 	}
+	
+	/**
+	 * added for backward compatibility
+	 * @param req
+	 * @return
+	 */
+	public List<MembershipVO> retrieveMemberships(ActionRequest req) {
+		return retrieveMemberships( req, false);
+	}
 
 	/**
 	 * Retrieves list of memberships
 	 * @param req
 	 * @return
 	 */
-	public List<MembershipVO> retrieveMemberships(ActionRequest req) {
+	public List<MembershipVO> retrieveMemberships(ActionRequest req, boolean isAdmintool) {
 		String schema = getCustomSchema();
 		List<Object> params = new ArrayList<>();
 
@@ -102,13 +112,14 @@ public class MembershipAction extends SBActionAdapter {
 			sql.append(") ");
 			params.addAll(Arrays.asList(membershipIds));
 
-		} else if (groupCodes != null && groupCodes.length > 0) {
+		} else if (groupCodes != null && groupCodes.length > 0 && ! isAdmintool) {
 			sql.append("and group_cd not in (");
 			DBUtil.preparedStatmentQuestion(groupCodes.length, sql);
 			sql.append(") ");
 			params.addAll(Arrays.asList(groupCodes));
 		}
 		sql.append("order by order_no");
+		log.debug("sql "+ sql + "|" + params );
 
 		DBProcessor dbp = new DBProcessor(dbConn, schema);
 		dbp.setGenerateExecutedSQL(log.isDebugEnabled());

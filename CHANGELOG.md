@@ -1,5 +1,24 @@
 WC_Custom Changelog (auto-generated)
 
+# [3.51.0](https://github.com/smtadmin/WC_Custom/compare/3.50.0...3.51.0) (2020-04-03)
+
+
+### Bug Fixes
+
+* **articles:** fixed issue displaying related articles ([8ce623d](https://github.com/smtadmin/WC_Custom/commit/8ce623d))
+* **marathon-rezdox-344:** fixed but where not all memberships appeared in the admintool ([e3506b9](https://github.com/smtadmin/WC_Custom/commit/e3506b9))
+* **rezdox-smarttrak:** Update smarttrak login as to work with the user impersonation system and incr ([6cfb583](https://github.com/smtadmin/WC_Custom/commit/6cfb583))
+* **ST-345:** Add columns for complimential trial campaigns. ([7b33878](https://github.com/smtadmin/WC_Custom/commit/7b33878))
+* **ST-381:** Allow updates only users to skip validation. ([b6c3077](https://github.com/smtadmin/WC_Custom/commit/b6c3077))
+* **ST-381:** Remove updates link redirects and make pilot company trials have updates only users. ([a1f0497](https://github.com/smtadmin/WC_Custom/commit/a1f0497))
+
+
+### Features
+
+* **marathon-rezdox-344:** add email to rezdox when data entry purchased. ([f7fdbbe](https://github.com/smtadmin/WC_Custom/commit/f7fdbbe))
+* **marathon-rezdox-344:** complete email after data entry buy ([62c44be](https://github.com/smtadmin/WC_Custom/commit/62c44be))
+* **sponsors:** added the sponsor management to the portal ([7cd6f1c](https://github.com/smtadmin/WC_Custom/commit/7cd6f1c))
+
 # [3.50.0](https://github.com/smtadmin/WC_Custom/compare/3.49.0...3.50.0) (2020-03-28)
 
 

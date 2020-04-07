@@ -7,12 +7,14 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 
 import com.biomed.smarttrak.admin.AccountUserAction;
+import com.biomed.smarttrak.vo.UserVO;
 import com.siliconmtn.action.ActionControllerFactoryImpl;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.util.Convert;
 import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.registration.RegistrationFacadeAction;
+import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
 
 /*****************************************************************************
@@ -54,12 +56,17 @@ public class SmarttrakTrialRegistrationAction extends SBActionAdapter {
 		}
 
 		if (!Convert.formatBoolean(req.getParameter("stepTwo"))) {
+			// The user should not have a profileId here. If one has been provided
+			// skip everything so as to prevent letting random people log into other accounts
+			if (req.hasParameter("profileId")) return;
+			
 			AccountUserAction acc = new AccountUserAction();
 			acc.setActionInit(actionInit);
 			acc.setAttributes(attributes);
 			acc.setDBConnection(dbConn);
 			acc.build(req);
-			req.setParameter("loginAs", req.getParameter("profileId"));
+			ModuleVO mod = getModuleVO();
+			req.setParameter("loginAs", ((UserVO)mod.getActionData()).getProfileId());
 			acc.retrieve(req);
 			req.setAttribute(Constants.REDIRECT_REQUEST, Boolean.TRUE);
 			req.setAttribute(Constants.REDIRECT_URL, req.getRequestURI() + "?hideMenu=true");
@@ -114,7 +121,7 @@ public class SmarttrakTrialRegistrationAction extends SBActionAdapter {
 		if (email.indexOf('@') == -1) return false;
 		
 		StringBuilder sql = new StringBuilder(300);
-		sql.append("select account_id, trial_expiration_dt, campaign_title_txt from ");
+		sql.append("select account_id, trial_expiration_dt, campaign_title_txt, type_id from ");
 		sql.append(attributes.get(Constants.CUSTOM_DB_SCHEMA)).append("biomedgps_account ");
 		sql.append("where domains_txt like ? and trial_expiration_dt > current_timestamp ");
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
@@ -127,6 +134,7 @@ public class SmarttrakTrialRegistrationAction extends SBActionAdapter {
 				req.setParameter("expirationDate", formatter.format(rs.getDate("trial_expiration_dt").getTime()));
 				req.setParameter("entrySource", rs.getString("campaign_title_txt"));
 				req.setParameter("statusFlg", "1");
+				req.setParameter("licenseType", rs.getInt("type_id") == 3? "U":"K");
 				req.setParameter("passProfile", "true");
 				return true;
 			}
