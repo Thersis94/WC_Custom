@@ -69,8 +69,11 @@ public class DocumentUtilAction extends SBActionAdapter {
 			// Add the MTS Document Information
 			MTSDocumentVO doc = this.addMTSDocument(req);
 			
-			// Copy the categories
-			this.copyRelatedArticles(req.getParameter("documentId"), doc.getDocumentId());
+			// Copy the related articles
+			copyRelatedArticles(req.getParameter("documentId"), doc.getDocumentId());
+			
+			// copy featured images
+			copyArticleAssets(req.getParameter("documentId"), doc.getDocumentId());
 
 			
 		} catch (Exception e) {
@@ -79,6 +82,29 @@ public class DocumentUtilAction extends SBActionAdapter {
 		
 		req.setAttribute(Constants.REDIRECT_REQUEST, Boolean.FALSE);
 		req.setAttribute(Constants.REDIRECT_URL, null);
+	}
+	
+	/**
+	 * Copies the related articles to the newly cloned article
+	 * @param origDocId
+	 * @param docId
+	 * @throws SQLException
+	 */
+	public void copyArticleAssets(String origDocId, String docId) throws SQLException {
+		StringBuilder sql = new StringBuilder(128);
+		sql.append("insert into custom.mts_document_asset (document_asset_id, document_nm, ");
+		sql.append("asset_type_cd, document_path, thumbnail_path, create_dt, object_key_id ) ");
+		sql.append("select replace(newid(), '-', ''), document_nm, asset_type_cd, document_path, thumbnail_path, now(), ? "); 
+		sql.append("from custom.mts_document_asset ");
+		sql.append("where object_key_id = ? ");
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, docId);
+			ps.setString(2, origDocId);
+			ps.executeUpdate();
+			
+			log.debug(ps.toString());
+		}
 	}
 	
 	/**
