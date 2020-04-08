@@ -202,7 +202,7 @@ public class UserListReportAction extends SimpleActionAdapter {
 		sql.append("left join profile_address pfa on pf.profile_id = pfa.profile_id ");
 		sql.append("left join phone_number ph on pf.profile_id = ph.profile_id ");
 		sql.append("inner join register_submittal rs on pf.profile_id = rs.profile_id ");
-		sql.append("inner join register_data rd on rs.register_submittal_id = rd.register_submittal_id ");
+		sql.append("left join register_data rd on rs.register_submittal_id = rd.register_submittal_id ");
 		sql.append("left join register_field_option rfo on rd.register_field_id = rfo.register_field_id ");  
 		sql.append("and rd.value_txt = rfo.option_value_txt ");
 		sql.append("order by ac.account_id, us.user_id, us.profile_id, phone_type_cd ");
