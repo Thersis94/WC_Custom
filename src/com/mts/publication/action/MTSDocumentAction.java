@@ -177,8 +177,8 @@ public class MTSDocumentAction extends SimpleActionAdapter {
 		sql.append("left outer join widget_meta_data f ");
 		sql.append("on e.widget_meta_data_id = f.widget_meta_data_id ");
 		sql.append("where ").append(isAuthor ? "b.author_id" : "b.sponsor_id").append(" = ? ");
-		sql.append("order by b.publish_dt desc");
-		log.info(sql.length() + "|" + sql + "|" + authorId);
+		sql.append(" and c.organization_id = 'MTS' order by b.publish_dt desc limit 250");
+		log.debug(sql.length() + "|" + sql + "|" + authorId);
 
 		DBProcessor db = new DBProcessor(getDBConnection(), schema);
 		return db.executeSelect(sql.toString(), Arrays.asList(authorId), new MTSDocumentVO());

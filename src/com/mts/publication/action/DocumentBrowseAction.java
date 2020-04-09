@@ -106,7 +106,7 @@ public class DocumentBrowseAction extends SimpleActionAdapter {
 		sql.append("select b.document_id, b.unique_cd, a.action_id, action_nm, action_desc, b.publish_dt, direct_access_pth, ");
 		sql.append("d.user_id, first_nm, last_nm, c.publication_id, publication_nm, newid() as document_asset_id, ");
 		sql.append("coalesce(doc_img, cat_img, '/000/000/feature.png') as document_path, ");
-		sql.append("coalesce(len(e.user_info_id), 0) as bookmark_flg ");
+		sql.append("coalesce(len(e.user_info_id), 0) as bookmark_flg, b.sponsor_id ");
 		sql.append("from sb_action a ");
 		sql.append("inner join document doc on a.action_id = doc.action_id ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("mts_document b on a.action_group_id = b.action_group_id and pending_sync_flg = 0 ");
