@@ -6,6 +6,8 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+import com.mts.common.MTSConstants;
+import com.mts.publication.data.AssetVO.AssetType;
 // SMT Base Libs 3.x
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.parser.BeanDataVO;
@@ -232,4 +234,37 @@ public class SponsorVO extends BeanDataVO {
 		this.assets = assets;
 	}
 
+	/**
+	 * Retrieves the primary sponsor image
+	 * @return
+	 */
+	public AssetVO getPrimaryAsset() {
+		// Get the sponsor image
+		AssetVO asset = new AssetVO();
+		asset.setDocumentAssetId(PublicationTeaserVO.DEFAULT_FEATURE_IMG);
+		asset.setDocumentPath(MTSConstants.DEF_FEATURE_IMG_PATH);
+		for (AssetVO ass : assets) {
+			if (ass.getAssetType().equals(AssetType.SPONSOR_IMG)) asset = ass;
+		}
+		
+		return asset;
+	}
+	
+	/**
+	 * Converts the sponsor object into an info-panel
+	 * @param asset
+	 * @return
+	 */
+	public String getInfoPanel() {
+
+		// Build the HTML for the panel
+		StringBuilder txt = new StringBuilder(512);
+		txt.append("<div class='startup-info-panel'><small>SPONSORED BY:</small>");
+		txt.append("<a href='").append(websiteUrl).append("' target='_blank'><img src='");
+		txt.append(getPrimaryAsset().getDocumentPath()).append("' /></a>");
+		txt.append("<p><strong>").append(name).append("</strong></p>");
+		txt.append("<p>").append(shortDesc).append("</p></div>");
+		
+		return txt.toString();
+	}
 }

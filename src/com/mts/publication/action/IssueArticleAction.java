@@ -134,7 +134,7 @@ public class IssueArticleAction extends SBActionAdapter {
 			sql.append("and (b.publish_dt < CURRENT_TIMESTAMP or b.publish_dt is null) "); //the article released
 
 		sql.append("order by action_nm, related_article_id ");
-		log.info(sql.length() + "|" + sql + "|" + documentId);
+		log.debug(sql.length() + "|" + sql + "|" + documentId);
 
 		DBProcessor db = new DBProcessor(getDBConnection()); 
 		return db.executeSelect(sql.toString(), Arrays.asList(documentId), new RelatedArticleVO());

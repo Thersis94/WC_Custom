@@ -366,7 +366,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		SponsorAction sa = new SponsorAction(getDBConnection(), getAttributes());
 		List<SponsorVO> sponsors = sa.getSponsors();
 		List<GenericVO> data = new ArrayList<>();
-		
+		data.add(new GenericVO("","None Selected"));
 		for (SponsorVO sponsor : sponsors) 
 			data.add(new GenericVO(sponsor.getSponsorId(), sponsor.getName()));
 		

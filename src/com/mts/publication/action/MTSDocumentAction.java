@@ -128,11 +128,24 @@ public class MTSDocumentAction extends SimpleActionAdapter {
 			ids.add(doc.getDocumentId());
 			ids.add(PublicationTeaserVO.DEFAULT_FEATURE_IMG);
 			doc.setAssets(aa.getAllAssets(ids));
-
+			
 			UserAction ua = new UserAction(getDBConnection(), getAttributes());
 			MTSUserVO user = ua.getUserProfile(doc.getAuthorId());
-			user.setArticles(getAuthorArticles(doc.getAuthorId()));
 			doc.setAuthor(user);
+			
+			// Get the article sponsor.  Overwrite the infobar if sponsored
+			if (!StringUtil.isEmpty(doc.getSponsorId())) {
+				SponsorAction sa = new SponsorAction(getDBConnection(), getAttributes());
+				doc.setSponsor(sa.getSponsor(doc.getSponsorId()));
+				doc.setInfoBar(doc.getSponsor().getInfoPanel());
+				user.setArticles(getAuthorArticles(doc.getSponsorId(), false));
+				
+			} else {
+				
+				user.setArticles(getAuthorArticles(doc.getAuthorId(), true));
+				doc.setAuthor(user);
+			}
+
 			setModuleData(doc);
 		} catch (Exception e) {
 			log.debug("Unable to retrieve document", e);
@@ -145,10 +158,10 @@ public class MTSDocumentAction extends SimpleActionAdapter {
 	 * @param authorId
 	 * @return
 	 */
-	public List<MTSDocumentVO> getAuthorArticles(String authorId) {
+	public List<MTSDocumentVO> getAuthorArticles(String authorId, boolean isAuthor) {
 		String schema = getCustomSchema();
 		StringBuilder sql = new StringBuilder(640);
-		sql.append("select b.publish_dt, b.author_id, unique_cd, b.document_id, ");
+		sql.append("select b.publish_dt, b.author_id, unique_cd, b.document_id, b.sponsor_id, ");
 		sql.append("c.*, d.*, doc.*, p.publication_nm, e.*, f.field_nm, f.parent_id, i.publication_id ");
 		sql.append("from ").append(schema).append("mts_document b ");
 		sql.append("inner join sb_action c ");
@@ -163,8 +176,9 @@ public class MTSDocumentAction extends SimpleActionAdapter {
 		sql.append("left outer join widget_meta_data_xr e on c.action_id = e.action_id ");
 		sql.append("left outer join widget_meta_data f ");
 		sql.append("on e.widget_meta_data_id = f.widget_meta_data_id ");
-		sql.append("where b.author_id = ? order by b.publish_dt desc");
-		log.debug(sql.length() + "|" + sql + "|" + authorId);
+		sql.append("where ").append(isAuthor ? "b.author_id" : "b.sponsor_id").append(" = ? ");
+		sql.append("order by b.publish_dt desc");
+		log.info(sql.length() + "|" + sql + "|" + authorId);
 
 		DBProcessor db = new DBProcessor(getDBConnection(), schema);
 		return db.executeSelect(sql.toString(), Arrays.asList(authorId), new MTSDocumentVO());

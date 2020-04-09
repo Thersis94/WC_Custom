@@ -65,7 +65,7 @@ public class AuthorDisplayWidget extends SimpleActionAdapter {
 			
 			// Get the most recent articles for the author
 			MTSDocumentAction mda = new MTSDocumentAction(getDBConnection(), getAttributes());
-			author.setArticles(mda.getAuthorArticles(author.getUserId()));
+			author.setArticles(mda.getAuthorArticles(author.getUserId(), true));
 			
 			// Add the data
 			setModuleData(author);
