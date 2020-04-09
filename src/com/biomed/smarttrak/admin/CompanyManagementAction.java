@@ -296,6 +296,7 @@ public class CompanyManagementAction extends ManagementAction {
 		}else{
 			loadAuthors(req); //load list of BiomedGPS Staff for the "Author" drop-down
 			loadSectionCounts(req);
+			super.putModuleData(new CompanyVO());
 		}	
 	}
 
@@ -1043,7 +1044,7 @@ public class CompanyManagementAction extends ManagementAction {
 	private void generateContent(ActionRequest req, String companyId, String attributeId) throws ActionException {
 		String[] contentList = req.getParameterValues("contentName");
 		// If nothing is supplied we can return without issue.
-		if (contentList.length == 0) return;
+		if (contentList == null || contentList.length == 0) return;
 
 		StringBuilder sql = new StringBuilder(275);
 		sql.append(INSERT_INTO).append(customDbSchema);

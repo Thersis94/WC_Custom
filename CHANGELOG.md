@@ -1,5 +1,14 @@
 WC_Custom Changelog (auto-generated)
 
+## [3.51.1](https://github.com/smtadmin/WC_Custom/compare/3.51.0...3.51.1) (2020-04-08)
+
+
+### Bug Fixes
+
+* **ST-389:** Ensure people without submital data records can show up in the report. ([e3c7c34](https://github.com/smtadmin/WC_Custom/commit/e3c7c34))
+* **ST-389:** Make email checks case insensitive. ([5cbdc7b](https://github.com/smtadmin/WC_Custom/commit/5cbdc7b))
+* **ST-393:** Place valid data in the moduleData field. ([a1a73ae](https://github.com/smtadmin/WC_Custom/commit/a1a73ae))
+
 # [3.51.0](https://github.com/smtadmin/WC_Custom/compare/3.50.0...3.51.0) (2020-04-03)
 
 
