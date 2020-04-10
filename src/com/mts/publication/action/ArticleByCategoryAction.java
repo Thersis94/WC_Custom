@@ -81,7 +81,7 @@ public class ArticleByCategoryAction extends SimpleActionAdapter {
 
 		StringBuilder sql = new StringBuilder(464);
 		sql.append("select action_nm, action_desc, a.action_id, document_id, ");
-		sql.append("unique_cd, publication_id, direct_access_pth, publish_dt ");
+		sql.append("unique_cd, publication_id, direct_access_pth, publish_dt, c.sponsor_id ");
 		sql.append("from widget_meta_data_xr  a ");
 		sql.append("inner join sb_action b on a.action_id = b.action_id and b.pending_sync_flg = 0 ");
 		sql.append("inner join document doc on b.action_id = doc.action_id ");

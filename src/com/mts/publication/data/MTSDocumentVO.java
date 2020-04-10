@@ -72,6 +72,7 @@ public class MTSDocumentVO extends DocumentVO {
 	private String publicationName;
 	private String userInfoId;
 	private int bookmarkFlag;
+	private SponsorVO sponsor;
 	private Map<String, List<WidgetMetadataVO>> cats = new LinkedHashMap<>();
 	
 	/**
@@ -582,6 +583,20 @@ public class MTSDocumentVO extends DocumentVO {
 	 */
 	public void setSponsorId(String sponsorId) {
 		this.sponsorId = sponsorId;
+	}
+
+	/**
+	 * @return the sponsor
+	 */
+	public SponsorVO getSponsor() {
+		return sponsor;
+	}
+
+	/**
+	 * @param sponsor the sponsor to set
+	 */
+	public void setSponsor(SponsorVO sponsor) {
+		this.sponsor = sponsor;
 	}
 }
 

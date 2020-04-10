@@ -134,7 +134,7 @@ public class IssueArticleAction extends SBActionAdapter {
 			sql.append("and (b.publish_dt < CURRENT_TIMESTAMP or b.publish_dt is null) "); //the article released
 
 		sql.append("order by action_nm, related_article_id ");
-		log.info(sql.length() + "|" + sql + "|" + documentId);
+		log.debug(sql.length() + "|" + sql + "|" + documentId);
 
 		DBProcessor db = new DBProcessor(getDBConnection()); 
 		return db.executeSelect(sql.toString(), Arrays.asList(documentId), new RelatedArticleVO());
@@ -249,7 +249,7 @@ public class IssueArticleAction extends SBActionAdapter {
 
 		sql.append("select a.document_id, c.action_id, first_nm, last_nm, a.publish_dt, a.author_id, ");
 		sql.append("c.action_nm, c.action_desc, b.issue_nm, m.field_nm as value_txt, m.widget_meta_data_id, p.publication_id, ");
-		sql.append("publication_nm, p.publication_desc, b.category_cd, direct_access_pth, b.issue_id ");
+		sql.append("publication_nm, p.publication_desc, b.category_cd, direct_access_pth, b.issue_id, a.sponsor_id ");
 		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("mts_document a ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("mts_issue b on a.issue_id = b.issue_id ");
 		sql.append(DBUtil.INNER_JOIN).append(schema).append("mts_publication p on b.publication_id = p.publication_id ");
