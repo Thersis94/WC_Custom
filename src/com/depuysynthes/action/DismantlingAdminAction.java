@@ -9,7 +9,7 @@ import java.util.List;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
-
+import com.siliconmtn.db.orm.DBProcessor;
 // WC Libs
 import com.smt.sitebuilder.action.SBActionAdapter;
 
@@ -73,6 +73,19 @@ public class DismantlingAdminAction extends SBActionAdapter {
 	 */
 	@Override
 	public void update(ActionRequest req) throws ActionException {
+		MediaBinAssetVO asset = new MediaBinAssetVO(req);
+		asset.setAssetNm("Synthes International/Product Support Material/legacy_Synthes_PDF/" + asset.getFileNm());
+		
+		try {
+			DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+			if (req.getBooleanParameter("isInsert")) db.insert(asset);
+			else db.update(asset);
+			
+			setModuleData(asset);
+		} catch (Exception e) {
+			log.error("Unable to save asset", e);
+			setModuleData(asset, 1, e.getLocalizedMessage());
+		}
 		
 	}
 	
@@ -82,6 +95,15 @@ public class DismantlingAdminAction extends SBActionAdapter {
 	 */
 	@Override
 	public void delete(ActionRequest req) throws ActionException {
-		
+		MediaBinAssetVO asset = new MediaBinAssetVO(req);
+		try {
+			DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+			db.delete(asset);
+			
+			setModuleData("success");
+		} catch (Exception e) {
+			log.error("Unable to delete asset", e);
+			setModuleData(asset, 1, e.getLocalizedMessage());
+		}
 	}
 }
