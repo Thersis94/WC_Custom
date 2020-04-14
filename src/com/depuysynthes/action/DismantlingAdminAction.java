@@ -101,7 +101,7 @@ public class DismantlingAdminAction extends SBActionAdapter {
 		asset.setAssetNm("Synthes International/Product Support Material/legacy_Synthes_PDF/" + asset.getFileNm());
 		asset.setModifiedDt(Convert.parseDateUnknownPattern(req.getParameter("modifiedDt")));
 		asset.setExpirationDt(Convert.parseDateUnknownPattern(req.getParameter("expirationDt")));
-		log.info(asset.getModifiedDt());
+		
 		try {
 			DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 			if (req.getBooleanParameter("isInsert")) db.insert(asset);
@@ -158,7 +158,6 @@ public class DismantlingAdminAction extends SBActionAdapter {
 		if (isDelete) server.deleteById(asset.getDpySynMediaBinId());
 		else {
 			SolrInputDocument doc = createSolrDoc(asset);
-			log.info(doc);
 			server.add(doc);
 			server.commit();
 		}
