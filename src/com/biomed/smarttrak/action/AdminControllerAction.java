@@ -94,6 +94,9 @@ public class AdminControllerAction extends SimpleActionAdapter {
 	public static final String STAFF_ROLE_ID = "3eef678eb39e87277f000101dfd4f140";
 	public static final String EUREPORT_ROLE_ID = "6f5c869a9b0e9b640a001421bce81c9b";
 	public static final String UPDATES_ROLE_ID = "edf3243498c048ca82a2f1041fa4b92e";
+
+	public static final String LOGIN_PMID_LABEL = "loginPMID";
+	public static final String LOGIN_PMID = "225468a1cd915aeac0a80241b4425ee0";
 	
 	/**
 	 * @deprecated - use UPDATES_ROLE_ID for naming consistency -JM- 08.08.2017
@@ -312,9 +315,8 @@ public class AdminControllerAction extends SimpleActionAdapter {
 			loadAction(DEFAULT_ACTION).retrieve(req);
 		}
 		prepareDocToken();
+		setModuleConstants();
 	}
-	
-
 
 	/**
 	 * sets a file upload token for use in the ckeditor's file attachment plugin
@@ -329,6 +331,14 @@ public class AdminControllerAction extends SimpleActionAdapter {
 		}
 		modVo.setAttribute(ProfileDocumentFileManagerStructureImpl.DOC_TOKEN, fileToken );
 		log.debug("set doc token: " + fileToken);
+	}
+
+	/**
+	 * Configures Admin Controller action with any variables required throughout SmartTRAK manage page
+	 */
+	public void setModuleConstants() {
+		ModuleVO modVo = (ModuleVO) getAttribute(Constants.MODULE_DATA);
+		modVo.setAttribute(LOGIN_PMID_LABEL, LOGIN_PMID);
 	}
 
 
