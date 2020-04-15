@@ -352,7 +352,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		sql.append("from ").append(getCustomSchema()).append("mts_document a ");
 		sql.append("inner join sb_action b on a.action_group_id = b.action_group_id and pending_sync_flg = 0 ");
 		sql.append("order by action_nm ");
-		log.info(sql.length() + "|" + sql);
+		log.debug(sql.length() + "|" + sql);
 
 		DBProcessor db = new DBProcessor(getDBConnection());
 		return db.executeSelect(sql.toString(), null, new GenericVO());
