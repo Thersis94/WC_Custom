@@ -350,7 +350,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		sql.append("substring(action_nm, 0, 50 + position(' ' in substring(action_nm, 50))) || ");
 		sql.append("CASE WHEN position(' ' in substring(action_nm, 50)) > 0  THEN ' ...' else '' END as value ");
 		sql.append("from ").append(getCustomSchema()).append("mts_document a ");
-		sql.append("inner join sb_action b on a.document_id = b.action_group_id and pending_sync_flg = 0 ");
+		sql.append("inner join sb_action b on a.action_group_id = b.action_group_id and pending_sync_flg = 0 ");
 		sql.append("order by action_nm ");
 		log.debug(sql.length() + "|" + sql);
 
