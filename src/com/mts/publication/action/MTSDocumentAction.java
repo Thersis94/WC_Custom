@@ -2,6 +2,7 @@ package com.mts.publication.action;
 
 // JDK 1.8.x
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -25,6 +26,7 @@ import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.db.util.DatabaseException;
+import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.RandomAlphaNumeric;
 import com.siliconmtn.util.StringUtil;
 
@@ -371,6 +373,48 @@ public class MTSDocumentAction extends SimpleActionAdapter {
 			log.error("unable to update categories", e);
 			throw new DatabaseException(e.getLocalizedMessage(), e);
 		}
+	}
+	
+	/**
+	 * Gets the latest articles by date and publication
+	 * @param pubId
+	 * @param publishDate
+	 * @return
+	 */
+	public PublicationTeaserVO getLatestArticles(String pubId, Date publishDate) {
+		StringBuilder sql = new StringBuilder(1088);
+		String schema = getCustomSchema();
+
+		sql.append("select a.document_id, c.action_id, first_nm, last_nm, a.publish_dt, a.author_id, ");
+		sql.append("c.action_nm, c.action_desc, b.issue_nm, p.publication_id, ");
+		sql.append("publication_nm, p.publication_desc, b.category_cd, direct_access_pth, b.issue_id, a.sponsor_id ");
+		sql.append(DBUtil.FROM_CLAUSE).append(schema).append("mts_document a ");
+		sql.append(DBUtil.INNER_JOIN).append(schema).append("mts_issue b on a.issue_id = b.issue_id ");
+		sql.append(DBUtil.INNER_JOIN).append(schema).append("mts_publication p on b.publication_id = p.publication_id ");
+		sql.append("inner join sb_action c on a.action_group_id = c.action_group_id and c.pending_sync_flg = 0 ");
+		sql.append("inner join document doc on c.action_id = doc.action_id ");
+		sql.append(DBUtil.INNER_JOIN).append(schema).append("mts_user u on a.author_id = u.user_id ");
+		sql.append(DBUtil.LEFT_OUTER_JOIN).append("(select * from ").append(schema);
+		sql.append("mts_document_asset where asset_type_cd = 'TEASER_IMG') as im on a.document_id = im.object_key_id ");
+		sql.append("where p.publication_id = ? and date(publish_dt) > ? ");
+		log.debug(sql + "|" + pubId + "|" + publishDate);
+		
+		PublicationTeaserVO ptvo = new PublicationTeaserVO();
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, pubId);
+			ps.setDate(2, Convert.formatSQLDate(publishDate));
+			ResultSet rs = ps.executeQuery();
+			while(rs.next()) {
+				MTSDocumentVO doc = new MTSDocumentVO(rs);
+				doc.setAuthor(new MTSUserVO(rs));
+				ptvo.addDocument(doc);
+				ptvo.assignAsset(doc);
+			}
+		} catch(Exception e) {
+			log.error("Error Retrieving latest articles: ", e);
+		}
+
+		return ptvo;
 	}
 }
 

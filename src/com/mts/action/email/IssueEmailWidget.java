@@ -1,18 +1,25 @@
 package com.mts.action.email;
 
+// JDK 1.8.x
+import java.util.Calendar;
+import java.util.Date;
+import java.util.List;
+
 // MTS imports
-import com.mts.publication.action.IssueAction;
-import com.mts.publication.action.IssueArticleAction;
-import com.mts.publication.data.IssueVO;
+import com.mts.publication.action.MTSDocumentAction;
+import com.mts.publication.data.MTSDocumentVO;
 import com.mts.publication.data.PublicationTeaserVO;
 
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.StringUtil;
 
 // WC Imports
 import com.smt.sitebuilder.action.SimpleActionAdapter;
+import com.smt.sitebuilder.util.CacheAdministrator;
 
 /****************************************************************************
  * <b>Title</b>: IssueEmailWidget.java
@@ -28,7 +35,11 @@ import com.smt.sitebuilder.action.SimpleActionAdapter;
  * @updates:
  ****************************************************************************/
 public class IssueEmailWidget extends SimpleActionAdapter {
-
+	/**
+	 * Cache key
+	 */
+	public static final String WC_CACHE_KEY = "MTS_CACHE_DOCUMENTS";
+	
 	/**
 	 * 
 	 */
@@ -49,23 +60,32 @@ public class IssueEmailWidget extends SimpleActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		log.debug("retrieving");
-
 		// Get the id for the publication
 		String id = req.getParameter("strategistPublicationId");
-		if (id.contains("#")) id = req.getParameter("pathwaysPublicationId");
-
-		// Load the latest issue
-		IssueAction is = new IssueAction(getDBConnection(), getAttributes());
-		IssueVO issue = is.getLatestIssue(id);
+		if (StringUtil.isEmpty(id) || id.contains("#")) id = req.getParameter("pathwaysPublicationId");
+		req.setParameter("filterPublicationId", id);
 		
-		// Get the issue documents
-		IssueArticleAction iaa = new IssueArticleAction(getDBConnection(), getAttributes());
-		PublicationTeaserVO ptvo = iaa.getArticleTeasers(issue.getPublicationId(), "", 1, 0);
-		if (ptvo != null && ! ptvo.getDocuments().isEmpty()) issue.setDocuments(ptvo.getDocuments());
-		log.debug("Number of articles: " + issue.getDocuments().size());
-
 		// Send the data to the view
-		setModuleData(issue, 1);
+		setModuleData(getDocuments(id), 1);
+	}
+	
+	/**
+	 * Gets the document from cache or the db.  If from db, adds to cache
+	 * @param id
+	 * @return
+	 */
+	public List<MTSDocumentVO> getDocuments(String id) {
+		// Check from cache first
+		Object cacheItem = new CacheAdministrator(attributes).readObjectFromCache(WC_CACHE_KEY);
+		if (cacheItem != null) return ((PublicationTeaserVO)cacheItem).getDocuments(); 
+		
+		// Get the articles within the last 7 days
+		MTSDocumentAction mda = new MTSDocumentAction(getDBConnection(), getAttributes());
+		PublicationTeaserVO ptvo = mda.getLatestArticles(id, Convert.formatDate(new Date(), Calendar.DAY_OF_YEAR, -7));
+		
+		// Add to cache for 3 days
+		new CacheAdministrator(attributes).writeToCache(WC_CACHE_KEY, ptvo, 259200);
+		
+		return ptvo.getDocuments();
 	}
 }
