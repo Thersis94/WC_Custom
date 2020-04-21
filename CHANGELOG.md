@@ -1,5 +1,12 @@
 WC_Custom Changelog (auto-generated)
 
+## [3.52.1](https://github.com/smtadmin/WC_Custom/compare/3.52.0...3.52.1) (2020-04-21)
+
+
+### Bug Fixes
+
+* **ST-398:** FIx issue where broken profiles could crash the report. ([f651b26](https://github.com/smtadmin/WC_Custom/commit/f651b26))
+
 # [3.52.0](https://github.com/smtadmin/WC_Custom/compare/3.51.1...3.52.0) (2020-04-16)
 
 
