@@ -1,6 +1,9 @@
 package com.mts.action.email;
 
 // JDK 1.8.x
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
@@ -14,8 +17,10 @@ import com.mts.publication.data.PublicationTeaserVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
+import com.smt.sitebuilder.action.SBModuleVO;
 
 // WC Imports
 import com.smt.sitebuilder.action.SimpleActionAdapter;
@@ -54,19 +59,52 @@ public class IssueEmailWidget extends SimpleActionAdapter {
 		super(arg0);
 	}
 	
+	@Override
+	public void list(ActionRequest req) throws ActionException {
+		super.list(req);
+		
+		// Add the attribute 1 and 2 text fields to the admin with the following fields
+		req.setAttribute(SBModuleVO.ATTRIBUTE_1, "Articles for the Past # Days");
+		req.setAttribute(SBModuleVO.ATTRIBUTE_2, "Publication ID<br/>MEDTECH-STRATEGIST <br/>MARKET-PATHWAYS)");
+	}
+	
 	/*
 	 * (non-javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.action.ActionRequest)
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		// Get the id for the publication
-		String id = req.getParameter("strategistPublicationId");
-		if (StringUtil.isEmpty(id) || id.contains("#")) id = req.getParameter("pathwaysPublicationId");
-		req.setParameter("filterPublicationId", id);
+		// Get the id for the publication and days from today
+		GenericVO vo = this.retrieveWidgetData(req, actionInit.getActionId());
 		
 		// Send the data to the view
-		setModuleData(getDocuments(id), 1);
+		setModuleData(getDocuments(vo), 1);
+	}
+	
+	/**
+	 * Grab the data from the action and populate into a vo
+	 * @param req
+	 * @param actionId
+	 * @return
+	 */
+	public GenericVO retrieveWidgetData(ActionRequest req, String actionId) {
+		String sql = "select attrib1_txt, attrib2_txt from sb_action where action_id = ? and pending_sync_flg = 0";
+		GenericVO vo = new GenericVO();
+		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
+			ps.setString(1, actionId);
+			ResultSet rs = ps.executeQuery();
+			if (rs.next()) {
+				vo = new GenericVO(Convert.formatInteger(rs.getString(1), -7), StringUtil.checkVal(rs.getString(2)).trim());
+				if (StringUtil.isEmpty(vo.getValue() + "")) {
+					String id = StringUtil.checkVal(req.getParameter("strategistPublicationId"), req.getParameter("pathwaysPublicationId"));
+					vo.setValue(id.trim());
+				}
+			}
+		} catch (SQLException e) {
+			log.error("Unable to retrieve action data", e);
+		}
+		
+		return vo;
 	}
 	
 	/**
@@ -74,14 +112,14 @@ public class IssueEmailWidget extends SimpleActionAdapter {
 	 * @param id
 	 * @return
 	 */
-	public List<MTSDocumentVO> getDocuments(String id) {
+	public List<MTSDocumentVO> getDocuments(GenericVO kv) {
 		// Check from cache first
 		Object cacheItem = new CacheAdministrator(attributes).readObjectFromCache(WC_CACHE_KEY);
 		if (cacheItem != null) return ((PublicationTeaserVO)cacheItem).getDocuments(); 
 		
 		// Get the articles within the last 7 days
 		MTSDocumentAction mda = new MTSDocumentAction(getDBConnection(), getAttributes());
-		PublicationTeaserVO ptvo = mda.getLatestArticles(id, Convert.formatDate(new Date(), Calendar.DAY_OF_YEAR, -7));
+		PublicationTeaserVO ptvo = mda.getLatestArticles((String)kv.getValue(), Convert.formatDate(new Date(), Calendar.DAY_OF_YEAR, (int)kv.getKey()));
 		
 		// Add to cache for 3 days
 		new CacheAdministrator(attributes).writeToCache(WC_CACHE_KEY, ptvo, 259200);
