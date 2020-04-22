@@ -57,6 +57,7 @@ public class AuthorDisplayWidget extends SimpleActionAdapter {
 	public void retrieve(ActionRequest req) throws ActionException {
 		MTSUserVO author = new MTSUserVO(req);
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+
 		try {
 			// Get the author, pubs and categories
 			db.getByPrimaryKey(author);
@@ -75,7 +76,7 @@ public class AuthorDisplayWidget extends SimpleActionAdapter {
 	}
 	
 	/**
-	 * Retirves a unique list of categories for the articles written by the supplied author
+	 * Retrieves a unique list of categories for the articles written by the supplied author
 	 * @param user
 	 */
 	public void assignCategories(MTSUserVO author) {

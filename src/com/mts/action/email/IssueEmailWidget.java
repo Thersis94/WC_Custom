@@ -1,18 +1,30 @@
 package com.mts.action.email;
 
+// JDK 1.8.x
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.List;
+
 // MTS imports
-import com.mts.publication.action.IssueAction;
-import com.mts.publication.action.IssueArticleAction;
-import com.mts.publication.data.IssueVO;
+import com.mts.publication.action.MTSDocumentAction;
+import com.mts.publication.data.MTSDocumentVO;
 import com.mts.publication.data.PublicationTeaserVO;
 
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.data.GenericVO;
+import com.siliconmtn.util.Convert;
+import com.siliconmtn.util.StringUtil;
+import com.smt.sitebuilder.action.SBModuleVO;
 
 // WC Imports
 import com.smt.sitebuilder.action.SimpleActionAdapter;
+import com.smt.sitebuilder.util.CacheAdministrator;
 
 /****************************************************************************
  * <b>Title</b>: IssueEmailWidget.java
@@ -28,7 +40,11 @@ import com.smt.sitebuilder.action.SimpleActionAdapter;
  * @updates:
  ****************************************************************************/
 public class IssueEmailWidget extends SimpleActionAdapter {
-
+	/**
+	 * Cache key
+	 */
+	public static final String WC_CACHE_KEY = "MTS_CACHE_DOCUMENTS";
+	
 	/**
 	 * 
 	 */
@@ -43,29 +59,71 @@ public class IssueEmailWidget extends SimpleActionAdapter {
 		super(arg0);
 	}
 	
+	@Override
+	public void list(ActionRequest req) throws ActionException {
+		super.list(req);
+		
+		// Add the attribute 1 and 2 text fields to the admin with the following fields
+		req.setAttribute(SBModuleVO.ATTRIBUTE_1, "Articles for the Past # Days");
+		req.setAttribute(SBModuleVO.ATTRIBUTE_2, "Publication ID<br/>MEDTECH-STRATEGIST <br/>MARKET-PATHWAYS)");
+	}
+	
 	/*
 	 * (non-javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.action.ActionRequest)
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		log.debug("retrieving");
-
-		// Get the id for the publication
-		String id = req.getParameter("strategistPublicationId");
-		if (id.contains("#")) id = req.getParameter("pathwaysPublicationId");
-
-		// Load the latest issue
-		IssueAction is = new IssueAction(getDBConnection(), getAttributes());
-		IssueVO issue = is.getLatestIssue(id);
+		// Get the id for the publication and days from today
+		GenericVO vo = this.retrieveWidgetData(req, actionInit.getActionId());
 		
-		// Get the issue documents
-		IssueArticleAction iaa = new IssueArticleAction(getDBConnection(), getAttributes());
-		PublicationTeaserVO ptvo = iaa.getArticleTeasers(issue.getPublicationId(), "", 1, 0);
-		if (ptvo != null && ! ptvo.getDocuments().isEmpty()) issue.setDocuments(ptvo.getDocuments());
-		log.debug("Number of articles: " + issue.getDocuments().size());
-
 		// Send the data to the view
-		setModuleData(issue, 1);
+		setModuleData(getDocuments(vo), 1);
+	}
+	
+	/**
+	 * Grab the data from the action and populate into a vo
+	 * @param req
+	 * @param actionId
+	 * @return
+	 */
+	public GenericVO retrieveWidgetData(ActionRequest req, String actionId) {
+		String sql = "select attrib1_txt, attrib2_txt from sb_action where action_id = ? and pending_sync_flg = 0";
+		GenericVO vo = new GenericVO();
+		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
+			ps.setString(1, actionId);
+			ResultSet rs = ps.executeQuery();
+			if (rs.next()) {
+				vo = new GenericVO(Convert.formatInteger(rs.getString(1), -7), StringUtil.checkVal(rs.getString(2)).trim());
+				if (StringUtil.isEmpty(vo.getValue() + "")) {
+					String id = StringUtil.checkVal(req.getParameter("strategistPublicationId"), req.getParameter("pathwaysPublicationId"));
+					vo.setValue(id.trim());
+				}
+			}
+		} catch (SQLException e) {
+			log.error("Unable to retrieve action data", e);
+		}
+		
+		return vo;
+	}
+	
+	/**
+	 * Gets the document from cache or the db.  If from db, adds to cache
+	 * @param id
+	 * @return
+	 */
+	public List<MTSDocumentVO> getDocuments(GenericVO kv) {
+		// Check from cache first
+		Object cacheItem = new CacheAdministrator(attributes).readObjectFromCache(WC_CACHE_KEY);
+		if (cacheItem != null) return ((PublicationTeaserVO)cacheItem).getDocuments(); 
+		
+		// Get the articles within the last 7 days
+		MTSDocumentAction mda = new MTSDocumentAction(getDBConnection(), getAttributes());
+		PublicationTeaserVO ptvo = mda.getLatestArticles((String)kv.getValue(), Convert.formatDate(new Date(), Calendar.DAY_OF_YEAR, (int)kv.getKey()));
+		
+		// Add to cache for 3 days
+		new CacheAdministrator(attributes).writeToCache(WC_CACHE_KEY, ptvo, 259200);
+		
+		return ptvo.getDocuments();
 	}
 }

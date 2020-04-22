@@ -320,7 +320,7 @@ public class IssueArticleAction extends SBActionAdapter {
 	 * @throws SQLException
 	 * @throws DatabaseException 
 	 */
-	private void assignAssets(PublicationTeaserVO ptvo) throws SQLException, DatabaseException {
+	public void assignAssets(PublicationTeaserVO ptvo) throws SQLException, DatabaseException {
 		Set<String> ids = ptvo.getAssetObjectKeys();
 		StringBuilder sql = new StringBuilder(128);
 		sql.append("select * from ").append(getCustomSchema()).append("mts_document_asset ");
@@ -422,6 +422,12 @@ public class IssueArticleAction extends SBActionAdapter {
 		if (! StringUtil.isEmpty(req.getParameter("filterIssueId"))) {
 			sql.append("and issue_id = ? ");
 			vals.add(req.getParameter("filterIssueId"));
+		}
+		
+		// Filter by publish date
+		if (! StringUtil.isEmpty(req.getParameter("publishDate"))) {
+			sql.append("and date(publish_dt) > ? ");
+			vals.add(req.getDateParameter("publishDate"));
 		}
 
 		// Filter by tool bar category filter
