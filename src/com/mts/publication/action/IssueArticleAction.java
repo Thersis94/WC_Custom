@@ -384,7 +384,7 @@ public class IssueArticleAction extends SBActionAdapter {
 
 		// Set the order by
 		sql.append(bst.getSQLOrderBy("publish_dt desc, action_nm", ""));
-		log.info(sql.length() + "|" + sql + "|" + vals);
+		log.debug(sql.length() + "|" + sql + "|" + vals);
 
 		// Get the articles
 		DBProcessor db = new DBProcessor(getDBConnection());
