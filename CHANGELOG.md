@@ -1,5 +1,25 @@
 WC_Custom Changelog (auto-generated)
 
+## [3.52.1](https://github.com/smtadmin/WC_Custom/compare/3.52.0...3.52.1) (2020-04-21)
+
+
+### Bug Fixes
+
+* **ST-398:** FIx issue where broken profiles could crash the report. ([f651b26](https://github.com/smtadmin/WC_Custom/commit/f651b26))
+
+# [3.52.0](https://github.com/smtadmin/WC_Custom/compare/3.51.1...3.52.0) (2020-04-16)
+
+
+### Bug Fixes
+
+* **cleanup:** minor fixes for this marathon release ([26a3f9e](https://github.com/smtadmin/WC_Custom/commit/26a3f9e))
+
+
+### Features
+
+* **article:** updated the article view to support sponsors ([5c881de](https://github.com/smtadmin/WC_Custom/commit/5c881de))
+* **sponsor:** added the new sponsor page and updated site for the sponsor label ([847a130](https://github.com/smtadmin/WC_Custom/commit/847a130))
+
 ## [3.51.1](https://github.com/smtadmin/WC_Custom/compare/3.51.0...3.51.1) (2020-04-08)
 
 
