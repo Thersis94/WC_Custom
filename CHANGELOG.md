@@ -1,5 +1,18 @@
 WC_Custom Changelog (auto-generated)
 
+# [3.53.0](https://github.com/smtadmin/WC_Custom/compare/3.52.1...3.53.0) (2020-04-23)
+
+
+### Bug Fixes
+
+* **feature-rezdox-358:** Fix, when sharing an account the auto complete now auto completes! ([564783c](https://github.com/smtadmin/WC_Custom/commit/564783c))
+
+
+### Features
+
+* **data:** added the ability to add params through admin tool ([d498f01](https://github.com/smtadmin/WC_Custom/commit/d498f01))
+* **email campaigns:** added the code for the MTS widget and email camapigns ([e68f97e](https://github.com/smtadmin/WC_Custom/commit/e68f97e))
+
 ## [3.52.1](https://github.com/smtadmin/WC_Custom/compare/3.52.0...3.52.1) (2020-04-21)
 
 
