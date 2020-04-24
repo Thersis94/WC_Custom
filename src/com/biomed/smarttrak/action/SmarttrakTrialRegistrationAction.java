@@ -49,6 +49,8 @@ public class SmarttrakTrialRegistrationAction extends SBActionAdapter {
 			return;
 		}
 		
+		req.setParameter("emailAddress", req.getParameter("emailAddress").toLowerCase());
+		
 		if (!req.hasParameter("profileId") && checkUserExists(req)) {
 			req.setAttribute(Constants.REDIRECT_REQUEST, Boolean.TRUE);
 			req.setAttribute(Constants.REDIRECT_URL, req.getRequestURI() + "?alreadyExists=true");
