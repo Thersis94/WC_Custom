@@ -93,7 +93,7 @@ public class SmarttrakTrialRegistrationAction extends SBActionAdapter {
 	private boolean checkUserExists(ActionRequest req) throws ActionException {
 		StringBuilder sql =  new StringBuilder(150);
 		sql.append("select user_id from ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA)).append("biomedgps_user ");
-		sql.append("where account_id = ? and email_address_txt = ? and active_flg = ? ");
+		sql.append("where account_id = ? and lower(email_address_txt) = ? and active_flg = ? ");
 		
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())){
 			ps.setString(1, req.getParameter("accountId"));
