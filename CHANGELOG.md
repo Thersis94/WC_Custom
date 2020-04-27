@@ -1,5 +1,13 @@
 WC_Custom Changelog (auto-generated)
 
+## [3.53.1](https://github.com/smtadmin/WC_Custom/compare/3.53.0...3.53.1) (2020-04-27)
+
+
+### Bug Fixes
+
+* **ST-403:** Ensure existing user checks are case insensitive. ([1636213](https://github.com/smtadmin/WC_Custom/commit/1636213))
+* **ST-403:** Ensure that all email addresses are lower case. ([88b9f26](https://github.com/smtadmin/WC_Custom/commit/88b9f26))
+
 # [3.53.0](https://github.com/smtadmin/WC_Custom/compare/3.52.1...3.53.0) (2020-04-23)
 
 
