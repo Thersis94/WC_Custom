@@ -239,7 +239,6 @@ public class UpdatesEditionDataLoader extends SimpleActionAdapter {
 		if (link.contains("&amp;"))
 			link = link.replaceAll("&amp;", "|");
 		redirectLink.append(req.getParameter("redirectUrl")).append(StringEncoder.urlEncode(se.decodeValue(link)));
-		log.debug(redirectLink);
 		return redirectLink.toString();
 	}
 	
