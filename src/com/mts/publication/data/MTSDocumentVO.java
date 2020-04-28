@@ -71,6 +71,7 @@ public class MTSDocumentVO extends DocumentVO {
 	private String publicationId;
 	private String publicationName;
 	private String userInfoId;
+	private String redirectUrl;
 	private int bookmarkFlag;
 	private SponsorVO sponsor;
 	private Map<String, List<WidgetMetadataVO>> cats = new LinkedHashMap<>();
@@ -597,6 +598,20 @@ public class MTSDocumentVO extends DocumentVO {
 	 */
 	public void setSponsor(SponsorVO sponsor) {
 		this.sponsor = sponsor;
+	}
+
+	/**
+	 * @return the redirectUrl
+	 */
+	public String getRedirectUrl() {
+		return redirectUrl;
+	}
+
+	/**
+	 * @param redirectUrl the redirectUrl to set
+	 */
+	public void setRedirectUrl(String redirectUrl) {
+		this.redirectUrl = redirectUrl;
 	}
 }
 
