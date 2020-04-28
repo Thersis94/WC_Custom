@@ -148,7 +148,7 @@ public class UpdatesEditionDataLoader extends SimpleActionAdapter {
 				up.setCompanyNm(StringEncoder.encodeExtendedAscii(up.getCompanyNm()));
 				up.setTitle(StringEncoder.encodeExtendedAscii(up.getTitle()));
 				if (baseUrl.isEmpty()) baseUrl = buildBaseUrl(up.getSSLFlg(), up.getSiteAliasUrl());
-				if (redirectLinks) up.setMessageTxt(buildRedirectLinks(up.getMessageTxt(), baseUrl));
+				if (redirectLinks) up.setMessageTxt(buildRedirectLinks(up.getMessageTxt(), baseUrl, req));
 				updates.add(up);
 			}
 		} catch(Exception e) {
@@ -198,9 +198,10 @@ public class UpdatesEditionDataLoader extends SimpleActionAdapter {
 	 * if they are logged in.
 	 * @param text
 	 * @param baseUrl
+	 * @param req 
 	 * @return
 	 */
-	private String buildRedirectLinks(String text, String baseUrl) {
+	private String buildRedirectLinks(String text, String baseUrl, ActionRequest req) {
 		if (StringUtil.isEmpty(text)) return text;
 		
 		Matcher matcher = HREF_START_REGEX.matcher(text);
@@ -216,7 +217,7 @@ public class UpdatesEditionDataLoader extends SimpleActionAdapter {
 			char propEndcap = text.charAt(valueStart-1);
 			curLoc = text.indexOf(propEndcap, valueStart);
 			// Append the redirect link and continue
-			newText.append(buildRedirectHref(text.substring(valueStart, curLoc), baseUrl));
+			newText.append(buildRedirectHref(text.substring(valueStart, curLoc), baseUrl, req));
 		}
 		// Append the remainder of the content
 		newText.append(text.substring(curLoc));
@@ -229,14 +230,16 @@ public class UpdatesEditionDataLoader extends SimpleActionAdapter {
 	 * Build a redirect link based off the original link
 	 * @param link
 	 * @param baseUrl
+	 * @param req 
 	 * @return
 	 */
-	private String buildRedirectHref(String link, String baseUrl) {
+	private String buildRedirectHref(String link, String baseUrl, ActionRequest req) {
 		StringBuilder redirectLink = new StringBuilder(250);
 		// Replace ampersands so that they are not lost between login and redirect.
 		if (link.contains("&amp;"))
 			link = link.replaceAll("&amp;", "|");
-		redirectLink.append("${redirectUrl}").append(StringEncoder.urlEncode(se.decodeValue(link)));
+		redirectLink.append(req.getParameter("redirectUrl")).append(StringEncoder.urlEncode(se.decodeValue(link)));
+		log.debug(redirectLink);
 		return redirectLink.toString();
 	}
 	
@@ -398,7 +401,7 @@ public class UpdatesEditionDataLoader extends SimpleActionAdapter {
 
 					// If we have not created the base url yet do so with this data
 					if (baseUrl.isEmpty()) baseUrl = buildBaseUrl(vo.getSSLFlg(), vo.getSiteAliasUrl());
-					if (redirectLinks) vo.setMessageTxt(buildRedirectLinks(vo.getMessageTxt(), baseUrl));
+					if (redirectLinks) vo.setMessageTxt(buildRedirectLinks(vo.getMessageTxt(), baseUrl, req));
 				}
 
 				//add the new section to it
