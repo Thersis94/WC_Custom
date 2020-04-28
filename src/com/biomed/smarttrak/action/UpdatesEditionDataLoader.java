@@ -236,8 +236,7 @@ public class UpdatesEditionDataLoader extends SimpleActionAdapter {
 		// Replace ampersands so that they are not lost between login and redirect.
 		if (link.contains("&amp;"))
 			link = link.replaceAll("&amp;", "|");
-		redirectLink.append(baseUrl).append("?");
-		redirectLink.append(REDIRECT_DEST).append("=").append(StringEncoder.urlEncode(se.decodeValue(link)));
+		redirectLink.append("${redirectUrl}").append(StringEncoder.urlEncode(se.decodeValue(link)));
 		return redirectLink.toString();
 	}
 	
