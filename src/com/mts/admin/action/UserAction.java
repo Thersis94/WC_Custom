@@ -299,7 +299,8 @@ public class UserAction extends UserBaseWidget {
 		StringBuilder sql = new StringBuilder(768);
 		sql.append("select a.email_address_txt, last_login_dt, a.user_id, a.first_nm, a.last_nm, a.sso_id, d.profile_id, ");
 		sql.append("a.company_nm, a.expiration_dt, a.active_flg, c.role_nm, b.profile_role_id, subscription_type_cd, cv_desc, ");
-		sql.append("d.authentication_id, a.create_dt, pub_txt, b.role_id, a.pro_title_nm, a.print_copy_flg , a.sec_user_id, a.note_txt ");
+		sql.append("d.authentication_id, a.create_dt, pub_txt, b.role_id, a.pro_title_nm, a.print_copy_flg , a.sec_user_id, a.note_txt, ");
+		sql.append("img_path, twitter_txt, linkedin_txt, yrs_experience_no ");
 		sql.append(DBUtil.FROM_CLAUSE).append(getCustomSchema()).append("mts_user a ");
 		sql.append(DBUtil.INNER_JOIN).append("profile d on a.profile_id = d.profile_id ");
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append("profile_role b on a.profile_id = b.profile_id and site_id =? ");
