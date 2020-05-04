@@ -55,7 +55,7 @@ public abstract class AbstractShowpadIngest extends DSMediaBinImporterV2 {
 	 * @param args
 	 * @throws IOException 
 	 */
-	protected AbstractShowpadIngest(String[] args) throws IOException {
+	protected AbstractShowpadIngest(String[] args) {
 		super(args);
 		MIN_EXP_ROWS = 0;
 	}
