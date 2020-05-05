@@ -524,7 +524,7 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 	 * @param vo
 	 * @param mr
 	 */
-	private void setUpdateFields(MediaBinDeltaVO vo, MediaBinDeltaVO mr) {
+	protected void setUpdateFields(MediaBinDeltaVO vo, MediaBinDeltaVO mr) {
 		//check to see if the data has changed, which implies we have an update
 		if (! vo.lexicographyEquals(mr)) {
 			vo.setRecordState(State.Update);

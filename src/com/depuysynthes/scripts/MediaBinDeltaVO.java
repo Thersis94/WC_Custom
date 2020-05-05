@@ -4,7 +4,9 @@ import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import com.depuysynthes.action.MediaBinAssetVO;
@@ -35,6 +37,14 @@ public class MediaBinDeltaVO extends MediaBinAssetVO {
 	private String fileName;
 	private String divisionId;
 
+	/**
+	 * holds the lists of divisions we need to add this asset to, and/or remove it from.
+	 * The list is populated when we merge the incoming data with the database records.
+	 * See ExcelShowpadIngest.  (Not used for EXP files/workflow.)
+	 */
+	private Map<Operation, Set<String>> divisionChanges;
+	private enum Operation { ADD, DEL }
+
 	/*
 	 * used by ShowpadProductDecorator to pass-along the update date of the product to affiliated assets.
 	 */
@@ -57,6 +67,7 @@ public class MediaBinDeltaVO extends MediaBinAssetVO {
 	public MediaBinDeltaVO() {
 		super();
 		tags = new ArrayList<>();
+		divisionChanges = new EnumMap<>(Operation.class);
 	}
 
 	public MediaBinDeltaVO(ResultSet rs) {
@@ -157,6 +168,23 @@ public class MediaBinDeltaVO extends MediaBinAssetVO {
 
 	public void setDivisionId(String divisionId) {
 		this.divisionId = divisionId;
+	}
+
+	/**
+	 * add the given divisionId to either the "remove from " or "add to" division lists
+	 * @param divisionId
+	 * @param isAdd
+	 */
+	public void captureDivisionChange(Set<String> ids, boolean isAdd) {
+		divisionChanges.put(isAdd ? Operation.ADD: Operation.DEL, ids);
+	}
+
+	public Set<String> getAddToDivisions() {
+		return divisionChanges.get(Operation.ADD);
+	}
+
+	public Set<String> getDeleteFromDivisions() {
+		return divisionChanges.get(Operation.DEL);
 	}
 
 	public Set<String> getReplicatorDesiredTags() {
