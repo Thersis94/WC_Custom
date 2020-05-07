@@ -76,9 +76,13 @@ public class IssueEmailWidget extends SimpleActionAdapter {
 	public void retrieve(ActionRequest req) throws ActionException {
 		// Get the id for the publication and days from today
 		GenericVO vo = this.retrieveWidgetData(req, actionInit.getActionId());
+		List<MTSDocumentVO> docs = getDocuments(vo);
+		for (MTSDocumentVO doc : docs) {
+			doc.setRedirectUrl(req.getParameter("redirectUrl"));
+		}
 		
 		// Send the data to the view
-		setModuleData(getDocuments(vo), 1);
+		setModuleData(docs, docs.size());
 	}
 	
 	/**
