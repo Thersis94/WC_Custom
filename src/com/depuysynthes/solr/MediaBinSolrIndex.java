@@ -211,7 +211,7 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
 		log.info("Added " + cnt + " records");
 	}
 
-	private String getAssetType(MediaBinAssetVO vo) {
+	public String getAssetType(MediaBinAssetVO vo) {
 		if ("multimedia file".equalsIgnoreCase(vo.getAssetType())) {
 			return StringUtil.checkVal(vo.getAssetDesc()).toLowerCase();
 		} else {
@@ -251,7 +251,7 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
 	 * @param fileRepos Location of the file data
 	 * @return
 	 */
-	private String parseFile(MediaBinAssetVO vo, String fileRepos) {
+	public String parseFile(MediaBinAssetVO vo, String fileRepos) {
 		String data = "";
 		String fileNm = null;
 		try { //catch NPEs in the file name, before we attempt to open the file
@@ -320,7 +320,7 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
 	 * @param duration
 	 * @return
 	 */
-	private String parseDuration(double duration) {
+	public String parseDuration(double duration) {
 		if (duration == 0) return "";
 		StringBuilder dur = new StringBuilder();
 		int hours = (int) duration / 3600;
@@ -354,7 +354,7 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
 	 * @param busUnit
 	 * @return
 	 */
-	private List<String> parseBusinessUnit(String busUnit) {
+	public List<String> parseBusinessUnit(String busUnit) {
 		String tmp = StringUtil.checkVal(busUnit).toUpperCase();
 		String[] tokens = tmp.split("~");
 		Set<String> data = new HashSet<>();
@@ -397,7 +397,7 @@ public class MediaBinSolrIndex extends SMTAbstractIndex {
 	 * @param isVideo
 	 * @return
 	 */
-	private String parseDownloadType(String downloadType, boolean isVideo) {
+	public String parseDownloadType(String downloadType, boolean isVideo) {
 		String tmp = StringUtil.checkVal(downloadType).replace("~", ",");
 		if (isVideo) {
 			// this is a video, set the type as 'Video' or add 'Video' to the existing type(s).
