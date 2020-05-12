@@ -28,6 +28,9 @@ public class IFUFacadeAction extends SimpleActionAdapter {
 	public static final String MEDIABIN_PATH = "/json?amid=MEDIA_BIN_AJAX&mbid=";
 	public static final String BINARY_PATH = "/binary/org/DPY_SYN_EMEA/ifu_documents/";
 	public static final String ORG_PATH = "/org/DPY_SYN_EMEA/ifu_documents/";
+	/* 2020-05-12: DBargerhuff: This is a temp accommodation until DS EMEA is ready to fully 
+	 * embrace the changes wrought in DSEMEA-67. */
+	public static final String PROD_IFU_SITE_URL = "https://ifu.depuysynthes.com";
 
 	/**
 	 * ActionType - supported behaviors of this facade
