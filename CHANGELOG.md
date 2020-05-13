@@ -1,5 +1,13 @@
 WC_Custom Changelog (auto-generated)
 
+## [3.54.1](https://github.com/smtadmin/WC_Custom/compare/3.54.0...3.54.1) (2020-05-13)
+
+
+### Bug Fixes
+
+* **dsemea:** revert the removal of binary upload for IFU docs ([b834aa6](https://github.com/smtadmin/WC_Custom/commit/b834aa6))
+* **dsemea:** update ([60ab880](https://github.com/smtadmin/WC_Custom/commit/60ab880))
+
 # [3.54.0](https://github.com/smtadmin/WC_Custom/compare/3.53.1...3.54.0) (2020-05-07)
 
 
