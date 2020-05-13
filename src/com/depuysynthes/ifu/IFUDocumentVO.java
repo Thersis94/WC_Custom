@@ -56,7 +56,7 @@ public class IFUDocumentVO extends IFUVO implements Serializable{
 		if (req.getFile("instanceFile") != null) {
 			this.setUrlText(req.getFile("instanceFile").getFileName());
 		} else {
-			this.setUrlText(req.getParameter("urlText"));
+			this.setUrlText(req.getParameter("urlTexOrig"));
 		}
 		
 		this.setTitleText(req.getParameter("titleText"));
