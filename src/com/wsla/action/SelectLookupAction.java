@@ -685,7 +685,6 @@ public class SelectLookupAction extends SBActionAdapter {
 		}
 
 		sql.append(") order by value");
-		log.info("@@@@@@@@@@@@@@@@@@@@@@@@@@@ defects");
 		log.debug("defects SQL " + sql + "|" + params);
 
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
@@ -721,8 +720,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		}
 
 		sql.append(") order by value");
-		log.info("@@@@@@@@@@@@@@@@@@@@@@@@@@@ repairs");
-		log.info("Repairs SQL " + sql + "|" + params);
+		log.debug("Repairs SQL " + sql + "|" + params);
 
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		return db.executeSelect(sql.toString(), params, new GenericVO());
