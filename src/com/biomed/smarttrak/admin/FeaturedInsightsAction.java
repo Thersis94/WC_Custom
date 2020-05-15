@@ -36,7 +36,7 @@ import com.smt.sitebuilder.common.constants.Constants;
  * <b>Company:</b> Silicon Mountain Technologies<p/>
  * @author Eric Damschroder
  * @since Aug 9, 2017<p/>
- * @updates:
+ * @updates: 
  ****************************************************************************/
 
 public class FeaturedInsightsAction extends SBActionAdapter {
@@ -105,7 +105,7 @@ public class FeaturedInsightsAction extends SBActionAdapter {
 	}
 	
 	/**
-	 * Load the documents from solr to simulare what the user will see.
+	 * Load the documents from solr to simulate what the user will see.
 	 * @param req
 	 * @throws ActionException
 	 */
@@ -113,9 +113,12 @@ public class FeaturedInsightsAction extends SBActionAdapter {
 		Set<String> userRoles = buildSimulatedRole(req);
 		
 		// Pass along the id of the solr search widget used for featured insights
+		// and use the configuration settings of that action in place of the default
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
 		setFeaturedData(mod);
-		
+
+		// configure the a copy of the public facing FeaturedInsightAction with
+		// matching settings to this action and have it retrieve the data
 		FeaturedInsightAction fia = new FeaturedInsightAction();
 		fia.setActionInit(actionInit);
 		fia.setAttributes(attributes);
@@ -124,14 +127,13 @@ public class FeaturedInsightsAction extends SBActionAdapter {
 		if (!userRoles.isEmpty()) {
 			fia.simulatedFeaturedRequest(req, userRoles);
 		} else {
-			mod.setAttribute(ModuleVO.ATTRIBUTE_1, mod.getActionUrl());
 			fia.retrieve(req);
 		}
 	}
 	
 	
 	/**
-	 * Get the action data for the featured insights
+	 * Get the action data for the featured insights widget
 	 * @param mod
 	 * @throws ActionException
 	 */
@@ -143,7 +145,9 @@ public class FeaturedInsightsAction extends SBActionAdapter {
 			ResultSet rs = ps.executeQuery();
 			
 			if (rs.next()) {
+				// the solr search widget this will be using
 				mod.setAttribute(ModuleVO.ATTRIBUTE_1, rs.getString("attrib1_txt"));
+				// the number of results to display
 				mod.setAttribute(ModuleVO.ATTRIBUTE_2, rs.getString("attrib2_txt"));
 			}
 			

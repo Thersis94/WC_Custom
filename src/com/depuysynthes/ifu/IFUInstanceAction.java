@@ -197,8 +197,11 @@ public class IFUInstanceAction extends SBActionAdapter {
 		Object msg = attributes.get(AdminConstants.KEY_SUCCESS_MESSAGE);
 		try {
 			IFUDocumentVO vo = new IFUDocumentVO(req);
-			if (req.getFile("instanceFile") != null)
-				vo.setUrlText(writeNewFile(req));
+			if (req.getFile("instanceFile") != null) {
+				String fullPath = IFUFacadeAction.PROD_IFU_SITE_URL + 
+						IFUFacadeAction.BINARY_PATH + vo.getBusinessUnitName() + "/";
+				vo.setUrlText(fullPath + writeNewFile(req));
+			}
 			this.update(vo);
 		} catch (ActionException e) {
 			throw e;
