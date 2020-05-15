@@ -31,6 +31,7 @@ import com.wsla.data.ticket.LedgerSummary;
 import com.wsla.data.ticket.StatusCode;
 import com.wsla.data.ticket.TicketDataVO;
 import com.wsla.data.ticket.TicketLedgerVO;
+import com.wsla.data.ticket.TicketVO;
 import com.wsla.data.ticket.TicketVO.UnitLocation;
 import com.wsla.data.ticket.UserVO;
 
@@ -221,14 +222,23 @@ public class DiagnosticTransaction extends BaseTransactionAction {
 				break;
 			}
 		}
-
-		// Add a ledger entry, change the status
-		TicketLedgerVO ledger = changeStatus(ticketId, user.getUserId(), StatusCode.CAS_IN_DIAG, LedgerSummary.RAN_DIAGNOSTIC.summary, null);
 		
-		// Build next step
-		Map<String, Object> params = new HashMap<>();
-		params.put("ticketId", ledger.getTicketId());
-		buildNextStep(ledger.getStatusCode(), params, false);
+		TicketEditAction tea = new TicketEditAction();
+		tea.setActionInit(actionInit);
+		tea.setAttributes(getAttributes());
+		tea.setDBConnection(getDBConnection());
+
+		TicketVO ticket = tea.getBaseTicket(req.getStringParameter("ticketId"));
+		
+		if(ticket.getStatusCode() == StatusCode.PICKUP_COMPLETE) {
+			// Add a ledger entry, change the status
+			TicketLedgerVO ledger = changeStatus(ticketId, user.getUserId(), StatusCode.CAS_IN_DIAG, LedgerSummary.RAN_DIAGNOSTIC.summary, null);
+			// Build next step
+			Map<String, Object> params = new HashMap<>();
+			params.put("ticketId", ledger.getTicketId());
+			buildNextStep(ledger.getStatusCode(), params, false);
+		}
+		
 	}
 	
 	/**
