@@ -146,7 +146,7 @@ public class FeaturedInsightAction extends InsightAction {
 		//build the solr action
 		executeSolrRequest(req);
 
-		//after solr retreive get the solr documents 
+		//after solr retrieve get the solr documents 
 		SolrResponseVO solVo = (SolrResponseVO)mod.getActionData();
 		mod.setAttribute("solarRes",solVo );
 
@@ -246,7 +246,7 @@ public class FeaturedInsightAction extends InsightAction {
 					authorizedFeatures.add(solDoc);
 				}
 			}
-			//once authorzied there is no reason to keep checking it
+			//once authorized there is no reason to keep checking it
 			if (authorizedFeatures.contains(solDoc)) break;
 		}
 	}	

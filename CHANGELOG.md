@@ -1,5 +1,43 @@
 WC_Custom Changelog (auto-generated)
 
+## [3.54.1](https://github.com/smtadmin/WC_Custom/compare/3.54.0...3.54.1) (2020-05-13)
+
+
+### Bug Fixes
+
+* **dsemea:** revert the removal of binary upload for IFU docs ([b834aa6](https://github.com/smtadmin/WC_Custom/commit/b834aa6))
+* **dsemea:** update ([60ab880](https://github.com/smtadmin/WC_Custom/commit/60ab880))
+
+# [3.54.0](https://github.com/smtadmin/WC_Custom/compare/3.53.1...3.54.0) (2020-05-07)
+
+
+### Bug Fixes
+
+* **ids:** changed the query to pass documentId instead of action_group_id ([5a8917a](https://github.com/smtadmin/WC_Custom/commit/5a8917a))
+* **sql:** referencing wrong field for related articles (action_group_id instead of document_id) ([ba17eb7](https://github.com/smtadmin/WC_Custom/commit/ba17eb7))
+* **ST-402:** Change to use passed values instead of replacing down the line. ([59d7172](https://github.com/smtadmin/WC_Custom/commit/59d7172))
+* **ST-402:** Update updates redirect links functionality. ([6566975](https://github.com/smtadmin/WC_Custom/commit/6566975))
+* **urls:** updated the urls for the content to include redirectUrl ([efac552](https://github.com/smtadmin/WC_Custom/commit/efac552))
+* **users:** missing fields in the select statement ([1a22b5e](https://github.com/smtadmin/WC_Custom/commit/1a22b5e))
+
+
+### Features
+
+* **dismantling:** finished dismantilng data tool ([3e9c4f6](https://github.com/smtadmin/WC_Custom/commit/3e9c4f6))
+* **dismantling:** started the dismantling data grid for EMEA ([a8627d6](https://github.com/smtadmin/WC_Custom/commit/a8627d6))
+* **doc:** updated the info int he Solr doc to ensure the items will be entered into solr correcly ([cd986b5](https://github.com/smtadmin/WC_Custom/commit/cd986b5))
+* **ifu:** updated the ifu url path for the pdfs to reflect new admin ([200aece](https://github.com/smtadmin/WC_Custom/commit/200aece))
+* **manage:** corrected the insights that display in the Featured Insights listing ([5d53831](https://github.com/smtadmin/WC_Custom/commit/5d53831))
+* **solr:** adding the integration to the new media bin updater and solr ([6ff16da](https://github.com/smtadmin/WC_Custom/commit/6ff16da))
+
+## [3.53.1](https://github.com/smtadmin/WC_Custom/compare/3.53.0...3.53.1) (2020-04-27)
+
+
+### Bug Fixes
+
+* **ST-403:** Ensure existing user checks are case insensitive. ([1636213](https://github.com/smtadmin/WC_Custom/commit/1636213))
+* **ST-403:** Ensure that all email addresses are lower case. ([88b9f26](https://github.com/smtadmin/WC_Custom/commit/88b9f26))
+
 # [3.53.0](https://github.com/smtadmin/WC_Custom/compare/3.52.1...3.53.0) (2020-04-23)
 
 

@@ -122,7 +122,7 @@ public class MTSDocumentAction extends SimpleActionAdapter {
 			page.setMetaKeyword(doc.getMetaDataItem("META_KEYWD").getValueText());
 			
 			// Get the Related Articles
-			doc.setRelatedArticles(getRelatedArticles(doc.getActionGroupId(), pagePreview));
+			doc.setRelatedArticles(getRelatedArticles(doc.getDocumentId(), pagePreview));
 
 			// Get the article assets
 			AssetAction aa = new AssetAction(getDBConnection(), getAttributes());
