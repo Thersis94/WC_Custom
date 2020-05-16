@@ -8,8 +8,12 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
+import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.data.parser.BeanDataMapper;
 // SMTBaseLibs 2.0
 import com.siliconmtn.db.DBUtil;
+import com.siliconmtn.db.orm.Column;
+import com.siliconmtn.db.orm.Table;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 
@@ -29,6 +33,7 @@ import com.smt.sitebuilder.action.SBModuleVO;
  * 2014-07-01: DBargerhuff: added downloadTypeTxt, languageCode fields.
  * 2014-07-10: DBargerhuff: added duration field.
  ****************************************************************************/
+@Table(name="dpy_syn_mediabin")
 public class MediaBinAssetVO extends SBModuleVO {
 	private static final long serialVersionUID = 1L;
 	
@@ -71,6 +76,11 @@ public class MediaBinAssetVO extends SBModuleVO {
 		super();
 	}
 	
+	
+	public MediaBinAssetVO(ActionRequest req) {
+		BeanDataMapper.parseBean(this, req.getParameterMap());
+	}
+	
 	public MediaBinAssetVO(ResultSet rs) {
 		DBUtil db = new DBUtil();
 		dpySynMediaBinId = db.getStringVal("dpy_syn_mediabin_id", rs);
@@ -111,13 +121,14 @@ public class MediaBinAssetVO extends SBModuleVO {
 		this.setDimensionsTxt(dims);
 	}
 	
-	
+	@Column(name="dpy_syn_mediabin_id", isPrimaryKey = true)
 	public String getDpySynMediaBinId() {
 		return dpySynMediaBinId;
 	}
 	public void setDpySynMediaBinId(String dpySynMediaBinId) {
 		this.dpySynMediaBinId = dpySynMediaBinId;
 	}
+	@Column(name="asset_nm")
 	public String getAssetNm() {
 		return assetNm;
 	}
@@ -130,6 +141,7 @@ public class MediaBinAssetVO extends SBModuleVO {
 	public void setAssetDesc(String assetDesc) {
 		this.assetDesc = assetDesc;
 	}
+	@Column(name="asset_type")
 	public String getAssetType() {
 		return assetType;
 	}
@@ -148,6 +160,7 @@ public class MediaBinAssetVO extends SBModuleVO {
 	public void setBodyRegionTxt(String bodyRegionTxt) {
 		this.bodyRegionTxt = bodyRegionTxt;
 	}
+	@Column(name="business_unit_nm")
 	public String getBusinessUnitNm() {
 		return businessUnitNm;
 	}
@@ -160,24 +173,28 @@ public class MediaBinAssetVO extends SBModuleVO {
 	public void setBusinessUnitId(Integer businessUnitId) {
 		this.businessUnitId = businessUnitId;
 	}
+	@Column(name="literature_type_txt")
 	public String getLiteratureTypeTxt() {
 		return literatureTypeTxt;
 	}
 	public void setLiteratureTypeTxt(String literatureTypeTxt) {
 		this.literatureTypeTxt = literatureTypeTxt;
 	}
+	@Column(name="file_nm")
 	public String getFileNm() {
 		return fileNm;
 	}
 	public void setFileNm(String fileNm) {
 		this.fileNm = fileNm;
 	}
+	@Column(name="modified_dt")
 	public Date getModifiedDt() {
 		return modifiedDt;
 	}
 	public void setModifiedDt(Date modifiedDt) {
 		this.modifiedDt = modifiedDt;
 	}
+	@Column(name="expiration_dt")
 	public Date getExpirationDt() {
 		return expirationDt;
 	}
@@ -196,30 +213,35 @@ public class MediaBinAssetVO extends SBModuleVO {
 	public void setProdFamilyNm(String prodFamilyNm) {
 		this.prodFamilyNm = prodFamilyNm;
 	}
+	@Column(name="prod_nm")
 	public String getProdNm() {
 		return prodNm;
 	}
 	public void setProdNm(String prodNm) {
 		this.prodNm = prodNm;
 	}
+	@Column(name="revision_lvl_txt")
 	public String getRevisionLvlTxt() {
 		return revisionLvlTxt;
 	}
 	public void setRevisionLvlTxt(String revisionLvlTxt) {
 		this.revisionLvlTxt = revisionLvlTxt;
 	}
+	@Column(name="opco_nm")
 	public String getOpCoNm() {
 		return opCoNm;
 	}
 	public void setOpCoNm(String opCoNm) {
 		this.opCoNm = opCoNm;
 	}
+	@Column(name="title_txt")
 	public String getTitleTxt() {
 		return titleTxt;
 	}
 	public void setTitleTxt(String titleTxt) {
 		this.titleTxt = titleTxt;
 	}
+	@Column(name="tracking_no_txt")
 	public String getTrackingNoTxt() {
 		return trackingNoTxt;
 	}
@@ -277,6 +299,7 @@ public class MediaBinAssetVO extends SBModuleVO {
 	/**
 	 * @return the downloadTypeTxt
 	 */
+	@Column(name="download_type_txt")
 	public String getDownloadTypeTxt() {
 		return downloadTypeTxt;
 	}
@@ -301,6 +324,7 @@ public class MediaBinAssetVO extends SBModuleVO {
 	/**
 	 * @return the languageCode
 	 */
+	@Column(name="language_cd")
 	public String getLanguageCode() {
 		return languageCode;
 	}
@@ -349,7 +373,7 @@ public class MediaBinAssetVO extends SBModuleVO {
 		this.anatomy = anatomy;
 	}
 
-
+	@Column(name="meta_kywds_txt")
 	public String getMetaKeywords() {
 		return metaKeywords;
 	}
@@ -543,7 +567,7 @@ public class MediaBinAssetVO extends SBModuleVO {
 	public void setDeltas(List<PropertyChangeEvent> deltas) {
 		this.deltas = deltas;
 	}
-
+	@Column(name="ecopy_revision_lvl_txt")
 	public String geteCopyRevisionLvl() {
 		return eCopyRevisionLvl;
 	}
