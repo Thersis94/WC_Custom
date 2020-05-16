@@ -8,6 +8,7 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 
+import com.mts.common.MTSConstants;
 // MTS imports
 import com.mts.publication.action.MTSDocumentAction;
 import com.mts.publication.data.MTSDocumentVO;
@@ -59,6 +60,10 @@ public class IssueEmailWidget extends SimpleActionAdapter {
 		super(arg0);
 	}
 	
+	/*
+	 * (non-javadoc)
+	 * @see com.smt.sitebuilder.action.SimpleActionAdapter#list(com.siliconmtn.action.ActionRequest)
+	 */
 	@Override
 	public void list(ActionRequest req) throws ActionException {
 		super.list(req);
@@ -82,7 +87,8 @@ public class IssueEmailWidget extends SimpleActionAdapter {
 		}
 		
 		// Send the data to the view
-		setModuleData(docs, docs.size());
+		GenericVO actionData = new GenericVO(MTSConstants.getEmailColor(vo.getValue()), docs);
+		setModuleData(actionData, docs.size());
 	}
 	
 	/**

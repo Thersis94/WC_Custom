@@ -88,6 +88,15 @@ public class MTSConstants {
 	public static final String SAML_LOGIN_MODULE_CLASSPATH = com.mts.security.MTSLoginModule.class.getName();
 	
 	/**
+	 * Colors for the email campaigns.  Used in the templates to avoid managing multiple
+	 */
+	public static final String STRATEGIST_EMAIL_COLOR = "#185977";
+	public static final String PATHWAYS_EMAIL_COLOR = "#B71E95";
+	public static String getEmailColor(Object id) {
+		return ("MARKET-PATHWAYS".equals((String)id)) ? PATHWAYS_EMAIL_COLOR : STRATEGIST_EMAIL_COLOR;
+	}
+	
+	/**
 	 * 
 	 */
 	private MTSConstants() {
