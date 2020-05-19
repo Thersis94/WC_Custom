@@ -484,7 +484,7 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 	 * @param masterRecords
 	 * @param newRecords
 	 */
-	private void sortDeltas(Map<String, MediaBinDeltaVO> masterRecords, Map<String, MediaBinDeltaVO> newRecords) {
+	protected void sortDeltas(Map<String, MediaBinDeltaVO> masterRecords, Map<String, MediaBinDeltaVO> newRecords) {
 		//loop the new records.  
 		//If the record exists in the master data mark it as an update
 		//if the record does not exist in the master data mark it as an insert
