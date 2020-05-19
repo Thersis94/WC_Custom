@@ -40,7 +40,7 @@ import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
-import com.smt.sitebuilder.util.PageViewVO;
+import com.smt.sitebuilder.util.PageViewUserVO;
 
 /*****************************************************************************
  <p><b>Title</b>: UserRecentActivityAction.java</p>
@@ -81,7 +81,7 @@ public class RecentlyViewedAction extends SBActionAdapter {
 		if (user == null) throw new ActionException("Not logged in.");
 
 		ModuleVO mod = (ModuleVO) getAttribute(Constants.MODULE_DATA);
-		Map<String, List<PageViewVO>> recentActivity;
+		Map<String, List<PageViewUserVO>> recentActivity;
 		try {
 			recentActivity = retrieveRecentlyViewedPages(req, user.getProfileId());
 
@@ -101,14 +101,14 @@ public class RecentlyViewedAction extends SBActionAdapter {
 	 * @return
 	 * @throws ActionException
 	 */
-	protected Map<String, List<PageViewVO>> retrieveRecentlyViewedPages(ActionRequest req, 
+	protected Map<String, List<PageViewUserVO>> retrieveRecentlyViewedPages(ActionRequest req, 
 			String profileId) throws ActionException {
-		/* Retrieve page views from db, parse into PageViewVO and return list */
+		/* Retrieve page views from db, parse into PageViewUserVO and return list */
 
 		SiteVO site = (SiteVO) req.getAttribute(Constants.SITE_DATA);
 		UserRoleVO userRole = (UserRoleVO)req.getSession().getAttribute(Constants.ROLE_DATA);
 
-		List<PageViewVO> pages = new ArrayList<>();
+		List<PageViewUserVO> pages = new ArrayList<>();
 
 		StringBuilder sql = formatRecentlyViewedQuery();
 		int idx = 0;
@@ -119,9 +119,9 @@ public class RecentlyViewedAction extends SBActionAdapter {
 				ps.setString(++idx, section.getURLToken()+QuickLinksAction.URL_STUB + "%");
 			}
 			ResultSet rs = ps.executeQuery();
-			PageViewVO page = null;
+			PageViewUserVO page = null;
 			while(rs.next()) {
-				page = new PageViewVO();
+				page = new PageViewUserVO();
 				page.setReferenceCode(rs.getString("reference_cd"));
 				page.setRequestUri(rs.getString("request_uri_txt"));
 
@@ -147,13 +147,13 @@ public class RecentlyViewedAction extends SBActionAdapter {
 	 * @param pages
 	 * @return
 	 */
-	protected Map<String, List<PageViewVO>> parseResults(SiteVO site, 
-			UserRoleVO userRole, List<PageViewVO> pages) {
+	protected Map<String, List<PageViewUserVO>> parseResults(SiteVO site, 
+			UserRoleVO userRole, List<PageViewUserVO> pages) {
 		// collate pages into buckets
-		Map<String, List<PageViewVO>> recentViewed = collatePages(pages);
+		Map<String, List<PageViewUserVO>> recentViewed = collatePages(pages);
 
 		// leverage solr to retrieve display names
-		for (Map.Entry<String, List<PageViewVO>> entry : recentViewed.entrySet()) {
+		for (Map.Entry<String, List<PageViewUserVO>> entry : recentViewed.entrySet()) {
 			try {
 				formatNamesFromPage(site.getOrganizationId(), userRole.getRoleLevel(), entry);
 			} catch(ActionException ae) {
@@ -169,11 +169,11 @@ public class RecentlyViewedAction extends SBActionAdapter {
 	 * @param pages
 	 * @return
 	 */
-	protected Map<String,List<PageViewVO>> collatePages(List<PageViewVO> pages) {
-		Map<String, List<PageViewVO>> pageMap = initializePageMap();
+	protected Map<String,List<PageViewUserVO>> collatePages(List<PageViewUserVO> pages) {
+		Map<String, List<PageViewUserVO>> pageMap = initializePageMap();
 		// loop pages, parse into buckets
-		List<PageViewVO> pList;
-		for (PageViewVO page : pages) {
+		List<PageViewUserVO> pList;
+		for (PageViewUserVO page : pages) {
 			// add page to the appropriate List.
 			pList = pageMap.get(page.getReferenceCode());
 			if (pList != null && 
@@ -184,11 +184,11 @@ public class RecentlyViewedAction extends SBActionAdapter {
 	}
 
 	/**
-	 * Initialize a Map of List of PageViewVO based on the key types enum.
+	 * Initialize a Map of List of PageViewUserVO based on the key types enum.
 	 * @return
 	 */
-	protected Map<String,List<PageViewVO>> initializePageMap() {
-		Map<String,List<PageViewVO>> pm = new HashMap<>();
+	protected Map<String,List<PageViewUserVO>> initializePageMap() {
+		Map<String,List<PageViewUserVO>> pm = new HashMap<>();
 		for (Section sect : Section.values()) {
 			pm.put(sect.name(), new ArrayList<>());
 		}
@@ -196,12 +196,12 @@ public class RecentlyViewedAction extends SBActionAdapter {
 	}
 
 	/**
-	 * We use page ID on the PageViewVO to represent the ID of the 
+	 * We use page ID on the PageViewUserVO to represent the ID of the 
 	 * section entity we are dealing with. For a market entity, page ID 
 	 * represents the market ID, for company, the company ID, and so on.
 	 * @param page
 	 */
-	protected void setPageId(PageViewVO page) {
+	protected void setPageId(PageViewUserVO page) {
 		int idx = page.getRequestUri().lastIndexOf(QuickLinksAction.CHAR_SLASH);
 		if (idx == 0 || idx == page.getRequestUri().length() - 1) return;
 		page.setPageId(page.getRequestUri().substring(idx+1));
@@ -215,9 +215,9 @@ public class RecentlyViewedAction extends SBActionAdapter {
 	 * @throws ActionException 
 	 */
 	protected void formatNamesFromPage(String orgId, int roleLevel, 
-			Map.Entry<String, List<PageViewVO>> pages) throws ActionException {
+			Map.Entry<String, List<PageViewUserVO>> pages) throws ActionException {
 		Map<String,String> pageNames = retrieveEntityNames(orgId,roleLevel,pages);
-		for (PageViewVO page : pages.getValue()) {
+		for (PageViewUserVO page : pages.getValue()) {
 			page.setPageDisplayName(pageNames.get(page.getPageId()));
 		}
 	}
@@ -231,11 +231,11 @@ public class RecentlyViewedAction extends SBActionAdapter {
 	 * @throws ActionException
 	 */
 	protected Map<String,String> retrieveEntityNames(String orgId, int roleLevel, 
-			Map.Entry<String, List<PageViewVO>> entry) throws ActionException {
+			Map.Entry<String, List<PageViewUserVO>> entry) throws ActionException {
 		String indexer = findIndexerType(entry.getKey());
 		SolrQueryProcessor sqp = new SolrQueryProcessor(getAttributes(), getAttribute(Constants.SOLR_COLLECTION_NAME).toString());
 		SolrActionVO qData = new SolrActionVO();
-		for (PageViewVO page : entry.getValue()) {
+		for (PageViewUserVO page : entry.getValue()) {
 			SolrFieldVO field = new SolrFieldVO();
 			field.setBooleanType(BooleanType.OR);
 			field.setFieldType(FieldType.SEARCH);
@@ -298,18 +298,18 @@ public class RecentlyViewedAction extends SBActionAdapter {
 		}
 
 		SMTSession sess = (SMTSession)req.getSession();
-		Map<String, List<PageViewVO>> rvMap = (Map<String,List<PageViewVO>>)sess.getAttribute(QuickLinksAction.MY_RECENTLY_VIEWED);
+		Map<String, List<PageViewUserVO>> rvMap = (Map<String,List<PageViewUserVO>>)sess.getAttribute(QuickLinksAction.MY_RECENTLY_VIEWED);
 		// if map doesn't exist, create it.
 		if (rvMap == null) rvMap = new HashMap<>();
 		log.debug("rvMap size is: " + rvMap.size());
 		// get the proper collection or create it if it doesn't exist
-		List<PageViewVO> pages = rvMap.get(collKey);
+		List<PageViewUserVO> pages = rvMap.get(collKey);
 		if (pages == null) {
 			pages = new ArrayList<>();
 		}
 
 		log.debug("pages is size: " + pages.size());
-		PageViewVO page = new PageViewVO();
+		PageViewUserVO page = new PageViewUserVO();
 		page.setPageDisplayName(req.getParameter(QuickLinksAction.PARAM_KEY_NAME));
 		page.setRequestUri(req.getParameter(QuickLinksAction.PARAM_KEY_URI_TXT));
 		int idx = page.getRequestUri().lastIndexOf(QuickLinksAction.CHAR_SLASH);
@@ -357,9 +357,9 @@ public class RecentlyViewedAction extends SBActionAdapter {
 	 * @param page
 	 * @return
 	 */
-	protected boolean isDuplicatePage(List<PageViewVO> pages, PageViewVO page) {
+	protected boolean isDuplicatePage(List<PageViewUserVO> pages, PageViewUserVO page) {
 		if (page.getPageId() == null) return true;
-		for (PageViewVO tmp : pages) {
+		for (PageViewUserVO tmp : pages) {
 			if (page.getPageId().equalsIgnoreCase(tmp.getPageId())) 
 				return true;
 		}

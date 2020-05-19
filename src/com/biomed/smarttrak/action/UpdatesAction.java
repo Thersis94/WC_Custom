@@ -40,7 +40,7 @@ import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
-import com.smt.sitebuilder.util.PageViewVO;
+import com.smt.sitebuilder.util.PageViewUserVO;
 import com.smt.sitebuilder.util.solr.SolrActionUtil;
 
 /****************************************************************************
@@ -102,7 +102,7 @@ public class UpdatesAction extends SBActionAdapter {
 			//adjust links only manage tool
 			adjustContentLinks(resp.getResultDocuments(), mod, req);
 
-			Map<String,List<PageViewVO>> favs = (Map<String,List<PageViewVO>>)req.getSession().getAttribute(MyFavoritesAction.MY_FAVORITES);
+			Map<String,List<PageViewUserVO>> favs = (Map<String,List<PageViewUserVO>>)req.getSession().getAttribute(MyFavoritesAction.MY_FAVORITES);
 
 			/*
 			 * Attempt to Flag Favorite Updates using Session Favorites if available.
@@ -138,7 +138,7 @@ public class UpdatesAction extends SBActionAdapter {
 	 * @param mod
 	 * @param req
 	 */
-	private void flagFavorites(List<SolrDocument> resp, Map<String, List<PageViewVO>> favs) {
+	private void flagFavorites(List<SolrDocument> resp, Map<String, List<PageViewUserVO>> favs) {
 		boolean isFav;
 		for (SolrDocument solrDocument : resp) {
 			isFav = false;
@@ -146,7 +146,7 @@ public class UpdatesAction extends SBActionAdapter {
 			//If solrDocument has a documentUrl, can be favorited.
 			if(!StringUtil.isEmpty(docUrl)) {
 				log.info(docUrl);
-				List<PageViewVO> favPages = favs.get((String)solrDocument.getFieldValue(SearchDocumentHandler.CONTENT_TYPE));
+				List<PageViewUserVO> favPages = favs.get((String)solrDocument.getFieldValue(SearchDocumentHandler.CONTENT_TYPE));
 
 				log.debug(favPages != null && !favPages.isEmpty());
 				isFav = checkFavPageUrl(solrDocument, favPages);
@@ -162,11 +162,11 @@ public class UpdatesAction extends SBActionAdapter {
 	 * @param favPages
 	 * @return
 	 */
-	private boolean checkFavPageUrl(SolrDocument solrDocument, List<PageViewVO> favPages) {
+	private boolean checkFavPageUrl(SolrDocument solrDocument, List<PageViewUserVO> favPages) {
 		String docUrl = (String)solrDocument.getFieldValue(SearchDocumentHandler.DOCUMENT_URL);
 		boolean isFav = false;
 		if(favPages != null && !favPages.isEmpty()) {
-			for(PageViewVO p : favPages) {
+			for(PageViewUserVO p : favPages) {
 				if(docUrl.equals(p.getRequestUri())) {
 					isFav = true;
 					break;
