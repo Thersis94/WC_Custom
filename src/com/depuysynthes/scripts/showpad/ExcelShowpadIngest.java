@@ -10,6 +10,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -96,36 +97,56 @@ public class ExcelShowpadIngest extends DSMediaBinImporterV2 {
 
 
 	/**
-	 * Merge opCo names, which are the divisions.  Any asset can move in and out
-	 * of Divisions at will (similar to how we reconsile tags)
-	 * @param vo - this is the only record we make changes to
-	 * @param mr - treat as immutable
+	 * @override
+	 */
+	@Override
+	protected void sortDeltas(Map<String, MediaBinDeltaVO> masterRecords, Map<String, MediaBinDeltaVO> newRecords) {
+		super.sortDeltas(masterRecords, newRecords);
+
+		// masterRecords contains the 'to be enacted on' set, after the call to super above.
+		// if the record is marked as changed or new, split the divisions we need update
+		for (MediaBinDeltaVO vo : masterRecords.values()) {
+			//inserts are the only case not covered in the parent iteration
+			if (State.Insert == vo.getRecordState()) {
+				//at this point both VOs are the same, which simply means nothing is going to be deleted - which is acceptable since this is an 'insert' use case.
+				setDivisionDeltas(vo, vo);
+			}
+		}
+	}
+
+
+	/**
+	 * This code sorts any Division changes - which to add-to and which to withdraw-from
+	 * @param vo
+	 * @param mr
 	 */
 	@Override
 	protected void setUpdateFields(MediaBinDeltaVO vo, MediaBinDeltaVO mr) {
 		super.setUpdateFields(vo, mr);
+		setDivisionDeltas(vo, mr);
+	}
 
-		//if no data has changed we don't need to care about the OpCos
-		if (State.Insert != vo.getRecordState() && State.Update != vo.getRecordState())
-			return;
 
-		/**
-		 * The rest of this code sorts any Division changes - which to add-to and which to withdraw-from 
-		 */
-
+	/**
+	 * Tag the divisions this asset should be added-to and removed-from
+	 * @param vo
+	 * @param mr
+	 */
+	private void setDivisionDeltas(MediaBinDeltaVO vo, MediaBinDeltaVO mr) {
 		//add it to all the today bindings
 		Set<String> desiredDivNms = new HashSet<>(Arrays.asList(StringUtil.checkVal(vo.getOpCoNm()).split(TOKENIZER)));
 
 		//remove it from all the yesterday bindings, sans the ones we want to persist
+		log.debug("old=" + mr.getOpCoNm());
+		log.debug("new=" + vo.getOpCoNm());
 		Set<String> removeDivNms = new HashSet<>(Arrays.asList(StringUtil.checkVal(mr.getOpCoNm()).split(TOKENIZER)));
 		removeDivNms.removeAll(desiredDivNms);
 
 		vo.captureDivisionChange(desiredDivNms, true);
 		vo.captureDivisionChange(removeDivNms, false);
-		log.debug("adding to divisions: " + StringUtil.getToString(desiredDivNms));
-		log.debug("removing from divisions: " + StringUtil.getToString(removeDivNms));
+		log.debug(vo.getDpySynMediaBinId() + " adding to divisions: " + StringUtil.getToString(desiredDivNms.toArray(), false, false, ","));
+		log.debug(vo.getDpySynMediaBinId() + " removing from divisions: " + StringUtil.getToString(removeDivNms.toArray(), false, false, ","));
 	}
-
 
 
 	/**
@@ -146,11 +167,13 @@ public class ExcelShowpadIngest extends DSMediaBinImporterV2 {
 			//see if we have a better name match - EMEA can use nicknames in the Excel file if we also have them in our config
 			for (String keypair : aliases) {
 				String[] arr = keypair.split("=");
-				if (arr.length == 2 && arr[0].equals(name))
+				if (arr.length == 2 && arr[0].equals(name)) {
 					name = arr[1];
+					break;
+				}
 			}
 			divisionMap.put(name, util.getDivisionId());
-			log.debug("created division " + div[0] + " with id " + div[1]);
+			log.debug("aliased division " + name + " to id " + div[1]);
 		}
 		log.info("loaded " + divisions.size() + " showpad divisions");
 	}
@@ -293,14 +316,14 @@ public class ExcelShowpadIngest extends DSMediaBinImporterV2 {
 	 */
 	protected void loopFileThroughDivisions(MediaBinDeltaVO vo) {
 		//push this asset to any divisions we're adding/updating
-		for (String divNm : vo.getAddToDivisions()) {
+		Set<String> divs =  vo.getAddToDivisions() != null ? vo.getAddToDivisions() : Collections.emptySet();
+		for (String divNm : divs) {
+			log.debug("adding to division aliased as " + divNm);
 			String divId = divisionMap.get(divNm);
-			//if we don't have this division in our config let the admins know to add it
-			if (StringUtil.isEmpty(divId))
-				failures.add(new Exception(String.format("Connector config is missing Division %s", divNm)));
 
 			for (ShowpadDivisionUtil util : divisions) {
 				if (util.getDivisionId().equals(divId)) {
+					log.debug("pushing to division " + divId);
 					util.pushAsset(vo);
 					break;
 				}
@@ -311,11 +334,15 @@ public class ExcelShowpadIngest extends DSMediaBinImporterV2 {
 		// When the whole record is deleted the deleteRecords workflow has us covered.
 		// When the list of opCos changes and the asset needs to be removed from only one Division, it 
 		// looks like an update and needs to be addressed here.
-		for (String divNm : vo.getAddToDivisions()) {
+		divs =  vo.getDeleteFromDivisions() != null ? vo.getDeleteFromDivisions() : Collections.emptySet();
+		for (String divNm : divs) {
+			log.debug("deleting from division aliased as " + divNm);
 			String divId = divisionMap.get(divNm);
 			for (ShowpadDivisionUtil util : divisions) {
 				if (util.getDivisionId().equals(divId)) {
+					log.debug("pushing delete to division " + divId);
 					util.deleteAsset(vo);
+					deleteFromDb(divId, vo.getDpySynMediaBinId());
 					break;
 				}
 			}
@@ -357,6 +384,26 @@ public class ExcelShowpadIngest extends DSMediaBinImporterV2 {
 				ps.addBatch();
 			}
 			ps.executeBatch();
+		} catch (SQLException sqle) {
+			failures.add(sqle);
+		}
+	}
+
+
+	/**
+	 * delete specific showpad assets from the local DB table
+	 * @param deletedIds
+	 */
+	private void deleteFromDb(String divisionId, String dpySynMediabinId ) {
+		StringBuilder sql = new StringBuilder(350);
+		sql.append("delete from ").append(schema).append("dpy_syn_showpad ");
+		sql.append("where division_id=? and dpy_syn_mediabin_id=?");
+		log.debug(sql);
+
+		try (PreparedStatement ps  = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, divisionId);
+			ps.setString(2, dpySynMediabinId);
+			ps.executeUpdate();
 		} catch (SQLException sqle) {
 			failures.add(sqle);
 		}
