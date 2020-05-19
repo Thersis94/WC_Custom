@@ -10,6 +10,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -94,9 +95,14 @@ public class ExcelShowpadIngest extends DSMediaBinImporterV2 {
 		super.run();
 	}
 
+
+	/**
+	 * @override
+	 */
+	@Override
 	protected void sortDeltas(Map<String, MediaBinDeltaVO> masterRecords, Map<String, MediaBinDeltaVO> newRecords) {
 		super.sortDeltas(masterRecords, newRecords);
-		
+
 		// masterRecords contains the 'to be enacted on' set, after the call to super above.
 		// if the record is marked as changed or new, split the divisions we need update
 		for (MediaBinDeltaVO vo : masterRecords.values()) {
@@ -119,7 +125,13 @@ public class ExcelShowpadIngest extends DSMediaBinImporterV2 {
 		super.setUpdateFields(vo, mr);
 		setDivisionDeltas(vo, mr);
 	}
-	
+
+
+	/**
+	 * Tag the divisions this asset should be added-to and removed-from
+	 * @param vo
+	 * @param mr
+	 */
 	private void setDivisionDeltas(MediaBinDeltaVO vo, MediaBinDeltaVO mr) {
 		//add it to all the today bindings
 		Set<String> desiredDivNms = new HashSet<>(Arrays.asList(StringUtil.checkVal(vo.getOpCoNm()).split(TOKENIZER)));
@@ -135,7 +147,6 @@ public class ExcelShowpadIngest extends DSMediaBinImporterV2 {
 		log.debug(vo.getDpySynMediaBinId() + " adding to divisions: " + StringUtil.getToString(desiredDivNms.toArray(), false, false, ","));
 		log.debug(vo.getDpySynMediaBinId() + " removing from divisions: " + StringUtil.getToString(removeDivNms.toArray(), false, false, ","));
 	}
-
 
 
 	/**
@@ -305,42 +316,37 @@ public class ExcelShowpadIngest extends DSMediaBinImporterV2 {
 	 */
 	protected void loopFileThroughDivisions(MediaBinDeltaVO vo) {
 		//push this asset to any divisions we're adding/updating
-		if (vo.getAddToDivisions() != null) {
-			for (String divNm : vo.getAddToDivisions()) {
-				log.debug("adding to division aliased as " + divNm);
-				String divId = divisionMap.get(divNm);
-				//if we don't have this division in our config let the admins know to add it
-				//if (StringUtil.isEmpty(divId))
-					//failures.add(new Exception(String.format("Connector config is missing Division %s", divNm)));
+		Set<String> divs =  vo.getAddToDivisions() != null ? vo.getAddToDivisions() : Collections.emptySet();
+		for (String divNm : divs) {
+			log.debug("adding to division aliased as " + divNm);
+			String divId = divisionMap.get(divNm);
 
-				for (ShowpadDivisionUtil util : divisions) {
-					if (util.getDivisionId().equals(divId)) {
-						log.debug("pushing to division " + divId);
-						util.pushAsset(vo);
-						break;
-					}
+			for (ShowpadDivisionUtil util : divisions) {
+				if (util.getDivisionId().equals(divId)) {
+					log.debug("pushing to division " + divId);
+					util.pushAsset(vo);
+					break;
 				}
 			}
 		}
-		
+
 		//delete this asset from any divisions we're withdrawing
 		// When the whole record is deleted the deleteRecords workflow has us covered.
 		// When the list of opCos changes and the asset needs to be removed from only one Division, it 
 		// looks like an update and needs to be addressed here.
-		if (vo.getDeleteFromDivisions() != null) {
-			for (String divNm : vo.getDeleteFromDivisions()) {
-				log.debug("deleting from division aliased as " + divNm);
-				String divId = divisionMap.get(divNm);
-				for (ShowpadDivisionUtil util : divisions) {
-					if (util.getDivisionId().equals(divId)) {
-						log.debug("pushing delete to division " + divId);
-						util.deleteAsset(vo);
-						deleteFromDb(divId, vo.getDpySynMediaBinId());
-						break;
-					}
+		divs =  vo.getDeleteFromDivisions() != null ? vo.getDeleteFromDivisions() : Collections.emptySet();
+		for (String divNm : divs) {
+			log.debug("deleting from division aliased as " + divNm);
+			String divId = divisionMap.get(divNm);
+			for (ShowpadDivisionUtil util : divisions) {
+				if (util.getDivisionId().equals(divId)) {
+					log.debug("pushing delete to division " + divId);
+					util.deleteAsset(vo);
+					deleteFromDb(divId, vo.getDpySynMediaBinId());
+					break;
 				}
-				
-			}}
+			}
+		}
 	}
 
 
@@ -360,7 +366,7 @@ public class ExcelShowpadIngest extends DSMediaBinImporterV2 {
 
 		//fail-fast if there's nothing to do
 		if (deletedIds == null || deletedIds.isEmpty()) return;
-		
+
 		// Build the SQL Statement
 		StringBuilder sql = new StringBuilder(350);
 		sql.append("delete from ").append(schema).append("dpy_syn_showpad ");
@@ -382,8 +388,8 @@ public class ExcelShowpadIngest extends DSMediaBinImporterV2 {
 			failures.add(sqle);
 		}
 	}
-	
-	
+
+
 	/**
 	 * delete specific showpad assets from the local DB table
 	 * @param deletedIds
