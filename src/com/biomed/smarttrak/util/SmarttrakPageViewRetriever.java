@@ -11,7 +11,7 @@ import com.biomed.smarttrak.action.AdminControllerAction;
 import com.biomed.smarttrak.vo.UserVO.LicenseType;
 //SB libs
 import com.smt.sitebuilder.util.PageViewRetriever;
-import com.smt.sitebuilder.util.PageViewVO;
+import com.smt.sitebuilder.util.PageViewUserVO;
 
 /****************************************************************************
  * Title: SmarttrakPageViewRetriever.java <p/>
@@ -101,8 +101,8 @@ public class SmarttrakPageViewRetriever extends PageViewRetriever {
 	 * @see com.smt.sitebuilder.util.PageViewRetriever#generatePageViewVO(java.sql.ResultSet)
 	 */
 	@Override
-	protected PageViewVO generatePageViewVO(ResultSet rs) throws SQLException {
-		PageViewVO pageView = super.generatePageViewVO(rs);
+	protected PageViewUserVO generatePageViewVO(ResultSet rs) throws SQLException {
+		PageViewUserVO pageView = super.generatePageViewVO(rs);
 		pageView.setPageTitleName(rs.getString("page_title_nm")); //set the custom field onto the vo
 		return pageView;
 	}
