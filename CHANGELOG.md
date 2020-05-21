@@ -1,5 +1,12 @@
 WC_Custom Changelog (auto-generated)
 
+# [3.55.0](https://github.com/smtadmin/WC_Custom/compare/3.54.1...3.55.0) (2020-05-21)
+
+
+### Features
+
+* **templates:** code updates for the emial embed widgets ([8b8ca6b](https://github.com/smtadmin/WC_Custom/commit/8b8ca6b))
+
 ## [3.54.1](https://github.com/smtadmin/WC_Custom/compare/3.54.0...3.54.1) (2020-05-13)
 
 
