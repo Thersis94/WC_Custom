@@ -675,13 +675,15 @@ public class ShowpadDivisionUtil {
 		this.failCount = failCount;
 	}
 
-
 	public boolean isEOSRun() {
 		return isEOSRun;
 	}
 
-
 	public void setEOSRun(boolean isEOSRun) {
 		this.isEOSRun = isEOSRun;
+	}
+	
+	public boolean hasAsset(MediaBinDeltaVO vo) {
+		return divisionAssets.containsKey(vo.getDpySynMediaBinId());
 	}
 }

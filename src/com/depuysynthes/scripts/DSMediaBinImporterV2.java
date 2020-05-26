@@ -484,7 +484,7 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 	 * @param masterRecords
 	 * @param newRecords
 	 */
-	private void sortDeltas(Map<String, MediaBinDeltaVO> masterRecords, Map<String, MediaBinDeltaVO> newRecords) {
+	protected void sortDeltas(Map<String, MediaBinDeltaVO> masterRecords, Map<String, MediaBinDeltaVO> newRecords) {
 		//loop the new records.  
 		//If the record exists in the master data mark it as an update
 		//if the record does not exist in the master data mark it as an insert
@@ -524,7 +524,7 @@ public class DSMediaBinImporterV2 extends CommandLineUtil {
 	 * @param vo
 	 * @param mr
 	 */
-	private void setUpdateFields(MediaBinDeltaVO vo, MediaBinDeltaVO mr) {
+	protected void setUpdateFields(MediaBinDeltaVO vo, MediaBinDeltaVO mr) {
 		//check to see if the data has changed, which implies we have an update
 		if (! vo.lexicographyEquals(mr)) {
 			vo.setRecordState(State.Update);
