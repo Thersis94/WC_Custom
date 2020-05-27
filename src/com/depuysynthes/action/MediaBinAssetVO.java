@@ -498,8 +498,7 @@ public class MediaBinAssetVO extends SBModuleVO {
 	 */
 	private boolean compareStr(String a, String b) {
 		if (a == null && b == null) return true;
-		if (a == null && b != null) return false;
-		if (a != null && b == null) return false;
+		if (a == null || b == null) return false;
 		return a.equals(b);
 	}
 	
@@ -511,8 +510,7 @@ public class MediaBinAssetVO extends SBModuleVO {
 	 */
 	private boolean compareInt(Integer a, Integer b) {
 		if (a == null && b == null) return true;
-		if (a == null && b != null) return false;
-		if (a != null && b == null) return false;
+		if (a == null ||  b == null) return false;
 		return a.compareTo(b) == 0;
 	}
 	
@@ -524,8 +522,7 @@ public class MediaBinAssetVO extends SBModuleVO {
 	 */
 	private boolean compareDbl(Double a, Double b) {
 		if (a == null && b == null) return true;
-		if (a == null && b != null) return false;
-		if (a != null && b == null) return false;
+		if (a == null || b == null) return false;
 		return a.compareTo(b) == 0;
 	}
 	
@@ -537,8 +534,7 @@ public class MediaBinAssetVO extends SBModuleVO {
 	 */
 	private boolean compareDate(Date a, Date b) {
 		if (a == null && b == null) return true;
-		if (a == null && b != null) return false;
-		if (a != null && b == null) return false;
+		if (a == null ||  b == null) return false;
 		return a.compareTo(b) == 0;
 	}
 	
