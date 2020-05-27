@@ -6,6 +6,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -140,11 +141,10 @@ public class MTSDocumentAction extends SimpleActionAdapter {
 				SponsorAction sa = new SponsorAction(getDBConnection(), getAttributes());
 				doc.setSponsor(sa.getSponsor(doc.getSponsorId()));
 				doc.setInfoBar(doc.getSponsor().getInfoPanel());
-				user.setArticles(getAuthorArticles(doc.getSponsorId(), false));
-				
+				doc.getSponsor().setArticles(getAuthorArticles(doc.getSponsorId(), false, doc.getDocumentId()));
 			} else {
 				
-				user.setArticles(getAuthorArticles(doc.getAuthorId(), true));
+				user.setArticles(getAuthorArticles(doc.getAuthorId(), true, doc.getDocumentId()));
 				doc.setAuthor(user);
 			}
 
@@ -160,7 +160,10 @@ public class MTSDocumentAction extends SimpleActionAdapter {
 	 * @param authorId
 	 * @return
 	 */
-	public List<MTSDocumentVO> getAuthorArticles(String authorId, boolean isAuthor) {
+	public List<MTSDocumentVO> getAuthorArticles(String authorId, boolean isAuthor, String docId) {
+		List<Object> params = new ArrayList<>();
+		params.add(authorId);
+		
 		String schema = getCustomSchema();
 		StringBuilder sql = new StringBuilder(640);
 		sql.append("select b.publish_dt, b.author_id, unique_cd, b.document_id, b.sponsor_id, ");
@@ -179,11 +182,19 @@ public class MTSDocumentAction extends SimpleActionAdapter {
 		sql.append("left outer join widget_meta_data f ");
 		sql.append("on e.widget_meta_data_id = f.widget_meta_data_id ");
 		sql.append("where ").append(isAuthor ? "b.author_id" : "b.sponsor_id").append(" = ? ");
-		sql.append(" and c.organization_id = 'MTS' order by b.publish_dt desc limit 250");
-		log.debug(sql.length() + "|" + sql + "|" + authorId);
-
+		sql.append(" and c.organization_id = 'MTS' ");
+		if (!StringUtil.isEmpty(docId)) {
+			sql.append("and b.document_id != ? ");
+			params.add(docId);
+		}
+		sql.append("order by b.publish_dt desc limit 250 ");
+		log.debug(sql.length() + "|" + sql + "|" + params);
+		
 		DBProcessor db = new DBProcessor(getDBConnection(), schema);
-		return db.executeSelect(sql.toString(), Arrays.asList(authorId), new MTSDocumentVO());
+		List<MTSDocumentVO> docs = db.executeSelect(sql.toString(), params, new MTSDocumentVO());
+		docs = docs.size() > 10 ? docs.subList(0, 10) : docs;
+		Collections.shuffle(docs);
+		return docs;
 	}
 
 	/**
