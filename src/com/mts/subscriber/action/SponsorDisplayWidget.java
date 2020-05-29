@@ -68,7 +68,7 @@ public class SponsorDisplayWidget extends SimpleActionAdapter {
 			
 			// Get the most recent articles for the sponsor
 			MTSDocumentAction mda = new MTSDocumentAction(getDBConnection(), getAttributes());
-			sponsor.setArticles(mda.getAuthorArticles(sponsor.getSponsorId(), false));
+			sponsor.setArticles(mda.getAuthorArticles(sponsor.getSponsorId(), false, null));
 			
 			// Add the data
 			setModuleData(sponsor);

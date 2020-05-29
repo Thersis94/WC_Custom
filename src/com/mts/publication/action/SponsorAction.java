@@ -117,6 +117,7 @@ public class SponsorAction extends SBActionAdapter {
 	 */
 	public SponsorVO updateSponsor(ActionRequest req) throws InvalidDataException, DatabaseException {
 		SponsorVO svo = new SponsorVO(req);
+		log.info("Summary: " + svo.getSummaryDesc());
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		db.save(svo);
 		
