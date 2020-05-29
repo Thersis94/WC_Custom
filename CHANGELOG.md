@@ -1,5 +1,17 @@
 WC_Custom Changelog (auto-generated)
 
+# [3.56.0](https://github.com/smtadmin/WC_Custom/compare/3.55.0...3.56.0) (2020-05-29)
+
+
+### Bug Fixes
+
+* **sponosrs:** fixed issue with sponsor articles loading iinto the author bean ([c17f6f9](https://github.com/smtadmin/WC_Custom/commit/c17f6f9))
+
+
+### Features
+
+* **sponsors:** added a summary desc field ([8da387a](https://github.com/smtadmin/WC_Custom/commit/8da387a))
+
 # [3.55.0](https://github.com/smtadmin/WC_Custom/compare/3.54.1...3.55.0) (2020-05-21)
 
 
