@@ -14,6 +14,7 @@ import java.util.stream.Collectors;
 import com.biomed.smarttrak.admin.GridChartAction;
 import com.biomed.smarttrak.admin.vo.GridDetailVO;
 import com.biomed.smarttrak.admin.vo.GridVO;
+import com.biomed.smarttrak.admin.vo.GridVO.RowStyle;
 import com.biomed.smarttrak.vo.grid.BiomedExcelReport;
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
@@ -156,10 +157,14 @@ public class GridDisplayAction extends SimpleActionAdapter {
 	private void addDetailTypes(SMTChartOptionIntfc options, GridVO grid) {
 		Map<String, Object> additionalDetails = loadParamMap("additionalOptions", options.getChartOptions());
 		List<String> rowDetails = new ArrayList<>();
+		int dataCount = 0;
 		for (GridDetailVO gDetail : grid.getDetails()) {
+			if (RowStyle.DATA.toString().equals(gDetail.getDetailType()))
+				dataCount++;
 			rowDetails.add(gDetail.getDetailType());
 		}
 		additionalDetails.put("rowDetails", rowDetails);
+		additionalDetails.put("isChartable", dataCount > 0);
 	}
 
 	/**
