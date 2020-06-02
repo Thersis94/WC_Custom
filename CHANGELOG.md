@@ -1,5 +1,14 @@
 WC_Custom Changelog (auto-generated)
 
+## [3.56.1](https://github.com/smtadmin/WC_Custom/compare/3.56.0...3.56.1) (2020-06-02)
+
+
+### Bug Fixes
+
+* **st-270:** update insights tabel with email date ([2b2f650](https://github.com/smtadmin/WC_Custom/commit/2b2f650))
+* **st-418:** add checks to see if this is a non chartable grid ([e73f5a0](https://github.com/smtadmin/WC_Custom/commit/e73f5a0))
+* **st0431:** change label for trends ([0bf233e](https://github.com/smtadmin/WC_Custom/commit/0bf233e))
+
 # [3.56.0](https://github.com/smtadmin/WC_Custom/compare/3.55.0...3.56.0) (2020-05-29)
 
 
