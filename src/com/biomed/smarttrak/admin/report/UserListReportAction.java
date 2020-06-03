@@ -311,7 +311,7 @@ public class UserListReportAction extends SimpleActionAdapter {
 	 * @param val
 	 */
 	private void addAttribute(UserVO user, String key, String val) {
-		if (key == null) return;
+		if (key == null || val == null) return;
 		if (user.getAttributes().containsKey(key)) {
 			if (!StringUtil.checkVal(user.getAttributes().get(key)).contains(val))
 				user.addAttribute(key, user.getAttributes().get(key) + ", " + val);
