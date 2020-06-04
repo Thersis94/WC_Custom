@@ -1,5 +1,12 @@
 WC_Custom Changelog (auto-generated)
 
+## [3.56.2](https://github.com/smtadmin/WC_Custom/compare/3.56.1...3.56.2) (2020-06-04)
+
+
+### Bug Fixes
+
+* **st-434:** fix issue with null values being placed into the attributes map ([ad35a73](https://github.com/smtadmin/WC_Custom/commit/ad35a73))
+
 ## [3.56.1](https://github.com/smtadmin/WC_Custom/compare/3.56.0...3.56.1) (2020-06-02)
 
 
