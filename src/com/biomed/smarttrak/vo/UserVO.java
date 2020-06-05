@@ -36,8 +36,6 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 	private static final long serialVersionUID = -8619730513300299951L;
 	private String accountId;
 	private String accountName;
-	private Date accountExpiration;
-	private int accountStatus;
 	private String userId;
 	private String registerSubmittalId;
 	private String licenseType;
@@ -276,24 +274,6 @@ public class UserVO extends UserDataVO implements HumanNameIntfc {
 
 	public void setAccountName(String accountName) {
 		this.accountName = accountName;
-	}
-
-	@Column(name="account_expiration_dt", isReadOnly=true)
-	public Date getAccountExpiration() {
-		return accountExpiration;
-	}
-
-	public void setAccountExpiration(Date accountExpiration) {
-		this.accountExpiration = accountExpiration;
-	}
-
-	@Column(name="account_status_flg", isReadOnly=true)
-	public int getAccountStatus() {
-		return accountStatus;
-	}
-
-	public void setAccountStatus(int accountStatus) {
-		this.accountStatus = accountStatus;
 	}
 
 	/**

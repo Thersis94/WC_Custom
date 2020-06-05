@@ -24,7 +24,6 @@ import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.common.constants.ErrorCodes;
 import com.smt.sitebuilder.security.DBLoginModule;
 import com.smt.sitebuilder.security.UserLogin;
-import com.biomed.smarttrak.vo.AccountVO;
 //WC_Custom libs
 import com.biomed.smarttrak.vo.TeamVO;
 import com.biomed.smarttrak.vo.UserVO;
@@ -148,7 +147,6 @@ public class SmartTRAKLoginModule extends DBLoginModule {
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
 			ps.setString(1, UserVO.RegistrationMap.SOURCE.getFieldId());
 			ps.setString(2, user.getProfileId());
-			log.debug(ps);
 			ResultSet rs = ps.executeQuery();
 			StringEncrypter se = new StringEncrypter((String)getAttribute(Constants.ENCRYPT_KEY));
 			while (rs.next()) {
@@ -189,6 +187,12 @@ public class SmartTRAKLoginModule extends DBLoginModule {
 			log.debug("loaded " + user.getTeams().size() + " teams for " + user.getEmailAddress());
 	}
 
+	
+	/**
+	 * Check potential auth disconnects and throw the proper error code for each
+	 * @param rs
+	 * @throws AuthenticationException
+	 */
 	private void checkAuthentication(ResultSet rs) throws AuthenticationException {
 		Date now = new Date();
 		try {
