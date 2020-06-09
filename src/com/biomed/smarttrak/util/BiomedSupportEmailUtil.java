@@ -1,5 +1,7 @@
 package com.biomed.smarttrak.util;
 
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumMap;
@@ -13,6 +15,7 @@ import org.apache.log4j.Logger;
 import com.biomed.smarttrak.action.AdminControllerAction;
 import com.biomed.smarttrak.vo.AccountVO;
 import com.biomed.smarttrak.vo.TicketEmailVO;
+import com.biomed.smarttrak.vo.UserVO;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.db.pool.SMTDBConnection;
@@ -76,18 +79,6 @@ public class BiomedSupportEmailUtil {
 		this.attributes = attributes;
 		this.ecbu = new EmailCampaignBuilderUtil(dbConn, attributes);
 		loadAdminEmails();
-	}
-
-	/**
-	 * Load Support Emails from config so we can filter out the admins that
-	 * should receive the emails.
-	 */
-	private void loadAdminEmails() {
-		adminEmails = new ArrayList<>();
-		String [] emails = StringUtil.checkVal(attributes.get(SUPPORT_ADMIN_EMAILS)).split(",");
-		for(String e : emails) {
-			adminEmails.add(StringUtil.checkVal(e));
-		}
 	}
 
 	/**
@@ -523,6 +514,33 @@ public class BiomedSupportEmailUtil {
 			} catch (DatabaseException e) {
 				log.error("Failed to send email", e);
 			}
+		}
+	}
+	
+	private void loadAdminEmails () {
+		StringBuilder sql = new StringBuilder(125);
+		
+		sql.append("select email_address_txt from ").append(attributes.get(Constants.CUSTOM_DB_SCHEMA)).append("biomedgps_user u ");
+		sql.append("left join register_submittal rs on rs.profile_id = u.profile_id and site_id = ? ");
+		sql.append("left join register_data rd on rs.register_submittal_id = rd.register_submittal_id and rd.register_field_id = ? ");
+		sql.append("where rd.value_txt = ? and u.active_flg = ? and u.status_cd = ? ");
+		
+		adminEmails = new ArrayList<>();
+		
+		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, AdminControllerAction.PUBLIC_SITE_ID);
+			ps.setString(2, UserVO.RegistrationMap.ASSIGNEESECTIONS.getFieldId());
+			ps.setString(3, "1");
+			ps.setInt(4, 1);
+			ps.setString(5, "S");
+			
+			ResultSet rs = ps.executeQuery();
+			
+			while(rs.next())
+				adminEmails.add(rs.getString("email_address_txt"));
+			
+		} catch (Exception e) {
+			log.error("Failed to load admin emails", e);
 		}
 	}
 
