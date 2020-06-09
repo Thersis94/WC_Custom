@@ -35,8 +35,8 @@ import com.smt.sitebuilder.action.SBModuleVO;
  ****************************************************************************/
 @Table(name="dpy_syn_mediabin")
 public class MediaBinAssetVO extends SBModuleVO {
+	public static final String SLASH = "/";
 	private static final long serialVersionUID = 1L;
-	
 	private static final List<String> videoTypes = Arrays.asList(MediaBinAdminAction.VIDEO_ASSETS);
 	private String dpySynMediaBinId = null;
 	private String assetNm = null;
@@ -45,6 +45,7 @@ public class MediaBinAssetVO extends SBModuleVO {
 	private String bodyRegionTxt = null;
 	private String businessUnitNm = null;
 	private Integer businessUnitId = Integer.valueOf(0);
+	private String customFileUrl = null;
 	private String literatureTypeTxt = null;
 	private String fileNm = null;
 	private Date modifiedDt = null;
@@ -90,6 +91,7 @@ public class MediaBinAssetVO extends SBModuleVO {
 		bodyRegionTxt = db.getStringVal("body_region_txt", rs);
 		businessUnitNm = db.getStringVal("business_unit_nm", rs);
 		businessUnitId = db.getIntegerVal("business_unit_id", rs);
+		customFileUrl = db.getStringVal("custom_file_url_txt", rs);
 		literatureTypeTxt = db.getStringVal("literature_type_txt", rs);
 		fileNm = db.getStringVal("file_nm", rs);
 		duration = db.getDoubleVal("duration_length_no", rs);
@@ -173,6 +175,13 @@ public class MediaBinAssetVO extends SBModuleVO {
 	public void setBusinessUnitId(Integer businessUnitId) {
 		this.businessUnitId = businessUnitId;
 	}
+	@Column(name="custom_file_url_txt")
+	public String getCustomFileUrl() {
+		return customFileUrl;
+	}
+	public void setCustomFileUrl(String customFileUrl) {
+		this.customFileUrl = customFileUrl;
+	}
 	@Column(name="literature_type_txt")
 	public String getLiteratureTypeTxt() {
 		return literatureTypeTxt;
@@ -185,7 +194,7 @@ public class MediaBinAssetVO extends SBModuleVO {
 		return fileNm;
 	}
 	public void setFileNm(String fileNm) {
-		this.fileNm = fileNm;
+		parseFileName(fileNm);
 	}
 	@Column(name="modified_dt")
 	public Date getModifiedDt() {
@@ -572,5 +581,26 @@ public class MediaBinAssetVO extends SBModuleVO {
 		//do some data cleanup; a zero synonymizes null here
 		if (lvl == null || lvl.length() == 0 || "0".equals(lvl)) lvl = null;
 		this.eCopyRevisionLvl = lvl;
+	}
+	
+	/**
+	 * Ensures that a file name prefixed with a custom file URL path is
+	 * parsed into it's proper components.
+	 * @param fileNm
+	 */
+	private void parseFileName(String fileNm) {
+		if (! StringUtil.isEmpty(fileNm)) {
+			// get length of arg and find last index of '/'
+			int len = fileNm.length();
+			int idx = fileNm.lastIndexOf(SLASH);
+			/* if idx is less than the arg length, capture file url
+			 * and file name, otherwise just use arg val as file name. */
+			if (idx > 0 && idx < len) {
+				customFileUrl = fileNm.substring(0,idx+1);
+				this.fileNm = fileNm.substring(idx+1);
+			} else {
+				this.fileNm = fileNm;
+			}
+		}
 	}
 }
