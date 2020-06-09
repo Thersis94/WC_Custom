@@ -517,6 +517,10 @@ public class BiomedSupportEmailUtil {
 		}
 	}
 	
+	
+	/**
+	 * Load admin emails from database. Grabbing every active staff user that has opted in to Direct Access.
+	 */
 	private void loadAdminEmails () {
 		StringBuilder sql = new StringBuilder(125);
 		
