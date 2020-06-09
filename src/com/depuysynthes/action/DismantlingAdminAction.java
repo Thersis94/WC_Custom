@@ -101,12 +101,12 @@ public class DismantlingAdminAction extends SBActionAdapter {
 		asset.setAssetNm("Synthes International/Product Support Material/legacy_Synthes_PDF/" + asset.getFileNm());
 		asset.setModifiedDt(Convert.parseDateUnknownPattern(req.getParameter("modifiedDt")));
 		asset.setExpirationDt(Convert.parseDateUnknownPattern(req.getParameter("expirationDt")));
-		
+
 		try {
 			DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 			if (req.getBooleanParameter("isInsert")) db.insert(asset);
 			else db.update(asset);
-			
+
 			// Update solr
 			this.updateSolr(asset, false);
 			
@@ -249,7 +249,7 @@ public class DismantlingAdminAction extends SBActionAdapter {
 	 * @return
 	 */
 	public String parseDuration(double duration) {
-		if (duration == 0) return "";
+		if ((int)duration == 0) return "";
 		StringBuilder dur = new StringBuilder();
 		int hours = (int) duration / 3600;
 		int minutes = (int) (duration % 3600) / 60;
@@ -295,5 +295,5 @@ public class DismantlingAdminAction extends SBActionAdapter {
 
 		return summary;
 	}
-	
+
 }
