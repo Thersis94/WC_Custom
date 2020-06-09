@@ -235,9 +235,6 @@ public class UpdatesEditionDataLoader extends SimpleActionAdapter {
 	 */
 	private String buildRedirectHref(String link, String baseUrl, ActionRequest req) {
 		StringBuilder redirectLink = new StringBuilder(250);
-		// Replace ampersands so that they are not lost between login and redirect.
-		if (link.contains("&amp;"))
-			link = link.replaceAll("&amp;", "|");
 		redirectLink.append(req.getParameter("redirectUrl")).append(StringEncoder.urlEncode(se.decodeValue(link)));
 		return redirectLink.toString();
 	}
