@@ -1,5 +1,17 @@
 WC_Custom Changelog (auto-generated)
 
+# [3.57.0](https://github.com/smtadmin/WC_Custom/compare/3.56.2...3.57.0) (2020-06-09)
+
+
+### Bug Fixes
+
+* **st-437:** remove old redirect logging code as the email campaign code is used now ([ae6ad8e](https://github.com/smtadmin/WC_Custom/commit/ae6ad8e))
+
+
+### Features
+
+* **event field:** modified the event pull to use the seo description field instead of the body ([fcf8332](https://github.com/smtadmin/WC_Custom/commit/fcf8332))
+
 ## [3.56.2](https://github.com/smtadmin/WC_Custom/compare/3.56.1...3.56.2) (2020-06-04)
 
 
