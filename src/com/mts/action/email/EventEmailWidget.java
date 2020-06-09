@@ -128,7 +128,7 @@ public class EventEmailWidget extends SimpleActionAdapter {
 		
 		// If not in cache, retrieve
 		SMTHttpConnectionManager conn = new SMTHttpConnectionManager();
-		byte[] data = conn.retrieveData(EVENT_URL);
+		byte[] data = conn.getRequestData(EVENT_URL, "", SMTHttpConnectionManager.HttpConnectionType.GET);
 		
 		// Parse into a Java Object
 		Gson g = new Gson();
