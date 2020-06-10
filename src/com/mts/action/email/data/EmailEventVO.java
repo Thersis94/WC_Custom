@@ -33,6 +33,7 @@ public class EmailEventVO extends BeanDataVO {
 	private String title;
 	private String assetUrl;
 	private String body;
+	private SeoDataVO seoData = new SeoDataVO();
 	private LocationVO location;
 	private long startDate;
 	private long endDate;
@@ -132,6 +133,13 @@ public class EmailEventVO extends BeanDataVO {
 	}
 
 	/**
+	 * @return the seoData
+	 */
+	public SeoDataVO getSeoData() {
+		return seoData;
+	}
+
+	/**
 	 * @return the location
 	 */
 	public LocationVO getLocation() {
@@ -213,6 +221,13 @@ public class EmailEventVO extends BeanDataVO {
 	 */
 	public void setBody(String body) {
 		this.body = body;
+	}
+
+	/**
+	 * @param seoData the seoData to set
+	 */
+	public void setSeoData(SeoDataVO seoData) {
+		this.seoData = seoData;
 	}
 
 }
