@@ -1,5 +1,14 @@
 WC_Custom Changelog (auto-generated)
 
+## [3.57.1](https://github.com/smtadmin/WC_Custom/compare/3.57.0...3.57.1) (2020-06-11)
+
+
+### Bug Fixes
+
+* **st-412:** change to load admins from db instead of properties ([c3165f3](https://github.com/smtadmin/WC_Custom/commit/c3165f3))
+* **st-433:** change column title ([77ece3d](https://github.com/smtadmin/WC_Custom/commit/77ece3d))
+* **st-433:** escape html safe values ([e3ab410](https://github.com/smtadmin/WC_Custom/commit/e3ab410))
+
 # [3.57.0](https://github.com/smtadmin/WC_Custom/compare/3.56.2...3.57.0) (2020-06-09)
 
 
