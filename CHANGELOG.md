@@ -1,5 +1,12 @@
 WC_Custom Changelog (auto-generated)
 
+## [3.57.2](https://github.com/smtadmin/WC_Custom/compare/3.57.1...3.57.2) (2020-06-12)
+
+
+### Bug Fixes
+
+* **ifu:** update IFU Dismantling tool to allow custom file URL to override default file location ([1d9308d](https://github.com/smtadmin/WC_Custom/commit/1d9308d))
+
 ## [3.57.1](https://github.com/smtadmin/WC_Custom/compare/3.57.0...3.57.1) (2020-06-11)
 
 
