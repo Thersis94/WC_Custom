@@ -92,8 +92,8 @@ public class ContentFeedJob extends AbstractSMTJob {
 	private void setDBConnection() throws DatabaseException, InvalidDataException {
 		DatabaseConnection dc = new DatabaseConnection();
 		dc.setDriverClass("org.postgresql.Driver");
-		dc.setUrl("jdbc:postgresql://sonic:5432/webcrescendo_dev112019_sb?defaultRowFetchSize=25&amp;prepareThreshold=3");
-		dc.setUserName("ryan_user_sb");
+		dc.setUrl("jdbc:postgresql://dev-common-sb-db.aws.siliconmtn.com:5432/wc_dev_sb?defaultRowFetchSize=25&amp;prepareThreshold=3");
+		dc.setUserName("wc_user_dev");
 		dc.setPassword("sqll0gin");
 		conn = dc.getConnection();
 	}
@@ -146,18 +146,51 @@ public class ContentFeedJob extends AbstractSMTJob {
 		// Get the docs published in the past day.  Exit of no articles found
 		ContentFeedVO docs = getArticles(feedTitle, feedDesc, baseUrl);
 		msg.append(String.format("Loaded %d articles\n", docs.getItems().size()));
+		
+		log.info("--------------------");
+		
+		postDocuments(docs);
+		
+	}
 
+
+	/**
+	 * Post the documents with the Hootsuite API
+	 * @param docs
+	 */
+	private void postDocuments(ContentFeedVO docs) {
+		
 		if (!docs.getItems().isEmpty()) {
-			String json = convertArticlesJson(docs);
-			// Save document
-			if (isManualJob) saveFile(json, fileLoc, msg);
-			else saveFile(json, fileLoc, host, user, pwd, msg);
+			for(ContentFeedItemVO article : docs.getItems()) {
+				if(article.getPublicationId().equalsIgnoreCase("MEDTECH-STRATEGIST")) {
+					String json = convertArticlesJson(docs);
+					// Save document
+//					if (isManualJob) saveFile(json, fileLoc, msg);
+//					else saveFile(json, fileLoc, host, user, pwd, msg);
+				}
+				
+				
+				//Fill the Hootsuite VOs
+				
+				ArrayList<PostVO> posts = new ArrayList<>();
+				
+				
+				
+				
+				
+				//Loop through each VO and run the postMessage method
+				
+				
+			}
 		}
 		
-		setSentFlags(docs.getUniqueIds());
-
-		msg.append("Success");
+//		setSentFlags(docs.getUniqueIds());
+//
+//		msg.append("Success");
+		
+		
 	}
+
 
 	/**
 	 * sets all the sent flags for published articles before todays job to sent
@@ -256,14 +289,14 @@ public class ContentFeedJob extends AbstractSMTJob {
 		String schema = (String)this.attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(400);
 		sql.append("select first_nm || ' ' || last_nm as author_nm, a.unique_cd, action_desc, ");
-		sql.append("action_nm, publish_dt, document_txt from ").append(schema).append("mts_document a ");
+		sql.append("action_nm, publish_dt, publication_id, document_txt from ").append(schema).append("mts_document a ");
 		sql.append("inner join ").append(schema).append("mts_issue i on a.issue_id = i.issue_id ");
 		sql.append("inner join sb_action b ");
 		sql.append("on a.document_id = b.action_group_id and b.pending_sync_flg = 0 ");
 		sql.append("inner join document c on b.action_id = c.action_id ");
 		sql.append("left outer join ").append(schema);
 		sql.append("mts_user u on a.author_id = u.user_id ");
-		sql.append("where publish_dt <= ? and publication_id = 'MEDTECH-STRATEGIST' and a.data_feed_processed_flg = '0' ");
+		sql.append("where publish_dt <= ? and a.data_feed_processed_flg = '0' ");
 		sql.append("order by publish_dt ");
 
 		List<Object> vals = new ArrayList<>();
@@ -271,6 +304,8 @@ public class ContentFeedJob extends AbstractSMTJob {
 		vals.add(Convert.formatEndDate(new Date()));
 
 		log.debug(sql.length() + "|" + sql + "|" + vals);
+		
+		log.info(sql.length() + "|" + sql + "|" + vals);
 
 		// Create the wrapper bean
 		ContentFeedVO feed = new ContentFeedVO();
@@ -281,7 +316,7 @@ public class ContentFeedJob extends AbstractSMTJob {
 		feed.setLocale("en-US");
 
 		// Get the articles and update the links
-		DBProcessor db = new DBProcessor(conn);		
+		DBProcessor db = new DBProcessor(conn);
 		feed.setItems(db.executeSelect(sql.toString(), vals, new ContentFeedItemVO()));
 		updateRelativeLinks(feed, baseUrl);
 		log.debug("Number Articles: " + feed.getItems().size());

@@ -38,6 +38,7 @@ public class ContentFeedItemVO extends BeanDataVO {
 	private String creator;
 	private Date pubDate;
 	private String content;
+	private String publicationId;
 	
 	/**
 	 * 
@@ -163,6 +164,21 @@ public class ContentFeedItemVO extends BeanDataVO {
 	 */
 	public void setContent(String content) {
 		this.content = content;
+	}
+
+	/**
+	 * @return the publicationId
+	 */
+	@Column(name="publication_id")
+	public String getPublicationId() {
+		return publicationId;
+	}
+
+	/**
+	 * @param publicationId the publicationId to set
+	 */
+	public void setPublicationId(String publicationId) {
+		this.publicationId = publicationId;
 	}
 
 }
