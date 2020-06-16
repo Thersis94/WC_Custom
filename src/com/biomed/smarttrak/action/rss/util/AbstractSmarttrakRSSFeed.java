@@ -703,16 +703,6 @@ public abstract class AbstractSmarttrakRSSFeed {
 	 * Calculate a wait time based on the last time we queried them.  If less than the threshold, put our thread to sleep.
 	 */
 	protected void throttleRequests(String url) {
-		throttleRequests(url, LAG_TIME_MS);
-	}
-	
-	
-	/**
-	 * Throttel request for variable time to allow for longer rests if needed
-	 * @param url
-	 * @param lagTime
-	 */
-	protected void throttleRequests(String url, long lagTime) {
 		String domain = StringUtil.stripProtocol(url);
 		domain = domain.substring(0, domain.indexOf('/'));
 
@@ -721,11 +711,11 @@ public abstract class AbstractSmarttrakRSSFeed {
 		log.debug("domain from URL= " + domain + " last access=" + lastAccessTime);
 
 		long mustWaitTime = System.currentTimeMillis() - lastAccessTime;
-		if (mustWaitTime > 0 && mustWaitTime < lagTime) {
+		if (mustWaitTime > 0 && mustWaitTime < LAG_TIME_MS) {
 			try {
 				//sleep the remaining time to get us to the threshold
-				log.debug("sleeping for " + (lagTime - mustWaitTime));
-				Thread.sleep(lagTime - mustWaitTime);
+				log.debug("sleeping for " + (LAG_TIME_MS - mustWaitTime));
+				Thread.sleep(LAG_TIME_MS - mustWaitTime);
 			} catch (Exception e) {
 				//don't care - this would bubble up as runtime issues anyways
 			}
