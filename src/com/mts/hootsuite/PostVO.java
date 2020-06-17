@@ -136,4 +136,39 @@ public class PostVO {
 		this.mediaLocation = mediaLocation;
 	}
 
+	/**
+	 * @return the log
+	 */
+	public static Logger getLog() {
+		return log;
+	}
+
+	/**
+	 * @param log the log to set
+	 */
+	public static void setLog(Logger log) {
+		PostVO.log = log;
+	}
+
+	/**
+	 * @return the mediaId
+	 */
+	public List<String> getMediaId() {
+		return mediaId;
+	}
+
+	/**
+	 * @param mediaId the mediaId to set
+	 */
+	public void setMediaId(List<String> mediaId) {
+		this.mediaId = mediaId;
+	}
+
+	/**
+	 * @param postDate the postDate to set
+	 */
+	public void setPostDate(Date postDate) {
+		this.postDate = postDate;
+	}
+
 }

@@ -22,6 +22,8 @@ import org.quartz.JobExecutionException;
 
 // GSON 2.3
 import com.google.gson.Gson;
+import com.mts.hootsuite.HootsuiteManager;
+import com.mts.hootsuite.PostVO;
 import com.siliconmtn.db.DBUtil;
 // SMT Base libs
 import com.siliconmtn.db.DatabaseConnection;
@@ -63,6 +65,8 @@ public class ContentFeedJob extends AbstractSMTJob {
 	 */
 	public ContentFeedJob() {
 		super();
+		
+		log.info("----------------Constructor---------------------------");
 	}
 
 
@@ -107,6 +111,7 @@ public class ContentFeedJob extends AbstractSMTJob {
 		super.execute(ctx);
 
 		attributes = ctx.getMergedJobDataMap().getWrappedMap();
+		
 		StringBuilder msg = new StringBuilder(500);
 		boolean success = true;
 
@@ -136,7 +141,7 @@ public class ContentFeedJob extends AbstractSMTJob {
 		String user = (String)attributes.get("SFTP_USER");
 		String pwd = (String)attributes.get("SFTP_PASSWORD");
 		String baseUrl = (String)attributes.get("BASE_URL");
-
+		
 		// Append the dates to this
 		Date d = new Date();
 		String pattern = "yyyyMMdd";
@@ -147,7 +152,7 @@ public class ContentFeedJob extends AbstractSMTJob {
 		ContentFeedVO docs = getArticles(feedTitle, feedDesc, baseUrl);
 		msg.append(String.format("Loaded %d articles\n", docs.getItems().size()));
 		
-		log.info("--------------------");
+		
 		
 		postDocuments(docs);
 		
@@ -161,27 +166,28 @@ public class ContentFeedJob extends AbstractSMTJob {
 	private void postDocuments(ContentFeedVO docs) {
 		
 		if (!docs.getItems().isEmpty()) {
+			
+			// Create a new Content Feed VO just for Medtech articles
+			ContentFeedVO medtechStrategistDocs = new ContentFeedVO();
+			//Create an array to hold all of the articles that are MedTech
+			List<ContentFeedItemVO> articles = new ArrayList<ContentFeedItemVO>();
+			
+			// Iterate through all of the articles and add them to the articles list if they are Medtech
 			for(ContentFeedItemVO article : docs.getItems()) {
 				if(article.getPublicationId().equalsIgnoreCase("MEDTECH-STRATEGIST")) {
-					String json = convertArticlesJson(docs);
-					// Save document
-//					if (isManualJob) saveFile(json, fileLoc, msg);
-//					else saveFile(json, fileLoc, host, user, pwd, msg);
+					articles.add(article);
 				}
-				
-				
-				//Fill the Hootsuite VOs
-				
-				ArrayList<PostVO> posts = new ArrayList<>();
-				
-				
-				
-				
-				
-				//Loop through each VO and run the postMessage method
-				
-				
 			}
+			medtechStrategistDocs.setItems(articles);
+			String json = convertArticlesJson(medtechStrategistDocs);
+			// Save document
+//			if (isManualJob) saveFile(json, fileLoc, msg);
+//			else saveFile(json, fileLoc, host, user, pwd, msg);
+			
+			HootsuiteManager hm = new HootsuiteManager();
+			
+			hm.createPost(docs);
+			
 		}
 		
 //		setSentFlags(docs.getUniqueIds());

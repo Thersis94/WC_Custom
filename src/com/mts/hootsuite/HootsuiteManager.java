@@ -28,6 +28,8 @@ import com.mts.hootsuite.ScheduleMessageVO;
 import com.mts.hootsuite.SchedulePostResponseVO;
 import com.mts.hootsuite.SocialMediaProfilesVO;
 import com.mts.hootsuite.TokenResponseVO;
+import com.mts.scheduler.job.ContentFeedItemVO;
+import com.mts.scheduler.job.ContentFeedVO;
 import com.siliconmtn.io.http.SMTHttpConnectionManager;
 import com.siliconmtn.io.http.SMTHttpConnectionManager.HttpConnectionType;
 
@@ -71,6 +73,32 @@ public class HootsuiteManager {
 //		postMessage(post, client); 
 		
 //		log.info(getSocialProfiles());
+		
+	
+	}
+	
+	/**
+	 * Iterates through a ContentFeedVO and creates a social media post for the articles.
+	 */
+	public void createPost(ContentFeedVO docs) {
+		
+		PostVO post = new PostVO();
+		
+		//Add a NEW ISSUE STRING
+		
+		
+		// We need to add a Blurb field capped at 1300 characters for Facebook/Linkedin. Do we need a unique blurb type for twitter?
+		
+		
+		// Get the Article names and the authors and create a String formatted for Hootsuite
+		String newArticles = "";
+		for(ContentFeedItemVO article : docs.getItems()) {
+			newArticles = newArticles + "'" + article.getTitle() + "' by " + article.getCreator() + "/n";
+		}
+		
+		// Add the feature Image
+		
+		
 		
 		
 	}
@@ -171,8 +199,26 @@ public class HootsuiteManager {
 
 		log.info(gson.toJson(response).toString()); // Remove when the tokens are stored to a database.
 
-		checkRefreshTokenResponse(response);
+		if(checkRefreshTokenResponse(response)) {
+			storeNewTokens(response);
+		}
 
+	}
+
+	/**
+	 * Store the new tokens to the database
+	 * @param response
+	 */
+	private void storeNewTokens(TokenResponseVO response) {
+		
+		// Figure out how the dbp works
+//		MyVo vo = new MyVo();
+//		vo.setSomething('firs name mario');
+//		vo.setSomethingelse('lastname mario');
+//		vo.setValueTxt('jump');
+//		DBProcessor dbp = new DBProcessor(getDBConnection(), getCustomSchema());
+//		dbp.save(vo);
+		
 	}
 
 	/**
@@ -181,18 +227,20 @@ public class HootsuiteManager {
 	 * 
 	 * @param response
 	 */
-	private void checkRefreshTokenResponse(TokenResponseVO response) {
+	private boolean checkRefreshTokenResponse(TokenResponseVO response) {
 		if (response.getAccess_token() != null) {
 			token = response.getAccess_token();
 			refresh_token = response.getRefresh_token();
 			Date now = new Date();
 			tokenExperationDate = new Date(now.getTime() + (response.getExpires_in() * 1000));
+			return true;
 		} else {
 			// Log out the error response info
 			log.info(response.getError());
 			log.info(response.getError_description());
 			log.info(response.getError_hint());
 			log.info(response.getStatus_code());
+			return false;
 		}
 	}
 
