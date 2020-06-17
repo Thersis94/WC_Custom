@@ -196,12 +196,12 @@ public class SmartTRAKLoginModule extends DBLoginModule {
 	private void checkAuthentication(ResultSet rs) throws AuthenticationException {
 		Date now = new Date();
 		try {
-			Date userExp = rs.getTimestamp("user_expiration");
-			if (userExp != null && now.after(userExp)) throw new AuthenticationException(ErrorCodes.CUSTOM_ERROR_MSG + "userExpired");
-			if (rs.getInt("active_flg") < 1) throw new AuthenticationException(ErrorCodes.CUSTOM_ERROR_MSG + "userInvalid");
 			Date accountExp = rs.getTimestamp("account_expiration");
 			if (accountExp != null && now.after(accountExp)) throw new AuthenticationException(ErrorCodes.CUSTOM_ERROR_MSG + "accountExpired");
 			if (!"A".equals(rs.getString("status_no"))) throw new AuthenticationException(ErrorCodes.CUSTOM_ERROR_MSG + "accountInvalid");
+			Date userExp = rs.getTimestamp("user_expiration");
+			if (userExp != null && now.after(userExp)) throw new AuthenticationException(ErrorCodes.CUSTOM_ERROR_MSG + "userExpired");
+			if (rs.getInt("active_flg") < 1) throw new AuthenticationException(ErrorCodes.CUSTOM_ERROR_MSG + "userInvalid");
 		} catch (SQLException e) {
 			log.error(e);
 			throw new AuthenticationException(ErrorCodes.CUSTOM_ERROR_MSG + "otherLoginException");
