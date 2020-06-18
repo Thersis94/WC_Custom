@@ -30,8 +30,10 @@ import com.mts.hootsuite.SocialMediaProfilesVO;
 import com.mts.hootsuite.TokenResponseVO;
 import com.mts.scheduler.job.ContentFeedItemVO;
 import com.mts.scheduler.job.ContentFeedVO;
+import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.io.http.SMTHttpConnectionManager;
 import com.siliconmtn.io.http.SMTHttpConnectionManager.HttpConnectionType;
+import com.smt.sitebuilder.scheduler.data.ScheduleJobInstanceDataVO;
 
 /****************************************************************************
  * <b>Title</b>: HootsuiteTestRequests.java <b>Project</b>: Hootsuite
@@ -48,7 +50,7 @@ public class HootsuiteManager {
 
 	static Logger log = Logger.getLogger(Process.class.getName());
 	private String token = "2SGSsaCaVdu2cEr-kVQljD-FamKmChG-HNCdbey1gM0.6aBSbvhqjR9-RjIAK2kwILHdJ_RrJRtjW9WbZGW9cTg";
-	private String refresh_token = "gWZEjzzjWHugVkA5LOtFAuNBN_MTyO8n2S60blp-2OQ.zwXgc1iOXmsm6UDj-D_afOPQ6F2cyBvGCEuCsO9qSAk";
+//	private String refresh_token = "gWZEjzzjWHugVkA5LOtFAuNBN_MTyO8n2S60blp-2OQ.zwXgc1iOXmsm6UDj-D_afOPQ6F2cyBvGCEuCsO9qSAk";
 	private Date tokenExperationDate = new Date();
 	
 
@@ -79,8 +81,14 @@ public class HootsuiteManager {
 	
 	/**
 	 * Iterates through a ContentFeedVO and creates a social media post for the articles.
+	 * @throws IOException 
 	 */
-	public void createPost(ContentFeedVO docs) {
+	public void execute(ContentFeedVO docs, Map<String, Object> attributes, java.sql.Connection conn) throws IOException {
+		
+		log.info(docs);
+		
+		refreshToken(attributes, conn);
+		
 		
 		PostVO post = new PostVO();
 		
@@ -177,7 +185,12 @@ public class HootsuiteManager {
 	 * 
 	 * @throws IOException
 	 */
-	private void refreshToken() throws IOException {
+	private void refreshToken(Map<String, Object> attributes, java.sql.Connection conn) throws IOException {
+		
+		String scheduleJobInstanceId = (String)attributes.get("scheduleJobInstanceId");
+		String hootsuiteRefreshToken = (String)attributes.get("HOOTSUITE_REFRESH_TOKEN");
+		
+		log.info("Hootsuite refreshToken: " + hootsuiteRefreshToken);
 
 		Gson gson = new Gson();
 		Map<String, Object> parameters = new HashMap<>();
@@ -186,7 +199,7 @@ public class HootsuiteManager {
 
 		addRefreshTokenHeaders(cm);
 
-		addRefreshTokenParameters(parameters);
+		addRefreshTokenParameters(parameters, hootsuiteRefreshToken);
 
 		HttpConnectionType post = HttpConnectionType.POST;
 
@@ -200,25 +213,52 @@ public class HootsuiteManager {
 		log.info(gson.toJson(response).toString()); // Remove when the tokens are stored to a database.
 
 		if(checkRefreshTokenResponse(response)) {
-			storeNewTokens(response);
+			storeNewTokens(response, attributes, conn);
+		} else {
+			log.info("-------------------Token Request Failed-----------------------------------");
 		}
 
 	}
+
+//	/**
+//	 * Retrieve the refreshToken from the database
+//	 * @param scheduleJobInstanceId
+//	 * @return
+//	 */
+//	private String getRefreshToken(String scheduleJobInstanceId, java.sql.Connection conn) {
+//		
+//		List<Object> vals = new ArrayList<>();
+//		
+//		StringBuilder sql = new StringBuilder(400);
+//		sql.append("select value_txt from schedule_job_instance_data ");
+//		sql.append("where schedule_job_instance_id = '").append(scheduleJobInstanceId).append("' ");
+//		sql.append("and schedule_job_data_id in (select schedule_job_data_id from core.schedule_job_data sjd ");
+//		sql.append("where key_txt = 'HOOTSUITE_REFRESH_TOKEN');");
+//		
+//		DBProcessor db = new DBProcessor(conn);
+//		List<HootsuiteRefreshTokenVO> refreshToken = db.executeSelect(sql.toString(), vals, new HootsuiteRefreshTokenVO());
+//		return refreshToken.get(0).getRefreshToken();
+//	}
 
 	/**
 	 * Store the new tokens to the database
 	 * @param response
 	 */
-	private void storeNewTokens(TokenResponseVO response) {
+	private void storeNewTokens(TokenResponseVO response, Map<String, Object> attributes, java.sql.Connection conn) {
 		
-		// Figure out how the dbp works
-//		MyVo vo = new MyVo();
-//		vo.setSomething('firs name mario');
-//		vo.setSomethingelse('lastname mario');
-//		vo.setValueTxt('jump');
-//		DBProcessor dbp = new DBProcessor(getDBConnection(), getCustomSchema());
-//		dbp.save(vo);
 		
+		
+		String scheduleJobInstanceId = (String)attributes.get("scheduleJobInstanceId");
+		
+		StringBuilder sql = new StringBuilder(400);
+		sql.append("update schedule_job_instance_data ");
+		sql.append("set value_txt = '").append(response.getRefresh_token()).append("' ");
+		sql.append("where schedule_job_instance_id = '").append(scheduleJobInstanceId).append("' ");
+		sql.append("and schedule_job_data_id in (select schedule_job_data_id from core.schedule_job_data sjd ");
+		sql.append("where key_txt = 'HOOTSUITE_REFRESH_TOKEN');");
+		
+		DBProcessor db = new DBProcessor(conn);
+		db.executeSQLCommand(sql.toString());
 	}
 
 	/**
@@ -230,7 +270,7 @@ public class HootsuiteManager {
 	private boolean checkRefreshTokenResponse(TokenResponseVO response) {
 		if (response.getAccess_token() != null) {
 			token = response.getAccess_token();
-			refresh_token = response.getRefresh_token();
+//			refresh_token = response.getRefresh_token(); This will now be stored in the DB
 			Date now = new Date();
 			tokenExperationDate = new Date(now.getTime() + (response.getExpires_in() * 1000));
 			return true;
@@ -249,7 +289,7 @@ public class HootsuiteManager {
 	 * 
 	 * @param parameters
 	 */
-	private void addRefreshTokenParameters(Map<String, Object> parameters) {
+	private void addRefreshTokenParameters(Map<String, Object> parameters, String refresh_token) {
 		parameters.put("grant_type", "refresh_token");
 		parameters.put("refresh_token", refresh_token);
 	}
@@ -302,17 +342,17 @@ public class HootsuiteManager {
 		return socialProfiles;
 	}
 
-	/**
-	 * Checks to see if the token is expired and refreshes the token if it is.
-	 * 
-	 * @throws IOException
-	 */
-	private void checkToken() throws IOException {
-		Date now = new Date();
-		if (now.compareTo(tokenExperationDate) > 0) {
-			refreshToken();
-		}
-	}
+//	/**
+//	 * Checks to see if the token is expired and refreshes the token if it is.
+//	 * 
+//	 * @throws IOException
+//	 */
+//	private void checkToken() throws IOException {
+//		Date now = new Date();
+//		if (now.compareTo(tokenExperationDate) > 0) {
+//			refreshToken();
+//		}
+//	}
 
 	/**
 	 * Schedules a social media post using the hootsuite api

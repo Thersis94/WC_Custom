@@ -23,16 +23,17 @@ import org.quartz.JobExecutionException;
 // GSON 2.3
 import com.google.gson.Gson;
 import com.mts.hootsuite.HootsuiteManager;
-import com.mts.hootsuite.PostVO;
 import com.siliconmtn.db.DBUtil;
 // SMT Base libs
 import com.siliconmtn.db.DatabaseConnection;
 import com.siliconmtn.db.orm.DBProcessor;
+import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.html.tool.HTMLFeedParser;
 import com.siliconmtn.http.filter.fileupload.Constants;
 import com.siliconmtn.util.Convert;
+import com.smt.sitebuilder.action.scheduler.ScheduleJobInstanceFacadeAction;
 // WC Libs
 import com.smt.sitebuilder.scheduler.AbstractSMTJob;
 
@@ -42,12 +43,10 @@ import ch.ethz.ssh2.SFTPv3Client;
 import ch.ethz.ssh2.SFTPv3FileHandle;
 
 /****************************************************************************
- * <b>Title</b>: ContentFeedJob.java
- * <b>Project</b>: WC_Custom
- * <b>Description: </b> Manages the sending of the new articles in the system to 
- * third parties
- * <b>Copyright:</b> Copyright (c) 2019
- * <b>Company:</b> Silicon Mountain Technologies
+ * <b>Title</b>: ContentFeedJob.java <b>Project</b>: WC_Custom <b>Description:
+ * </b> Manages the sending of the new articles in the system to third parties
+ * <b>Copyright:</b> Copyright (c) 2019 <b>Company:</b> Silicon Mountain
+ * Technologies
  * 
  * @author James Camire
  * @version 3.0
@@ -65,17 +64,20 @@ public class ContentFeedJob extends AbstractSMTJob {
 	 */
 	public ContentFeedJob() {
 		super();
-		
-		log.info("----------------Constructor---------------------------");
+
+		log.info("Constructor");
 	}
 
-
 	public static void main(String[] args) throws Exception {
+
+		log.info("main");
+
 		// Set job Information
 		ContentFeedJob cfj = new ContentFeedJob();
 		cfj.attributes.put("FEED_RECPT", "MTS_DOCUMENT_");
 		cfj.attributes.put("FEED_TITLE", "MTS Publications News Feed");
-		cfj.attributes.put("FEED_DESC", "We help you better understand your world as you make key decisions impacting your day-to-day business and long-term strategic goals.");
+		cfj.attributes.put("FEED_DESC",
+				"We help you better understand your world as you make key decisions impacting your day-to-day business and long-term strategic goals.");
 		cfj.attributes.put("BASE_URL", "https://www.mystrategist.com");
 		cfj.attributes.put("FEED_FILE_PATH", "/home/ryan/Desktop/");
 		cfj.attributes.put(Constants.CUSTOM_DB_SCHEMA, "custom.");
@@ -90,28 +92,39 @@ public class ContentFeedJob extends AbstractSMTJob {
 
 	/**
 	 * get job database connection
+	 * 
 	 * @throws DatabaseException
 	 * @throws InvalidDataException
 	 */
 	private void setDBConnection() throws DatabaseException, InvalidDataException {
+
+		log.info("setDBConnection");
+
 		DatabaseConnection dc = new DatabaseConnection();
 		dc.setDriverClass("org.postgresql.Driver");
-		dc.setUrl("jdbc:postgresql://dev-common-sb-db.aws.siliconmtn.com:5432/wc_dev_sb?defaultRowFetchSize=25&amp;prepareThreshold=3");
-		dc.setUserName("wc_user_dev");
+		dc.setUrl(
+				"jdbc:postgresql://sonic:5432/webcrescendo_dev112019_sb?defaultRowFetchSize=25&amp;prepareThreshold=3");
+		dc.setUserName("ryan_user_sb");
 		dc.setPassword("sqll0gin");
 		conn = dc.getConnection();
 	}
 
 	/*
 	 * (non-Javadoc)
-	 * @see com.smt.sitebuilder.scheduler.AbstractSMTJob#execute(org.quartz.JobExecutionContext)
+	 * 
+	 * @see com.smt.sitebuilder.scheduler.AbstractSMTJob#execute(org.quartz.
+	 * JobExecutionContext)
 	 */
 	@Override
 	public void execute(JobExecutionContext ctx) throws JobExecutionException {
 		super.execute(ctx);
 
+		log.info("-----execute-----");
+
 		attributes = ctx.getMergedJobDataMap().getWrappedMap();
-		
+
+//		log.info("------------------------------" + attributes);
+
 		StringBuilder msg = new StringBuilder(500);
 		boolean success = true;
 
@@ -129,101 +142,104 @@ public class ContentFeedJob extends AbstractSMTJob {
 
 	/**
 	 * Runs the workflow for sending the documents
-	 * @throws IOException 
-	 * @throws com.siliconmtn.db.util.DatabaseException 
+	 * 
+	 * @throws IOException
+	 * @throws com.siliconmtn.db.util.DatabaseException
 	 */
 	public void processDocuments(StringBuilder msg) throws Exception {
+
+		log.info("processDocuments");
+
 		// Get the data fields
-		String fileLoc = (String)attributes.get("FEED_RECPT");
-		String feedTitle = (String)attributes.get("FEED_TITLE");
-		String feedDesc = (String)attributes.get("FEED_DESC");
-		String host = (String)attributes.get("SFTP_HOST");
-		String user = (String)attributes.get("SFTP_USER");
-		String pwd = (String)attributes.get("SFTP_PASSWORD");
-		String baseUrl = (String)attributes.get("BASE_URL");
+		String fileLoc = (String) attributes.get("FEED_RECPT");
+		String feedTitle = (String) attributes.get("FEED_TITLE");
+		String feedDesc = (String) attributes.get("FEED_DESC");
+		String host = (String) attributes.get("SFTP_HOST");
+		String user = (String) attributes.get("SFTP_USER");
+		String pwd = (String) attributes.get("SFTP_PASSWORD");
+		String baseUrl = (String) attributes.get("BASE_URL");
+
+		String scheduleJobInstanceId = (String)attributes.get("scheduleJobInstanceId");
 		
+//		log.info(attributes);
+		
+//		log.info(scheduleJobInstanceId);
+//		String hootsuiteAccessToken = (String)attributes.get("HOOTSUITE_TOKEN");
+//		String hootsuiteRefreshToken = (String)attributes.get("HOOTSUITE_REFRESH_TOKEN");
+//		String scheduleJobInstanceDataId = (String)attributes.get("scheduleJobInstanceDataId");
+
+//		log.info(scheduleJobInstanceId);
+
+//		log.info("scheduleJobInstanceDataId: " + scheduleJobInstanceDataId);
+//		log.info("Instance id: " + scheduleJobInstanceId);
+//		log.info("Token: " + hootsuiteAccessToken);
+//		log.info("hootsuite refresh token: " + hootsuiteRefreshToken);
+
 		// Append the dates to this
 		Date d = new Date();
 		String pattern = "yyyyMMdd";
-		SimpleDateFormat sdf =new SimpleDateFormat(pattern);
+		SimpleDateFormat sdf = new SimpleDateFormat(pattern);
 		fileLoc += sdf.format(d) + ".json";
 
-		// Get the docs published in the past day.  Exit of no articles found
+		// Get the docs published in the past day. Exit if no articles found
 		ContentFeedVO docs = getArticles(feedTitle, feedDesc, baseUrl);
 		msg.append(String.format("Loaded %d articles\n", docs.getItems().size()));
 		
-		
-		
-		postDocuments(docs);
-		
-	}
-
-
-	/**
-	 * Post the documents with the Hootsuite API
-	 * @param docs
-	 */
-	private void postDocuments(ContentFeedVO docs) {
+		// Get the issue information for the latest issue.
 		
 		if (!docs.getItems().isEmpty()) {
-			
-			// Create a new Content Feed VO just for Medtech articles
-			ContentFeedVO medtechStrategistDocs = new ContentFeedVO();
-			//Create an array to hold all of the articles that are MedTech
-			List<ContentFeedItemVO> articles = new ArrayList<ContentFeedItemVO>();
-			
-			// Iterate through all of the articles and add them to the articles list if they are Medtech
-			for(ContentFeedItemVO article : docs.getItems()) {
-				if(article.getPublicationId().equalsIgnoreCase("MEDTECH-STRATEGIST")) {
-					articles.add(article);
-				}
-			}
-			medtechStrategistDocs.setItems(articles);
-			String json = convertArticlesJson(medtechStrategistDocs);
+			String json = convertArticlesJson(docs);
 			// Save document
 //			if (isManualJob) saveFile(json, fileLoc, msg);
 //			else saveFile(json, fileLoc, host, user, pwd, msg);
-			
-			HootsuiteManager hm = new HootsuiteManager();
-			
-			hm.createPost(docs);
-			
 		}
+
+		HootsuiteManager hoot = new HootsuiteManager();
+		hoot.execute(docs, attributes, conn);
+		
+//		log.info("After hoot");
+//		ScheduleJobInstanceFacadeAction s = new ScheduleJobInstanceFacadeAction((SMTDBConnection) conn, attributes);
+//		log.info("updating scheduler");
+//		s.updateScheduler(scheduleJobInstanceId);
+//		log.info("-------------------------------------------------------------------------------"); // Figure this out!
 		
 //		setSentFlags(docs.getUniqueIds());
-//
-//		msg.append("Success");
-		
-		
-	}
 
+		msg.append("Success");
+	}
 
 	/**
 	 * sets all the sent flags for published articles before todays job to sent
-	 * @param uniqueIds 
-	 * @throws com.siliconmtn.db.util.DatabaseException 
+	 * 
+	 * @param uniqueIds
+	 * @throws com.siliconmtn.db.util.DatabaseException
 	 * 
 	 */
-	private void setSentFlags(List<String> uniqueIds) throws com.siliconmtn.db.util.DatabaseException, DatabaseException {
-		
-		if(uniqueIds == null || uniqueIds.isEmpty())return;
-		
-		String schema = (String)this.attributes.get(Constants.CUSTOM_DB_SCHEMA);
+	private void setSentFlags(List<String> uniqueIds)
+			throws com.siliconmtn.db.util.DatabaseException, DatabaseException {
+
+		log.info("setSentFlags");
+
+		if (uniqueIds == null || uniqueIds.isEmpty())
+			return;
+
+		String schema = (String) this.attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(134);
-				
+
 		sql.append(DBUtil.UPDATE_CLAUSE).append(schema).append("mts_document ");
 		sql.append("set data_feed_processed_flg = ? ");
-		sql.append(DBUtil.WHERE_CLAUSE).append("unique_cd in ( ").append(DBUtil.preparedStatmentQuestion(uniqueIds.size())).append(" ) ");
-		
-		log.debug(" sql " + sql.toString() +"|1 and than ids : " +uniqueIds);
-		
+		sql.append(DBUtil.WHERE_CLAUSE).append("unique_cd in ( ")
+				.append(DBUtil.preparedStatmentQuestion(uniqueIds.size())).append(" ) ");
+
+		log.debug(" sql " + sql.toString() + "|1 and than ids : " + uniqueIds);
+
 		try (PreparedStatement ps = conn.prepareStatement(sql.toString())) {
-			//set the flag value of 1
+			// set the flag value of 1
 			ps.setInt(1, 1);
-			
-			//loop the unique ids
-			for(int x =0 ; x < uniqueIds.size() ; x++) {
-				ps.setString(x+2, uniqueIds.get(x));
+
+			// loop the unique ids
+			for (int x = 0; x < uniqueIds.size(); x++) {
+				ps.setString(x + 2, uniqueIds.get(x));
 			}
 
 			ps.executeUpdate();
@@ -232,9 +248,9 @@ public class ContentFeedJob extends AbstractSMTJob {
 		}
 	}
 
-
-	/** 
-	 * saves the file to the file system 
+	/**
+	 * saves the file to the file system
+	 * 
 	 * @param json
 	 * @param fileLoc
 	 * @throws IOException
@@ -242,7 +258,7 @@ public class ContentFeedJob extends AbstractSMTJob {
 	protected void saveFile(String json, String fileLoc, StringBuilder msg) throws IOException {
 		log.debug("saving to file");
 		Path p = Paths.get(attributes.get("FEED_FILE_PATH") + fileLoc);
-		try(BufferedWriter bw = Files.newBufferedWriter(p)) {
+		try (BufferedWriter bw = Files.newBufferedWriter(p)) {
 			bw.write(json);
 			bw.flush();
 		}
@@ -251,11 +267,12 @@ public class ContentFeedJob extends AbstractSMTJob {
 
 	/**
 	 * Write the file to the file system
+	 * 
 	 * @param json
 	 * @param fileLoc
 	 * @throws IOException
 	 */
-	protected void saveFile(String json, String fileLoc, String host, String user, String pwd, StringBuilder msg) 
+	protected void saveFile(String json, String fileLoc, String host, String user, String pwd, StringBuilder msg)
 			throws IOException {
 		log.debug("saving to infodesk");
 		// Connect to the server and authenticate
@@ -263,7 +280,8 @@ public class ContentFeedJob extends AbstractSMTJob {
 		try {
 			sftpConn.connect(null, 3000, 0);
 			boolean isAuth = sftpConn.authenticateWithPassword(user, pwd);
-			if (! isAuth) throw new IOException("Authentication Failed");
+			if (!isAuth)
+				throw new IOException("Authentication Failed");
 
 		} catch (Exception e) {
 			throw new IOException("Connection / Authentication Failed");
@@ -274,8 +292,8 @@ public class ContentFeedJob extends AbstractSMTJob {
 		SFTPv3Client sftp = new SFTPv3Client(sftpConn);
 		SFTPv3FileHandle handle = sftp.createFile(fileLoc);
 		byte[] buffer = new byte[1024];
-		long offset=0;
-		int i=0;
+		long offset = 0;
+		int i = 0;
 		while ((i = bais.read(buffer)) != -1) {
 			sftp.write(handle, offset, buffer, 0, i);
 			offset += i;
@@ -295,14 +313,14 @@ public class ContentFeedJob extends AbstractSMTJob {
 		String schema = (String)this.attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(400);
 		sql.append("select first_nm || ' ' || last_nm as author_nm, a.unique_cd, action_desc, ");
-		sql.append("action_nm, publish_dt, publication_id, document_txt from ").append(schema).append("mts_document a ");
+		sql.append("action_nm, publish_dt, document_txt from ").append(schema).append("mts_document a ");
 		sql.append("inner join ").append(schema).append("mts_issue i on a.issue_id = i.issue_id ");
 		sql.append("inner join sb_action b ");
 		sql.append("on a.document_id = b.action_group_id and b.pending_sync_flg = 0 ");
 		sql.append("inner join document c on b.action_id = c.action_id ");
 		sql.append("left outer join ").append(schema);
 		sql.append("mts_user u on a.author_id = u.user_id ");
-		sql.append("where publish_dt <= ? and a.data_feed_processed_flg = '0' ");
+		sql.append("where publish_dt <= ? and publication_id = 'MEDTECH-STRATEGIST' and a.data_feed_processed_flg = '0' ");
 		sql.append("order by publish_dt ");
 
 		List<Object> vals = new ArrayList<>();
@@ -310,8 +328,6 @@ public class ContentFeedJob extends AbstractSMTJob {
 		vals.add(Convert.formatEndDate(new Date()));
 
 		log.debug(sql.length() + "|" + sql + "|" + vals);
-		
-		log.info(sql.length() + "|" + sql + "|" + vals);
 
 		// Create the wrapper bean
 		ContentFeedVO feed = new ContentFeedVO();
@@ -322,7 +338,7 @@ public class ContentFeedJob extends AbstractSMTJob {
 		feed.setLocale("en-US");
 
 		// Get the articles and update the links
-		DBProcessor db = new DBProcessor(conn);
+		DBProcessor db = new DBProcessor(conn);		
 		feed.setItems(db.executeSelect(sql.toString(), vals, new ContentFeedItemVO()));
 		updateRelativeLinks(feed, baseUrl);
 		log.debug("Number Articles: " + feed.getItems().size());
@@ -332,6 +348,7 @@ public class ContentFeedJob extends AbstractSMTJob {
 
 	/**
 	 * Updates the relative URLs/links to be fully qualified
+	 * 
 	 * @param feed
 	 */
 	protected void updateRelativeLinks(ContentFeedVO feed, String baseUrl) {
@@ -345,6 +362,7 @@ public class ContentFeedJob extends AbstractSMTJob {
 
 	/**
 	 * Convert the object to a json data object
+	 * 
 	 * @param docs
 	 * @return
 	 */
@@ -353,4 +371,3 @@ public class ContentFeedJob extends AbstractSMTJob {
 		return g.toJson(doc);
 	}
 }
-
