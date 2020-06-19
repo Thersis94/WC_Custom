@@ -1,5 +1,9 @@
 package com.mts.hootsuite;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -24,34 +28,19 @@ import org.apache.log4j.Logger;
  * @updates:
  ****************************************************************************/
 public class PostVO {
-
-	static Logger log = Logger.getLogger(Process.class.getName());
 	
-	String messageText;
-	Date postDate; // We need to add 1 day to this at some point
-	List<String> mediaId = new ArrayList<>();
-	String mimeType;
-	String mediaLocation;
+	private String title;
+	private String author;
+	private String description;
+	private String link;
+	private Date postDate; // We need to add 1 day to this at some point
+	private List<String> mediaId = new ArrayList<>();
+	private String mimeType = "";
+	private Path mediaLocation;
 
 	public PostVO() {
-		messageText = "Java test message in PostVO";
-		mediaLocation = "/home/justinjeffrey/Downloads/demoImg.jpeg";
 		mimeType = "image/jpeg";
 		postDate = new Date();
-	}
-
-	/**
-	 * @return the messageText
-	 */
-	public String getMessageText() {
-		return messageText;
-	}
-
-	/**
-	 * @param messageText the messageText to set
-	 */
-	public void setMessageText(String messageText) {
-		this.messageText = messageText;
 	}
 
 	/**
@@ -78,7 +67,7 @@ public class PostVO {
 			// Setting the date to the given date
 			c.setTime(new Date());
 		} catch (Exception e) {
-			log.info(e);
+			System.out.println(e);
 		}
 		
 		c.add(Calendar.DAY_OF_MONTH, postDayIncrement);
@@ -110,8 +99,15 @@ public class PostVO {
 
 	/**
 	 * @return the mimeType
+	 * @throws IOException 
 	 */
-	public String getMimeType() {
+	public String getMimeType() throws IOException {
+		
+		// If mime type is not set
+		if(mimeType.equals("")) {
+			// Get and set the mimeType
+			mimeType = Files.probeContentType(mediaLocation);
+		}
 		return mimeType;
 	}
 
@@ -126,14 +122,92 @@ public class PostVO {
 	 * @return the mediaLocation
 	 */
 	public String getMediaLocation() {
-		return mediaLocation;
+		
+		return mediaLocation.toString();
 	}
 
 	/**
 	 * @param mediaLocation the mediaLocation to set
 	 */
 	public void setMediaLocation(String mediaLocation) {
-		this.mediaLocation = mediaLocation;
+		this.mediaLocation = Paths.get(mediaLocation);
+	}
+
+	/**
+	 * @return the title
+	 */
+	public String getTitle() {
+		return title;
+	}
+
+	/**
+	 * @param title the title to set
+	 */
+	public void setTitle(String title) {
+		this.title = title;
+	}
+
+	/**
+	 * @return the author
+	 */
+	public String getAuthor() {
+		return author;
+	}
+
+	/**
+	 * @param author the author to set
+	 */
+	public void setAuthor(String author) {
+		this.author = author;
+	}
+
+	/**
+	 * @return the description
+	 */
+	public String getDescription() {
+		return description;
+	}
+
+	/**
+	 * @param description the description to set
+	 */
+	public void setDescription(String description) {
+		this.description = description;
+	}
+
+	/**
+	 * @return the link
+	 */
+	public String getLink() {
+		return link;
+	}
+
+	/**
+	 * @param link the link to set
+	 */
+	public void setLink(String link) {
+		this.link = link;
+	}
+
+	/**
+	 * @return the mediaId
+	 */
+	public List<String> getMediaId() {
+		return mediaId;
+	}
+
+	/**
+	 * @param mediaId the mediaId to set
+	 */
+	public void setMediaId(List<String> mediaId) {
+		this.mediaId = mediaId;
+	}
+
+	/**
+	 * @param postDate the postDate to set
+	 */
+	public void setPostDate(Date postDate) {
+		this.postDate = postDate;
 	}
 
 }

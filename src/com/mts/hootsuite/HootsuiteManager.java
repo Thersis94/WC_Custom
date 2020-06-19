@@ -18,7 +18,7 @@ import org.apache.log4j.Logger;
 // Gson for parsing json data
 import com.google.gson.Gson;
 import com.mts.hootsuite.AuthResponseVO;
-import com.mts.hootsuite.HootsuiteClientData;
+
 // Local Libs
 import com.mts.hootsuite.MediaLinkRequestVO;
 import com.mts.hootsuite.MediaLinkResponseVO;
@@ -57,21 +57,13 @@ public class HootsuiteManager {
 	 * @throws InterruptedException
 	 */
 	public static void main(String[] args) throws IOException, InterruptedException {
-		HootsuiteManager hr = new HootsuiteManager();
-		hr.process();
+//		HootsuiteManager hr = new HootsuiteManager();
+//		hr.execute();
 	}
 	
-	private void process() throws IOException {
+	public void execute(HootsuiteClientVO client) throws IOException {
 		
-//		PostVO post = new PostVO();
-//		HootsuiteClientData client = new HootsuiteClientData();
-//		
-//		post.setPostDate(1);
-//		
-//		postMessage(post, client); 
-		
-//		log.info(getSocialProfiles());
-		
+		refreshToken(client);
 		
 	}
 
@@ -80,45 +72,13 @@ public class HootsuiteManager {
 	 * @param post VO containing post values (text, media ids, date to post)
 	 * @param client VO containing client values (Social profiles ids)
 	 */
-	public void postMessage(PostVO post, HootsuiteClientData client) {
+	public void postMessage(PostVO post, HootsuiteClientVO client) {
 		try {
 			uploadHootsuiteMedia(post);
 			schedulePost(post, client);
 		} catch (Exception e) {
 			log.info(e);
 		}
-	}
-	
-	/**
-	 * Get a new set of Tokens
-	 * @throws IOException 
-	 */
-	private void getOAuthCode() throws IOException {
-		
-		Gson gson = new Gson();
-		Map<String, Object> parameters = new HashMap<>();
-		
-		SMTHttpConnectionManager cm = new SMTHttpConnectionManager();
-		
-//		cm.addRequestHeader("Authorization", "Basic YTYwZDA0MzItMzk5OS00YThkLTkxNDAtZjdhNDNmMzNjZjlmOlVac25hcW5mZVo5bA==");
-		cm.addRequestHeader("Accept", "text/html");
-		cm.addRequestHeader("Content-Type", "application/x-www-form-urlencoded");
-		
-//		addTokenParameters(parameters);
-		
-		HttpConnectionType get = HttpConnectionType.GET;
-		
-		
-		
-		// Send get request
-				ByteBuffer in = ByteBuffer
-						.wrap(cm.getRequestData("https://platform.hootsuite.com/oauth2/auth?response_type=code&client_id=a60d0432-3999-4a8d-9140-f7a43f33cf9f&scope=offline&redirect_uri=http://localhost:3000/callback&client_secret=UZsnaqnfeZ9l", parameters, get));
-				
-				
-				
-				log.info(StandardCharsets.UTF_8.decode(in).toString());
-				
-				
 	}
 	
 	private void getToken(String oauthCode) throws IOException {
@@ -149,7 +109,7 @@ public class HootsuiteManager {
 	 * 
 	 * @throws IOException
 	 */
-	private void refreshToken() throws IOException {
+	private void refreshToken(HootsuiteClientVO client) throws IOException {
 
 		Gson gson = new Gson();
 		Map<String, Object> parameters = new HashMap<>();
@@ -158,7 +118,7 @@ public class HootsuiteManager {
 
 		addRefreshTokenHeaders(cm);
 
-		addRefreshTokenParameters(parameters);
+		addRefreshTokenParameters(parameters, client);
 
 		HttpConnectionType post = HttpConnectionType.POST;
 
@@ -200,10 +160,11 @@ public class HootsuiteManager {
 	 * Adds required parameters for the Hootsuite refresh end point
 	 * 
 	 * @param parameters
+	 * @param client 
 	 */
-	private void addRefreshTokenParameters(Map<String, Object> parameters) {
+	private void addRefreshTokenParameters(Map<String, Object> parameters, HootsuiteClientVO client) {
 		parameters.put("grant_type", "refresh_token");
-		parameters.put("refresh_token", refresh_token);
+		parameters.put("refresh_token", client.getRefreshToken());
 	}
 
 	/**
@@ -254,17 +215,17 @@ public class HootsuiteManager {
 		return socialProfiles;
 	}
 
-	/**
-	 * Checks to see if the token is expired and refreshes the token if it is.
-	 * 
-	 * @throws IOException
-	 */
-	private void checkToken() throws IOException {
-		Date now = new Date();
-		if (now.compareTo(tokenExperationDate) > 0) {
-			refreshToken();
-		}
-	}
+//	/**
+//	 * Checks to see if the token is expired and refreshes the token if it is.
+//	 * 
+//	 * @throws IOException
+//	 */
+//	private void checkToken() throws IOException {
+//		Date now = new Date();
+//		if (now.compareTo(tokenExperationDate) > 0) {
+//			refreshToken();
+//		}
+//	}
 
 	/**
 	 * Schedules a social media post using the hootsuite api
@@ -272,7 +233,7 @@ public class HootsuiteManager {
 	 * @param client VO containing client values (Social profiles ids)
 	 * @throws IOException
 	 */
-	private void schedulePost(PostVO post, HootsuiteClientData client) throws IOException {
+	private void schedulePost(PostVO post, HootsuiteClientVO client) throws IOException {
 
 //		checkToken();
 

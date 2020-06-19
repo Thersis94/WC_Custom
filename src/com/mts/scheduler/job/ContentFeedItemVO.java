@@ -39,6 +39,7 @@ public class ContentFeedItemVO extends BeanDataVO {
 	private Date pubDate;
 	private String content;
 	private String publicationId;
+	private String imagePath;
 	
 	/**
 	 * 
@@ -89,6 +90,7 @@ public class ContentFeedItemVO extends BeanDataVO {
 	/**
 	 * @return the link
 	 */
+	@Column(name="direct_access_pth")
 	public String getLink() {
 		return link;
 	}
@@ -179,6 +181,21 @@ public class ContentFeedItemVO extends BeanDataVO {
 	 */
 	public void setPublicationId(String publicationId) {
 		this.publicationId = publicationId;
+	}
+
+	/**
+	 * @return the imagePath
+	 */
+	@Column(name="document_path")
+	public String getImagePath() {
+		return imagePath;
+	}
+
+	/**
+	 * @param imagePath the imagePath to set
+	 */
+	public void setImagePath(String imagePath) {
+		this.imagePath = imagePath;
 	}
 
 }
