@@ -1,5 +1,12 @@
 WC_Custom Changelog (auto-generated)
 
+## [3.57.4](https://github.com/smtadmin/WC_Custom/compare/3.57.3...3.57.4) (2020-06-23)
+
+
+### Bug Fixes
+
+* **hotfix-mts-175:** fix edge case that results in a NullPointerException when loading subscriptions ([d32215c](https://github.com/smtadmin/WC_Custom/commit/d32215c))
+
 ## [3.57.3](https://github.com/smtadmin/WC_Custom/compare/3.57.2...3.57.3) (2020-06-23)
 
 
