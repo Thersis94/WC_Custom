@@ -1,5 +1,16 @@
 WC_Custom Changelog (auto-generated)
 
+## [3.57.3](https://github.com/smtadmin/WC_Custom/compare/3.57.2...3.57.3) (2020-06-23)
+
+
+### Bug Fixes
+
+* **st-300:** add new error codes ([4fe7605](https://github.com/smtadmin/WC_Custom/commit/4fe7605))
+* **st-300:** move account fails above user fails ([b87922b](https://github.com/smtadmin/WC_Custom/commit/b87922b))
+* **st-300:** remove unneeded changes to uservo and remove logging ([e611161](https://github.com/smtadmin/WC_Custom/commit/e611161))
+* **st-300:** update uservo for login information error logging ([e0722ee](https://github.com/smtadmin/WC_Custom/commit/e0722ee))
+* **st-413:** change refrences to deprecated code ([fcfa03a](https://github.com/smtadmin/WC_Custom/commit/fcfa03a))
+
 ## [3.57.2](https://github.com/smtadmin/WC_Custom/compare/3.57.1...3.57.2) (2020-06-12)
 
 
