@@ -58,7 +58,7 @@ public class SmarttrakSSOLoginModule extends SAMLLoginModule {
 	}
 
 	
-	private UserDataVO loadSmarttrakUser(UserDataVO userData) {
+	private UserDataVO loadSmarttrakUser(UserDataVO userData) throws AuthenticationException {
 		SmartTRAKLoginModule login = new SmartTRAKLoginModule(getAttributes());
 		UserVO user = login.loadSmarttrakUser(userData);
 		
