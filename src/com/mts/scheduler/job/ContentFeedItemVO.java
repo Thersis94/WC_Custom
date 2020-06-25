@@ -8,6 +8,9 @@ import java.util.Date;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.data.parser.BeanDataVO;
 import com.siliconmtn.db.orm.Column;
+import com.siliconmtn.util.RandomAlphaNumeric;
+import com.siliconmtn.util.UUIDGenerator;
+import com.smt.sitebuilder.action.tools.SiteRedirVO;
 
 /****************************************************************************
  * <b>Title</b>: ContentFeedItemVO.java
@@ -38,7 +41,28 @@ public class ContentFeedItemVO extends BeanDataVO {
 	private String creator;
 	private Date pubDate;
 	private String content;
-	private String publicationId;
+	private transient String publicationId;
+	private transient String imagePath;
+	private transient String shortUrl;
+	
+	/**
+	 * Builds a redirect URL for shortening the url to 8 characters
+	 * @return
+	 */
+	public SiteRedirVO getRedir() {
+		SiteRedirVO vo = new SiteRedirVO();
+		vo.setSiteRedirectId(new UUIDGenerator().getUUID());
+		vo.setSiteId("MTS_2");
+		vo.setActiveFlag(1);
+		vo.setCreateDate(new Date());
+		vo.setGlobalFlag(0);
+		vo.setPermRedirFlag(0);
+		vo.setLogRedirFlag(0);
+		vo.setDestinationUrl("/" + publicationId.toLowerCase() + "/article/" + link);
+		vo.setAliasText("/" + RandomAlphaNumeric.generateRandom(8));
+		shortUrl = vo.getAliasText();
+		return vo;
+	}
 	
 	/**
 	 * 
@@ -89,6 +113,7 @@ public class ContentFeedItemVO extends BeanDataVO {
 	/**
 	 * @return the link
 	 */
+	@Column(name="direct_access_pth")
 	public String getLink() {
 		return link;
 	}
@@ -181,5 +206,33 @@ public class ContentFeedItemVO extends BeanDataVO {
 		this.publicationId = publicationId;
 	}
 
+	/**
+	 * @return the imagePath
+	 */
+	@Column(name="document_path")
+	public String getImagePath() {
+		return imagePath;
+	}
+
+	/**
+	 * @param imagePath the imagePath to set
+	 */
+	public void setImagePath(String imagePath) {
+		this.imagePath = imagePath;
+	}
+
+	/**
+	 * @return the shortUrl
+	 */
+	public String getShortUrl() {
+		return shortUrl;
+	}
+
+	/**
+	 * @param shortUrl the shortUrl to set
+	 */
+	public void setShortUrl(String shortUrl) {
+		this.shortUrl = shortUrl;
+	}
 }
 

@@ -1,6 +1,7 @@
 package com.mts.hootsuite;
 
 import com.siliconmtn.db.orm.Column;
+import com.siliconmtn.db.orm.Table;
 
 /****************************************************************************
  * <b>Title</b>: HootsuiteRefreshTokenVO.java
@@ -14,6 +15,7 @@ import com.siliconmtn.db.orm.Column;
  * @since May 18, 2020
  * @updates:
  ****************************************************************************/
+@Table(name="schedule_job_instance_data")
 public class HootsuiteRefreshTokenVO {
 
 	String refreshToken;

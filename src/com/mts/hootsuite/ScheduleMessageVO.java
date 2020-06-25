@@ -23,6 +23,8 @@ public class ScheduleMessageVO {
 	private List<String> socialProfileIds = new ArrayList<>();
 	private String scheduledSendTime;
 	private List<Map<String, String>> media = new ArrayList<>();
+	private List<Map<String, String>> mediaUrls = new ArrayList();
+	
 	/**
 	 * @return the text
 	 */
@@ -83,6 +85,18 @@ public class ScheduleMessageVO {
 	 */
 	public void setScheduledSendTime(String scheduledSendTime) {
 		this.scheduledSendTime = scheduledSendTime;
+	}
+	/**
+	 * @return the mediaUrls
+	 */
+	public List<Map<String, String>> getMediaUrls() {
+		return mediaUrls;
+	}
+	/**
+	 * @param mediaUrls the mediaUrls to set
+	 */
+	public void setMediaUrls(List<Map<String, String>> mediaUrls) {
+		this.mediaUrls = mediaUrls;
 	}
 	
 	

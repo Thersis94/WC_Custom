@@ -12,13 +12,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.catalina.tribes.util.Arrays;
 // Apache Logger for detailed logging utilities
 import org.apache.log4j.Logger;
 
 // Gson for parsing json data
 import com.google.gson.Gson;
 import com.mts.hootsuite.AuthResponseVO;
-import com.mts.hootsuite.HootsuiteClientData;
+
 // Local Libs
 import com.mts.hootsuite.MediaLinkRequestVO;
 import com.mts.hootsuite.MediaLinkResponseVO;
@@ -28,12 +29,8 @@ import com.mts.hootsuite.ScheduleMessageVO;
 import com.mts.hootsuite.SchedulePostResponseVO;
 import com.mts.hootsuite.SocialMediaProfilesVO;
 import com.mts.hootsuite.TokenResponseVO;
-import com.mts.scheduler.job.ContentFeedItemVO;
-import com.mts.scheduler.job.ContentFeedVO;
-import com.siliconmtn.db.orm.DBProcessor;
 import com.siliconmtn.io.http.SMTHttpConnectionManager;
 import com.siliconmtn.io.http.SMTHttpConnectionManager.HttpConnectionType;
-import com.smt.sitebuilder.scheduler.data.ScheduleJobInstanceDataVO;
 
 /****************************************************************************
  * <b>Title</b>: HootsuiteTestRequests.java <b>Project</b>: Hootsuite
@@ -49,9 +46,7 @@ import com.smt.sitebuilder.scheduler.data.ScheduleJobInstanceDataVO;
 public class HootsuiteManager {
 
 	static Logger log = Logger.getLogger(Process.class.getName());
-	private String token = "2SGSsaCaVdu2cEr-kVQljD-FamKmChG-HNCdbey1gM0.6aBSbvhqjR9-RjIAK2kwILHdJ_RrJRtjW9WbZGW9cTg";
-//	private String refresh_token = "gWZEjzzjWHugVkA5LOtFAuNBN_MTyO8n2S60blp-2OQ.zwXgc1iOXmsm6UDj-D_afOPQ6F2cyBvGCEuCsO9qSAk";
-	private Date tokenExperationDate = new Date();
+	private String token;
 	
 
 	/**
@@ -62,99 +57,38 @@ public class HootsuiteManager {
 	 */
 	public static void main(String[] args) throws IOException, InterruptedException {
 		HootsuiteManager hr = new HootsuiteManager();
-		hr.process();
+		hr.execute();
 	}
 	
-	private void process() throws IOException {
+	public void execute() throws IOException {
 		
-//		PostVO post = new PostVO();
-//		HootsuiteClientData client = new HootsuiteClientData();
-//		
-//		post.setPostDate(1);
-//		
-//		postMessage(post, client); 
+//		log.info(shortenURL("https://www.mystrategist.com/medtech-strategist/article/navigating_beyond_covid-19_what_device_companies_can_do_to_survive_and_thrive_a_conversation_with_glenn_snyder_deloitte_consulting.html"));
 		
-//		log.info(getSocialProfiles());
-		
-	
 	}
 	
-	/**
-	 * Iterates through a ContentFeedVO and creates a social media post for the articles.
-	 * @throws IOException 
-	 */
-	public void execute(ContentFeedVO docs, Map<String, Object> attributes, java.sql.Connection conn) throws IOException {
-		
-		log.info(docs);
-		
-		refreshToken(attributes, conn);
-		
-		
-		PostVO post = new PostVO();
-		
-		//Add a NEW ISSUE STRING
-		
-		
-		// We need to add a Blurb field capped at 1300 characters for Facebook/Linkedin. Do we need a unique blurb type for twitter?
-		
-		
-		// Get the Article names and the authors and create a String formatted for Hootsuite
-		String newArticles = "";
-		for(ContentFeedItemVO article : docs.getItems()) {
-			newArticles = newArticles + "'" + article.getTitle() + "' by " + article.getCreator() + "/n";
-		}
-		
-		// Add the feature Image
-		
-		
-		
+	public void post(String socialId, PostVO post, HootsuiteClientVO hc, String postContent, boolean media) throws IOException {
+
+		post.setPostDate(1);// Replace this with the 11am scheduler
+		postMessage(socialId, post, postContent, media);
 		
 	}
 
 	/**
 	 * Post a message with media using the hootsuite api.
 	 * @param post VO containing post values (text, media ids, date to post)
+	 * @param postContent 
 	 * @param client VO containing client values (Social profiles ids)
 	 */
-	public void postMessage(PostVO post, HootsuiteClientData client) {
+	public void postMessage(String socialId, PostVO post, String postContent, boolean media) {
 		try {
-			uploadHootsuiteMedia(post);
-			schedulePost(post, client);
+			if(media) {
+				uploadHootsuiteMedia(post);
+				schedulePost(socialId, post, postContent);
+			} else
+				schedulePost(socialId, post, postContent);
 		} catch (Exception e) {
 			log.info(e);
 		}
-	}
-	
-	/**
-	 * Get a new set of Tokens
-	 * @throws IOException 
-	 */
-	private void getOAuthCode() throws IOException {
-		
-		Gson gson = new Gson();
-		Map<String, Object> parameters = new HashMap<>();
-		
-		SMTHttpConnectionManager cm = new SMTHttpConnectionManager();
-		
-//		cm.addRequestHeader("Authorization", "Basic YTYwZDA0MzItMzk5OS00YThkLTkxNDAtZjdhNDNmMzNjZjlmOlVac25hcW5mZVo5bA==");
-		cm.addRequestHeader("Accept", "text/html");
-		cm.addRequestHeader("Content-Type", "application/x-www-form-urlencoded");
-		
-//		addTokenParameters(parameters);
-		
-		HttpConnectionType get = HttpConnectionType.GET;
-		
-		
-		
-		// Send get request
-				ByteBuffer in = ByteBuffer
-						.wrap(cm.getRequestData("https://platform.hootsuite.com/oauth2/auth?response_type=code&client_id=a60d0432-3999-4a8d-9140-f7a43f33cf9f&scope=offline&redirect_uri=http://localhost:3000/callback&client_secret=UZsnaqnfeZ9l", parameters, get));
-				
-				
-				
-				log.info(StandardCharsets.UTF_8.decode(in).toString());
-				
-				
 	}
 	
 	private void getToken(String oauthCode) throws IOException {
@@ -185,12 +119,9 @@ public class HootsuiteManager {
 	 * 
 	 * @throws IOException
 	 */
-	private void refreshToken(Map<String, Object> attributes, java.sql.Connection conn) throws IOException {
+	public String refreshToken(HootsuiteClientVO client) throws IOException {
 		
-		String scheduleJobInstanceId = (String)attributes.get("scheduleJobInstanceId");
-		String hootsuiteRefreshToken = (String)attributes.get("HOOTSUITE_REFRESH_TOKEN");
-		
-		log.info("Hootsuite refreshToken: " + hootsuiteRefreshToken);
+		log.info("running refreshToken");
 
 		Gson gson = new Gson();
 		Map<String, Object> parameters = new HashMap<>();
@@ -199,7 +130,7 @@ public class HootsuiteManager {
 
 		addRefreshTokenHeaders(cm);
 
-		addRefreshTokenParameters(parameters, hootsuiteRefreshToken);
+		addRefreshTokenParameters(parameters, client);
 
 		HttpConnectionType post = HttpConnectionType.POST;
 
@@ -212,53 +143,9 @@ public class HootsuiteManager {
 
 		log.info(gson.toJson(response).toString()); // Remove when the tokens are stored to a database.
 
-		if(checkRefreshTokenResponse(response)) {
-			storeNewTokens(response, attributes, conn);
-		} else {
-			log.info("-------------------Token Request Failed-----------------------------------");
-		}
+		checkRefreshTokenResponse(response);
 
-	}
-
-//	/**
-//	 * Retrieve the refreshToken from the database
-//	 * @param scheduleJobInstanceId
-//	 * @return
-//	 */
-//	private String getRefreshToken(String scheduleJobInstanceId, java.sql.Connection conn) {
-//		
-//		List<Object> vals = new ArrayList<>();
-//		
-//		StringBuilder sql = new StringBuilder(400);
-//		sql.append("select value_txt from schedule_job_instance_data ");
-//		sql.append("where schedule_job_instance_id = '").append(scheduleJobInstanceId).append("' ");
-//		sql.append("and schedule_job_data_id in (select schedule_job_data_id from core.schedule_job_data sjd ");
-//		sql.append("where key_txt = 'HOOTSUITE_REFRESH_TOKEN');");
-//		
-//		DBProcessor db = new DBProcessor(conn);
-//		List<HootsuiteRefreshTokenVO> refreshToken = db.executeSelect(sql.toString(), vals, new HootsuiteRefreshTokenVO());
-//		return refreshToken.get(0).getRefreshToken();
-//	}
-
-	/**
-	 * Store the new tokens to the database
-	 * @param response
-	 */
-	private void storeNewTokens(TokenResponseVO response, Map<String, Object> attributes, java.sql.Connection conn) {
-		
-		
-		
-		String scheduleJobInstanceId = (String)attributes.get("scheduleJobInstanceId");
-		
-		StringBuilder sql = new StringBuilder(400);
-		sql.append("update schedule_job_instance_data ");
-		sql.append("set value_txt = '").append(response.getRefresh_token()).append("' ");
-		sql.append("where schedule_job_instance_id = '").append(scheduleJobInstanceId).append("' ");
-		sql.append("and schedule_job_data_id in (select schedule_job_data_id from core.schedule_job_data sjd ");
-		sql.append("where key_txt = 'HOOTSUITE_REFRESH_TOKEN');");
-		
-		DBProcessor db = new DBProcessor(conn);
-		db.executeSQLCommand(sql.toString());
+		return response.getRefresh_token();
 	}
 
 	/**
@@ -267,20 +154,15 @@ public class HootsuiteManager {
 	 * 
 	 * @param response
 	 */
-	private boolean checkRefreshTokenResponse(TokenResponseVO response) {
+	private void checkRefreshTokenResponse(TokenResponseVO response) {
 		if (response.getAccess_token() != null) {
 			token = response.getAccess_token();
-//			refresh_token = response.getRefresh_token(); This will now be stored in the DB
-			Date now = new Date();
-			tokenExperationDate = new Date(now.getTime() + (response.getExpires_in() * 1000));
-			return true;
 		} else {
 			// Log out the error response info
 			log.info(response.getError());
 			log.info(response.getError_description());
 			log.info(response.getError_hint());
 			log.info(response.getStatus_code());
-			return false;
 		}
 	}
 
@@ -288,10 +170,12 @@ public class HootsuiteManager {
 	 * Adds required parameters for the Hootsuite refresh end point
 	 * 
 	 * @param parameters
+	 * @param client 
 	 */
-	private void addRefreshTokenParameters(Map<String, Object> parameters, String refresh_token) {
+	private void addRefreshTokenParameters(Map<String, Object> parameters, HootsuiteClientVO client) {
+		log.info("adding to parameters " + client.getRefreshToken());
 		parameters.put("grant_type", "refresh_token");
-		parameters.put("refresh_token", refresh_token);
+		parameters.put("refresh_token", client.getRefreshToken());
 	}
 
 	/**
@@ -308,14 +192,12 @@ public class HootsuiteManager {
 	}
 
 	/**
-	 * Return an array of social profiles connected to the hootsuite account
-	 * 
+	 * Returns a map of all of the social media profile ids associated with the clients profile
+	 * @return map of social ids
 	 * @throws IOException
 	 */
 	public HashMap<String, String> getSocialProfiles() throws IOException {
-
-//		checkToken();
-
+		
 		Gson gson = new Gson();
 
 		Map<String, Object> parameters = new HashMap<>();
@@ -356,13 +238,15 @@ public class HootsuiteManager {
 
 	/**
 	 * Schedules a social media post using the hootsuite api
+	 * @param twitterId VO containing client values (Social profiles ids)
 	 * @param post VO containing post values (text, media ids, date to post)
-	 * @param client VO containing client values (Social profiles ids)
+	 * @param postContent 
 	 * @throws IOException
 	 */
-	private void schedulePost(PostVO post, HootsuiteClientData client) throws IOException {
+	private void schedulePost(String socialId, PostVO post, String postContent) throws IOException {
 
-//		checkToken();
+		List<String> socialIds = new ArrayList<>();
+		socialIds.add(socialId);
 
 		List<Map<String, String>> mediaList = new ArrayList<>();
 		
@@ -372,7 +256,7 @@ public class HootsuiteManager {
 
 		ScheduleMessageVO message = new ScheduleMessageVO();
 
-		setMessageContent(message, post.getPostDate(), client.getSocialIds(), post.getMessageText(), mediaList);
+		setMessageContent(message, post.getPostDate(), socialIds, postContent, mediaList);
 
 		byte[] document = gson.toJson(message).getBytes();
 
@@ -554,4 +438,44 @@ public class HootsuiteManager {
 		else
 			return false;
 	}
+	
+//	/**
+//	 * Creates a shortened URL using the Bit.ly URL shortening API
+//	 * @return a shortened version of the URL
+//	 * @throws IOException 
+//	 */
+//	private String shortenURL(String longURL) throws IOException {
+//		
+//		String bitlyToken = "3bffc1465445d781e2ebd502f30c295d6f5c04a9";
+//		String shortURL = "";
+//		
+//		Gson gson = new Gson();
+//
+//		SMTHttpConnectionManager cm = new SMTHttpConnectionManager();
+//		cm.addRequestHeader("Authorization", "Bearer " + bitlyToken);
+//		cm.addRequestHeader("Accept", "*/*");
+//		
+//		URLShortenerRequestVO sr = new URLShortenerRequestVO();
+//		sr.setLong_url(longURL);
+//
+//		byte[] document = gson.toJson(sr).getBytes();
+//		
+//		String doc = new String(document);
+//		log.info(doc);
+//		
+//		ByteBuffer in = ByteBuffer.wrap(cm.sendBinaryData("https://api-ssl.bitly.com/v4/shorten", document,
+//				"application/json", HttpConnectionType.POST));
+//		
+//		URLShortenerResponseVO response = gson.fromJson(StandardCharsets.UTF_8.decode(in).toString(),
+//				URLShortenerResponseVO.class);
+//
+//		if(response.getMessage().length() != 0) {
+//			log.info(response.getMessage());
+//			log.info(response.getErrors());
+//			log.info(response.getMessage());
+//			log.info(response.getResource());
+//			return null;
+//		} else
+//			return response.getLink();		
+//	}
 }

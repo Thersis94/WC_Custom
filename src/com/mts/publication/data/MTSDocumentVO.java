@@ -23,11 +23,13 @@ import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.db.orm.BeanSubElement;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
+import com.siliconmtn.util.RandomAlphaNumeric;
 import com.siliconmtn.util.StringUtil;
 
 // WC Libs
 import com.smt.sitebuilder.action.content.DocumentVO;
 import com.smt.sitebuilder.action.metadata.WidgetMetadataVO;
+import com.smt.sitebuilder.action.tools.SiteRedirVO;
 
 /****************************************************************************
  * <b>Title</b>: MTSDocumentVO.java
@@ -58,6 +60,7 @@ public class MTSDocumentVO extends DocumentVO {
 	private String sbActionId;
 	private String infoBar;
 	private String sponsorId;
+	private String shortUrl;
 	private int dataFeedProcessedFlag;
 	
 	// Sub-Beans
@@ -75,6 +78,22 @@ public class MTSDocumentVO extends DocumentVO {
 	private int bookmarkFlag;
 	private SponsorVO sponsor;
 	private Map<String, List<WidgetMetadataVO>> cats = new LinkedHashMap<>();
+	
+	
+	/**
+	 * Builds a redirect URL for shortening the url to 8 characters
+	 * @return
+	 */
+	public SiteRedirVO getRedir() {
+		SiteRedirVO vo = new SiteRedirVO();
+		vo.setSiteId("MTS_2");
+		vo.setActiveFlag(1);
+		vo.setCreateDate(new Date());
+		vo.setLogRedirFlag(1);
+		vo.setDestinationUrl(this.getFullPathText());
+		vo.setAliasText("/" + RandomAlphaNumeric.generateRandom(8));
+		return vo;
+	}
 	
 	/**
 	 * 
@@ -522,7 +541,7 @@ public class MTSDocumentVO extends DocumentVO {
 	}
 
 	/**
-	 * @param publicationName the publicationName to set
+	 * @param publicationName the publicationName to setgetFullPathText
 	 */
 	public void setPublicationName(String publicationName) {
 		this.publicationName = publicationName;
@@ -612,6 +631,21 @@ public class MTSDocumentVO extends DocumentVO {
 	 */
 	public void setRedirectUrl(String redirectUrl) {
 		this.redirectUrl = redirectUrl;
+	}
+
+	/**
+	 * @return the shortUrl
+	 */
+	@Column(name="")
+	public String getShortUrl() {
+		return shortUrl;
+	}
+
+	/**
+	 * @param shortUrl the shortUrl to set
+	 */
+	public void setShortUrl(String shortUrl) {
+		this.shortUrl = shortUrl;
 	}
 }
 
