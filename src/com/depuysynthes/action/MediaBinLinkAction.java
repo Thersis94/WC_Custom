@@ -9,6 +9,7 @@ import java.sql.SQLException;
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.exception.InvalidDataException;
+import com.siliconmtn.util.StringUtil;
 import com.siliconmtn.action.ActionRequest;
 
 // WC Libs
@@ -29,6 +30,7 @@ import com.smt.sitebuilder.common.constants.Constants;
  * <b>Changes: 
  * added baseUrlIntl, needed to serve Intl assets separely from US ones. -JM 07-11-2013
  * added PageViewUDPUtil to track downloads/impressions as we do other PageViews -JM 09.05.14
+ * - Added check for custom file URL which is then used in place of the standard base URLs. - DGB 2020-06-03
  * </b>
  ****************************************************************************/
 public class MediaBinLinkAction extends SimpleActionAdapter {
@@ -82,15 +84,21 @@ public class MediaBinLinkAction extends SimpleActionAdapter {
 	 */
 	public String getDocumentLink(String id) throws InvalidDataException {
 		StringBuilder s = new StringBuilder(150);
-		s.append("select asset_nm, import_file_cd from ").append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
+		s.append("select asset_nm, import_file_cd, file_nm, custom_file_url_txt from ");
+		s.append(getAttribute(Constants.CUSTOM_DB_SCHEMA));
 		s.append("dpy_syn_mediabin where dpy_syn_mediabin_id = ?");
 
 		try (PreparedStatement ps = dbConn.prepareStatement(s.toString())) {
 			ps.setString(1, id);
 			ResultSet rs = ps.executeQuery();
 			if (rs.next()) {
-				//serve Intl assets from an alternate baseUrl
-				return (2 == rs.getInt(2) ? INT_BASE_URL : US_BASE_URL) + rs.getString(1);
+				if (StringUtil.isEmpty(rs.getString("custom_file_url_txt"))) {
+					//serve Intl assets from an alternate baseUrl
+					return (2 == rs.getInt(2) ? INT_BASE_URL : US_BASE_URL) + rs.getString(1);
+				} else {
+					// use the custom file URL as the base URL
+					return rs.getString("custom_file_url_txt") + rs.getString("file_nm");
+				}
 			}
 		} catch (SQLException sqle) {
 			log.error("could not load mediaBin asset", sqle);

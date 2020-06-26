@@ -5,6 +5,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Date;
 import java.util.Map;
 
 //SMTBaseLibs
@@ -23,7 +24,6 @@ import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.common.constants.ErrorCodes;
 import com.smt.sitebuilder.security.DBLoginModule;
 import com.smt.sitebuilder.security.UserLogin;
-import com.biomed.smarttrak.vo.AccountVO;
 //WC_Custom libs
 import com.biomed.smarttrak.vo.TeamVO;
 import com.biomed.smarttrak.vo.UserVO;
@@ -104,7 +104,7 @@ public class SmartTRAKLoginModule extends DBLoginModule {
 	 * @param user
 	 * @return
 	 */
-	public UserVO loadSmarttrakUser(UserDataVO userData) {
+	public UserVO loadSmarttrakUser(UserDataVO userData) throws AuthenticationException {
 		UserVO stUser = new UserVO();
 		stUser.setData(userData.getDataMap());
 		stUser.setAttributes(userData.getAttributes());
@@ -123,7 +123,7 @@ public class SmartTRAKLoginModule extends DBLoginModule {
 	 * @param user
 	 * @return
 	 */
-	private void loadCustomData(UserVO user) {
+	private void loadCustomData(UserVO user) throws AuthenticationException {
 		Connection dbConn = (Connection)getAttribute(GlobalConfig.KEY_DB_CONN);
 		String schema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
 
@@ -131,23 +131,22 @@ public class SmartTRAKLoginModule extends DBLoginModule {
 		StringBuilder sql = new StringBuilder(1100);
 		sql.append("select u.user_id, u.account_id, u.register_submittal_id, u.fd_auth_flg, u.ga_auth_flg, u.update_dt, u.create_dt, ");
 		sql.append("u.acct_owner_flg, coalesce(u.expiration_dt, a.expiration_dt) as expiration_dt, u.status_cd, u.active_flg, a.type_id, ");
-		sql.append("t.team_id, t.account_id, t.team_nm, t.default_flg, t.private_flg, a.account_nm, p.profile_id as source_id, p.email_address_txt as source_email ");
+		sql.append("t.team_id, t.account_id, t.team_nm, t.default_flg, t.private_flg, a.account_nm, p.profile_id as source_id, p.email_address_txt as source_email, ");
+		sql.append("u.expiration_dt as user_expiration, a.expiration_dt as account_expiration, a.status_no ");
 		sql.append("from ").append(schema).append("biomedgps_user u ");
 		sql.append("left outer join ").append(schema).append("biomedgps_user_team_xr xr on u.user_id=xr.user_id ");
 		sql.append("left outer join ").append(schema).append("biomedgps_team t on xr.team_id=t.team_id ");
-		sql.append("inner join ").append(schema).append("biomedgps_account a on a.status_no= ? and u.account_id=a.account_id ");
+		sql.append("inner join ").append(schema).append("biomedgps_account a on u.account_id=a.account_id ");
 		sql.append("left outer join register_data rd on rd.register_submittal_id = u.register_submittal_id and register_field_id = ? ");
 		sql.append("left outer join profile p on p.profile_id = rd.value_txt ");
-		sql.append("where u.profile_id=? and u.active_flg > 0 and (u.expiration_dt > current_date or u.expiration_dt is null) ");
-		sql.append("and (a.expiration_dt > current_date or a.expiration_dt is null) ");
+		sql.append("where u.profile_id=? ");
 		sql.append("order by t.team_nm"); //active > 0 includes Active and Demo.
 		log.debug(sql + user.getProfileId());
 
 		int iter = 0;
 		try (PreparedStatement ps = dbConn.prepareStatement(sql.toString())) {
-			ps.setString(1, AccountVO.Status.ACTIVE.getStatusNo());
-			ps.setString(2, UserVO.RegistrationMap.SOURCE.getFieldId());
-			ps.setString(3, user.getProfileId());
+			ps.setString(1, UserVO.RegistrationMap.SOURCE.getFieldId());
+			ps.setString(2, user.getProfileId());
 			ResultSet rs = ps.executeQuery();
 			StringEncrypter se = new StringEncrypter((String)getAttribute(Constants.ENCRYPT_KEY));
 			while (rs.next()) {
@@ -166,6 +165,8 @@ public class SmartTRAKLoginModule extends DBLoginModule {
 					user.setSourceEmail(decrypt(se, rs.getString("source_email")));
 					user.setCreateDate(rs.getDate("create_dt"));
 					user.setUpdateDate(rs.getDate("update_dt"));
+					
+					checkAuthentication(rs);
 
 					// Account Type - used by the role module to restrict users to Updates Only (role) - just pass the "4" along to it.
 					String type = rs.getString("type_id");
@@ -184,6 +185,27 @@ public class SmartTRAKLoginModule extends DBLoginModule {
 
 		if (log.isDebugEnabled() && user.getTeams() != null)
 			log.debug("loaded " + user.getTeams().size() + " teams for " + user.getEmailAddress());
+	}
+
+	
+	/**
+	 * Check potential auth disconnects and throw the proper error code for each
+	 * @param rs
+	 * @throws AuthenticationException
+	 */
+	private void checkAuthentication(ResultSet rs) throws AuthenticationException {
+		Date now = new Date();
+		try {
+			Date accountExp = rs.getTimestamp("account_expiration");
+			if (accountExp != null && now.after(accountExp)) throw new AuthenticationException(ErrorCodes.CUSTOM_ERROR_MSG + "accountExpired");
+			if (!"A".equals(rs.getString("status_no"))) throw new AuthenticationException(ErrorCodes.CUSTOM_ERROR_MSG + "accountInvalid");
+			Date userExp = rs.getTimestamp("user_expiration");
+			if (userExp != null && now.after(userExp)) throw new AuthenticationException(ErrorCodes.CUSTOM_ERROR_MSG + "userExpired");
+			if (rs.getInt("active_flg") < 1) throw new AuthenticationException(ErrorCodes.CUSTOM_ERROR_MSG + "userInvalid");
+		} catch (SQLException e) {
+			log.error(e);
+			throw new AuthenticationException(ErrorCodes.CUSTOM_ERROR_MSG + "otherLoginException");
+		}
 	}
 
 	/**

@@ -146,14 +146,15 @@ public class SubscriptionAction extends SBActionAdapter {
 		MTSUserVO user = (!userPubs.isEmpty()) ? userPubs.get(0) : new MTSUserVO();
 		
 		// If the user is an author or admin assign.  Otherwise only assign
-		// if expiration date is in the future
+		// if expiration date is not null and is in the future
 		if (user.getActiveFlag() == 0) return;
 		if ("100".equals(user.getRoleId()) || "AUTHOR".equals(user.getRoleId()))
 			authUser.setUserExtendedInfo(user);
 		else {
 			Date now = new Date();
 			for (SubscriptionUserVO vo : user.getSubscriptions()) {
-				if (now.before(vo.getExpirationDate())) {
+				if (vo.getExpirationDate() != null && 
+						now.before(vo.getExpirationDate())) {
 					authUser.setUserExtendedInfo(user);
 					break;
 				}

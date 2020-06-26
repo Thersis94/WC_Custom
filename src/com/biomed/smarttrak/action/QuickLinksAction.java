@@ -17,7 +17,7 @@ import com.smt.sitebuilder.action.SBActionAdapter;
 import com.smt.sitebuilder.action.tools.MyFavoritesAction;
 import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
-import com.smt.sitebuilder.util.PageViewVO;
+import com.smt.sitebuilder.util.PageViewUserVO;
 
 /*****************************************************************************
  <p><b>Title</b>: QuickLinksAction.java</p>
@@ -110,7 +110,7 @@ public class QuickLinksAction extends SBActionAdapter {
 			log.debug("favorites mod error condition: " + mod.getErrorCondition());
 			if (! mod.getErrorCondition()) {
 				SMTSession sess = req.getSession();
-				Map<String, List<PageViewVO>> fv = (Map<String, List<PageViewVO>>) mod.getActionData();
+				Map<String, List<PageViewUserVO>> fv = (Map<String, List<PageViewUserVO>>) mod.getActionData();
 				sess.setAttribute(MyFavoritesAction.MY_FAVORITES,fv);
 			}
 		}
@@ -131,7 +131,7 @@ public class QuickLinksAction extends SBActionAdapter {
 		ModuleVO mod = (ModuleVO)getAttribute(Constants.MODULE_DATA);
 		if (! mod.getErrorCondition()) {
 			SMTSession sess = req.getSession();
-			Map<String, List<PageViewVO>> rv = (Map<String, List<PageViewVO>>) mod.getActionData();
+			Map<String, List<PageViewUserVO>> rv = (Map<String, List<PageViewUserVO>>) mod.getActionData();
 			sess.setAttribute(MY_RECENTLY_VIEWED,rv);
 		}
 	}
@@ -173,18 +173,18 @@ public class QuickLinksAction extends SBActionAdapter {
 	}
 
 	/**
-	 * iterates the session-stored List<PageViewVO> to see if the given ID for the given Section is on the list.
+	 * iterates the session-stored List<PageViewUserVO> to see if the given ID for the given Section is on the list.
 	 * Used in views to set button colors for 'Favorite' buttons.
 	 * @param data
 	 * @param sec
 	 * @param pkId
 	 * @return
 	 */
-	public static boolean isFavorite(Map<String, List<PageViewVO>> data, String sec, String pkId) {
+	public static boolean isFavorite(Map<String, List<PageViewUserVO>> data, String sec, String pkId) {
 		// no data, no match.
 		if (data == null) return false;
 		// unpack target section
-		List<PageViewVO> section = data.get(sec);
+		List<PageViewUserVO> section = data.get(sec);
 		// invalid section key, or empty list, no match.
 		if (section == null || section.isEmpty()) return false;
 		
@@ -195,7 +195,7 @@ public class QuickLinksAction extends SBActionAdapter {
 		}
 		
 		// loop pageviews looking for match.
-		for (PageViewVO page : section) {
+		for (PageViewUserVO page : section) {
 			if (primaryId.equalsIgnoreCase(page.getPageId()) || pkId.equalsIgnoreCase(page.getPageId())) {
 				return true;
 			}

@@ -11,6 +11,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.lang.StringEscapeUtils;
+
 // WC custom
 import com.biomed.smarttrak.vo.UserVO;
 // SMTBaseLibs
@@ -311,12 +313,12 @@ public class UserListReportAction extends SimpleActionAdapter {
 	 * @param val
 	 */
 	private void addAttribute(UserVO user, String key, String val) {
-		if (key == null) return;
+		if (key == null || val == null) return;
 		if (user.getAttributes().containsKey(key)) {
 			if (!StringUtil.checkVal(user.getAttributes().get(key)).contains(val))
-				user.addAttribute(key, user.getAttributes().get(key) + ", " + val);
+				user.addAttribute(key, user.getAttributes().get(key) + ", " + StringEscapeUtils.unescapeHtml(val));
 		} else {
-			user.addAttribute(key, val);
+			user.addAttribute(key, StringEscapeUtils.unescapeHtml(val));
 		}
 	}
 

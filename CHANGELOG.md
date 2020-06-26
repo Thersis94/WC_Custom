@@ -1,5 +1,67 @@
 WC_Custom Changelog (auto-generated)
 
+## [3.57.4](https://github.com/smtadmin/WC_Custom/compare/3.57.3...3.57.4) (2020-06-23)
+
+
+### Bug Fixes
+
+* **hotfix-mts-175:** fix edge case that results in a NullPointerException when loading subscriptions ([d32215c](https://github.com/smtadmin/WC_Custom/commit/d32215c))
+
+## [3.57.3](https://github.com/smtadmin/WC_Custom/compare/3.57.2...3.57.3) (2020-06-23)
+
+
+### Bug Fixes
+
+* **st-300:** add new error codes ([4fe7605](https://github.com/smtadmin/WC_Custom/commit/4fe7605))
+* **st-300:** move account fails above user fails ([b87922b](https://github.com/smtadmin/WC_Custom/commit/b87922b))
+* **st-300:** remove unneeded changes to uservo and remove logging ([e611161](https://github.com/smtadmin/WC_Custom/commit/e611161))
+* **st-300:** update uservo for login information error logging ([e0722ee](https://github.com/smtadmin/WC_Custom/commit/e0722ee))
+* **st-413:** change refrences to deprecated code ([fcfa03a](https://github.com/smtadmin/WC_Custom/commit/fcfa03a))
+
+## [3.57.2](https://github.com/smtadmin/WC_Custom/compare/3.57.1...3.57.2) (2020-06-12)
+
+
+### Bug Fixes
+
+* **ifu:** update IFU Dismantling tool to allow custom file URL to override default file location ([1d9308d](https://github.com/smtadmin/WC_Custom/commit/1d9308d))
+
+## [3.57.1](https://github.com/smtadmin/WC_Custom/compare/3.57.0...3.57.1) (2020-06-11)
+
+
+### Bug Fixes
+
+* **st-412:** change to load admins from db instead of properties ([c3165f3](https://github.com/smtadmin/WC_Custom/commit/c3165f3))
+* **st-433:** change column title ([77ece3d](https://github.com/smtadmin/WC_Custom/commit/77ece3d))
+* **st-433:** escape html safe values ([e3ab410](https://github.com/smtadmin/WC_Custom/commit/e3ab410))
+
+# [3.57.0](https://github.com/smtadmin/WC_Custom/compare/3.56.2...3.57.0) (2020-06-09)
+
+
+### Bug Fixes
+
+* **st-437:** remove old redirect logging code as the email campaign code is used now ([ae6ad8e](https://github.com/smtadmin/WC_Custom/commit/ae6ad8e))
+
+
+### Features
+
+* **event field:** modified the event pull to use the seo description field instead of the body ([fcf8332](https://github.com/smtadmin/WC_Custom/commit/fcf8332))
+
+## [3.56.2](https://github.com/smtadmin/WC_Custom/compare/3.56.1...3.56.2) (2020-06-04)
+
+
+### Bug Fixes
+
+* **st-434:** fix issue with null values being placed into the attributes map ([ad35a73](https://github.com/smtadmin/WC_Custom/commit/ad35a73))
+
+## [3.56.1](https://github.com/smtadmin/WC_Custom/compare/3.56.0...3.56.1) (2020-06-02)
+
+
+### Bug Fixes
+
+* **st-270:** update insights tabel with email date ([2b2f650](https://github.com/smtadmin/WC_Custom/commit/2b2f650))
+* **st-418:** add checks to see if this is a non chartable grid ([e73f5a0](https://github.com/smtadmin/WC_Custom/commit/e73f5a0))
+* **st0431:** change label for trends ([0bf233e](https://github.com/smtadmin/WC_Custom/commit/0bf233e))
+
 # [3.56.0](https://github.com/smtadmin/WC_Custom/compare/3.55.0...3.56.0) (2020-05-29)
 
 
