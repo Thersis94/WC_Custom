@@ -1,5 +1,6 @@
 package com.mts.hootsuite;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -38,7 +39,7 @@ public class PostVO {
 	private Date postDate; // We need to add 1 day to this at some point
 	private List<String> mediaId = new ArrayList<>();
 	private String mimeType = "";
-	private Path mediaLocation;
+	private String mediaLocation;
 	private String shortURL;
 	private String postContent;
 
@@ -107,10 +108,12 @@ public class PostVO {
 	 */
 	public String getMimeType() throws IOException {
 		
+		Path mediaFileLocation = Paths.get(mediaLocation);
+		
 		// If mime type is not set
 		if(mimeType.equals("")) {
 			// Get and set the mimeType
-			mimeType = Files.probeContentType(mediaLocation);
+			mimeType = Files.probeContentType(mediaFileLocation);
 		}
 		return mimeType;
 	}
@@ -134,7 +137,7 @@ public class PostVO {
 	 * @param mediaLocation the mediaLocation to set
 	 */
 	public void setMediaLocation(String mediaLocation) {
-		this.mediaLocation = Paths.get(mediaLocation);
+		this.mediaLocation = mediaLocation;
 	}
 
 	/**
@@ -274,13 +277,6 @@ public class PostVO {
 	}
 
 	/**
-	 * @param mediaLocation the mediaLocation to set
-	 */
-	public void setMediaLocation(Path mediaLocation) {
-		this.mediaLocation = mediaLocation;
-	}
-
-	/**
 	 * @return the postContent
 	 */
 	public String getPostContent() {
@@ -298,16 +294,16 @@ public class PostVO {
 	public void addHashTags(List<String> categories) {
 		String descriptionWithHashtags = description;
 		
-		List<Integer> indexes = new ArrayList<>();
-		
-		for(String category : categories) {
-			indexes.add(description.toLowerCase().indexOf(category.toLowerCase()));
-		}
-		
-		for(Integer index : indexes) {
-			if(index != -1)
-				descriptionWithHashtags = descriptionWithHashtags.substring(0, index) + "#" + descriptionWithHashtags.substring(index);
-		}
+//		List<Integer> indexes = new ArrayList<>();
+//		
+//		for(String category : categories) {
+//			indexes.add(description.toLowerCase().indexOf(category.toLowerCase()));
+//		}
+//		
+//		for(Integer index : indexes) {
+//			if(index != -1)
+//				descriptionWithHashtags = descriptionWithHashtags.substring(0, index) + "#" + descriptionWithHashtags.substring(index);
+//		}
 		description = descriptionWithHashtags;
 	}
 

@@ -1,7 +1,13 @@
 package com.mts.hootsuite;
 
+import java.awt.Image;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 // JDK 11
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
+import java.net.URLConnection;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -11,6 +17,8 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import javax.imageio.ImageIO;
 
 import org.apache.catalina.tribes.util.Arrays;
 // Apache Logger for detailed logging utilities
@@ -29,8 +37,10 @@ import com.mts.hootsuite.ScheduleMessageVO;
 import com.mts.hootsuite.SchedulePostResponseVO;
 import com.mts.hootsuite.SocialMediaProfilesVO;
 import com.mts.hootsuite.TokenResponseVO;
+import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.io.http.SMTHttpConnectionManager;
 import com.siliconmtn.io.http.SMTHttpConnectionManager.HttpConnectionType;
+
 
 /****************************************************************************
  * <b>Title</b>: HootsuiteTestRequests.java <b>Project</b>: Hootsuite
@@ -62,16 +72,9 @@ public class HootsuiteManager {
 	
 	public void execute() throws IOException {
 		
-//		log.info(shortenURL("https://www.mystrategist.com/medtech-strategist/article/navigating_beyond_covid-19_what_device_companies_can_do_to_survive_and_thrive_a_conversation_with_glenn_snyder_deloitte_consulting.html"));
-		
 	}
 	
-	public void post(String socialId, PostVO post, HootsuiteClientVO hc, String postContent, boolean media) throws IOException {
 
-		post.setPostDate(1);// Replace this with the 11am scheduler
-		postMessage(socialId, post, postContent, media);
-		
-	}
 
 	/**
 	 * Post a message with media using the hootsuite api.
@@ -79,49 +82,28 @@ public class HootsuiteManager {
 	 * @param postContent 
 	 * @param client VO containing client values (Social profiles ids)
 	 */
-	public void postMessage(String socialId, PostVO post, String postContent, boolean media) {
+	public void post(boolean success, StringBuilder msg, String socialId, PostVO post, String postContent, boolean media) {
+		post.setPostDate(1);// Replace this with the 11am scheduler
 		try {
 			if(media) {
-				uploadHootsuiteMedia(post);
-				schedulePost(socialId, post, postContent);
+				uploadHootsuiteMedia(success, msg, post);
+				schedulePost(success, msg, socialId, post, postContent);
 			} else
-				schedulePost(socialId, post, postContent);
+				schedulePost(success, msg, socialId, post, postContent);
 		} catch (Exception e) {
-			log.info(e);
+			msg.append("Failure: ").append(e.getLocalizedMessage());
+			success = false;
 		}
-	}
-	
-	private void getToken(String oauthCode) throws IOException {
-		
-		Gson gson = new Gson();
-		Map<String, Object> parameters = new HashMap<>();
-		
-		HttpConnectionType post = HttpConnectionType.POST;
-		
-		SMTHttpConnectionManager cm = new SMTHttpConnectionManager();
-		
-		parameters.put("grant_type", "authorization_code");
-		parameters.put("code", oauthCode);
-		parameters.put("redirect_uri", "http://localhost:3000/callback");// Redirect URI that is set in hootsuite.
-		
-		cm.addRequestHeader("Authorization", "Basic YTYwZDA0MzItMzk5OS00YThkLTkxNDAtZjdhNDNmMzNjZjlmOlVac25hcW5mZVo5bA==");// Basic header. This can probably be assigned using the SMTHTTP utility
-		
-		// Send post request
-		ByteBuffer in = ByteBuffer
-				.wrap(cm.getRequestData("https://platform.hootsuite.com/oauth2/token", parameters, post));
-		
-		log.info(StandardCharsets.UTF_8.decode(in).toString());
-		
 	}
 
 	/**
 	 * Requests a new set of tokens from the Hootsuite Api refresh token endpoint
+	 * @param msg 
+	 * @param success 
 	 * 
 	 * @throws IOException
 	 */
-	public String refreshToken(HootsuiteClientVO client) throws IOException {
-		
-		log.info("running refreshToken");
+	public String refreshToken(boolean success, StringBuilder msg, HootsuiteClientVO client) throws IOException {
 
 		Gson gson = new Gson();
 		Map<String, Object> parameters = new HashMap<>();
@@ -141,9 +123,7 @@ public class HootsuiteManager {
 		// Capture the response
 		TokenResponseVO response = gson.fromJson(StandardCharsets.UTF_8.decode(in).toString(), TokenResponseVO.class);
 
-		log.info(gson.toJson(response).toString()); // Remove when the tokens are stored to a database.
-
-		checkRefreshTokenResponse(response);
+		checkRefreshTokenResponse(success, msg, response);
 
 		return response.getRefresh_token();
 	}
@@ -154,15 +134,13 @@ public class HootsuiteManager {
 	 * 
 	 * @param response
 	 */
-	private void checkRefreshTokenResponse(TokenResponseVO response) {
+	private void checkRefreshTokenResponse(boolean success, StringBuilder msg, TokenResponseVO response) {
 		if (response.getAccess_token() != null) {
 			token = response.getAccess_token();
 		} else {
-			// Log out the error response info
-			log.info(response.getError());
-			log.info(response.getError_description());
-			log.info(response.getError_hint());
-			log.info(response.getStatus_code());
+			// Set schedule job success to false and append the completion message to include the error
+			success = false;
+			msg.append("Failure: ").append("Refresh Token Failed : " + response.getError() + "|" + response.getError_description() + "|" + response.getError_hint() + "|" + response.getStatus_code());
 		}
 	}
 
@@ -173,7 +151,6 @@ public class HootsuiteManager {
 	 * @param client 
 	 */
 	private void addRefreshTokenParameters(Map<String, Object> parameters, HootsuiteClientVO client) {
-		log.info("adding to parameters " + client.getRefreshToken());
 		parameters.put("grant_type", "refresh_token");
 		parameters.put("refresh_token", client.getRefreshToken());
 	}
@@ -193,10 +170,12 @@ public class HootsuiteManager {
 
 	/**
 	 * Returns a map of all of the social media profile ids associated with the clients profile
+	 * @param msg 
+	 * @param success 
 	 * @return map of social ids
 	 * @throws IOException
 	 */
-	public HashMap<String, String> getSocialProfiles() throws IOException {
+	public HashMap<String, String> getSocialProfiles(boolean success, StringBuilder msg) throws IOException {
 		
 		Gson gson = new Gson();
 
@@ -218,32 +197,24 @@ public class HootsuiteManager {
 		HashMap<String, String> socialProfiles = response.getAllSocialIds();
 
 		if(response.getError() != null) {
-			log.info(response.getError() + " : " + response.getError_description());
+			// Set schedule job success to false and append the completion message to include the error
+			success = false;
+			msg.append("Failure: ").append("Refresh Token Failed : " + response.getError() + "|" + response.getError_description());
 		}
 		
 		return socialProfiles;
 	}
 
-//	/**
-//	 * Checks to see if the token is expired and refreshes the token if it is.
-//	 * 
-//	 * @throws IOException
-//	 */
-//	private void checkToken() throws IOException {
-//		Date now = new Date();
-//		if (now.compareTo(tokenExperationDate) > 0) {
-//			refreshToken();
-//		}
-//	}
-
 	/**
 	 * Schedules a social media post using the hootsuite api
+	 * @param msg 
+	 * @param success 
 	 * @param twitterId VO containing client values (Social profiles ids)
 	 * @param post VO containing post values (text, media ids, date to post)
 	 * @param postContent 
 	 * @throws IOException
 	 */
-	private void schedulePost(String socialId, PostVO post, String postContent) throws IOException {
+	private void schedulePost(boolean success, StringBuilder msg, String socialId, PostVO post, String postContent) throws IOException {
 
 		List<String> socialIds = new ArrayList<>();
 		socialIds.add(socialId);
@@ -257,20 +228,22 @@ public class HootsuiteManager {
 		ScheduleMessageVO message = new ScheduleMessageVO();
 
 		setMessageContent(message, post.getPostDate(), socialIds, postContent, mediaList);
-
+		
 		byte[] document = gson.toJson(message).getBytes();
-
+		
 		SMTHttpConnectionManager cm = new SMTHttpConnectionManager();
 		cm.addRequestHeader("Authorization", "Bearer " + token);
 
 		ByteBuffer in = ByteBuffer.wrap(cm.sendBinaryData("https://platform.hootsuite.com/v1/messages", document,
-				"application/json", HttpConnectionType.POST));
+				"application/json;charset=utf-8", HttpConnectionType.POST));
 
 		SchedulePostResponseVO response = gson.fromJson(StandardCharsets.UTF_8.decode(in).toString(),
 				SchedulePostResponseVO.class);
 		
 		if(response.getErrors().size()>0) {
-			log.info(response.getErrorMessage());
+			// Set schedule job success to false and append the completion message to include the error
+			success = false;
+			msg.append("Failure: ").append("Refresh Token Failed : " + response.getErrors().toString() + "|" + response.getErrorMessage().toString());
 		}
 
 	}
@@ -301,7 +274,7 @@ public class HootsuiteManager {
 			String messageText, List<Map<String, String>> mediaList) {
 		message.setScheduledSendTime(scheduledSendTime);
 		message.setSocialProfiles(socialIdList);
-		message.setText(messageText);// This needs to be restricted to a length of 280 characters for twitter
+		message.setText(messageText);
 		message.setMedia(mediaList);
 	}
 
@@ -309,14 +282,14 @@ public class HootsuiteManager {
 	 * getMediaUploadLink will request a link to the Hootsuite AWS file server that
 	 * can be used in conjunction with upload image to create a media link for new
 	 * message uploads
+	 * @param msg 
+	 * @param success 
 	 * @param post 
 	 * 
 	 * @throws IOException
 	 * @throws InterruptedException
 	 */
-	private void uploadHootsuiteMedia(PostVO post) throws IOException, InterruptedException {
-
-//		checkToken();
+	private void uploadHootsuiteMedia(boolean success, StringBuilder msg, PostVO post) throws IOException, InterruptedException {
 
 		Gson gson = new Gson();
 
@@ -335,43 +308,48 @@ public class HootsuiteManager {
 				MediaLinkResponseVO.class);
 
 		if (response.successfulRequest()) {
-			uploadMediaToAWS(response, mlr, post.getMediaLocation());
+			uploadMediaToAWS(success, msg, response, mlr, post.getMediaLocation());
 			post.addMediaId(response.getId());
 		} else {
-			log.info("checkMediaLinkResponse returned false");
-			log.info(response.getError() + " : " + response.getError_description());
+			// Set schedule job success to false and append the completion message to include the error
+			success = false;
+			msg.append("Failure: ").append("Refresh Token Failed : " + response.getError() + "|" + response.getError_description());
 		}
 
-		waitForSuccessfulUpload(response);
+		waitForSuccessfulUpload(success, msg, response);
 	}
 
 	/**
 	 * Loops the retrieveMediaUploadStatus until the media has been successfully
 	 * uploaded to the AWS server
+	 * @param msg 
+	 * @param success 
 	 * 
 	 * @param response the response from hootsuite media link request
 	 * @throws IOException
 	 * @throws InterruptedException
 	 */
 
-	private void waitForSuccessfulUpload(MediaLinkResponseVO response) throws IOException, InterruptedException {
+	private void waitForSuccessfulUpload(boolean success, StringBuilder msg, MediaLinkResponseVO response) throws IOException, InterruptedException {
 
-		// Find a better way to do this!
 		int timeOut = 0;
 		while (!retrieveMediaUploadStatus(response.getId())) {
 			timeOut++;
 			if (timeOut > 10) {
-				log.info("Upload Failed");
+				msg.append("Failure: ").append("Media failed to upload.");
+				success = false;
 				break;
 			}
 			Thread.sleep(1000);
-			log.info("Waiting for upload to complete.");
+			log.debug("Waiting for upload to complete.");
 		}
 
 		if (retrieveMediaUploadStatus(response.getId())) {
-			log.info("Media successfully uploaded.");
+			log.debug("Media successfully uploaded.");
 		} else {
-			log.info("Media still uploading.");
+			// Set schedule job success to false and append the completion message to include the error
+			success = false;
+			msg.append("Failure: ").append("Media failed to upload.");
 		}
 	}
 
@@ -379,32 +357,39 @@ public class HootsuiteManager {
 	 * uploadImage will upload a image to the hootsuite AWS file server. this upload
 	 * returns a link that can be used when posting message to attach an image to
 	 * that message.
+	 * @param msg 
+	 * @param success 
 	 * 
 	 * @param response
 	 * @param mlr
 	 * 
 	 * @throws IOException
 	 */
-	private void uploadMediaToAWS(MediaLinkResponseVO response, MediaLinkRequestVO mlr, String path)
+	private void uploadMediaToAWS(boolean success, StringBuilder msg, MediaLinkResponseVO response, MediaLinkRequestVO mlr, String path)
 			throws IOException {
 
 		String errorMessage = "";
 
 		SMTHttpConnectionManager cm = new SMTHttpConnectionManager();
-
-		// Using a file path for now. Later this will need to be changed to whatever
-		// format Webcrescendo uses
-		byte[] bytesArr = Files.readAllBytes(Paths.get(path));
-
-		// Build the put request using the response url value
+		
+		URL url = new URL(path);
+		URLConnection conn = (URLConnection) url.openConnection();
+		
+		InputStream is = new ByteArrayInputStream(new byte[] { 0, 1, 2 });
+		
+		is = conn.getInputStream();
+		 
+	    byte[] bytesArr = is.readAllBytes();
+		
 		ByteBuffer in = ByteBuffer
 				.wrap(cm.sendBinaryData(response.getUploadUrl(), bytesArr, mlr.getMimeType(), HttpConnectionType.PUT));
 
 		errorMessage = StandardCharsets.UTF_8.decode(in).toString();
 
 		if (errorMessage.length() > 0) {
-			log.info("uploadMedia response code: " + cm.getResponseCode());
-			log.info("uploadMedia error message: " + errorMessage);
+			// Set schedule job success to false and append the completion message to include the error
+			success = false;
+			msg.append("Failure: ").append("Refresh Token Failed : " + response.getError() + "|" + response.getError_description());
 		}
 	}
 
@@ -438,44 +423,4 @@ public class HootsuiteManager {
 		else
 			return false;
 	}
-	
-//	/**
-//	 * Creates a shortened URL using the Bit.ly URL shortening API
-//	 * @return a shortened version of the URL
-//	 * @throws IOException 
-//	 */
-//	private String shortenURL(String longURL) throws IOException {
-//		
-//		String bitlyToken = "3bffc1465445d781e2ebd502f30c295d6f5c04a9";
-//		String shortURL = "";
-//		
-//		Gson gson = new Gson();
-//
-//		SMTHttpConnectionManager cm = new SMTHttpConnectionManager();
-//		cm.addRequestHeader("Authorization", "Bearer " + bitlyToken);
-//		cm.addRequestHeader("Accept", "*/*");
-//		
-//		URLShortenerRequestVO sr = new URLShortenerRequestVO();
-//		sr.setLong_url(longURL);
-//
-//		byte[] document = gson.toJson(sr).getBytes();
-//		
-//		String doc = new String(document);
-//		log.info(doc);
-//		
-//		ByteBuffer in = ByteBuffer.wrap(cm.sendBinaryData("https://api-ssl.bitly.com/v4/shorten", document,
-//				"application/json", HttpConnectionType.POST));
-//		
-//		URLShortenerResponseVO response = gson.fromJson(StandardCharsets.UTF_8.decode(in).toString(),
-//				URLShortenerResponseVO.class);
-//
-//		if(response.getMessage().length() != 0) {
-//			log.info(response.getMessage());
-//			log.info(response.getErrors());
-//			log.info(response.getMessage());
-//			log.info(response.getResource());
-//			return null;
-//		} else
-//			return response.getLink();		
-//	}
 }
