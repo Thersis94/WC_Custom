@@ -30,7 +30,7 @@ import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.search.SearchDocumentHandler;
 import com.smt.sitebuilder.security.SBUserRole;
-import com.smt.sitebuilder.util.PageViewVO;
+import com.smt.sitebuilder.util.PageViewUserVO;
 
 /*****************************************************************************
  <p><b>Title</b>: FavoritesAction.java</p>
@@ -70,12 +70,12 @@ public class FavoritesAction extends SBActionAdapter {
 		if (role == null) throw new ActionException("Not logged in.");
 
 		ModuleVO mod;
-		Map<String, List<PageViewVO>> favs;
+		Map<String, List<PageViewUserVO>> favs;
 
 		if (req.hasParameter(QuickLinksAction.PARAM_KEY_REFRESH_FAVORITES)) {
 			// retrieve favs from session.
 			mod = new ModuleVO();
-			favs = (Map<String, List<PageViewVO>>)req.getSession().getAttribute(MyFavoritesAction.MY_FAVORITES);
+			favs = (Map<String, List<PageViewUserVO>>)req.getSession().getAttribute(MyFavoritesAction.MY_FAVORITES);
 			if (favs == null) favs = new HashMap<>();
 
 		} else {
@@ -116,7 +116,7 @@ public class FavoritesAction extends SBActionAdapter {
 		String pkId = parsePrimaryId(req.getParameter(QuickLinksAction.PARAM_KEY_URI_TXT));
 		if (pkId == null) return;
 
-		PageViewVO fav = new PageViewVO();
+		PageViewUserVO fav = new PageViewUserVO();
 		fav.setReferenceCode(collKey);
 		// Old favoritable items exist in solr with section cd_id, not just id
 		if(pkId.length() < AdminControllerAction.DOC_ID_MIN_LEN){
@@ -163,7 +163,7 @@ public class FavoritesAction extends SBActionAdapter {
 	 * @param fav
 	 * @throws ActionException
 	 */
-	protected void updateProfileFavorites(ActionRequest req, PageViewVO fav) throws ActionException {
+	protected void updateProfileFavorites(ActionRequest req, PageViewUserVO fav) throws ActionException {
 		log.debug("updateProfileFavorites...");
 
 		MyFavoritesAction mfa = new MyFavoritesAction(getActionInit());
@@ -191,10 +191,10 @@ public class FavoritesAction extends SBActionAdapter {
 	 * @param isDelete
 	 */
 	@SuppressWarnings("unchecked")
-	protected void updateSessionFavorites(SMTSession session, PageViewVO fav, boolean isDelete) {
+	protected void updateSessionFavorites(SMTSession session, PageViewUserVO fav, boolean isDelete) {
 		// get the Favs map off of the session.
-		Map<String,List<PageViewVO>> favMap = (Map<String,List<PageViewVO>>)session.getAttribute(MyFavoritesAction.MY_FAVORITES);
-		List<PageViewVO> favs = favMap.get(fav.getReferenceCode());
+		Map<String,List<PageViewUserVO>> favMap = (Map<String,List<PageViewUserVO>>)session.getAttribute(MyFavoritesAction.MY_FAVORITES);
+		List<PageViewUserVO> favs = favMap.get(fav.getReferenceCode());
 		if (favs == null) favs = new ArrayList<>();
 		if (isDelete) {
 			// remove fav
@@ -208,17 +208,17 @@ public class FavoritesAction extends SBActionAdapter {
 	}
 	
 	/**
-	 * Iterates a List of PageViewVO and removes the page that matches the pageId 
+	 * Iterates a List of PageViewUserVO and removes the page that matches the pageId 
 	 * passed in.
 	 * @param pages
 	 * @param favPageId
 	 */
-	protected void removeFromSession(List<PageViewVO> pages, String favPageId) {
+	protected void removeFromSession(List<PageViewUserVO> pages, String favPageId) {
 		if (pages.isEmpty()) return;
 		// loop and remove
-		ListIterator<PageViewVO> li = pages.listIterator();
+		ListIterator<PageViewUserVO> li = pages.listIterator();
 		while (li.hasNext()) {
-			PageViewVO tmp = li.next();
+			PageViewUserVO tmp = li.next();
 			if (favPageId.equalsIgnoreCase(tmp.getPageId())) {
 				li.remove();
 				break;
@@ -252,10 +252,10 @@ public class FavoritesAction extends SBActionAdapter {
 	 * @throws ActionException
 	 */
 	@SuppressWarnings("unchecked")
-	protected Map<String, List<PageViewVO>> processUserFavorites(ModuleVO mod) 
+	protected Map<String, List<PageViewUserVO>> processUserFavorites(ModuleVO mod) 
 			throws ActionException {
 		log.debug("processUserFavorites...");
-		Map<String, List<PageViewVO>> pageMap = initializePageMap();
+		Map<String, List<PageViewUserVO>> pageMap = initializePageMap();
 		if (mod.getErrorCondition()) return pageMap;
 
 		List<FavoriteVO> favs = (List<FavoriteVO>)mod.getActionData();
@@ -270,11 +270,11 @@ public class FavoritesAction extends SBActionAdapter {
 	
 	/**
 	 * Parses a Favorite asset to determine if it is a section page favorite. If so, the asset is
-	 * parsed into a PageViewVO and is added to the appropriate collection of pages on the page map.
+	 * parsed into a PageViewUserVO and is added to the appropriate collection of pages on the page map.
 	 * @param pages
 	 * @param fav
 	 */
-	protected void processFavorite(Map<String,List<PageViewVO>> pages, FavoriteVO fav) {
+	protected void processFavorite(Map<String,List<PageViewUserVO>> pages, FavoriteVO fav) {
 		try {
 			checkCollectionKey(fav.getTypeCd());
 		} catch (Exception e) {
@@ -282,8 +282,8 @@ public class FavoritesAction extends SBActionAdapter {
 			return;
 		}
 		
-		// convert favorite into a PageViewVO
-		PageViewVO page = new PageViewVO();
+		// convert favorite into a PageViewUserVO
+		PageViewUserVO page = new PageViewUserVO();
 		page.setReferenceCode(fav.getTypeCd());
 		page.setPageId(fav.getRelId());
 		page.setRequestUri(fav.getUriTxt());
@@ -295,17 +295,17 @@ public class FavoritesAction extends SBActionAdapter {
 
 		log.debug("adding favorite: ref cd | pageId | uri | name: " + page.getReferenceCode() +"|"+page.getPageId() +"|"+page.getRequestUri() +"|"+page.getPageDisplayName());
 
-		List<PageViewVO>pList = pages.get(page.getReferenceCode());
+		List<PageViewUserVO>pList = pages.get(page.getReferenceCode());
 		if (pList != null)
 			pList.add(page);
 	}
 
 	/**
-	 * Initialize a Map of List of PageViewVO based on the key types enum.
+	 * Initialize a Map of List of PageViewUserVO based on the key types enum.
 	 * @return
 	 */
-	protected Map<String,List<PageViewVO>> initializePageMap() {
-		Map<String,List<PageViewVO>> pm = new HashMap<>();
+	protected Map<String,List<PageViewUserVO>> initializePageMap() {
+		Map<String,List<PageViewUserVO>> pm = new HashMap<>();
 		for (Section sect : Section.values()) {
 			pm.put(sect.name(), new ArrayList<>());
 		}

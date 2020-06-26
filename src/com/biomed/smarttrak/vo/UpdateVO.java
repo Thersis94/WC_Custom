@@ -60,7 +60,7 @@ public class UpdateVO extends AuthorVO implements HumanNameIntfc, ChangeLogIntfc
 		NON("Not an Announcement", 0),
 		ANNOUNCEMENT("SmartTRAK Announcement", 1),
 		POLICY("Healthcare Policy", 2),
-		TREND("Healthcare Trend", 3),
+		TREND("Healthcare Trends", 3),
 		INDUSTRY("Industry News", 4);
 		
 		private String name;

@@ -33,7 +33,7 @@ import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.security.SBUserRole;
 import com.smt.sitebuilder.security.SecurityController;
 import com.smt.sitebuilder.util.PageViewRetriever;
-import com.smt.sitebuilder.util.PageViewVO;
+import com.smt.sitebuilder.util.PageViewUserVO;
 
 /*****************************************************************************
  <p><b>Title</b>: UserActivityAction.java</p>
@@ -183,7 +183,7 @@ public class UserActivityAction extends SimpleActionAdapter {
 		String customSchema = (String)getAttribute(Constants.CUSTOM_DB_SCHEMA);
 		PageViewRetriever pvr = new SmarttrakPageViewRetriever(dbConn, customSchema);
 		pvr.setSortDescending(true);
-		List<PageViewVO> pageViews = pvr.retrievePageViews(siteId, profileId, dateStart, dateEnd);
+		List<PageViewUserVO> pageViews = pvr.retrievePageViews(siteId, profileId, dateStart, dateEnd);
 		log.debug("Total number of raw page views found: " + pageViews.size());
 		return parseResults(pageViews);
 	}
@@ -193,13 +193,13 @@ public class UserActivityAction extends SimpleActionAdapter {
 	 * @param pageViews
 	 * @return
 	 */
-	private Map<String,UserActivityVO> parseResults(List<PageViewVO> pageViews) {
+	private Map<String,UserActivityVO> parseResults(List<PageViewUserVO> pageViews) {
 		UserActivityVO user = null;
 		Map<String,UserActivityVO> userActivity = new HashMap<>();
 		String prevPid = null;
 		String currPid;
 
-		for (PageViewVO pageView : pageViews ) {
+		for (PageViewUserVO pageView : pageViews ) {
 
 			currPid = pageView.getProfileId();
 			if (currPid.equals(prevPid)) {

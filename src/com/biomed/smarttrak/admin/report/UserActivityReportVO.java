@@ -14,7 +14,7 @@ import com.siliconmtn.data.report.ExcelReport;
 import com.siliconmtn.util.StringUtil;
 // WebCrescendo
 import com.smt.sitebuilder.action.AbstractSBReportVO;
-import com.smt.sitebuilder.util.PageViewVO;
+import com.smt.sitebuilder.util.PageViewUserVO;
 
 /*****************************************************************************
  <p><b>Title</b>: UserActivityReportVO.java</p>
@@ -95,7 +95,7 @@ public class UserActivityReportVO extends AbstractSBReportVO {
 			UserActivityVO user = users.getValue();
 			// loop users
 			String userName = StringUtil.join(user.getFirstName() + " " + user.getLastName());
-			for (PageViewVO page : user.getPageViews()) {
+			for (PageViewUserVO page : user.getPageViews()) {
 				row = new HashMap<>();
 				row.put(NAME, userName);
 				row.put(PAGE, page.getPageDisplayName());
