@@ -16,7 +16,7 @@ import com.siliconmtn.db.orm.Table;
  * @updates:
  ****************************************************************************/
 @Table(name="widget_meta_data")
-public class CatVO {
+public class MTSArticleCategoryVO {
 	
 
 	

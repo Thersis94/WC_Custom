@@ -29,7 +29,6 @@ import com.mts.hootsuite.HootsuiteManager;
 import com.mts.hootsuite.HootsuitePostsVO;
 import com.mts.hootsuite.HootsuiteRefreshTokenVO;
 import com.mts.hootsuite.PostVO;
-import com.mts.publication.data.CategoryVO;
 import com.siliconmtn.db.DBUtil;
 // SMT Base libs
 import com.siliconmtn.db.DatabaseConnection;
@@ -277,7 +276,6 @@ public class ContentFeedJob extends AbstractSMTJob {
 	/**
 	 * Resyncs the scheduler instance with the new database values
 	 * @param msg 
-	 * @param success2 
 	 */
 	private void updateScheduler(StringBuilder msg) {
 		try {
@@ -320,11 +318,11 @@ public class ContentFeedJob extends AbstractSMTJob {
 		// Get the articles and update the links
 		DBProcessor db = new DBProcessor(conn);
 
-		List<CatVO> categories = db.executeSelect(sql.toString(), null, new CatVO());
+		List<MTSArticleCategoryVO> categories = db.executeSelect(sql.toString(), null, new MTSArticleCategoryVO());
 
 		List<String> categoryArr = new ArrayList<>();
 
-		for (CatVO category : categories) {
+		for (MTSArticleCategoryVO category : categories) {
 			categoryArr.add(category.getFieldName());
 		}
 
@@ -364,12 +362,12 @@ public class ContentFeedJob extends AbstractSMTJob {
 		// Create an instance of the DBProcessor and then add the shortened redirect
 		// urls to the database site_redirects table
 		DBProcessor dp = new DBProcessor(conn);
-//		dp.executeBatch(redirects, true);
+		dp.executeBatch(redirects, true);
 
 		return hp;
 	}
 
-	/**
+	/**Apache/2.4.41 (Ubuntu) Server at mts.dev.siliconmtn.com Port 443
 	 * Stores the new response token recieved from the hootsuite API to the database
 	 * 
 	 * @param refreshToken

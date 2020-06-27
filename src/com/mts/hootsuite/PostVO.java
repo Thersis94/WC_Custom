@@ -294,16 +294,16 @@ public class PostVO {
 	public void addHashTags(List<String> categories) {
 		String descriptionWithHashtags = description;
 		
-//		List<Integer> indexes = new ArrayList<>();
-//		
-//		for(String category : categories) {
-//			indexes.add(description.toLowerCase().indexOf(category.toLowerCase()));
-//		}
-//		
-//		for(Integer index : indexes) {
-//			if(index != -1)
-//				descriptionWithHashtags = descriptionWithHashtags.substring(0, index) + "#" + descriptionWithHashtags.substring(index);
-//		}
+		List<Integer> indexes = new ArrayList<>();
+		
+		for(String category : categories) {
+			indexes.add(description.toLowerCase().indexOf(category.toLowerCase()));
+		}
+		
+		for(Integer index : indexes) {
+			if(index != -1)
+				descriptionWithHashtags = descriptionWithHashtags.substring(0, index) + "#" + descriptionWithHashtags.substring(index);
+		}
 		description = descriptionWithHashtags;
 	}
 

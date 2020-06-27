@@ -1,8 +1,6 @@
 package com.mts.hootsuite;
 
-import java.awt.Image;
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 // JDK 11
 import java.io.IOException;
 import java.io.InputStream;
@@ -10,34 +8,19 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.imageio.ImageIO;
 
-import org.apache.catalina.tribes.util.Arrays;
 // Apache Logger for detailed logging utilities
 import org.apache.log4j.Logger;
 
 // Gson for parsing json data
 import com.google.gson.Gson;
-import com.mts.hootsuite.AuthResponseVO;
 
 // Local Libs
-import com.mts.hootsuite.MediaLinkRequestVO;
-import com.mts.hootsuite.MediaLinkResponseVO;
-import com.mts.hootsuite.MediaUploadStatusResponseVO;
-import com.mts.hootsuite.PostVO;
-import com.mts.hootsuite.ScheduleMessageVO;
-import com.mts.hootsuite.SchedulePostResponseVO;
-import com.mts.hootsuite.SocialMediaProfilesVO;
-import com.mts.hootsuite.TokenResponseVO;
-import com.siliconmtn.http.parser.StringEncoder;
 import com.siliconmtn.io.http.SMTHttpConnectionManager;
 import com.siliconmtn.io.http.SMTHttpConnectionManager.HttpConnectionType;
 
@@ -58,7 +41,6 @@ public class HootsuiteManager {
 	static Logger log = Logger.getLogger(Process.class.getName());
 	private String token;
 	
-
 	/**
 	 * Public main for interfacing with the command line
 	 * @param args
