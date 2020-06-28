@@ -57,9 +57,9 @@ public class PostVO {
 
 	/**
 	 * Set the Post Date value.
-	 * @param postDayIncrement int that determines the number of days in the future the post will be scheduled.
+	 * @param hourOfTheDay int using the 24 hour calendar that represents the time of the dat that the post will be scheduled
 	 */
-	public void setPostDate(int postDayIncrement) {
+	public void setPostTime(int hourOfTheDay) {
 		Calendar c = Calendar.getInstance();
 
 		try {
@@ -69,8 +69,7 @@ public class PostVO {
 			System.out.println(e);
 		}
 		
-		c.add(Calendar.DAY_OF_MONTH, postDayIncrement);
-
+		c.add(Calendar.HOUR_OF_DAY, hourOfTheDay);
 		this.postDate = c.getTime();
 	}
 
