@@ -68,7 +68,6 @@ public class CategoryAction extends SBActionAdapter {
 	 */
 	@Override
 	public void retrieve(ActionRequest req) throws ActionException {
-		log.error("*****************************************");
 		OrgMetadataAction oma = new OrgMetadataAction(getDBConnection(), getAttributes());
 		setModuleData(oma.getOrgMetadata("MTS", null, false, false));
 	}
