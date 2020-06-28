@@ -1,7 +1,6 @@
 package com.mts.hootsuite;
 
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -23,7 +22,7 @@ public class ScheduleMessageVO {
 	private List<String> socialProfileIds = new ArrayList<>();
 	private String scheduledSendTime;
 	private List<Map<String, String>> media = new ArrayList<>();
-	private List<Map<String, String>> mediaUrls = new ArrayList();
+	private List<Map<String, String>> mediaUrls = new ArrayList<>();
 	
 	/**
 	 * @return the text
@@ -98,8 +97,5 @@ public class ScheduleMessageVO {
 	public void setMediaUrls(List<Map<String, String>> mediaUrls) {
 		this.mediaUrls = mediaUrls;
 	}
-	
-	
-	
 	
 }

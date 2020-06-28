@@ -1,6 +1,5 @@
 package com.mts.hootsuite;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -10,14 +9,9 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.TimeZone;
 
-import org.apache.log4j.Logger;
-
-import jdk.internal.jline.internal.Log;
 
 /****************************************************************************
  * <b>Title</b>: ArticleVO.java <b>Project</b>: Hootsuite <b>Description: </b>
@@ -306,9 +300,5 @@ public class PostVO {
 		}
 		description = descriptionWithHashtags;
 	}
-
-	
-
-	
 
 }

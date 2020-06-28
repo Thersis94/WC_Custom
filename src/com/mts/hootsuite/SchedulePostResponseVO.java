@@ -33,6 +33,10 @@ public class SchedulePostResponseVO {
 		this.data = data;
 	}
 	
+	/**
+	 * 
+	 * @return the Id
+	 */
 	public String getId() {
 		return data.get(0).getId();
 	}
@@ -51,6 +55,10 @@ public class SchedulePostResponseVO {
 		this.errors = errors;
 	}
 	
+	/**
+	 * 
+	 * @return the error message
+	 */
 	public String getErrorMessage() {
 		String errorMessage = "";
 		for(HashMap<String, String> error: errors) {

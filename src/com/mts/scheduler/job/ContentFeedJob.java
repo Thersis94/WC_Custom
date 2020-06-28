@@ -20,7 +20,6 @@ import java.util.Map;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
 import org.quartz.impl.StdSchedulerFactory;
-import org.quartz.utils.DBConnectionManager;
 
 // GSON 2.3
 import com.google.gson.Gson;
@@ -73,9 +72,14 @@ public class ContentFeedJob extends AbstractSMTJob {
 	public ContentFeedJob() {
 		super();
 
-		log.info("---Constructor---");
 	}
 
+	/**
+	 * Used for testing a post using preset attributes
+	 * 
+	 * @param args
+	 * @throws Exception
+	 */
 	public static void main(String[] args) throws Exception {
 		// Set job Information
 		ContentFeedJob cfj = new ContentFeedJob();
@@ -98,7 +102,6 @@ public class ContentFeedJob extends AbstractSMTJob {
 
 	/**
 	 * get job database connection
-	 * 
 	 * @throws DatabaseException
 	 * @throws InvalidDataException
 	 */
@@ -123,9 +126,9 @@ public class ContentFeedJob extends AbstractSMTJob {
 		super.execute(ctx);
 
 		log.info("running execute");
-		
+
 		attributes = ctx.getMergedJobDataMap().getWrappedMap();
-		
+
 		StringBuilder msg = new StringBuilder(500);
 		success = true;
 
@@ -158,9 +161,8 @@ public class ContentFeedJob extends AbstractSMTJob {
 
 	/**
 	 * Runs the workflow for sending the documents
-	 * 
-	 * @throws IOException
-	 * @throws com.siliconmtn.db.util.DatabaseException
+	 * @param msg error/success message
+	 * @throws Exception handled in execute
 	 */
 	public void processDocuments(StringBuilder msg) throws Exception {
 
@@ -223,13 +225,12 @@ public class ContentFeedJob extends AbstractSMTJob {
 	/**
 	 * Post the contents of a ContentFeedVO to social media accounts using the
 	 * Hootsuite API
-	 * @param msg 
 	 * 
-	 * @param baseUrl
-	 * @param docs
+	 * @param msg error/success message
+	 * @param docs VO with information about the issue and a list of articles
+	 * @param baseUrl the baseUrl passed with attributes
 	 * @throws com.siliconmtn.db.util.DatabaseException
 	 * @throws IOException
-	 * 
 	 */
 	private void postToHootsuite(StringBuilder msg, ContentFeedVO docs, String baseUrl)
 			throws com.siliconmtn.db.util.DatabaseException, IOException {
@@ -244,14 +245,10 @@ public class ContentFeedJob extends AbstractSMTJob {
 		HootsuiteManager hoot = new HootsuiteManager();
 
 		// Request a new set of tokens and then store those tokens in the database
-		
-		// Add error handling
 		storeNewRefreshToken(hoot.refreshToken(success, msg, hc));
 
 		// Set the clients social media ids based upon the social accounts they have
 		// connected to hootsuite
-		
-		//Add error handing
 		hc.setSocialProfiles(hoot.getSocialProfiles(success, msg));
 
 		for (PostVO post : hp.getPosts()) {
@@ -275,7 +272,7 @@ public class ContentFeedJob extends AbstractSMTJob {
 
 	/**
 	 * Resyncs the scheduler instance with the new database values
-	 * @param msg 
+	 * @param msg error/success message
 	 */
 	private void updateScheduler(StringBuilder msg) {
 		try {
@@ -290,7 +287,6 @@ public class ContentFeedJob extends AbstractSMTJob {
 
 	/**
 	 * Add hashtags to the content of each post
-	 * 
 	 * @param categories
 	 * @param hp
 	 */
@@ -304,8 +300,7 @@ public class ContentFeedJob extends AbstractSMTJob {
 
 	/**
 	 * Return a list of the MTS article categories
-	 * 
-	 * @return
+	 * @return list of MTS article categories
 	 */
 	private List<String> getCategoriesList() {
 
@@ -331,9 +326,9 @@ public class ContentFeedJob extends AbstractSMTJob {
 
 	/**
 	 * Populate the variables of the PostVO using the ContentFeedVO class
-	 * 
-	 * @param docs
+	 * @param docs  VO with information about the issue and a list of articles
 	 * @param baseUrl
+	 * @return
 	 * @throws com.siliconmtn.db.util.DatabaseException
 	 */
 	private HootsuitePostsVO fillHootsuitePostVOs(ContentFeedVO docs, String baseUrl)
@@ -367,14 +362,13 @@ public class ContentFeedJob extends AbstractSMTJob {
 		return hp;
 	}
 
-	/**Apache/2.4.41 (Ubuntu) Server at mts.dev.siliconmtn.com Port 443
-	 * Stores the new response token recieved from the hootsuite API to the database
-	 * 
+	/**
+	 * Apache/2.4.41 (Ubuntu) Server at mts.dev.siliconmtn.com Port 443 Stores the
+	 * new response token recieved from the hootsuite API to the database
 	 * @param refreshToken
 	 */
 	private void storeNewRefreshToken(String refreshToken) {
 
-		String schema = (String) this.attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(400);
 
 		sql.append("update schedule_job_instance_data ");
@@ -392,8 +386,6 @@ public class ContentFeedJob extends AbstractSMTJob {
 
 	/**
 	 * Fill the HootsuiteClientVO Bean with the instance values.
-	 * 
-	 * @param hc
 	 * @return
 	 */
 	private HootsuiteClientVO fillHootsuiteClientValues() {
@@ -405,12 +397,10 @@ public class ContentFeedJob extends AbstractSMTJob {
 
 	/**
 	 * Get the hootsuite refresh token from the database
-	 * 
 	 * @return
 	 */
 	private String getRefreshToken() {
 
-		String schema = (String) this.attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		StringBuilder sql = new StringBuilder(400);
 
 		sql.append("select value_txt from schedule_job_instance_data ");
@@ -431,10 +421,9 @@ public class ContentFeedJob extends AbstractSMTJob {
 
 	/**
 	 * sets all the sent flags for published articles before todays job to sent
-	 * 
 	 * @param uniqueIds
 	 * @throws com.siliconmtn.db.util.DatabaseException
-	 * 
+	 * @throws DatabaseException
 	 */
 	private void setSentFlags(List<String> uniqueIds)
 			throws com.siliconmtn.db.util.DatabaseException, DatabaseException {
@@ -469,9 +458,9 @@ public class ContentFeedJob extends AbstractSMTJob {
 
 	/**
 	 * saves the file to the file system
-	 * 
 	 * @param json
 	 * @param fileLoc
+	 * @param msg error/success message
 	 * @throws IOException
 	 */
 	protected void saveFile(String json, String fileLoc, StringBuilder msg) throws IOException {
@@ -486,9 +475,12 @@ public class ContentFeedJob extends AbstractSMTJob {
 
 	/**
 	 * Write the file to the file system
-	 * 
 	 * @param json
 	 * @param fileLoc
+	 * @param host
+	 * @param user
+	 * @param pwd
+	 * @param msg error/success message
 	 * @throws IOException
 	 */
 	protected void saveFile(String json, String fileLoc, String host, String user, String pwd, StringBuilder msg)
@@ -524,7 +516,10 @@ public class ContentFeedJob extends AbstractSMTJob {
 	}
 
 	/**
-	 * 
+	 * Get the unsent articles from the database
+	 * @param title
+	 * @param desc
+	 * @param baseUrl
 	 * @return
 	 */
 	public ContentFeedVO getArticles(String title, String desc, String baseUrl) {
@@ -571,8 +566,8 @@ public class ContentFeedJob extends AbstractSMTJob {
 
 	/**
 	 * Updates the relative URLs/links to be fully qualified
-	 * 
 	 * @param feed
+	 * @param baseUrl
 	 */
 	protected void updateRelativeLinks(ContentFeedVO feed, String baseUrl) {
 		// Update the relative links and image sources to be fully qualified
@@ -585,9 +580,8 @@ public class ContentFeedJob extends AbstractSMTJob {
 
 	/**
 	 * Convert the object to a json data object
-	 * 
-	 * @param docs
-	 * @return
+	 * @param doc a ContentFeedVO
+	 * @return json of ContentFeedVO
 	 */
 	public String convertArticlesJson(ContentFeedVO doc) {
 		Gson g = new Gson();

@@ -48,21 +48,17 @@ public class HootsuiteManager {
 	 * @throws InterruptedException
 	 */
 	public static void main(String[] args) throws IOException, InterruptedException {
-		HootsuiteManager hr = new HootsuiteManager();
-		hr.execute();
-	}
-	
-	public void execute() throws IOException {
-		
-	}
-	
 
+	}
 
 	/**
-	 * Post a message with media using the hootsuite api.
-	 * @param post VO containing post values (text, media ids, date to post)
-	 * @param postContent 
-	 * @param client VO containing client values (Social profiles ids)
+	 * Public main for interfacing with the command line
+	 * @param success
+	 * @param msg
+	 * @param socialId
+	 * @param post
+	 * @param postContent
+	 * @param media
 	 */
 	public void post(boolean success, StringBuilder msg, String socialId, PostVO post, String postContent, boolean media) {
 		post.setPostDate(1);// Replace this with the 11am scheduler
@@ -80,9 +76,10 @@ public class HootsuiteManager {
 
 	/**
 	 * Requests a new set of tokens from the Hootsuite Api refresh token endpoint
-	 * @param msg 
-	 * @param success 
-	 * 
+	 * @param success
+	 * @param msg
+	 * @param client
+	 * @return
 	 * @throws IOException
 	 */
 	public String refreshToken(boolean success, StringBuilder msg, HootsuiteClientVO client) throws IOException {
@@ -113,7 +110,8 @@ public class HootsuiteManager {
 	/**
 	 * Checks if the API response is successful and either logs an error or updates
 	 * token values.
-	 * 
+	 * @param success
+	 * @param msg
 	 * @param response
 	 */
 	private void checkRefreshTokenResponse(boolean success, StringBuilder msg, TokenResponseVO response) {
@@ -128,9 +126,8 @@ public class HootsuiteManager {
 
 	/**
 	 * Adds required parameters for the Hootsuite refresh end point
-	 * 
 	 * @param parameters
-	 * @param client 
+	 * @param client
 	 */
 	private void addRefreshTokenParameters(Map<String, Object> parameters, HootsuiteClientVO client) {
 		parameters.put("grant_type", "refresh_token");
@@ -139,7 +136,6 @@ public class HootsuiteManager {
 
 	/**
 	 * Adds required headers for the Hootsuite Token refresh end point.
-	 * 
 	 * @param cm
 	 */
 	private void addRefreshTokenHeaders(SMTHttpConnectionManager cm) {
@@ -152,9 +148,9 @@ public class HootsuiteManager {
 
 	/**
 	 * Returns a map of all of the social media profile ids associated with the clients profile
-	 * @param msg 
-	 * @param success 
-	 * @return map of social ids
+	 * @param success
+	 * @param msg
+	 * @return
 	 * @throws IOException
 	 */
 	public HashMap<String, String> getSocialProfiles(boolean success, StringBuilder msg) throws IOException {
@@ -189,11 +185,11 @@ public class HootsuiteManager {
 
 	/**
 	 * Schedules a social media post using the hootsuite api
-	 * @param msg 
-	 * @param success 
-	 * @param twitterId VO containing client values (Social profiles ids)
-	 * @param post VO containing post values (text, media ids, date to post)
-	 * @param postContent 
+	 * @param success
+	 * @param msg
+	 * @param socialId
+	 * @param post
+	 * @param postContent
 	 * @throws IOException
 	 */
 	private void schedulePost(boolean success, StringBuilder msg, String socialId, PostVO post, String postContent) throws IOException {
@@ -232,8 +228,8 @@ public class HootsuiteManager {
 
 	/**
 	 * Formats the mediaIds into an array of maps
-	 * @param mediaList a list of maps containing the media ids that will be attached to the message body 
-	 * @param mediaIds list of social media ids that will be added to the mediaList
+	 * @param mediaList
+	 * @param socialIds
 	 */
 	private void populateMediaList(List<Map<String, String>> mediaList, List<String> socialIds) {
 		for(String id : socialIds) {
@@ -245,7 +241,6 @@ public class HootsuiteManager {
 
 	/**
 	 * Sets the parameters to the values of the ScheduleMessageVO
-	 * 
 	 * @param message
 	 * @param scheduledSendTime
 	 * @param socialIdList
@@ -264,10 +259,9 @@ public class HootsuiteManager {
 	 * getMediaUploadLink will request a link to the Hootsuite AWS file server that
 	 * can be used in conjunction with upload image to create a media link for new
 	 * message uploads
-	 * @param msg 
-	 * @param success 
-	 * @param post 
-	 * 
+	 * @param success
+	 * @param msg
+	 * @param post
 	 * @throws IOException
 	 * @throws InterruptedException
 	 */
@@ -304,14 +298,12 @@ public class HootsuiteManager {
 	/**
 	 * Loops the retrieveMediaUploadStatus until the media has been successfully
 	 * uploaded to the AWS server
-	 * @param msg 
-	 * @param success 
-	 * 
-	 * @param response the response from hootsuite media link request
+	 * @param success
+	 * @param msg
+	 * @param response
 	 * @throws IOException
 	 * @throws InterruptedException
 	 */
-
 	private void waitForSuccessfulUpload(boolean success, StringBuilder msg, MediaLinkResponseVO response) throws IOException, InterruptedException {
 
 		int timeOut = 0;
@@ -339,12 +331,11 @@ public class HootsuiteManager {
 	 * uploadImage will upload a image to the hootsuite AWS file server. this upload
 	 * returns a link that can be used when posting message to attach an image to
 	 * that message.
-	 * @param msg 
-	 * @param success 
-	 * 
+	 * @param success
+	 * @param msg
 	 * @param response
 	 * @param mlr
-	 * 
+	 * @param path
 	 * @throws IOException
 	 */
 	private void uploadMediaToAWS(boolean success, StringBuilder msg, MediaLinkResponseVO response, MediaLinkRequestVO mlr, String path)
@@ -377,13 +368,11 @@ public class HootsuiteManager {
 
 	/**
 	 * Checks the upload status of a media file to the Hootsuite/Amazon AWS server
-	 * 
-	 * @return the boolean status of the upload
+	 * @param mediaId
+	 * @return
 	 * @throws IOException
 	 */
 	private boolean retrieveMediaUploadStatus(String mediaId) throws IOException {
-
-//		checkToken();
 
 		Gson gson = new Gson();
 
