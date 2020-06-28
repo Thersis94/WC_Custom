@@ -71,7 +71,6 @@ public class ContentFeedJob extends AbstractSMTJob {
 	 */
 	public ContentFeedJob() {
 		super();
-
 	}
 
 	/**
@@ -175,10 +174,10 @@ public class ContentFeedJob extends AbstractSMTJob {
 		String pwd = (String) attributes.get("SFTP_PASSWORD");
 		String baseUrl = (String) attributes.get("BASE_URL");
 
-		attributes.put("FEED_FILE_PATH", "/home/justinjeffrey/Desktop/"); // This is for testing. It changes the save
-																			// directory for files to a local path to
-																			// allow for the testing of the JSON output
-																			// files.
+//		attributes.put("FEED_FILE_PATH", "/home/justinjeffrey/Desktop/"); // This is for testing. It changes the save
+//																			// directory for files to a local path to
+//																			// allow for the testing of the JSON output
+//																			// files.
 
 		// Append the dates to this
 		Date d = new Date();
@@ -211,13 +210,13 @@ public class ContentFeedJob extends AbstractSMTJob {
 
 			String json = convertArticlesJson(docs);
 			// Save document
-//			if (isManualJob) saveFile(json, fileLoc, msg);
-//			else saveFile(json, fileLoc, host, user, pwd, msg);
+			if (isManualJob) saveFile(json, fileLoc, msg);
+			else saveFile(json, fileLoc, host, user, pwd, msg);
 		}
 
 		// Update the newly published articles data_feed_processed_flg database entry to
 		// 1
-//		setSentFlags(docs.getUniqueIds());
+		setSentFlags(docs.getUniqueIds());
 
 		msg.append("Success");
 	}
