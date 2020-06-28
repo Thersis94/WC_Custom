@@ -61,7 +61,7 @@ public class HootsuiteManager {
 	 * @param media
 	 */
 	public void post(boolean success, StringBuilder msg, String socialId, PostVO post, String postContent, boolean media) {
-		post.setPostTime(1);// Replace this with the 11am scheduler
+		post.setPostTime(11);
 		try {
 			if(media) {
 				uploadHootsuiteMedia(success, msg, post);
