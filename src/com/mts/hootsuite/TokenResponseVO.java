@@ -1,4 +1,8 @@
 package com.mts.hootsuite;
+
+//SMT Base Libs
+import com.siliconmtn.data.parser.BeanDataVO;
+
 /****************************************************************************
  * <b>Title</b>: TokenResponseVO.java
  * <b>Project</b>: Hootsuite
@@ -11,7 +15,7 @@ package com.mts.hootsuite;
  * @since May 15, 2020
  * @updates:
  ****************************************************************************/
-public class TokenResponseVO {
+public class TokenResponseVO extends BeanDataVO {
 	private String error;
 	private String error_description;
 	private String error_hint;

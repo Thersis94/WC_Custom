@@ -1,5 +1,7 @@
 package com.mts.hootsuite;
 
+//SMT Base Libs
+import com.siliconmtn.data.parser.BeanDataVO;
 import com.siliconmtn.db.orm.Column;
 import com.siliconmtn.db.orm.Table;
 
@@ -16,7 +18,7 @@ import com.siliconmtn.db.orm.Table;
  * @updates:
  ****************************************************************************/
 @Table(name="schedule_job_instance_data")
-public class HootsuiteRefreshTokenVO {
+public class HootsuiteRefreshTokenVO extends BeanDataVO {
 
 	String refreshToken;
 

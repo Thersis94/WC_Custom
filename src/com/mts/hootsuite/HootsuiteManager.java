@@ -1,7 +1,7 @@
 package com.mts.hootsuite;
 
+// JDK 1.8
 import java.io.ByteArrayInputStream;
-// JDK 11
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
@@ -12,7 +12,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 
 // Apache Logger for detailed logging utilities
 import org.apache.log4j.Logger;
@@ -40,16 +39,6 @@ public class HootsuiteManager {
 
 	static Logger log = Logger.getLogger(Process.class.getName());
 	private String token;
-	
-	/**
-	 * Public main for interfacing with the command line
-	 * @param args
-	 * @throws IOException
-	 * @throws InterruptedException
-	 */
-	public static void main(String[] args) throws IOException, InterruptedException {
-
-	}
 
 	/**
 	 * Public main for interfacing with the command line

@@ -1,4 +1,8 @@
 package com.mts.hootsuite;
+
+//SMT Base Libs
+import com.siliconmtn.data.parser.BeanDataVO;
+
 /****************************************************************************
  * <b>Title</b>: MediaLinkRequestVO.java
  * <b>Project</b>: Hootsuite
@@ -11,7 +15,7 @@ package com.mts.hootsuite;
  * @since May 18, 2020
  * @updates:
  ****************************************************************************/
-public class MediaLinkRequestVO {
+public class MediaLinkRequestVO extends BeanDataVO {
 
 	int sizeBytes;
 	String mimeType;

@@ -1,4 +1,8 @@
 package com.mts.hootsuite;
+
+//SMT Base Libs
+import com.siliconmtn.data.parser.BeanDataVO;
+
 /****************************************************************************
  * <b>Title</b>: SocialMediaProfileVO.java
  * <b>Project</b>: Hootsuite
@@ -11,7 +15,7 @@ package com.mts.hootsuite;
  * @since May 19, 2020
  * @updates:
  ****************************************************************************/
-public class SocialMediaProfileVO {
+public class SocialMediaProfileVO extends BeanDataVO {
 	
 	private String id;
 	private String type;

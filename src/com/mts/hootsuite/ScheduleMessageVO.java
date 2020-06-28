@@ -1,8 +1,12 @@
 package com.mts.hootsuite;
 
+//JDK 1.8.x
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+
+//SMT Base Libs
+import com.siliconmtn.data.parser.BeanDataVO;
 
 /****************************************************************************
  * <b>Title</b>: TwitterMessageVO.java
@@ -16,7 +20,7 @@ import java.util.Map;
  * @since May 11, 2020
  * @updates:
  ****************************************************************************/
-public class ScheduleMessageVO {
+public class ScheduleMessageVO extends BeanDataVO {
 
 	private String text;
 	private List<String> socialProfileIds = new ArrayList<>();

@@ -1,6 +1,10 @@
 package com.mts.hootsuite;
 
+//JDK 1.8.x
 import java.util.HashMap;
+
+//SMT Base Libs
+import com.siliconmtn.data.parser.BeanDataVO;
 
 /****************************************************************************
  * <b>Title</b>: MediaLinkResponseVO.java <b>Project</b>: Hootsuite
@@ -12,7 +16,7 @@ import java.util.HashMap;
  * @since May 18, 2020
  * @updates:
  ****************************************************************************/
-public class MediaLinkResponseVO {
+public class MediaLinkResponseVO extends BeanDataVO {
 
 	HashMap<String, String> data = new HashMap<>();
 	private String error;

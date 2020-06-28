@@ -1,5 +1,6 @@
 package com.mts.hootsuite;
 
+//JDK 1.8.x
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -11,6 +12,9 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.TimeZone;
+
+//SMT Base Libs
+import com.siliconmtn.data.parser.BeanDataVO;
 
 
 /****************************************************************************
@@ -24,7 +28,7 @@ import java.util.TimeZone;
  * @since May 28, 2020
  * @updates:
  ****************************************************************************/
-public class PostVO {
+public class PostVO extends BeanDataVO {
 	
 	private String title;
 	private String author;

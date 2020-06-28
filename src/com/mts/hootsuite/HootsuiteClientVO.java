@@ -1,7 +1,11 @@
 package com.mts.hootsuite;
 
+//JDK 1.8.x
 import java.util.HashMap;
 import java.util.Map;
+
+//SMT Base Libs
+import com.siliconmtn.data.parser.BeanDataVO;
 
 /****************************************************************************
  * <b>Title</b>: HootsuiteClientData.java <b>Project</b>: Hootsuite
@@ -13,7 +17,7 @@ import java.util.Map;
  * @since May 28, 2020
  * @updates:
  ****************************************************************************/
-public class HootsuiteClientVO {
+public class HootsuiteClientVO extends BeanDataVO {
 
 	private Map<String, String> socialProfiles = new HashMap<>();
 

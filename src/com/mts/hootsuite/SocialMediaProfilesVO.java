@@ -1,7 +1,11 @@
 package com.mts.hootsuite;
 
+//JDK 1.8.x
 import java.util.ArrayList;
 import java.util.HashMap;
+
+//SMT Base Libs
+import com.siliconmtn.data.parser.BeanDataVO;
 
 /****************************************************************************
  * <b>Title</b>: SocialMediaProfiles.java
@@ -15,7 +19,7 @@ import java.util.HashMap;
  * @since May 19, 2020
  * @updates:
  ****************************************************************************/
-public class SocialMediaProfilesVO {
+public class SocialMediaProfilesVO extends BeanDataVO {
 	
 	ArrayList<SocialMediaProfileVO> data = new ArrayList<>();
 	String error;

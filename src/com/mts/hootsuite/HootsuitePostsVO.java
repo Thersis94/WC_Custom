@@ -1,7 +1,11 @@
 package com.mts.hootsuite;
 
+//JDK 1.8.x
 import java.util.ArrayList;
 import java.util.List;
+
+//SMT Base Libs
+import com.siliconmtn.data.parser.BeanDataVO;
 
 /****************************************************************************
  * <b>Title</b>: HootsuitePostsVO.java
@@ -15,7 +19,7 @@ import java.util.List;
  * @since Jun 18, 2020
  * @updates:
  ****************************************************************************/
-public class HootsuitePostsVO {
+public class HootsuitePostsVO extends BeanDataVO {
 
 	List<PostVO> posts = new ArrayList<>();
 

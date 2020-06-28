@@ -38,6 +38,7 @@ import com.siliconmtn.exception.InvalidDataException;
 import com.siliconmtn.html.tool.HTMLFeedParser;
 import com.siliconmtn.http.filter.fileupload.Constants;
 import com.siliconmtn.util.Convert;
+import com.smt.sitebuilder.action.metadata.MetadataVO;
 import com.smt.sitebuilder.action.scheduler.ScheduleJobInstanceFacadeAction;
 import com.smt.sitebuilder.action.tools.SiteRedirVO;
 // WC Libs
@@ -124,8 +125,6 @@ public class ContentFeedJob extends AbstractSMTJob {
 	public void execute(JobExecutionContext ctx) throws JobExecutionException {
 		super.execute(ctx);
 
-		log.info("running execute");
-
 		attributes = ctx.getMergedJobDataMap().getWrappedMap();
 
 		StringBuilder msg = new StringBuilder(500);
@@ -155,7 +154,6 @@ public class ContentFeedJob extends AbstractSMTJob {
 
 		// Close out the database and the transaction log
 		finalizeJob(success, msg.toString());
-		log.info("Finished");
 	}
 
 	/**
@@ -251,22 +249,35 @@ public class ContentFeedJob extends AbstractSMTJob {
 		hc.setSocialProfiles(hoot.getSocialProfiles(success, msg));
 
 		for (PostVO post : hp.getPosts()) {
-			for (Map.Entry<String, String> profile : hc.getSocialProfiles().entrySet()) {
-				if (profile.getKey().equalsIgnoreCase("TWITTER")) {
-					// Post the message to Twitter
-					hoot.post(success, msg, profile.getValue(), post, post.getTwitterFormattedString(), false);
-				} else {
-					// Get the list of categories for hashtags
-					List<String> categories = getCategoriesList();
-					// Update the Post description to use Hashtags
-					addHashTags(categories, hp);
-					// Post the message to Facebook and Linkedin
-					hoot.post(success, msg, profile.getValue(), post, post.getStandardFormattedString(), true);
-				}
-			}
+			sequencePosts(hc, hoot, msg, post, hp);
 		}
+		
 		// Resync the scheduler instance with the new database values
 		updateScheduler(msg);
+	}
+
+	/**
+	 * Sequence the posts to for each of the social media profiles
+	 * @param hc
+	 * @param hoot
+	 * @param msg
+	 * @param post
+	 * @param hp
+	 */
+	private void sequencePosts(HootsuiteClientVO hc, HootsuiteManager hoot, StringBuilder msg, PostVO post, HootsuitePostsVO hp) {
+		for (Map.Entry<String, String> profile : hc.getSocialProfiles().entrySet()) {
+			if (profile.getKey().equalsIgnoreCase("TWITTER")) {
+				// Post the message to Twitter
+				hoot.post(success, msg, profile.getValue(), post, post.getTwitterFormattedString(), false);
+			} else {
+				// Get the list of categories for hashtags
+				List<String> categories = getCategoriesList();
+				// Update the Post description to use Hashtags
+				addHashTags(categories, hp);
+				// Post the message to Facebook and Linkedin
+				hoot.post(success, msg, profile.getValue(), post, post.getStandardFormattedString(), true);
+			}
+		}
 	}
 
 	/**
@@ -312,14 +323,13 @@ public class ContentFeedJob extends AbstractSMTJob {
 		// Get the articles and update the links
 		DBProcessor db = new DBProcessor(conn);
 
-		List<MTSArticleCategoryVO> categories = db.executeSelect(sql.toString(), null, new MTSArticleCategoryVO());
+		List<MetadataVO> categories = db.executeSelect(sql.toString(), null, new MetadataVO());
 
 		List<String> categoryArr = new ArrayList<>();
 
-		for (MTSArticleCategoryVO category : categories) {
+		for (MetadataVO category : categories) {
 			categoryArr.add(category.getFieldName());
 		}
-
 		return categoryArr;
 	}
 
