@@ -3,3 +3,5 @@
 .settings
 /build
 .DS_Store
+/src
+quartz.properties
