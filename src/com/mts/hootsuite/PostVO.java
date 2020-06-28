@@ -70,6 +70,7 @@ public class PostVO {
 		}
 		
 		c.add(Calendar.HOUR_OF_DAY, hourOfTheDay);
+		c.add(Calendar.MINUTE, 0);
 		this.postDate = c.getTime();
 	}
 
