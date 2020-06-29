@@ -55,7 +55,7 @@ public class MediaLinkResponseVO extends HootsuiteResponseVO {
 		return Integer.parseInt(data.get("uploadUrlDurationSeconds"));
 	}
 
-	public boolean successfulRequest() {
+	public boolean isSuccessfulRequest() {
 		if (data.get("uploadUrl") != null && data.get("id") != null && data.get("uploadUrlDurationSeconds") != null) {
 			return true;
 		} else

@@ -196,13 +196,13 @@ public class ContentFeedJob extends AbstractSMTJob {
 
 			String json = convertArticlesJson(MTSDocs);
 			// Save document
-//			if (isManualJob) saveFile(json, fileLoc, msg);
-//			else saveFile(json, fileLoc, host, user, pwd, msg);
+			if (isManualJob) saveFile(json, fileLoc, msg);
+			else saveFile(json, fileLoc, host, user, pwd, msg);
 		}
 
 		// Update the newly published articles data_feed_processed_flg database entry to
 		// 1
-//		setSentFlags(UIDs);
+		setSentFlags(UIDs);
 
 		msg.append("Success");
 	}

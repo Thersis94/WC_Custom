@@ -240,7 +240,7 @@ public class HootsuiteManager {
 			String messageText, List<Map<String, String>> mediaList) {
 		message.setScheduledSendTime(scheduledSendTime);
 		message.setSocialProfiles(socialIdList);
-		message.setText(messageText);
+		message.setHootsuiteMessageText(messageText);
 		message.setMedia(mediaList);
 	}
 
@@ -272,7 +272,7 @@ public class HootsuiteManager {
 		MediaLinkResponseVO response = gson.fromJson(StandardCharsets.UTF_8.decode(in).toString(),
 				MediaLinkResponseVO.class);
 
-		if (response.successfulRequest()) {
+		if (response.isSuccessfulRequest()) {
 			uploadMediaToAWS(success, msg, response, mlr, post.getMediaLocation());
 			post.addMediaId(response.getId());
 		} else {

@@ -22,24 +22,12 @@ import com.siliconmtn.data.parser.BeanDataVO;
  ****************************************************************************/
 public class ScheduleMessageVO extends BeanDataVO {
 
-	private String text;
+	private String hootsuiteMessageText;
 	private List<String> socialProfileIds = new ArrayList<>();
 	private String scheduledSendTime;
 	private List<Map<String, String>> media = new ArrayList<>();
 	private List<Map<String, String>> mediaUrls = new ArrayList<>();
 	
-	/**
-	 * @return the text
-	 */
-	public String getText() {
-		return text;
-	}
-	/**
-	 * @param text the text to set
-	 */
-	public void setText(String text) {
-		this.text = text;
-	}
 	/**
 	 * @return the socialProfiles
 	 */
@@ -100,6 +88,18 @@ public class ScheduleMessageVO extends BeanDataVO {
 	 */
 	public void setMediaUrls(List<Map<String, String>> mediaUrls) {
 		this.mediaUrls = mediaUrls;
+	}
+	/**
+	 * @return the hootsuiteMessageText
+	 */
+	public String getHootsuiteMessageText() {
+		return hootsuiteMessageText;
+	}
+	/**
+	 * @param hootsuiteMessageText the hootsuiteMessageText to set
+	 */
+	public void setHootsuiteMessageText(String hootsuiteMessageText) {
+		this.hootsuiteMessageText = hootsuiteMessageText;
 	}
 	
 }
