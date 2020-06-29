@@ -23,6 +23,7 @@ public class SocialMediaProfilesVO extends BeanDataVO {
 	
 	ArrayList<SocialMediaProfileVO> data = new ArrayList<>();
 	String error;
+	// The underscore is Hootsuite specific
 	String error_description;
 	
 	/**
@@ -82,6 +83,7 @@ public class SocialMediaProfilesVO extends BeanDataVO {
 
 	/**
 	 * @return the error_description
+	 * The underscore is Hootsuite specific
 	 */
 	public String getError_description() {
 		return error_description;
@@ -89,6 +91,7 @@ public class SocialMediaProfilesVO extends BeanDataVO {
 
 	/**
 	 * @param error_description the error_description to set
+	 * The underscore is Hootsuite specific
 	 */
 	public void setError_description(String error_description) {
 		this.error_description = error_description;

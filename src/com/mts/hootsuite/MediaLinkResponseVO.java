@@ -20,6 +20,7 @@ public class MediaLinkResponseVO extends BeanDataVO {
 
 	HashMap<String, String> data = new HashMap<>();
 	private String error;
+	// The underscore is Hootsuite specific
 	private String error_description;
 	
 	/**
@@ -83,6 +84,7 @@ public class MediaLinkResponseVO extends BeanDataVO {
 
 	/**
 	 * @return the error_description
+	 * The underscore is Hootsuite specific
 	 */
 	public String getError_description() {
 		return error_description;
@@ -90,6 +92,7 @@ public class MediaLinkResponseVO extends BeanDataVO {
 
 	/**
 	 * @param error_description the error_description to set
+	 * The underscore is Hootsuite specific
 	 */
 	public void setError_description(String error_description) {
 		this.error_description = error_description;
