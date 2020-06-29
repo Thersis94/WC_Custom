@@ -4,9 +4,6 @@ package com.mts.hootsuite;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-//SMT Base Libs
-import com.siliconmtn.data.parser.BeanDataVO;
-
 /****************************************************************************
  * <b>Title</b>: SchedulePostResponseVO.java
  * <b>Project</b>: Hootsuite
@@ -19,10 +16,9 @@ import com.siliconmtn.data.parser.BeanDataVO;
  * @since May 22, 2020
  * @updates:
  ****************************************************************************/
-public class SchedulePostResponseVO extends BeanDataVO {
+public class SchedulePostResponseVO extends HootsuiteResponseVO {
 
 	ArrayList<SocialMediaProfileVO> data = new ArrayList<>();
-	ArrayList<HashMap<String, String>> errors = new ArrayList<>();
 	/**
 	 * @return the data
 	 */
@@ -43,32 +39,6 @@ public class SchedulePostResponseVO extends BeanDataVO {
 	 */
 	public String getId() {
 		return data.get(0).getId();
-	}
-
-	/**
-	 * @return the errors
-	 */
-	public ArrayList<HashMap<String, String>> getErrors() {
-		return errors;
-	}
-
-	/**
-	 * @param errors the errors to set
-	 */
-	public void setErrors(ArrayList<HashMap<String, String>> errors) {
-		this.errors = errors;
-	}
-	
-	/**
-	 * 
-	 * @return the error message
-	 */
-	public String getErrorMessage() {
-		String errorMessage = "";
-		for(HashMap<String, String> error: errors) {
-			errorMessage = errorMessage + " | " + "Error code: " + error.get("code") + ". Error Message: " + error.get("message");
-		}
-		return errorMessage;
 	}
 	
 }

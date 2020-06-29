@@ -21,9 +21,6 @@ import com.siliconmtn.data.parser.BeanDataVO;
 public class MediaUploadStatusResponseVO extends BeanDataVO {
 
 	HashMap<String, String> data = new HashMap<>();
-	private String error;
-	// The underscore is Hootsuite specific
-	private String error_description;
 	
 	public String getId() {
 		return data.get("id");
@@ -52,32 +49,6 @@ public class MediaUploadStatusResponseVO extends BeanDataVO {
 	 */
 	public void setData(HashMap<String, String> data) {
 		this.data = data;
-	}
-	/**
-	 * @return the error
-	 */
-	public String getError() {
-		return error;
-	}
-	/**
-	 * @param error the error to set
-	 */
-	public void setError(String error) {
-		this.error = error;
-	}
-	/**
-	 * @return the error_description
-	 * The underscore is Hootsuite specific
-	 */
-	public String getError_description() {
-		return error_description;
-	}
-	/**
-	 * @param error_description the error_description to set
-	 * The underscore is Hootsuite specific
-	 */
-	public void setError_description(String error_description) {
-		this.error_description = error_description;
 	}
 	
 }

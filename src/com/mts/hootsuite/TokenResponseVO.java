@@ -1,8 +1,5 @@
 package com.mts.hootsuite;
 
-//SMT Base Libs
-import com.siliconmtn.data.parser.BeanDataVO;
-
 /****************************************************************************
  * <b>Title</b>: TokenResponseVO.java
  * <b>Project</b>: Hootsuite
@@ -15,58 +12,15 @@ import com.siliconmtn.data.parser.BeanDataVO;
  * @since May 15, 2020
  * @updates:
  ****************************************************************************/
-public class TokenResponseVO extends BeanDataVO {
+public class TokenResponseVO extends HootsuiteResponseVO {
 	
 	// The underscores are Hootsuite specific
-	private String error;
-	private String error_description;
-	private String error_hint;
-	private int status_code;
 	private String access_token;
 	private int expires_in;
 	private String refresh_token;
 	private String scope;
 	private String token_type;
-	/**
-	 * @return the error
-	 */
-	public String getError() {
-		return error;
-	}
-	/**
-	 * @param error the error to set
-	 */
-	public void setError(String error) {
-		this.error = error;
-	}
-	/**
-	 * @return the error_description
-	 * The underscore is Hootsuite specific
-	 */
-	public String getError_description() {
-		return error_description;
-	}
-	/**
-	 * @param error_description the error_description to set
-	 * The underscore is Hootsuite specific
-	 */
-	public void setError_description(String error_description) {
-		this.error_description = error_description;
-	}
-	/**
-	 * @return the error_hint
-	 * The underscore is Hootsuite specific
-	 */
-	public String getError_hint() {
-		return error_hint;
-	}
-	/**
-	 * @param error_hint the error_hint to set
-	 * The underscore is Hootsuite specific
-	 */
-	public void setError_hint(String error_hint) {
-		this.error_hint = error_hint;
-	}
+	
 	/**
 	 * @return the access_token
 	 * The underscore is Hootsuite specific
@@ -135,18 +89,5 @@ public class TokenResponseVO extends BeanDataVO {
 	public void setToken_type(String token_type) {
 		this.token_type = token_type;
 	}
-	/**
-	 * @return the status_code
-	 * The underscore is Hootsuite specific
-	 */
-	public int getStatus_code() {
-		return status_code;
-	}
-	/**
-	 * @param status_code the status_code to set
-	 * The underscore is Hootsuite specific
-	 */
-	public void setStatus_code(int status_code) {
-		this.status_code = status_code;
-	}
+
 }

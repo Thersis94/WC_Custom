@@ -3,9 +3,6 @@ package com.mts.hootsuite;
 //JDK 1.8.x
 import java.util.HashMap;
 
-//SMT Base Libs
-import com.siliconmtn.data.parser.BeanDataVO;
-
 /****************************************************************************
  * <b>Title</b>: MediaLinkResponseVO.java <b>Project</b>: Hootsuite
  * <b>Description: </b> VO for the Media Link Response <b>Copyright:</b> Copyright (c) 2020
@@ -16,12 +13,9 @@ import com.siliconmtn.data.parser.BeanDataVO;
  * @since May 18, 2020
  * @updates:
  ****************************************************************************/
-public class MediaLinkResponseVO extends BeanDataVO {
+public class MediaLinkResponseVO extends HootsuiteResponseVO {
 
 	HashMap<String, String> data = new HashMap<>();
-	private String error;
-	// The underscore is Hootsuite specific
-	private String error_description;
 	
 	/**
 	 * @return the data
@@ -66,36 +60,6 @@ public class MediaLinkResponseVO extends BeanDataVO {
 			return true;
 		} else
 			return false;
-	}
-
-	/**
-	 * @return the error
-	 */
-	public String getError() {
-		return error;
-	}
-
-	/**
-	 * @param error the error to set
-	 */
-	public void setError(String error) {
-		this.error = error;
-	}
-
-	/**
-	 * @return the error_description
-	 * The underscore is Hootsuite specific
-	 */
-	public String getError_description() {
-		return error_description;
-	}
-
-	/**
-	 * @param error_description the error_description to set
-	 * The underscore is Hootsuite specific
-	 */
-	public void setError_description(String error_description) {
-		this.error_description = error_description;
 	}
 
 }

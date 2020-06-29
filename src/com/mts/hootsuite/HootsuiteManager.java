@@ -109,7 +109,7 @@ public class HootsuiteManager {
 		} else {
 			// Set schedule job success to false and append the completion message to include the error
 			success = false;
-			msg.append("Failure: ").append("Refresh Token Failed : " + response.getError() + "|" + response.getError_description() + "|" + response.getError_hint() + "|" + response.getStatus_code());
+			msg.append("Failure: ").append("Refresh Token Failed : " + response.getErrors().toString() + "|" + response.getErrorMessage().toString());
 		}
 	}
 
@@ -278,7 +278,7 @@ public class HootsuiteManager {
 		} else {
 			// Set schedule job success to false and append the completion message to include the error
 			success = false;
-			msg.append("Failure: ").append("Refresh Token Failed : " + response.getError() + "|" + response.getError_description());
+			msg.append("Failure: ").append("Refresh Token Failed : " + response.getErrors().toString() + "|" + response.getErrorMessage().toString());
 		}
 
 		waitForSuccessfulUpload(success, msg, response);
@@ -351,7 +351,7 @@ public class HootsuiteManager {
 		if (errorMessage.length() > 0) {
 			// Set schedule job success to false and append the completion message to include the error
 			success = false;
-			msg.append("Failure: ").append("Refresh Token Failed : " + response.getError() + "|" + response.getError_description());
+			msg.append("Failure: ").append("Refresh Token Failed : " + response.getErrors().toString() + "|" + response.getErrorMessage().toString());
 		}
 	}
 
