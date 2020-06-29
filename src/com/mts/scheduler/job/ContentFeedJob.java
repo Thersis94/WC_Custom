@@ -105,7 +105,7 @@ public class ContentFeedJob extends AbstractSMTJob {
 	private void setDBConnection() throws DatabaseException, InvalidDataException {
 		DatabaseConnection dc = new DatabaseConnection();
 		dc.setDriverClass("org.postgresql.Driver");
-		dc.setUrl("jdbc:postgresql://dev-common-sb-db.aws.siliconmtn.com:5432/wc_dev_sb?defaultRowFetchSize=25&amp;prepareThreshold=3&amp;reWriteBatchedInserts=true");
+		dc.setUrl( "jdbc:postgresql://dev-common-sb-db.aws.siliconmtn.com:5432/wc_dev_sb?defaultRowFetchSize=25&amp;prepareThreshold=3&amp;reWriteBatchedInserts=true");
 		dc.setUserName("ryan_user_sb");
 		dc.setPassword("sqll0gin");
 		conn = dc.getConnection();
