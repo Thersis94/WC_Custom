@@ -82,13 +82,11 @@ public class ContentFeedJob extends AbstractSMTJob {
 	public static void main(String[] args) throws Exception {
 		// Set job Information
 		ContentFeedJob cfj = new ContentFeedJob();
-		cfj.attributes.put("FEED_RECPT", "test-dir");
+		cfj.attributes.put("FEED_RECPT", "MTS_DOCUMENT_");
 		cfj.attributes.put("FEED_TITLE", "MTS Publications News Feed");
-		cfj.attributes.put("FEED_DESC",
-				"We help you better understand your world as you make key decisions impacting your day-to-day business and long-term strategic goals.");
+		cfj.attributes.put("FEED_DESC", "We help you better understand your world as you make key decisions impacting your day-to-day business and long-term strategic goals.");
 		cfj.attributes.put("BASE_URL", "https://www.mystrategist.com");
-		cfj.attributes.put("FEED_FILE_PATH", "/home/justinjeffrey/Desktop/");
-		cfj.attributes.put("scheduleJobInstanceId", "36742e02b91b494e7f000101744bf6c5");
+		cfj.attributes.put("FEED_FILE_PATH", "/home/ryan/Desktop/");
 		cfj.attributes.put(Constants.CUSTOM_DB_SCHEMA, "custom.");
 		cfj.isManualJob = true;
 		cfj.setDBConnection();
