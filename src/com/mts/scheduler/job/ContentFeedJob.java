@@ -19,7 +19,6 @@ import java.util.Map;
 // Quartz libs
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
-import org.quartz.impl.StdSchedulerFactory;
 
 // GSON 2.3
 import com.google.gson.Gson;
@@ -130,21 +129,6 @@ public class ContentFeedJob extends AbstractSMTJob {
 		StringBuilder msg = new StringBuilder(500);
 		success = true;
 
-		// Check to see if a quartz scheduler factory instance is passed in with the
-		// attribute.
-		if (!attributes.containsKey("org.quartz.impl.StdSchedulerFactory.KEY")) {
-			try {
-				// If there is no quartz factory instance then create one and add it to the
-				// attributes.
-				StdSchedulerFactory factory = new StdSchedulerFactory();
-				// Start the scheduler now
-				factory.getScheduler().start();
-				attributes.put("org.quartz.impl.StdSchedulerFactory.KEY", factory);
-			} catch (Exception e) {
-				msg.append("Failure: ").append(e.getLocalizedMessage());
-			}
-		}
-
 		// Process the data feed
 		try {
 			processDocuments(msg);
@@ -185,7 +169,11 @@ public class ContentFeedJob extends AbstractSMTJob {
 
 		// Get the docs published in the past day. Exit of no articles found
 		ContentFeedVO docs = getArticles(feedTitle, feedDesc, baseUrl);
+		ContentFeedVO MTSDocs = docs;
 		msg.append(String.format("Loaded %d articles\n", docs.getItems().size()));
+		
+		// Get a list of the docs UIDs
+		List<String> UIDs = docs.getUniqueIds();
 
 		// Post all new docs using the hootsuite API
 		postToHootsuite(msg, docs, baseUrl);
@@ -204,17 +192,17 @@ public class ContentFeedJob extends AbstractSMTJob {
 			}
 
 			// Set the docs to the array of medtechDocs
-			docs.setItems(medtechDocs);
+			MTSDocs.setItems(medtechDocs);
 
-			String json = convertArticlesJson(docs);
+			String json = convertArticlesJson(MTSDocs);
 			// Save document
-			if (isManualJob) saveFile(json, fileLoc, msg);
-			else saveFile(json, fileLoc, host, user, pwd, msg);
+//			if (isManualJob) saveFile(json, fileLoc, msg);
+//			else saveFile(json, fileLoc, host, user, pwd, msg);
 		}
 
 		// Update the newly published articles data_feed_processed_flg database entry to
 		// 1
-		setSentFlags(docs.getUniqueIds());
+//		setSentFlags(UIDs);
 
 		msg.append("Success");
 	}
@@ -231,7 +219,6 @@ public class ContentFeedJob extends AbstractSMTJob {
 	 */
 	private void postToHootsuite(StringBuilder msg, ContentFeedVO docs, String baseUrl)
 			throws com.siliconmtn.db.util.DatabaseException, IOException {
-
 		// Fill HootsuteClientVO
 		HootsuiteClientVO hc = fillHootsuiteClientValues();
 

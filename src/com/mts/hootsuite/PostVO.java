@@ -73,8 +73,11 @@ public class PostVO extends BeanDataVO {
 			System.out.println(e);
 		}
 		
-		c.add(Calendar.HOUR_OF_DAY, hourOfTheDay);
-		c.add(Calendar.MINUTE, 0);
+		c.set(Calendar.HOUR_OF_DAY, hourOfTheDay);
+		c.set(Calendar.MINUTE, 0);
+		c.set(Calendar.SECOND, 0);
+		c.add(Calendar.DATE, 1);
+		
 		this.postDate = c.getTime();
 	}
 
