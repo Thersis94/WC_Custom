@@ -79,6 +79,12 @@ public class MTSDocumentVO extends DocumentVO {
 	private SponsorVO sponsor;
 	private Map<String, List<WidgetMetadataVO>> cats = new LinkedHashMap<>();
 	
+	/**
+	 * 
+	 */
+	public MTSDocumentVO() {
+		super();
+	}
 	
 	/**
 	 * Builds a redirect URL for shortening the url to 8 characters
@@ -93,13 +99,6 @@ public class MTSDocumentVO extends DocumentVO {
 		vo.setDestinationUrl(this.getFullPathText());
 		vo.setAliasText("/" + RandomAlphaNumeric.generateRandom(8));
 		return vo;
-	}
-	
-	/**
-	 * 
-	 */
-	public MTSDocumentVO() {
-		super();
 	}
 
 	/**

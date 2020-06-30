@@ -46,6 +46,13 @@ public class ContentFeedItemVO extends BeanDataVO {
 	private transient String shortUrl;
 	
 	/**
+	 * 
+	 */
+	public ContentFeedItemVO() {
+		super();
+	}
+	
+	/**
 	 * Builds a redirect URL for shortening the url to 8 characters
 	 * @return
 	 */
@@ -62,13 +69,6 @@ public class ContentFeedItemVO extends BeanDataVO {
 		vo.setAliasText("/" + RandomAlphaNumeric.generateRandom(8));
 		shortUrl = vo.getAliasText();
 		return vo;
-	}
-	
-	/**
-	 * 
-	 */
-	public ContentFeedItemVO() {
-		super();
 	}
 
 	/**

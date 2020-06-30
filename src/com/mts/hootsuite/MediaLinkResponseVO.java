@@ -28,8 +28,8 @@ public class MediaLinkResponseVO extends HootsuiteResponseVO {
 	/**
 	 * @param data the data to set
 	 */
-	public void setData(HashMap<String, String> data) {
-		this.data = data;
+	public void setData(Map<String, String> data) {
+		this.data = (HashMap<String, String>) data;
 	}
 
 	/**
