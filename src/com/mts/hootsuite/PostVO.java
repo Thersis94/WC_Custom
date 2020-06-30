@@ -54,9 +54,8 @@ public class PostVO extends BeanDataVO {
 		TimeZone tz = TimeZone.getTimeZone("UTC");
 		DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm'Z'"); // Quoted "Z" to indicate UTC, no timezone offset
 		df.setTimeZone(tz);
-		String dateAsISO = df.format(postDate);
 
-		return dateAsISO;
+		return df.format(postDate);
 	}
 
 	/**
@@ -66,12 +65,8 @@ public class PostVO extends BeanDataVO {
 	public void setPostTime(int hourOfTheDay) {
 		Calendar c = Calendar.getInstance();
 
-		try {
-			// Setting the date to the given date
-			c.setTime(new Date());
-		} catch (Exception e) {
-			System.out.println(e);
-		}
+		// Setting the date to the given date
+		c.setTime(new Date());
 		
 		c.set(Calendar.HOUR_OF_DAY, hourOfTheDay);
 		c.set(Calendar.MINUTE, 0);
@@ -112,7 +107,7 @@ public class PostVO extends BeanDataVO {
 		Path mediaFileLocation = Paths.get(mediaLocation);
 		
 		// If mime type is not set
-		if(mimeType.equals("")) {
+		if("".equals(mimeType)) {
 			// Get and set the mimeType
 			mimeType = Files.probeContentType(mediaFileLocation);
 		}
@@ -131,7 +126,7 @@ public class PostVO extends BeanDataVO {
 	 */
 	public String getMediaLocation() {
 		
-		return mediaLocation.toString();
+		return mediaLocation;
 	}
 
 	/**

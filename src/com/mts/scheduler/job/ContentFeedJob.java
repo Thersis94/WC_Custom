@@ -152,13 +152,6 @@ public class ContentFeedJob extends AbstractSMTJob {
 		String pwd = (String) attributes.get("SFTP_PASSWORD");
 		String baseUrl = (String) attributes.get("BASE_URL");
 
-//		attributes.put("FEED_FILE_PATH", "/home/justinjeffrey/Desktop/"); // This is for testing. It changes the save
-//																			// directory for files to a local path to
-//																			// allow for the testing of the JSON output
-//																			// files.
-//		attributes.put("FEED_RECPT", "test");
-//		isManualJob = true;
-
 		// Append the dates to this
 		Date d = new Date();
 		String pattern = "yyyyMMdd";
@@ -184,7 +177,7 @@ public class ContentFeedJob extends AbstractSMTJob {
 			// Iterate through the docs.items and add the item to the medtech ArrayList if
 			// they are published by MedTech
 			for (ContentFeedItemVO article : docs.getItems()) {
-				if (article.getPublicationId().equalsIgnoreCase("MEDTECH-STRATEGIST")) {
+				if ("MEDTECH-STRATEGIST".equalsIgnoreCase(article.getPublicationId())) {
 					medtechDocs.add(article);
 				}
 			}
@@ -254,7 +247,7 @@ public class ContentFeedJob extends AbstractSMTJob {
 	 */
 	private void sequencePosts(HootsuiteClientVO hc, HootsuiteManager hoot, StringBuilder msg, PostVO post, HootsuitePostsVO hp) throws IOException, InterruptedException {
 		for (Map.Entry<String, String> profile : hc.getSocialProfiles().entrySet()) {
-			if (profile.getKey().equalsIgnoreCase("TWITTER")) {
+			if ("TWITTER".equalsIgnoreCase(profile.getKey())) {
 				// Post the message to Twitter
 				hoot.post(msg, profile.getValue(), post, post.getTwitterFormattedString(), false);
 			} else {

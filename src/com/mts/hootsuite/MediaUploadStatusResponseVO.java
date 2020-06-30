@@ -2,6 +2,7 @@ package com.mts.hootsuite;
 
 //JDK 1.8.x
 import java.util.HashMap;
+import java.util.Map;
 
 //SMT Base Libs
 import com.siliconmtn.data.parser.BeanDataVO;
@@ -41,7 +42,7 @@ public class MediaUploadStatusResponseVO extends BeanDataVO {
 	/**
 	 * @return the data
 	 */
-	public HashMap<String, String> getData() {
+	public Map<String, String> getData() {
 		return data;
 	}
 	/**

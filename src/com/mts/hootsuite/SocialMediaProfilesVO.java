@@ -3,6 +3,7 @@ package com.mts.hootsuite;
 //JDK 1.8.x
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 //SMT Base Libs
 import com.siliconmtn.data.parser.BeanDataVO;
@@ -56,7 +57,7 @@ public class SocialMediaProfilesVO extends BeanDataVO {
 	/**
 	 * @return the data
 	 */
-	public ArrayList<SocialMediaProfileVO> getData() {
+	public List<SocialMediaProfileVO> getData() {
 		return data;
 	}
 
