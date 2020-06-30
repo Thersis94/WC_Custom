@@ -356,16 +356,14 @@ public class HootsuiteManager {
 		URL url = new URL(path);
 		URLConnection conn = url.openConnection();
 
-		InputStream is = new ByteArrayInputStream(new byte[] { 0, 1, 2 });
-
-		is = conn.getInputStream();
+		InputStream inputStream = conn.getInputStream();
 
 		ByteArrayOutputStream buffer = new ByteArrayOutputStream();
 
 		int nRead;
 		byte[] data = new byte[16384];
 
-		while ((nRead = is.read(data, 0, data.length)) != -1) {
+		while ((nRead = inputStream.read(data, 0, data.length)) != -1) {
 			buffer.write(data, 0, nRead);
 		}
 
