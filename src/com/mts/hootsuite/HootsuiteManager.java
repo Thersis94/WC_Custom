@@ -1,7 +1,6 @@
 package com.mts.hootsuite;
 
 // JDK 1.8
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -221,7 +220,7 @@ public class HootsuiteManager {
 		SchedulePostResponseVO response = gson.fromJson(StandardCharsets.UTF_8.decode(in).toString(),
 				SchedulePostResponseVO.class);
 
-		if (response.getErrors().isEmpty()) {
+		if (!response.getErrors().isEmpty()) {
 			// Set schedule job success to false and append the completion message to
 			// include the error
 			msg.append("Failure: ").append("Schedule Post Failed : " + response.getErrors().toString() + "|"
