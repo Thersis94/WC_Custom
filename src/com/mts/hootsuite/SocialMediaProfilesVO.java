@@ -4,6 +4,7 @@ package com.mts.hootsuite;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 //SMT Base Libs
 import com.siliconmtn.data.parser.BeanDataVO;
@@ -46,7 +47,7 @@ public class SocialMediaProfilesVO extends BeanDataVO {
 	 * Used for getting a hashmap of all of the social media profiles.
 	 * @returna HashMap with all of the social media profiles
 	 */
-	public HashMap<String, String> getAllSocialIds() {
+	public Map<String, String> getAllSocialIds() {
 		HashMap<String, String> ids = new HashMap<>();
 		for (SocialMediaProfileVO profile: data) {
 			ids.put(profile.getType(), profile.getId());
@@ -64,8 +65,8 @@ public class SocialMediaProfilesVO extends BeanDataVO {
 	/**
 	 * @param data the data to set
 	 */
-	public void setData(ArrayList<SocialMediaProfileVO> data) {
-		this.data = data;
+	public void setData(List<SocialMediaProfileVO> data) {
+		this.data = (ArrayList<SocialMediaProfileVO>) data;
 	}
 
 	/**

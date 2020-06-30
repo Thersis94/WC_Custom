@@ -49,17 +49,19 @@ public class HootsuiteManager {
 	 * @param postContent
 	 * @param media
 	 * @throws IOException 
-	 * @throws InterruptedException 
 	 */
 	public void post(StringBuilder msg, String socialId, PostVO post, String postContent,
-			boolean media) throws IOException, InterruptedException {
-		post.setPostTime(9);
-		if (media) {
-			uploadHootsuiteMedia(msg, post);
-			schedulePost(msg, socialId, post, postContent);
-		} else
-			schedulePost(msg, socialId, post, postContent);
-
+			boolean media) throws IOException {
+		try {
+			post.setPostTime(9);
+			if (media) {
+				uploadHootsuiteMedia(msg, post);
+				schedulePost(msg, socialId, post, postContent);
+			} else
+				schedulePost(msg, socialId, post, postContent);
+		} catch(Exception e) {
+			throw new IOException("Hootsuite Post Failed: " + e);
+		}
 	}
 
 	/**
@@ -164,7 +166,7 @@ public class HootsuiteManager {
 
 		SocialMediaProfilesVO response = gson.fromJson(StandardCharsets.UTF_8.decode(in).toString(),
 				SocialMediaProfilesVO.class);
-		HashMap<String, String> socialProfiles = response.getAllSocialIds();
+		HashMap<String, String> socialProfiles = (HashMap<String, String>) response.getAllSocialIds();
 
 		if (response.getError() != null) {
 			// Set schedule job success to false and append the completion message to
