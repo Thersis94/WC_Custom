@@ -241,10 +241,9 @@ public class ContentFeedJob extends AbstractSMTJob {
 	 * @param msg
 	 * @param post
 	 * @param hp
-	 * @throws InterruptedException 
 	 * @throws IOException 
 	 */
-	private void sequencePosts(HootsuiteClientVO hc, HootsuiteManager hoot, StringBuilder msg, PostVO post, HootsuitePostsVO hp) throws IOException, InterruptedException {
+	private void sequencePosts(HootsuiteClientVO hc, HootsuiteManager hoot, StringBuilder msg, PostVO post, HootsuitePostsVO hp) throws IOException {
 		for (Map.Entry<String, String> profile : hc.getSocialProfiles().entrySet()) {
 			if ("TWITTER".equalsIgnoreCase(profile.getKey())) {
 				// Post the message to Twitter
