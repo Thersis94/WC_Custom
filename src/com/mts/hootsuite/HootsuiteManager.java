@@ -347,7 +347,7 @@ public class HootsuiteManager {
 		SMTHttpConnectionManager cm = new SMTHttpConnectionManager();
 
 		URL url = new URL(path);
-		URLConnection conn = (URLConnection) url.openConnection();
+		URLConnection conn = url.openConnection();
 
 		InputStream is = new ByteArrayInputStream(new byte[] { 0, 1, 2 });
 
@@ -401,9 +401,7 @@ public class HootsuiteManager {
 		MediaUploadStatusResponseVO response = gson.fromJson(StandardCharsets.UTF_8.decode(in).toString(),
 				MediaUploadStatusResponseVO.class);
 
-		if (response.getState() != null && response.getState().equalsIgnoreCase("READY"))
-			return true;
-		else
-			return false;
+		return (response.getState() != null && response.getState().equalsIgnoreCase("READY"));
+		
 	}
 }

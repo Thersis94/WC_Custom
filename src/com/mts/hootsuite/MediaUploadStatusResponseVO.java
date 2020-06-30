@@ -21,7 +21,7 @@ import com.siliconmtn.data.parser.BeanDataVO;
  ****************************************************************************/
 public class MediaUploadStatusResponseVO extends BeanDataVO {
 
-	HashMap<String, String> data = new HashMap<>();
+	private Map<String, String> data = new HashMap<>();
 	
 	public String getId() {
 		return data.get("id");
@@ -49,7 +49,7 @@ public class MediaUploadStatusResponseVO extends BeanDataVO {
 	 * @param data the data to set
 	 */
 	public void setData(Map<String, String> data) {
-		this.data = (HashMap<String, String>) data;
+		this.data = data;
 	}
 	
 }

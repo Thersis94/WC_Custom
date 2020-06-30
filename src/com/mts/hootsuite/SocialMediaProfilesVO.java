@@ -23,10 +23,10 @@ import com.siliconmtn.data.parser.BeanDataVO;
  ****************************************************************************/
 public class SocialMediaProfilesVO extends BeanDataVO {
 	
-	ArrayList<SocialMediaProfileVO> data = new ArrayList<>();
-	String error;
+	private List<SocialMediaProfileVO> data = new ArrayList<>();
+	private String error;
 	// The underscore is Hootsuite specific
-	String error_description;
+	private String error_description;
 	
 	/**
 	 * Returns the social profile id of the profile name passed into it.
@@ -66,7 +66,7 @@ public class SocialMediaProfilesVO extends BeanDataVO {
 	 * @param data the data to set
 	 */
 	public void setData(List<SocialMediaProfileVO> data) {
-		this.data = (ArrayList<SocialMediaProfileVO>) data;
+		this.data = data;
 	}
 
 	/**

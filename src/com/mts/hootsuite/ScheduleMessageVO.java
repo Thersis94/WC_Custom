@@ -55,12 +55,6 @@ public class ScheduleMessageVO extends BeanDataVO {
 		this.media = mediaList;
 	}
 	/**
-	 * @return the socialProfileIds
-	 */
-	public List<String> getSocialProfileIds() {
-		return socialProfileIds;
-	}
-	/**
 	 * @param socialProfileIds the socialProfileIds to set
 	 */
 	public void setSocialProfileIds(List<String> socialProfileIds) {

@@ -163,7 +163,7 @@ public class ContentFeedJob extends AbstractSMTJob {
 		msg.append(String.format("Loaded %d articles\n", docs.getItems().size()));
 		
 		// Get a list of the docs UIDs
-		List<String> UIDs = docs.getUniqueIds();
+		List<String> uIds = docs.getUniqueIds();
 
 		// Post all new docs using the hootsuite API
 		postToHootsuite(msg, docs, baseUrl);
@@ -192,7 +192,7 @@ public class ContentFeedJob extends AbstractSMTJob {
 
 		// Update the newly published articles data_feed_processed_flg database entry to
 		// 1
-		setSentFlags(UIDs);
+		setSentFlags(uIds);
 
 		msg.append("Success");
 	}
@@ -209,7 +209,7 @@ public class ContentFeedJob extends AbstractSMTJob {
 	 * @throws InterruptedException 
 	 */
 	private void postToHootsuite(StringBuilder msg, ContentFeedVO docs, String baseUrl)
-			throws com.siliconmtn.db.util.DatabaseException, IOException, InterruptedException {
+			throws com.siliconmtn.db.util.DatabaseException, IOException {
 		// Fill HootsuteClientVO
 		HootsuiteClientVO hc = fillHootsuiteClientValues();
 

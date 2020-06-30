@@ -2,6 +2,7 @@ package com.mts.hootsuite;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 import com.siliconmtn.data.parser.BeanDataVO;
 
@@ -24,15 +25,15 @@ public class HootsuiteResponseVO extends BeanDataVO {
 	/**
 	 * @return the errors
 	 */
-	public ArrayList<HashMap<String, String>> getErrors() {
+	public List<HashMap<String, String>> getErrors() {
 		return errors;
 	}
 
 	/**
 	 * @param errors the errors to set
 	 */
-	public void setErrors(ArrayList<HashMap<String, String>> errors) {
-		this.errors = errors;
+	public void setErrors(List<HashMap<String, String>> errors) {
+		this.errors = (ArrayList<HashMap<String, String>>) errors;
 	}
 	
 	/**

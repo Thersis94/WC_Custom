@@ -238,20 +238,6 @@ public class PostVO extends BeanDataVO {
 	}
 
 	/**
-	 * @return the mediaId
-	 */
-	public List<String> getMediaId() {
-		return mediaId;
-	}
-
-	/**
-	 * @param mediaId the mediaId to set
-	 */
-	public void setMediaId(List<String> mediaId) {
-		this.mediaId = mediaId;
-	}
-
-	/**
 	 * @param postDate the postDate to set
 	 */
 	public void setPostDate(Date postDate) {

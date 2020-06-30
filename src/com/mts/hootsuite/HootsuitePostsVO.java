@@ -21,7 +21,7 @@ import com.siliconmtn.data.parser.BeanDataVO;
  ****************************************************************************/
 public class HootsuitePostsVO extends BeanDataVO {
 
-	List<PostVO> posts = new ArrayList<>();
+	private List<PostVO> posts = new ArrayList<>();
 
 	/**
 	 * @return the posts

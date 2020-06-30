@@ -16,7 +16,7 @@ import java.util.Map;
  ****************************************************************************/
 public class MediaLinkResponseVO extends HootsuiteResponseVO {
 
-	HashMap<String, String> data = new HashMap<>();
+	private Map<String, String> data = new HashMap<>();
 	
 	/**
 	 * @return the data
@@ -29,7 +29,7 @@ public class MediaLinkResponseVO extends HootsuiteResponseVO {
 	 * @param data the data to set
 	 */
 	public void setData(Map<String, String> data) {
-		this.data = (HashMap<String, String>) data;
+		this.data = data;
 	}
 
 	/**
