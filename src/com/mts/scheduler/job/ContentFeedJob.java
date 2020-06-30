@@ -120,7 +120,6 @@ public class ContentFeedJob extends AbstractSMTJob {
 	@Override
 	public void execute(JobExecutionContext ctx) throws JobExecutionException {
 		super.execute(ctx);
-		log.info("running execute");
 		attributes = ctx.getMergedJobDataMap().getWrappedMap();
 
 		StringBuilder msg = new StringBuilder(500);
