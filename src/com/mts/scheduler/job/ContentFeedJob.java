@@ -122,7 +122,7 @@ public class ContentFeedJob extends AbstractSMTJob {
 		attributes = ctx.getMergedJobDataMap().getWrappedMap();
 
 		StringBuilder msg = new StringBuilder(500);
-		success = true;
+		boolean success = true;
 
 		// Process the data feed
 		try {
