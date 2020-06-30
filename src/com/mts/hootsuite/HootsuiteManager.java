@@ -109,7 +109,7 @@ public class HootsuiteManager {
 			// Set schedule job success to false and append the completion message to
 			// include the error
 			msg.append("Failure: ").append("Check Refresh Token Failed : " + response.getErrors().toString() + "|"
-					+ response.getErrorMessage().toString());
+					+ response.getErrorMessage());
 		}
 	}
 
@@ -145,7 +145,7 @@ public class HootsuiteManager {
 	 * @return
 	 * @throws IOException
 	 */
-	public HashMap<String, String> getSocialProfiles(StringBuilder msg) throws IOException {
+	public Map<String, String> getSocialProfiles(StringBuilder msg) throws IOException {
 
 		Gson gson = new Gson();
 
@@ -212,11 +212,11 @@ public class HootsuiteManager {
 		SchedulePostResponseVO response = gson.fromJson(StandardCharsets.UTF_8.decode(in).toString(),
 				SchedulePostResponseVO.class);
 
-		if (response.getErrors().size() > 0) {
+		if (response.getErrors().isEmpty()) {
 			// Set schedule job success to false and append the completion message to
 			// include the error
 			msg.append("Failure: ").append("Schedule Post Failed : " + response.getErrors().toString() + "|"
-					+ response.getErrorMessage().toString());
+					+ response.getErrorMessage());
 		}
 
 	}
@@ -288,7 +288,7 @@ public class HootsuiteManager {
 			// Set schedule job success to false and append the completion message to
 			// include the error
 			msg.append("Failure: ").append("Upload Hootsuite Media Failed : " + response.getErrors().toString() + "|"
-					+ response.getErrorMessage().toString());
+					+ response.getErrorMessage());
 		}
 
 		waitForSuccessfulUpload(msg, response);
@@ -371,7 +371,7 @@ public class HootsuiteManager {
 			// Set schedule job success to false and append the completion message to
 			// include the error
 			msg.append("Failure: ").append("Upload Media to AWS Failed : " + response.getErrors().toString() + "|"
-					+ response.getErrorMessage().toString());
+					+ response.getErrorMessage());
 		}
 	}
 

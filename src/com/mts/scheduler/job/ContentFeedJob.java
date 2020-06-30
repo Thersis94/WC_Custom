@@ -64,7 +64,6 @@ public class ContentFeedJob extends AbstractSMTJob {
 	// Members
 	private Map<String, Object> attributes = new HashMap<>();
 	private boolean isManualJob = false;
-	private boolean success;
 
 	/**
 	 * 
