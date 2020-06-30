@@ -37,9 +37,16 @@ import com.siliconmtn.io.http.SMTHttpConnectionManager.HttpConnectionType;
  ****************************************************************************/
 public class HootsuiteManager {
 
-	static Logger log = Logger.getLogger(Process.class.getName());
+	protected static Logger log;
 	private String token;
 
+	/**
+	 * 
+	 */
+	public HootsuiteManager() {
+		log = Logger.getLogger(getClass());
+	}
+	
 	/**
 	 * Public main for interfacing with the command line
 	 * 
@@ -401,7 +408,7 @@ public class HootsuiteManager {
 		MediaUploadStatusResponseVO response = gson.fromJson(StandardCharsets.UTF_8.decode(in).toString(),
 				MediaUploadStatusResponseVO.class);
 
-		return (response.getState() != null && response.getState().equalsIgnoreCase("READY"));
+		return (response.getState() != null && "READY".equalsIgnoreCase(response.getState()));
 		
 	}
 }
