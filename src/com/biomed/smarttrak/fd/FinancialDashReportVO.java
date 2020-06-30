@@ -91,6 +91,10 @@ public class FinancialDashReportVO extends AbstractSBReportVO {
 		// Add the rows
 		addTitleRow();
 		
+		if (dash.getSectionId() != "MASTER_ROOT") {
+			addDescRow();
+		}
+		
 		if (!StringUtil.isEmpty(dash.getCompanyId())) {
 			// Company view groups data by parent markets
 			addDataRowGroups();
@@ -169,6 +173,32 @@ public class FinancialDashReportVO extends AbstractSBReportVO {
 		// Merge the title cell across additional cells to display full title
 		int range = dash.getColHeaders().getColumns().size();
 		sheet.addMergedRegion(new CellRangeAddress(0,0,0,range));
+	}
+
+	/**
+	 * Adds a description row to the excel report detailing the segment this resport is on
+	 */
+	protected void addDescRow() {
+		row = sheet.createRow(rowCount++);
+		row.setHeightInPoints((short) 20);
+
+		StringBuilder description = new StringBuilder(60);
+		//Here I build the description out and put all the things in there that it needs
+		if (!StringUtil.isEmpty(dash.getCompanyId())) {
+			description.append("Company - ").append(dash.getCompanyName());
+		}
+		else {
+			description.append("Market - ").append(dash.getSectionName());
+		}
+		
+		Cell cell = row.createCell(0);
+		cell.setCellType(Cell.CELL_TYPE_STRING);
+		cell.setCellValue(description.toString());
+		cell.setCellStyle(cellStyles.get(CellStyleName.GROUP_TITLE));
+
+		// Merge the title cell across all utilized cells within the report to display full description
+		int range = dash.getColHeaders().getColumns().size();
+		sheet.addMergedRegion(new CellRangeAddress(rowCount-1,rowCount-1,0,range));
 	}
 	
 	/**

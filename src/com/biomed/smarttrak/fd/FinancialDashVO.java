@@ -40,6 +40,7 @@ public class FinancialDashVO extends SBModuleVO {
 	private FinancialDashColumnSet colHeaders;
 	private List<FinancialDashDataRowVO> rows;
 	private String sectionId;
+	private String sectionName;
 	private boolean editMode;
 	private String scenarioId;
 	private String companyId;
@@ -213,6 +214,8 @@ public class FinancialDashVO extends SBModuleVO {
 		} else {
 			setPublishedYear(section.getFdPubYr());
 		}
+
+		setSectionName(section.getSectionNm());
 	}
 
 	/**
@@ -267,6 +270,13 @@ public class FinancialDashVO extends SBModuleVO {
 	 */
 	public String getSectionId() {
 		return sectionId;
+	}
+	
+	/**
+	 * @return the sectionName
+	 */
+	public String getSectionName() {
+		return sectionName;
 	}
 
 	/**
@@ -421,6 +431,14 @@ public class FinancialDashVO extends SBModuleVO {
 	public void setSectionId(String sectionId) {
 		this.sectionId = sectionId;
 	}
+	
+	/**
+	 * @param sectionName the sectionName to set
+	 */
+	public void setSectionName(String sectionName) {
+		this.sectionName = sectionName;
+	}
+
 
 	/**
 	 * @param editMode the editMode to set
