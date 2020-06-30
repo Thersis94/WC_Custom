@@ -2,6 +2,7 @@ package com.mts.hootsuite;
 
 // JDK 1.8
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
@@ -50,7 +51,7 @@ public class HootsuiteManager {
 	 * @param media
 	 */
 	public void post(boolean success, StringBuilder msg, String socialId, PostVO post, String postContent, boolean media) {
-		post.setPostTime(11);
+		post.setPostTime(9);
 		try {
 			if(media) {
 				uploadHootsuiteMedia(success, msg, post);
@@ -109,7 +110,7 @@ public class HootsuiteManager {
 		} else {
 			// Set schedule job success to false and append the completion message to include the error
 			success = false;
-			msg.append("Failure: ").append("Refresh Token Failed : " + response.getErrors().toString() + "|" + response.getErrorMessage().toString());
+			msg.append("Failure: ").append("Check Refresh Token Failed : " + response.getErrors().toString() + "|" + response.getErrorMessage().toString());
 		}
 	}
 
@@ -166,7 +167,7 @@ public class HootsuiteManager {
 		if(response.getError() != null) {
 			// Set schedule job success to false and append the completion message to include the error
 			success = false;
-			msg.append("Failure: ").append("Refresh Token Failed : " + response.getError() + "|" + response.getError_description());
+			msg.append("Failure: ").append("Get Social Profiles Failed : " + response.getError() + "|" + response.getError_description());
 		}
 		
 		return socialProfiles;
@@ -195,7 +196,7 @@ public class HootsuiteManager {
 		ScheduleMessageVO message = new ScheduleMessageVO();
 
 		setMessageContent(message, post.getPostDate(), socialIds, postContent, mediaList);
-		
+
 		byte[] document = gson.toJson(message).getBytes();
 		
 		SMTHttpConnectionManager cm = new SMTHttpConnectionManager();
@@ -206,11 +207,11 @@ public class HootsuiteManager {
 
 		SchedulePostResponseVO response = gson.fromJson(StandardCharsets.UTF_8.decode(in).toString(),
 				SchedulePostResponseVO.class);
-		
+
 		if(response.getErrors().size()>0) {
 			// Set schedule job success to false and append the completion message to include the error
 			success = false;
-			msg.append("Failure: ").append("Refresh Token Failed : " + response.getErrors().toString() + "|" + response.getErrorMessage().toString());
+			msg.append("Failure: ").append("Schedule Post Failed : " + response.getErrors().toString() + "|" + response.getErrorMessage().toString());
 		}
 
 	}
@@ -278,7 +279,7 @@ public class HootsuiteManager {
 		} else {
 			// Set schedule job success to false and append the completion message to include the error
 			success = false;
-			msg.append("Failure: ").append("Refresh Token Failed : " + response.getErrors().toString() + "|" + response.getErrorMessage().toString());
+			msg.append("Failure: ").append("Upload Hootsuite Media Failed : " + response.getErrors().toString() + "|" + response.getErrorMessage().toString());
 		}
 
 		waitForSuccessfulUpload(success, msg, response);
@@ -340,8 +341,17 @@ public class HootsuiteManager {
 		InputStream is = new ByteArrayInputStream(new byte[] { 0, 1, 2 });
 		
 		is = conn.getInputStream();
+		
+		ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+
+		int nRead;
+		byte[] data = new byte[16384];
+
+		while ((nRead = is.read(data, 0, data.length)) != -1) {
+		  buffer.write(data, 0, nRead);
+		}
 		 
-	    byte[] bytesArr = is.readAllBytes();
+	    byte[] bytesArr = buffer.toByteArray();
 		
 		ByteBuffer in = ByteBuffer
 				.wrap(cm.sendBinaryData(response.getUploadUrl(), bytesArr, mlr.getMimeType(), HttpConnectionType.PUT));
@@ -351,7 +361,7 @@ public class HootsuiteManager {
 		if (errorMessage.length() > 0) {
 			// Set schedule job success to false and append the completion message to include the error
 			success = false;
-			msg.append("Failure: ").append("Refresh Token Failed : " + response.getErrors().toString() + "|" + response.getErrorMessage().toString());
+			msg.append("Failure: ").append("Upload Media to AWS Failed : " + response.getErrors().toString() + "|" + response.getErrorMessage().toString());
 		}
 	}
 

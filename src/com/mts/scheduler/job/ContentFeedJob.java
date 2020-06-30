@@ -105,7 +105,7 @@ public class ContentFeedJob extends AbstractSMTJob {
 	private void setDBConnection() throws DatabaseException, InvalidDataException {
 		DatabaseConnection dc = new DatabaseConnection();
 		dc.setDriverClass("org.postgresql.Driver");
-		dc.setUrl("jdbc:postgresql://dev-common-sb-db.aws.siliconmtn.com:5432/wc_dev_sb?defaultRowFetchSize=25&amp;prepareThreshold=3&amp;reWriteBatchedInserts=true");
+		dc.setUrl( "jdbc:postgresql://dev-common-sb-db.aws.siliconmtn.com:5432/wc_dev_sb?defaultRowFetchSize=25&amp;prepareThreshold=3&amp;reWriteBatchedInserts=true");
 		dc.setUserName("ryan_user_sb");
 		dc.setPassword("sqll0gin");
 		conn = dc.getConnection();
@@ -120,7 +120,7 @@ public class ContentFeedJob extends AbstractSMTJob {
 	@Override
 	public void execute(JobExecutionContext ctx) throws JobExecutionException {
 		super.execute(ctx);
-
+		log.info("running execute");
 		attributes = ctx.getMergedJobDataMap().getWrappedMap();
 
 		StringBuilder msg = new StringBuilder(500);
@@ -132,7 +132,6 @@ public class ContentFeedJob extends AbstractSMTJob {
 		} catch (Exception e) {
 			msg.append("Failure: ").append(e.getLocalizedMessage());
 		}
-
 		// Close out the database and the transaction log
 		finalizeJob(success, msg.toString());
 	}
@@ -157,6 +156,8 @@ public class ContentFeedJob extends AbstractSMTJob {
 //																			// directory for files to a local path to
 //																			// allow for the testing of the JSON output
 //																			// files.
+//		attributes.put("FEED_RECPT", "test");
+//		isManualJob = true;
 
 		// Append the dates to this
 		Date d = new Date();
