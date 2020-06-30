@@ -2,6 +2,7 @@ package com.mts.hootsuite;
 
 //JDK 1.8.x
 import java.util.HashMap;
+import java.util.Map;
 
 /****************************************************************************
  * <b>Title</b>: MediaLinkResponseVO.java <b>Project</b>: Hootsuite
@@ -20,7 +21,7 @@ public class MediaLinkResponseVO extends HootsuiteResponseVO {
 	/**
 	 * @return the data
 	 */
-	public HashMap<String, String> getData() {
+	public Map<String, String> getData() {
 		return data;
 	}
 
@@ -56,10 +57,7 @@ public class MediaLinkResponseVO extends HootsuiteResponseVO {
 	}
 
 	public boolean isSuccessfulRequest() {
-		if (data.get("uploadUrl") != null && data.get("id") != null && data.get("uploadUrlDurationSeconds") != null) {
-			return true;
-		} else
-			return false;
+		return data.get("uploadUrl") != null && data.get("id") != null && data.get("uploadUrlDurationSeconds") != null;
 	}
 
 }
