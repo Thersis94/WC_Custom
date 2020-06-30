@@ -24,7 +24,6 @@ import com.google.gson.Gson;
 import com.siliconmtn.io.http.SMTHttpConnectionManager;
 import com.siliconmtn.io.http.SMTHttpConnectionManager.HttpConnectionType;
 
-
 /****************************************************************************
  * <b>Title</b>: HootsuiteTestRequests.java <b>Project</b>: Hootsuite
  * <b>Description: </b> Class for developing Hootsuite test requests
@@ -43,36 +42,35 @@ public class HootsuiteManager {
 
 	/**
 	 * Public main for interfacing with the command line
-	 * @param success
+	 * 
 	 * @param msg
 	 * @param socialId
 	 * @param post
 	 * @param postContent
 	 * @param media
+	 * @throws IOException 
+	 * @throws InterruptedException 
 	 */
-	public void post(boolean success, StringBuilder msg, String socialId, PostVO post, String postContent, boolean media) {
+	public void post(StringBuilder msg, String socialId, PostVO post, String postContent,
+			boolean media) throws IOException, InterruptedException {
 		post.setPostTime(9);
-		try {
-			if(media) {
-				uploadHootsuiteMedia(success, msg, post);
-				schedulePost(success, msg, socialId, post, postContent);
-			} else
-				schedulePost(success, msg, socialId, post, postContent);
-		} catch (Exception e) {
-			msg.append("Failure: ").append(e.getLocalizedMessage());
-			success = false;
-		}
+		if (media) {
+			uploadHootsuiteMedia(msg, post);
+			schedulePost(msg, socialId, post, postContent);
+		} else
+			schedulePost(msg, socialId, post, postContent);
+
 	}
 
 	/**
 	 * Requests a new set of tokens from the Hootsuite Api refresh token endpoint
-	 * @param success
+	 * 
 	 * @param msg
 	 * @param client
 	 * @return
 	 * @throws IOException
 	 */
-	public String refreshToken(boolean success, StringBuilder msg, HootsuiteClientVO client) throws IOException {
+	public String refreshToken(StringBuilder msg, HootsuiteClientVO client) throws IOException {
 
 		Gson gson = new Gson();
 		Map<String, Object> parameters = new HashMap<>();
@@ -92,7 +90,7 @@ public class HootsuiteManager {
 		// Capture the response
 		TokenResponseVO response = gson.fromJson(StandardCharsets.UTF_8.decode(in).toString(), TokenResponseVO.class);
 
-		checkRefreshTokenResponse(success, msg, response);
+		checkRefreshTokenResponse(msg, response);
 
 		return response.getRefresh_token();
 	}
@@ -100,22 +98,24 @@ public class HootsuiteManager {
 	/**
 	 * Checks if the API response is successful and either logs an error or updates
 	 * token values.
-	 * @param success
+	 * 
 	 * @param msg
 	 * @param response
 	 */
-	private void checkRefreshTokenResponse(boolean success, StringBuilder msg, TokenResponseVO response) {
+	private void checkRefreshTokenResponse(StringBuilder msg, TokenResponseVO response) {
 		if (response.getAccess_token() != null) {
 			token = response.getAccess_token();
 		} else {
-			// Set schedule job success to false and append the completion message to include the error
-			success = false;
-			msg.append("Failure: ").append("Check Refresh Token Failed : " + response.getErrors().toString() + "|" + response.getErrorMessage().toString());
+			// Set schedule job success to false and append the completion message to
+			// include the error
+			msg.append("Failure: ").append("Check Refresh Token Failed : " + response.getErrors().toString() + "|"
+					+ response.getErrorMessage().toString());
 		}
 	}
 
 	/**
 	 * Adds required parameters for the Hootsuite refresh end point
+	 * 
 	 * @param parameters
 	 * @param client
 	 */
@@ -126,6 +126,7 @@ public class HootsuiteManager {
 
 	/**
 	 * Adds required headers for the Hootsuite Token refresh end point.
+	 * 
 	 * @param cm
 	 */
 	private void addRefreshTokenHeaders(SMTHttpConnectionManager cm) {
@@ -137,14 +138,15 @@ public class HootsuiteManager {
 	}
 
 	/**
-	 * Returns a map of all of the social media profile ids associated with the clients profile
-	 * @param success
+	 * Returns a map of all of the social media profile ids associated with the
+	 * clients profile
+	 * 
 	 * @param msg
 	 * @return
 	 * @throws IOException
 	 */
-	public HashMap<String, String> getSocialProfiles(boolean success, StringBuilder msg) throws IOException {
-		
+	public HashMap<String, String> getSocialProfiles(StringBuilder msg) throws IOException {
+
 		Gson gson = new Gson();
 
 		Map<String, Object> parameters = new HashMap<>();
@@ -164,31 +166,33 @@ public class HootsuiteManager {
 				SocialMediaProfilesVO.class);
 		HashMap<String, String> socialProfiles = response.getAllSocialIds();
 
-		if(response.getError() != null) {
-			// Set schedule job success to false and append the completion message to include the error
-			success = false;
-			msg.append("Failure: ").append("Get Social Profiles Failed : " + response.getError() + "|" + response.getError_description());
+		if (response.getError() != null) {
+			// Set schedule job success to false and append the completion message to
+			// include the error
+			msg.append("Failure: ").append(
+					"Get Social Profiles Failed : " + response.getError() + "|" + response.getError_description());
 		}
-		
+
 		return socialProfiles;
 	}
 
 	/**
 	 * Schedules a social media post using the hootsuite api
-	 * @param success
+	 * 
 	 * @param msg
 	 * @param socialId
 	 * @param post
 	 * @param postContent
 	 * @throws IOException
 	 */
-	private void schedulePost(boolean success, StringBuilder msg, String socialId, PostVO post, String postContent) throws IOException {
+	private void schedulePost(StringBuilder msg, String socialId, PostVO post, String postContent)
+			throws IOException {
 
 		List<String> socialIds = new ArrayList<>();
 		socialIds.add(socialId);
 
 		List<Map<String, String>> mediaList = new ArrayList<>();
-		
+
 		populateMediaList(mediaList, post.getMediaIds());
 
 		Gson gson = new Gson();
@@ -198,7 +202,7 @@ public class HootsuiteManager {
 		setMessageContent(message, post.getPostDate(), socialIds, postContent, mediaList);
 
 		byte[] document = gson.toJson(message).getBytes();
-		
+
 		SMTHttpConnectionManager cm = new SMTHttpConnectionManager();
 		cm.addRequestHeader("Authorization", "Bearer " + token);
 
@@ -208,21 +212,23 @@ public class HootsuiteManager {
 		SchedulePostResponseVO response = gson.fromJson(StandardCharsets.UTF_8.decode(in).toString(),
 				SchedulePostResponseVO.class);
 
-		if(response.getErrors().size()>0) {
-			// Set schedule job success to false and append the completion message to include the error
-			success = false;
-			msg.append("Failure: ").append("Schedule Post Failed : " + response.getErrors().toString() + "|" + response.getErrorMessage().toString());
+		if (response.getErrors().size() > 0) {
+			// Set schedule job success to false and append the completion message to
+			// include the error
+			msg.append("Failure: ").append("Schedule Post Failed : " + response.getErrors().toString() + "|"
+					+ response.getErrorMessage().toString());
 		}
 
 	}
 
 	/**
 	 * Formats the mediaIds into an array of maps
+	 * 
 	 * @param mediaList
 	 * @param socialIds
 	 */
 	private void populateMediaList(List<Map<String, String>> mediaList, List<String> socialIds) {
-		for(String id : socialIds) {
+		for (String id : socialIds) {
 			Map<String, String> mediaIdMap = new HashMap<>();
 			mediaIdMap.put("id", id);
 			mediaList.add(mediaIdMap);
@@ -231,6 +237,7 @@ public class HootsuiteManager {
 
 	/**
 	 * Sets the parameters to the values of the ScheduleMessageVO
+	 * 
 	 * @param message
 	 * @param scheduledSendTime
 	 * @param socialIdList
@@ -249,13 +256,14 @@ public class HootsuiteManager {
 	 * getMediaUploadLink will request a link to the Hootsuite AWS file server that
 	 * can be used in conjunction with upload image to create a media link for new
 	 * message uploads
-	 * @param success
+	 * 
 	 * @param msg
 	 * @param post
 	 * @throws IOException
 	 * @throws InterruptedException
 	 */
-	private void uploadHootsuiteMedia(boolean success, StringBuilder msg, PostVO post) throws IOException, InterruptedException {
+	private void uploadHootsuiteMedia(StringBuilder msg, PostVO post)
+			throws IOException, InterruptedException {
 
 		Gson gson = new Gson();
 
@@ -274,34 +282,35 @@ public class HootsuiteManager {
 				MediaLinkResponseVO.class);
 
 		if (response.isSuccessfulRequest()) {
-			uploadMediaToAWS(success, msg, response, mlr, post.getMediaLocation());
+			uploadMediaToAWS(msg, response, mlr, post.getMediaLocation());
 			post.addMediaId(response.getId());
 		} else {
-			// Set schedule job success to false and append the completion message to include the error
-			success = false;
-			msg.append("Failure: ").append("Upload Hootsuite Media Failed : " + response.getErrors().toString() + "|" + response.getErrorMessage().toString());
+			// Set schedule job success to false and append the completion message to
+			// include the error
+			msg.append("Failure: ").append("Upload Hootsuite Media Failed : " + response.getErrors().toString() + "|"
+					+ response.getErrorMessage().toString());
 		}
 
-		waitForSuccessfulUpload(success, msg, response);
+		waitForSuccessfulUpload(msg, response);
 	}
 
 	/**
 	 * Loops the retrieveMediaUploadStatus until the media has been successfully
 	 * uploaded to the AWS server
-	 * @param success
+	 * 
 	 * @param msg
 	 * @param response
 	 * @throws IOException
 	 * @throws InterruptedException
 	 */
-	private void waitForSuccessfulUpload(boolean success, StringBuilder msg, MediaLinkResponseVO response) throws IOException, InterruptedException {
+	private void waitForSuccessfulUpload(StringBuilder msg, MediaLinkResponseVO response)
+			throws IOException, InterruptedException {
 
 		int timeOut = 0;
 		while (!retrieveMediaUploadStatus(response.getId())) {
 			timeOut++;
 			if (timeOut > 10) {
 				msg.append("Failure: ").append("Media failed to upload.");
-				success = false;
 				break;
 			}
 			Thread.sleep(1000);
@@ -311,8 +320,8 @@ public class HootsuiteManager {
 		if (retrieveMediaUploadStatus(response.getId())) {
 			log.debug("Media successfully uploaded.");
 		} else {
-			// Set schedule job success to false and append the completion message to include the error
-			success = false;
+			// Set schedule job success to false and append the completion message to
+			// include the error
 			msg.append("Failure: ").append("Media failed to upload.");
 		}
 	}
@@ -321,52 +330,54 @@ public class HootsuiteManager {
 	 * uploadImage will upload a image to the hootsuite AWS file server. this upload
 	 * returns a link that can be used when posting message to attach an image to
 	 * that message.
-	 * @param success
+	 * 
 	 * @param msg
 	 * @param response
 	 * @param mlr
 	 * @param path
 	 * @throws IOException
 	 */
-	private void uploadMediaToAWS(boolean success, StringBuilder msg, MediaLinkResponseVO response, MediaLinkRequestVO mlr, String path)
-			throws IOException {
+	private void uploadMediaToAWS(StringBuilder msg, MediaLinkResponseVO response,
+			MediaLinkRequestVO mlr, String path) throws IOException {
 
 		String errorMessage = "";
 
 		SMTHttpConnectionManager cm = new SMTHttpConnectionManager();
-		
+
 		URL url = new URL(path);
 		URLConnection conn = (URLConnection) url.openConnection();
-		
+
 		InputStream is = new ByteArrayInputStream(new byte[] { 0, 1, 2 });
-		
+
 		is = conn.getInputStream();
-		
+
 		ByteArrayOutputStream buffer = new ByteArrayOutputStream();
 
 		int nRead;
 		byte[] data = new byte[16384];
 
 		while ((nRead = is.read(data, 0, data.length)) != -1) {
-		  buffer.write(data, 0, nRead);
+			buffer.write(data, 0, nRead);
 		}
-		 
-	    byte[] bytesArr = buffer.toByteArray();
-		
+
+		byte[] bytesArr = buffer.toByteArray();
+
 		ByteBuffer in = ByteBuffer
 				.wrap(cm.sendBinaryData(response.getUploadUrl(), bytesArr, mlr.getMimeType(), HttpConnectionType.PUT));
 
 		errorMessage = StandardCharsets.UTF_8.decode(in).toString();
 
 		if (errorMessage.length() > 0) {
-			// Set schedule job success to false and append the completion message to include the error
-			success = false;
-			msg.append("Failure: ").append("Upload Media to AWS Failed : " + response.getErrors().toString() + "|" + response.getErrorMessage().toString());
+			// Set schedule job success to false and append the completion message to
+			// include the error
+			msg.append("Failure: ").append("Upload Media to AWS Failed : " + response.getErrors().toString() + "|"
+					+ response.getErrorMessage().toString());
 		}
 	}
 
 	/**
 	 * Checks the upload status of a media file to the Hootsuite/Amazon AWS server
+	 * 
 	 * @param mediaId
 	 * @return
 	 * @throws IOException

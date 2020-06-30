@@ -129,6 +129,7 @@ public class ContentFeedJob extends AbstractSMTJob {
 		try {
 			processDocuments(msg);
 		} catch (Exception e) {
+			success = false;
 			msg.append("Failure: ").append(e.getLocalizedMessage());
 		}
 		// Close out the database and the transaction log
@@ -213,9 +214,10 @@ public class ContentFeedJob extends AbstractSMTJob {
 	 * @param baseUrl the baseUrl passed with attributes
 	 * @throws com.siliconmtn.db.util.DatabaseException
 	 * @throws IOException
+	 * @throws InterruptedException 
 	 */
 	private void postToHootsuite(StringBuilder msg, ContentFeedVO docs, String baseUrl)
-			throws com.siliconmtn.db.util.DatabaseException, IOException {
+			throws com.siliconmtn.db.util.DatabaseException, IOException, InterruptedException {
 		// Fill HootsuteClientVO
 		HootsuiteClientVO hc = fillHootsuiteClientValues();
 
@@ -226,11 +228,11 @@ public class ContentFeedJob extends AbstractSMTJob {
 		HootsuiteManager hoot = new HootsuiteManager();
 
 		// Request a new set of tokens and then store those tokens in the database
-		storeNewRefreshToken(hoot.refreshToken(success, msg, hc));
+		storeNewRefreshToken(hoot.refreshToken(msg, hc));
 
 		// Set the clients social media ids based upon the social accounts they have
 		// connected to hootsuite
-		hc.setSocialProfiles(hoot.getSocialProfiles(success, msg));
+		hc.setSocialProfiles(hoot.getSocialProfiles(msg));
 
 		for (PostVO post : hp.getPosts()) {
 			sequencePosts(hc, hoot, msg, post, hp);
@@ -247,19 +249,21 @@ public class ContentFeedJob extends AbstractSMTJob {
 	 * @param msg
 	 * @param post
 	 * @param hp
+	 * @throws InterruptedException 
+	 * @throws IOException 
 	 */
-	private void sequencePosts(HootsuiteClientVO hc, HootsuiteManager hoot, StringBuilder msg, PostVO post, HootsuitePostsVO hp) {
+	private void sequencePosts(HootsuiteClientVO hc, HootsuiteManager hoot, StringBuilder msg, PostVO post, HootsuitePostsVO hp) throws IOException, InterruptedException {
 		for (Map.Entry<String, String> profile : hc.getSocialProfiles().entrySet()) {
 			if (profile.getKey().equalsIgnoreCase("TWITTER")) {
 				// Post the message to Twitter
-				hoot.post(success, msg, profile.getValue(), post, post.getTwitterFormattedString(), false);
+				hoot.post(msg, profile.getValue(), post, post.getTwitterFormattedString(), false);
 			} else {
 				// Get the list of categories for hashtags
 				List<String> categories = getCategoriesList();
 				// Update the Post description to use Hashtags
 				addHashTags(categories, hp);
 				// Post the message to Facebook and Linkedin
-				hoot.post(success, msg, profile.getValue(), post, post.getStandardFormattedString(), true);
+				hoot.post(msg, profile.getValue(), post, post.getStandardFormattedString(), true);
 			}
 		}
 	}
@@ -488,7 +492,7 @@ public class ContentFeedJob extends AbstractSMTJob {
 				throw new IOException("Authentication Failed");
 
 		} catch (Exception e) {
-			throw new IOException("Connection / Authentication Failed");
+			throw new IOException("Info deskConnection / Authentication Failed");
 		}
 
 		// Write the file to the server
