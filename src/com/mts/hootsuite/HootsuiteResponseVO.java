@@ -20,7 +20,7 @@ import com.siliconmtn.data.parser.BeanDataVO;
  ****************************************************************************/
 public class HootsuiteResponseVO extends BeanDataVO {
 
-	ArrayList<HashMap<String, String>> errors = new ArrayList<>();
+	private ArrayList<HashMap<String, String>> errors = new ArrayList<>();
 	
 	/**
 	 * @return the errors

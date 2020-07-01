@@ -38,6 +38,7 @@ public class HootsuiteManager {
 
 	protected static Logger log;
 	private String token;
+	private String HS_BASE_URL = "https://platform.hootsuite.com";
 
 	/**
 	 * 
@@ -93,7 +94,7 @@ public class HootsuiteManager {
 
 		// Send post request
 		ByteBuffer in = ByteBuffer
-				.wrap(cm.getRequestData("https://platform.hootsuite.com/oauth2/token", parameters, post));
+				.wrap(cm.getRequestData(HS_BASE_URL + "/oauth2/token", parameters, post));
 
 		// Capture the response
 		TokenResponseVO response = gson.fromJson(StandardCharsets.UTF_8.decode(in).toString(), TokenResponseVO.class);
@@ -140,6 +141,8 @@ public class HootsuiteManager {
 	private void addRefreshTokenHeaders(SMTHttpConnectionManager cm) {
 		cm.addRequestHeader("Accept", "application/json;charset=utf-8");
 		cm.addRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+		// This is the SMT specific access token. It allows us to access the Hootsuite /oauth2/token end point.
+		// The other tokens in this class are client tokens and must be passed in.
 		cm.addRequestHeader("Authorization",
 				"Basic YTYwZDA0MzItMzk5OS00YThkLTkxNDAtZjdhNDNmMzNjZjlmOlVac25hcW5mZVo5bA==");
 		cm.addRequestHeader("Accept-Encoding", "gzip, deflate, br");
@@ -168,7 +171,7 @@ public class HootsuiteManager {
 
 		// Send post request
 		ByteBuffer in = ByteBuffer
-				.wrap(cm.getRequestData("https://platform.hootsuite.com/v1/socialProfiles", parameters, get));
+				.wrap(cm.getRequestData(HS_BASE_URL + "/v1/socialProfiles", parameters, get));
 
 		SocialMediaProfilesVO response = gson.fromJson(StandardCharsets.UTF_8.decode(in).toString(),
 				SocialMediaProfilesVO.class);
@@ -214,7 +217,7 @@ public class HootsuiteManager {
 		SMTHttpConnectionManager cm = new SMTHttpConnectionManager();
 		cm.addRequestHeader("Authorization", "Bearer " + token);
 
-		ByteBuffer in = ByteBuffer.wrap(cm.sendBinaryData("https://platform.hootsuite.com/v1/messages", document,
+		ByteBuffer in = ByteBuffer.wrap(cm.sendBinaryData(HS_BASE_URL + "/v1/messages", document,
 				"application/json;charset=utf-8", HttpConnectionType.POST));
 
 		SchedulePostResponseVO response = gson.fromJson(StandardCharsets.UTF_8.decode(in).toString(),
@@ -283,7 +286,7 @@ public class HootsuiteManager {
 
 		byte[] document = gson.toJson(mlr).getBytes();
 
-		ByteBuffer in = ByteBuffer.wrap(cm.sendBinaryData("https://platform.hootsuite.com/v1/media", document,
+		ByteBuffer in = ByteBuffer.wrap(cm.sendBinaryData(HS_BASE_URL + "/v1/media", document,
 				"application/json", HttpConnectionType.POST));
 
 		MediaLinkResponseVO response = gson.fromJson(StandardCharsets.UTF_8.decode(in).toString(),
@@ -400,7 +403,7 @@ public class HootsuiteManager {
 		HttpConnectionType get = HttpConnectionType.GET;
 
 		ByteBuffer in = ByteBuffer
-				.wrap(cm.getRequestData("https://platform.hootsuite.com/v1/media/" + mediaId, parameters, get));
+				.wrap(cm.getRequestData(HS_BASE_URL + "/v1/media/" + mediaId, parameters, get));
 
 		MediaUploadStatusResponseVO response = gson.fromJson(StandardCharsets.UTF_8.decode(in).toString(),
 				MediaUploadStatusResponseVO.class);

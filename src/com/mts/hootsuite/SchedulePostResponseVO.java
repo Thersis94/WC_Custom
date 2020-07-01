@@ -2,7 +2,6 @@ package com.mts.hootsuite;
 
 //JDK 1.8.x
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 
 /****************************************************************************
