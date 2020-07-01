@@ -38,7 +38,7 @@ public class HootsuiteManager {
 
 	protected static Logger log;
 	private String token;
-	private String HS_BASE_URL = "https://platform.hootsuite.com";
+	private static final String HS_BASE_URL = "https://platform.hootsuite.com";
 
 	/**
 	 * 
