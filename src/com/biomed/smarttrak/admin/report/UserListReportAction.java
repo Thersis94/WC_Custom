@@ -10,6 +10,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.commons.lang.StringEscapeUtils;
 
@@ -161,7 +162,6 @@ public class UserListReportAction extends SimpleActionAdapter {
 
 			List<UserVO> users = account.getUsers();
 			for (UserVO user : users) {
-
 				// now add auth attributes if they exist.
 				userAttribs = authAttribs.get(user.getAuthenticationId());
 				if (userAttribs == null || userAttribs.isEmpty()) continue;

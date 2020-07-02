@@ -29,6 +29,7 @@ import org.apache.poi.ss.util.CellUtil;
 import com.biomed.smarttrak.fd.FinancialDashVO.CountryType;
 import com.biomed.smarttrak.util.SmarttrakTree;
 import com.siliconmtn.data.Node;
+import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.AbstractSBReportVO;
 
@@ -91,9 +92,7 @@ public class FinancialDashReportVO extends AbstractSBReportVO {
 		// Add the rows
 		addTitleRow();
 		
-		if (dash.getSectionId() != "MASTER_ROOT") {
-			addDescRow();
-		}
+		addDescRow();
 		
 		if (!StringUtil.isEmpty(dash.getCompanyId())) {
 			// Company view groups data by parent markets
@@ -102,8 +101,10 @@ public class FinancialDashReportVO extends AbstractSBReportVO {
 			// Market view lists sub-markets or companies
 			addDataRows(dash.getRows());
 		}
+
+		addNotesRows();
 		
-		// Format so everthing can be seen when opened
+		// Format so everything can be seen when opened
 		for (Cell cell : row) {
 			// Auto size to the non-formatted data
 			sheet.autoSizeColumn(cell.getColumnIndex(), false);
@@ -155,15 +156,10 @@ public class FinancialDashReportVO extends AbstractSBReportVO {
 	protected void addTitleRow() {		
 		row = sheet.createRow(rowCount++);
 		row.setHeightInPoints((short) 24);
-		List<CountryType> countryTypes = dash.getSelectedCountryTypes();
 		
 		//construct the title
 		StringBuilder title = new StringBuilder(50);
 		title.append(reportTitle);
-		if(!countryTypes.isEmpty()){
-			String region = countryTypes.get(0).toString();
-			title.append(" - Region : ").append(region);
-		}
 		
 		Cell cell = row.createCell(0);
 		cell.setCellType(Cell.CELL_TYPE_STRING);
@@ -184,21 +180,52 @@ public class FinancialDashReportVO extends AbstractSBReportVO {
 
 		StringBuilder description = new StringBuilder(60);
 		//Here I build the description out and put all the things in there that it needs
-		if (!StringUtil.isEmpty(dash.getCompanyId())) {
-			description.append("Company - ").append(dash.getCompanyName());
+		List<CountryType> countryTypes = dash.getSelectedCountryTypes();
+		if(!countryTypes.isEmpty()){
+			String region = countryTypes.get(0).toString();
+			description.append("Region : ").append(region);
 		}
-		else {
-			description.append("Market - ").append(dash.getSectionName());
+		if (dash.getSectionId() != "MASTER_ROOT") {
+			if (!StringUtil.isEmpty(dash.getCompanyId())) {
+				description.append("Company : ").append(dash.getCompanyName());
+			}
+			else {
+				description.append("Market : ").append(dash.getSectionName());
+			}
 		}
 		
 		Cell cell = row.createCell(0);
 		cell.setCellType(Cell.CELL_TYPE_STRING);
 		cell.setCellValue(description.toString());
-		cell.setCellStyle(cellStyles.get(CellStyleName.GROUP_TITLE));
+		cell.setCellStyle(cellStyles.get(CellStyleName.PARENT_TITLE));
+		
 
 		// Merge the title cell across all utilized cells within the report to display full description
 		int range = dash.getColHeaders().getColumns().size();
 		sheet.addMergedRegion(new CellRangeAddress(rowCount-1,rowCount-1,0,range));
+	}
+
+	/**
+	 * Adds a row to the excel report with clarifying notes and copyright information
+	 */
+	protected void addNotesRows() {
+		row = sheet.createRow(rowCount++);
+		row.setHeightInPoints((short) 20);
+
+		String copyright = String.format("\nCopyright© %s SmartTRAK, LLC", Convert.getCurrentYear());
+		String note = "All numbers in thousands";
+
+		Cell cellCopyright = row.createCell(0);
+		cellCopyright.setCellType(Cell.CELL_TYPE_STRING);
+		cellCopyright.setCellValue(copyright);
+		cellCopyright.setCellStyle(cellStyles.get(CellStyleName.LEFT));
+		sheet.addMergedRegion(new CellRangeAddress(rowCount-1,rowCount-1,0,2));
+
+		Cell cellNote = row.createCell(0);
+		cellNote.setCellType(Cell.CELL_TYPE_STRING);
+		cellNote.setCellValue(note);
+		cellNote.setCellStyle(cellStyles.get(CellStyleName.LEFT));
+		sheet.addMergedRegion(new CellRangeAddress(rowCount-1,rowCount-1,3,5));
 	}
 	
 	/**
