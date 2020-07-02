@@ -13,7 +13,6 @@ import java.util.Map;
 
 import org.apache.commons.lang.StringEscapeUtils;
 
-import com.biomed.smarttrak.vo.AccountVO;
 // WC custom
 import com.biomed.smarttrak.vo.UserVO;
 // SMTBaseLibs
