@@ -182,7 +182,7 @@ public class FinancialDashReportVO extends AbstractSBReportVO {
 	 * Adds a description row to the excel report detailing the segment this report is on
 	 */
 	protected void addDescRow() {	
-		List<Integer> boldIndexes = new ArrayList<Integer>(); 
+		List<Integer> boldIndexes = new ArrayList<>(); 
 
 		StringBuilder description = new StringBuilder(100);
 		//Here I build the description out and put all the things in there that it needs
