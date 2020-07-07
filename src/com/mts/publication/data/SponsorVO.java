@@ -42,6 +42,7 @@ public class SponsorVO extends BeanDataVO {
 	private String name;
 	private String description;
 	private String shortDesc;
+	private String summaryDesc;
 	private String websiteUrl;
 	private String logo;
 	private String linkedinName;
@@ -156,6 +157,14 @@ public class SponsorVO extends BeanDataVO {
 	@Column(name="total_images", isReadOnly = true)
 	public int getTotalImages() {
 		return totalImages;
+	}
+
+	/**
+	 * @return the summaryDesc
+	 */
+	@Column(name="summary_desc")
+	public String getSummaryDesc() {
+		return summaryDesc;
 	}
 
 	/**
@@ -346,5 +355,12 @@ public class SponsorVO extends BeanDataVO {
 	 */
 	public void setTwitterName(String twitterName) {
 		this.twitterName = twitterName;
+	}
+
+	/**
+	 * @param summaryDesc the summaryDesc to set
+	 */
+	public void setSummaryDesc(String summaryDesc) {
+		this.summaryDesc = summaryDesc;
 	}
 }

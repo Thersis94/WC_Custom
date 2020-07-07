@@ -37,7 +37,7 @@ import com.smt.sitebuilder.common.ModuleVO;
 import com.smt.sitebuilder.common.SiteVO;
 import com.smt.sitebuilder.common.constants.Constants;
 import com.smt.sitebuilder.util.PageViewRetriever;
-import com.smt.sitebuilder.util.PageViewVO;
+import com.smt.sitebuilder.util.PageViewUserVO;
 
 /*****************************************************************************
  <p><b>Title</b>: UserUtilizationReportAction.java</p>
@@ -99,7 +99,7 @@ public class UserUtilizationReportAction extends SimpleActionAdapter {
 		dateEnd = formatReportDate(req.getParameter(KEY_DATE_END), false, isDaily);
 
 		// 1. get user pageviews for the given start date.
-		List<PageViewVO> pageViews = retrieveBasePageViews(siteId,isDaily);
+		List<PageViewUserVO> pageViews = retrieveBasePageViews(siteId,isDaily);
 		log.debug("raw pageViews size: " + pageViews.size());
 
 		// 2. parse the pageviews into a map of page counts for each user
@@ -206,7 +206,7 @@ public class UserUtilizationReportAction extends SimpleActionAdapter {
 	 * @return
 	 * @throws ActionException 
 	 */
-	protected List<PageViewVO> retrieveBasePageViews(String siteId,
+	protected List<PageViewUserVO> retrieveBasePageViews(String siteId,
 			boolean isDaily) throws ActionException {
 		log.debug("retrieveBasePageViews...");
 		PageViewRetriever pvr = new PageViewRetriever(dbConn);
@@ -283,7 +283,7 @@ public class UserUtilizationReportAction extends SimpleActionAdapter {
 	 * @param isDaily
 	 * @return
 	 */
-	protected Map<String, Map<String,Integer>> parsePageCounts(List<PageViewVO> pageViews, 
+	protected Map<String, Map<String,Integer>> parsePageCounts(List<PageViewUserVO> pageViews, 
 			boolean isDaily) {
 		String currId;
 		String currDateKey;
@@ -291,7 +291,7 @@ public class UserUtilizationReportAction extends SimpleActionAdapter {
 		// Map of profileId to Map of Month, pageCount
 		Map< String, Map<String,Integer>> pageCounts = new HashMap<>();
 
-		for (PageViewVO page : pageViews) {
+		for (PageViewUserVO page : pageViews) {
 			currId = page.getProfileId();
 			currDateKey = buildDateKey(page.getReferenceCode(),isDaily);
 			addPageCount(pageCounts,currId,currDateKey,page.getResponseCode());

@@ -307,7 +307,7 @@ public class UserListReportVO extends AbstractSBReportVO {
 		headerMap.put(RegistrationMap.JOBLEVEL.name(),"Job Level");
 		headerMap.put(RegistrationMap.INDUSTRY.name(),"Industry");
 		headerMap.put(RegistrationMap.ROLE.name(),"Market Role");
-		headerMap.put(RegistrationMap.FUNCTION.name(),"Market Function");
+		headerMap.put(RegistrationMap.FUNCTION.name(),"Functional Group");
 		headerMap.put(RegistrationMap.INTEREST.name(),"Market Interests");
 		headerMap.put(ENTRY_SROUCE,"Entry Source");
 		return headerMap;

@@ -2,6 +2,9 @@ package com.mts.action.email;
 
 // JDK 1.8.x
 import java.io.IOException;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 
 // Google Gson 2.x
@@ -10,12 +13,15 @@ import com.google.gson.Gson;
 // MTS Libs
 import com.mts.action.email.data.EmailEventVO;
 import com.mts.action.email.data.EventVO;
+import com.mts.common.MTSConstants;
 
 // SMT Base Libs
 import com.siliconmtn.action.ActionException;
 import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
+import com.siliconmtn.data.GenericVO;
 import com.siliconmtn.io.http.SMTHttpConnectionManager;
+import com.smt.sitebuilder.action.SBModuleVO;
 
 // WC Libs 
 import com.smt.sitebuilder.action.SimpleActionAdapter;
@@ -61,6 +67,18 @@ public class EventEmailWidget extends SimpleActionAdapter {
 	
 	/*
 	 * (non-javadoc)
+	 * @see com.smt.sitebuilder.action.SimpleActionAdapter#list(com.siliconmtn.action.ActionRequest)
+	 */
+	@Override
+	public void list(ActionRequest req) throws ActionException {
+		super.list(req);
+		
+		// Add the attribute 1 and 2 text fields to the admin with the following fields
+		req.setAttribute(SBModuleVO.ATTRIBUTE_1, "Publication ID<br/>MEDTECH-STRATEGIST <br/>MARKET-PATHWAYS)");
+	}
+	
+	/*
+	 * (non-javadoc)
 	 * @see com.smt.sitebuilder.action.SBActionAdapter#retrieve(com.siliconmtn.action.ActionRequest)
 	 */
 	@Override
@@ -68,12 +86,35 @@ public class EventEmailWidget extends SimpleActionAdapter {
 		log.debug("retrieving Email Event");
 		try {
 			EventVO events = getEvents();
-			setModuleData(events.getUpcoming(), events.getUpcoming().size());
+			GenericVO actionData = new GenericVO(MTSConstants.getEmailColor(getAction()), events.getUpcoming());
+			setModuleData(actionData, events.getUpcoming().size());
 			
 		} catch (Exception e) {
 			log.error("Unable to retrieve events", e);
 			setModuleData(new ArrayList<EmailEventVO>(), 0, e.getLocalizedMessage());
 		}
+	}
+	
+	/**
+	 * Grab the data from the action and populate into a vo
+	 * @param req
+	 * @param actionId
+	 * @return
+	 */
+	public String getAction() {
+		String sql = "select attrib1_txt from sb_action where action_id = ? and pending_sync_flg = 0";
+		String pubId = "";
+		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
+			ps.setString(1, actionInit.getActionId());
+			ResultSet rs = ps.executeQuery();
+			if (rs.next()) {
+				pubId = rs.getString(1);
+			}
+		} catch (SQLException e) {
+			log.error("Unable to retrieve action data", e);
+		}
+		
+		return pubId;
 	}
 	
 	/**
@@ -87,7 +128,7 @@ public class EventEmailWidget extends SimpleActionAdapter {
 		
 		// If not in cache, retrieve
 		SMTHttpConnectionManager conn = new SMTHttpConnectionManager();
-		byte[] data = conn.retrieveData(EVENT_URL);
+		byte[] data = conn.getRequestData(EVENT_URL, "", SMTHttpConnectionManager.HttpConnectionType.GET);
 		
 		// Parse into a Java Object
 		Gson g = new Gson();

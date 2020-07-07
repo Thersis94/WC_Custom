@@ -1,4 +1,4 @@
-package com.depuysynthes.scripts.showpad.xls;
+package com.depuysynthes.scripts.showpad;
 
 import java.io.File;
 import java.io.IOException;
@@ -8,11 +8,15 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 import com.depuysynthes.action.MediaBinAssetVO;
@@ -20,8 +24,6 @@ import com.depuysynthes.scripts.DSMediaBinImporterV2;
 import com.depuysynthes.scripts.DSPrivateAssetsImporter;
 import com.depuysynthes.scripts.MediaBinDeltaVO;
 import com.depuysynthes.scripts.MediaBinDeltaVO.State;
-import com.depuysynthes.scripts.showpad.ShowpadApiUtil;
-import com.depuysynthes.scripts.showpad.ShowpadDivisionUtil;
 import com.siliconmtn.db.DBUtil;
 import com.siliconmtn.io.http.SMTHttpConnectionManager;
 import com.siliconmtn.util.Convert;
@@ -30,7 +32,7 @@ import com.siliconmtn.util.parser.MapExcelParser;
 import com.smt.sitebuilder.common.constants.Constants;
 
 /****************************************************************************
- * <b>Title</b>: AbstractShowpadIngest.java<br/>
+ * <b>Title</b>: ExcelShowpadIngest.java<br/>
  * <b>Description</b>: Extends the MediaBin importer to record and push assets to Showpad at the same time.
  * This file models ShowpadMediaBinDecorator, but deviates in supporting the simplified Excel meta-data file,
  * instead of EXP files.  It's only used for Showpad pushes. 
@@ -40,8 +42,10 @@ import com.smt.sitebuilder.common.constants.Constants;
  * @author James McKain
  * @version 1.0
  * @since Feb 01, 2020
+ * @updates
+ * 		Refactored from 'one division per Excel file' to 'one file, split OpCo field into Divisions' - JM - 05/05/2020
  ****************************************************************************/
-public abstract class AbstractShowpadIngest extends DSMediaBinImporterV2 {
+public class ExcelShowpadIngest extends DSMediaBinImporterV2 {
 
 	static final String BR = "<br/>";
 	static final String HR_NL = "<hr/>\r\n";
@@ -49,15 +53,21 @@ public abstract class AbstractShowpadIngest extends DSMediaBinImporterV2 {
 
 	protected ShowpadApiUtil showpadApi;
 	protected List<ShowpadDivisionUtil> divisions = new ArrayList<>();
+	private Map<String, String> divisionMap = new HashMap<>();
 
 	/**
 	 * abstract constructor - not visible publicly
 	 * @param args
 	 * @throws IOException 
 	 */
-	protected AbstractShowpadIngest(String[] args) throws IOException {
+	protected ExcelShowpadIngest(String[] args) {
 		super(args);
 		MIN_EXP_ROWS = 0;
+		emailSubjectSuffix = "Excel";
+	}
+
+	public static void main(String[] args) {
+		new ExcelShowpadIngest(args).run();
 	}
 
 
@@ -86,6 +96,58 @@ public abstract class AbstractShowpadIngest extends DSMediaBinImporterV2 {
 	}
 
 
+	/**
+	 * @override
+	 */
+	@Override
+	protected void sortDeltas(Map<String, MediaBinDeltaVO> masterRecords, Map<String, MediaBinDeltaVO> newRecords) {
+		super.sortDeltas(masterRecords, newRecords);
+
+		// masterRecords contains the 'to be enacted on' set, after the call to super above.
+		// if the record is marked as changed or new, split the divisions we need update
+		for (MediaBinDeltaVO vo : masterRecords.values()) {
+			//inserts are the only case not covered in the parent iteration
+			if (State.Insert == vo.getRecordState()) {
+				//at this point both VOs are the same, which simply means nothing is going to be deleted - which is acceptable since this is an 'insert' use case.
+				setDivisionDeltas(vo, vo);
+			}
+		}
+	}
+
+
+	/**
+	 * This code sorts any Division changes - which to add-to and which to withdraw-from
+	 * @param vo
+	 * @param mr
+	 */
+	@Override
+	protected void setUpdateFields(MediaBinDeltaVO vo, MediaBinDeltaVO mr) {
+		super.setUpdateFields(vo, mr);
+		setDivisionDeltas(vo, mr);
+	}
+
+
+	/**
+	 * Tag the divisions this asset should be added-to and removed-from
+	 * @param vo
+	 * @param mr
+	 */
+	private void setDivisionDeltas(MediaBinDeltaVO vo, MediaBinDeltaVO mr) {
+		//add it to all the today bindings
+		Set<String> desiredDivNms = new HashSet<>(Arrays.asList(StringUtil.checkVal(vo.getOpCoNm()).split(TOKENIZER)));
+
+		//remove it from all the yesterday bindings, sans the ones we want to persist
+		log.debug("old=" + mr.getOpCoNm());
+		log.debug("new=" + vo.getOpCoNm());
+		Set<String> removeDivNms = new HashSet<>(Arrays.asList(StringUtil.checkVal(mr.getOpCoNm()).split(TOKENIZER)));
+		removeDivNms.removeAll(desiredDivNms);
+
+		vo.captureDivisionChange(desiredDivNms, true);
+		vo.captureDivisionChange(removeDivNms, false);
+		log.debug(vo.getDpySynMediaBinId() + " adding to divisions: " + StringUtil.getToString(desiredDivNms.toArray(), false, false, ","));
+		log.debug(vo.getDpySynMediaBinId() + " removing from divisions: " + StringUtil.getToString(removeDivNms.toArray(), false, false, ","));
+	}
+
 
 	/**
 	 * Load a list of tags already at Showpad
@@ -94,12 +156,24 @@ public abstract class AbstractShowpadIngest extends DSMediaBinImporterV2 {
 	 */
 	protected void loadShowpadDivisionList() {
 		String[] divs = props.getProperty("showpadDivisions" + type).split(",");
+		String[] aliases = props.getProperty("showpadAliases" + type).split(",");
 		for (String d : divs) {
 			String[] div = d.split("=");
 			ShowpadDivisionUtil util = new ShowpadDivisionUtil(props, div[1], div[0], showpadApi, dbConn);
 			util.setEOSRun(true); //affects how files are named
 			divisions.add(util);
-			log.debug("created division " + div[0] + " with id " + div[1]);
+
+			String name = util.getDivisionNm();
+			//see if we have a better name match - EMEA can use nicknames in the Excel file if we also have them in our config
+			for (String keypair : aliases) {
+				String[] arr = keypair.split("=");
+				if (arr.length == 2 && arr[0].equals(name)) {
+					name = arr[1];
+					break;
+				}
+			}
+			divisionMap.put(name, util.getDivisionId());
+			log.debug("aliased division " + name + " to id " + div[1]);
 		}
 		log.info("loaded " + divisions.size() + " showpad divisions");
 	}
@@ -132,7 +206,7 @@ public abstract class AbstractShowpadIngest extends DSMediaBinImporterV2 {
 
 		if (fileOnLLChanged(vo) || !todaysDate.equals(lastFullDate)) {
 			vo.setFileChanged(true); //either of the above yields a true here
-			
+
 			// If there's no checksum that means we got a non-200 http response. 
 			// We don't want to process any farther - exit quietly and let the script continue trying (on schedule) until the file becomes available
 			if (StringUtil.isEmpty(vo.getChecksum()))
@@ -241,8 +315,37 @@ public abstract class AbstractShowpadIngest extends DSMediaBinImporterV2 {
 	 * @throws QuotaException
 	 */
 	protected void loopFileThroughDivisions(MediaBinDeltaVO vo) {
-		for (ShowpadDivisionUtil util : divisions) {
-			util.pushAsset(vo);	
+		//push this asset to any divisions we're adding/updating
+		Set<String> divs =  vo.getAddToDivisions() != null ? vo.getAddToDivisions() : Collections.emptySet();
+		for (String divNm : divs) {
+			log.debug("adding to division aliased as " + divNm);
+			String divId = divisionMap.get(divNm);
+
+			for (ShowpadDivisionUtil util : divisions) {
+				if (util.getDivisionId().equals(divId)) {
+					log.debug("pushing to division " + divId);
+					util.pushAsset(vo);
+					break;
+				}
+			}
+		}
+
+		//delete this asset from any divisions we're withdrawing
+		// When the whole record is deleted the deleteRecords workflow has us covered.
+		// When the list of opCos changes and the asset needs to be removed from only one Division, it 
+		// looks like an update and needs to be addressed here.
+		divs =  vo.getDeleteFromDivisions() != null ? vo.getDeleteFromDivisions() : Collections.emptySet();
+		for (String divNm : divs) {
+			log.debug("deleting from division aliased as " + divNm);
+			String divId = divisionMap.get(divNm);
+			for (ShowpadDivisionUtil util : divisions) {
+				if (util.getDivisionId().equals(divId)) {
+					log.debug("pushing delete to division " + divId);
+					util.deleteAsset(vo);
+					deleteFromDb(divId, vo.getDpySynMediaBinId());
+					break;
+				}
+			}
 		}
 	}
 
@@ -281,6 +384,26 @@ public abstract class AbstractShowpadIngest extends DSMediaBinImporterV2 {
 				ps.addBatch();
 			}
 			ps.executeBatch();
+		} catch (SQLException sqle) {
+			failures.add(sqle);
+		}
+	}
+
+
+	/**
+	 * delete specific showpad assets from the local DB table
+	 * @param deletedIds
+	 */
+	private void deleteFromDb(String divisionId, String dpySynMediabinId ) {
+		StringBuilder sql = new StringBuilder(350);
+		sql.append("delete from ").append(schema).append("dpy_syn_showpad ");
+		sql.append("where division_id=? and dpy_syn_mediabin_id=?");
+		log.debug(sql);
+
+		try (PreparedStatement ps  = dbConn.prepareStatement(sql.toString())) {
+			ps.setString(1, divisionId);
+			ps.setString(2, dpySynMediabinId);
+			ps.executeUpdate();
 		} catch (SQLException sqle) {
 			failures.add(sqle);
 		}
