@@ -150,7 +150,8 @@ public class ContentFeedJob extends AbstractSMTJob {
 		String user = (String) attributes.get("SFTP_USER");
 		String pwd = (String) attributes.get("SFTP_PASSWORD");
 		String baseUrl = (String) attributes.get("BASE_URL");
-
+		if("true".equalsIgnoreCase((String) attributes.get("MANUAL_JOB")))
+			isManualJob = true;
 		// Append the dates to this
 		Date d = new Date();
 		String pattern = "yyyyMMdd";
@@ -185,9 +186,11 @@ public class ContentFeedJob extends AbstractSMTJob {
 			MTSDocs.setItems(medtechDocs);
 
 			String json = convertArticlesJson(MTSDocs);
-			// Save document
-			if (isManualJob) saveFile(json, fileLoc, msg);
-			else saveFile(json, fileLoc, host, user, pwd, msg);
+			// Save document if the file is Manual then save to a directory instead of to InfoDesk
+			if (isManualJob) {
+				saveFile(json, fileLoc, msg);
+			} else
+				saveFile(json, fileLoc, host, user, pwd, msg);
 		}
 
 		// Update the newly published articles data_feed_processed_flg database entry to
