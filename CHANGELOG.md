@@ -1,5 +1,12 @@
 WC_Custom Changelog (auto-generated)
 
+# [3.58.0](https://github.com/smtadmin/WC_Custom/compare/3.57.4...3.58.0) (2020-07-07)
+
+
+### Features
+
+* **feature-wsla-i110:** add defect and repair codes to diagnostic run ([0bc5857](https://github.com/smtadmin/WC_Custom/commit/0bc5857))
+
 ## [3.57.4](https://github.com/smtadmin/WC_Custom/compare/3.57.3...3.57.4) (2020-06-23)
 
 
