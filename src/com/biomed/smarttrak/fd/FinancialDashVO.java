@@ -43,8 +43,10 @@ public class FinancialDashVO extends SBModuleVO {
 	private String sectionName;
 	private boolean editMode;
 	private String scenarioId;
+	private String scenarioName;
 	private String companyId;
 	private String companyName;
+	private String displayName;
 	private int publishedQtr;
 	private int publishedYear;
 	private int reportedQtr;
@@ -198,6 +200,7 @@ public class FinancialDashVO extends SBModuleVO {
 		setEditMode(edit);
 		setScenarioId(scenId);
 		setCompanyId(compId);
+		setDisplayName(DisplayType.valueOf(dispType).getName());
 
 		// Get the year/quarter of what was most recently published for the section being viewed
 		SectionVO section = (SectionVO) sections.getRootNode().getUserObject();
@@ -294,6 +297,13 @@ public class FinancialDashVO extends SBModuleVO {
 	}
 
 	/**
+	 * @return the scenarioName
+	 */
+	public String getScenarioName() {
+		return scenarioName;
+	}
+
+	/**
 	 * @return the companyId
 	 */
 	public String getCompanyId() {
@@ -305,6 +315,13 @@ public class FinancialDashVO extends SBModuleVO {
 	 */
 	public String getCompanyName() {
 		return companyName;
+	}
+
+	/**
+	 * @return the displayName
+	 */
+	public String getDisplayName() {
+		return displayName;
 	}
 
 	/**
@@ -455,6 +472,13 @@ public class FinancialDashVO extends SBModuleVO {
 	}
 
 	/**
+	 * @param scenarioName the scenarioName to set
+	 */
+	public void setScenarioName(String scenarioName) {
+		this.scenarioName = scenarioName;
+	}
+
+	/**
 	 * @param companyId the companyId to set
 	 */
 	public void setCompanyId(String companyId) {
@@ -466,6 +490,13 @@ public class FinancialDashVO extends SBModuleVO {
 	 */
 	public void setCompanyName(String companyName) {
 		this.companyName = companyName;
+	}
+
+	/**
+	 * @param displayType the displayName to set
+	 */
+	public void setDisplayName(String displayName) {
+		this.displayName = displayName;
 	}
 
 	/**
