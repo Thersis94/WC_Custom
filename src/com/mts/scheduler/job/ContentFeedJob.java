@@ -247,11 +247,11 @@ public class ContentFeedJob extends AbstractSMTJob {
 			StringBuilder missingValues = new StringBuilder();
 			missingValues.append("Article missing required fields: ");
 			
-			if(!(article.getTitle() != null && !article.getTitle().isEmpty())) missingValues.append("title ");
-			if(!(article.getCreator() != null && !article.getCreator().isEmpty())) missingValues.append("author ");
-			if(!(article.getDescription() != null && !article.getDescription().isEmpty())) missingValues.append("description ");
-			if(!(article.getShortUrl() != null && !article.getShortUrl().isEmpty())) missingValues.append("link ");
-			if(!(article.getImagePath() != null && !article.getImagePath().isEmpty())) missingValues.append("image ");
+			if(article.getTitle() == null || article.getTitle().isEmpty()) missingValues.append("title ");
+			if(article.getCreator() == null || article.getCreator().isEmpty()) missingValues.append("author ");
+			if(article.getDescription() == null || article.getDescription().isEmpty()) missingValues.append("description ");
+			if(article.getShortUrl() == null || article.getShortUrl().isEmpty()) missingValues.append("link ");
+			if(article.getImagePath() == null || article.getImagePath().isEmpty()) missingValues.append("image ");
 			
 			if(missingValues.length() > 33)
 				return missingValues.toString();
