@@ -57,7 +57,7 @@ public class HootsuiteManager {
 	 * @param media
 	 * @throws ApplicationException 
 	 */
-	public void post(StringBuilder msg, String socialId, PostVO post, String postContent,boolean media) 
+	public void post(StringBuilder msg, String socialId, PostVO post, String postContent, boolean media) 
 	throws ApplicationException {
 			post.setPostTime(9);
 			
