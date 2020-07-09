@@ -21,8 +21,6 @@ import java.util.Map;
 // Quartz libs
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
-import org.quartz.ee.servlet.QuartzInitializerListener;
-import org.quartz.impl.StdSchedulerFactory;
 
 // GSON 2.3
 import com.google.gson.Gson;
@@ -35,7 +33,6 @@ import com.siliconmtn.db.DBUtil;
 // SMT Base libs
 import com.siliconmtn.db.DatabaseConnection;
 import com.siliconmtn.db.orm.DBProcessor;
-import com.siliconmtn.db.pool.SMTDBConnection;
 import com.siliconmtn.exception.ApplicationException;
 import com.siliconmtn.exception.DatabaseException;
 import com.siliconmtn.exception.InvalidDataException;
@@ -43,7 +40,6 @@ import com.siliconmtn.html.tool.HTMLFeedParser;
 import com.siliconmtn.http.filter.fileupload.Constants;
 import com.siliconmtn.util.Convert;
 import com.smt.sitebuilder.action.metadata.MetadataVO;
-import com.smt.sitebuilder.action.scheduler.ScheduleJobInstanceFacadeAction;
 import com.smt.sitebuilder.action.tools.SiteRedirVO;
 // WC Libs
 import com.smt.sitebuilder.scheduler.AbstractSMTJob;
@@ -127,12 +123,7 @@ public class ContentFeedJob extends AbstractSMTJob {
 	public void execute(JobExecutionContext ctx) throws JobExecutionException {
 		super.execute(ctx);
 		attributes = ctx.getMergedJobDataMap().getWrappedMap();
-		// JobExecutionContext.getMergedJobDataMap doesn't come with an instance of the
-		// scheduler factory so we have to grab the scheduler and add it to the attributes map
-		// manually
-		StdSchedulerFactory ssf = new StdSchedulerFactory();
-		attributes.put(QuartzInitializerListener.QUARTZ_FACTORY_KEY, ssf);
-
+		
 		StringBuilder msg = new StringBuilder(500);
 
 		// Process the data feed
@@ -175,7 +166,7 @@ public class ContentFeedJob extends AbstractSMTJob {
 		// Get the docs published in the past day. Exit of no articles found
 		ContentFeedVO docs = getArticles(feedTitle, feedDesc, baseUrl);
 		ContentFeedVO MTSDocs = docs;
-		msg.append(String.format("Loaded %d articles\n", docs.getItems().size()));
+		msg.append(String.format("Loaded %d articles.\n", docs.getItems().size()));
 
 		// Get a list of the docs UIDs
 		List<String> uIds = docs.getUniqueIds();
@@ -198,11 +189,10 @@ public class ContentFeedJob extends AbstractSMTJob {
 
 			// Set the docs to the array of medtechDocs
 			MTSDocs.setItems(medtechDocs);
-
+			
 			String json = convertArticlesJson(MTSDocs);
 			// Save document if the file is Manual then save to a directory instead of to InfoDesk
 			if (isManualJob) {
-
 				saveFile(json, fileLoc, msg);
 			} else
 				saveFile(json, fileLoc, host, user, pwd, msg);
@@ -212,7 +202,7 @@ public class ContentFeedJob extends AbstractSMTJob {
 		// 1
 		setSentFlags(uIds);
 		if (success)
-			msg.append("Success");
+			msg.append("Job Completed Successfully. ");
 	}
 
 	/**
@@ -247,9 +237,28 @@ public class ContentFeedJob extends AbstractSMTJob {
 		for (PostVO post : hp.getPosts()) {
 			sequencePosts(hc, hoot, msg, post, hp);
 		}
+	}
 
-		// Resync the scheduler instance with the new database values
-		updateScheduler(msg);
+	/**
+	 * Validates that all of the member variables in the HootsuitePosts that are required in order to make a Hootsuite post are present.
+	 * @param article
+	 * @throws ApplicationException
+	 */
+	private String validateHootsuiteArticleData(ContentFeedItemVO article) throws ApplicationException {
+		
+			StringBuilder missingValues = new StringBuilder();
+			missingValues.append("Article missing required fields: ");
+			
+			if(!(article.getTitle() != null && !article.getTitle().isEmpty())) missingValues.append("title ");
+			if(!(article.getCreator() != null && !article.getCreator().isEmpty())) missingValues.append("author ");
+			if(!(article.getDescription() != null && !article.getDescription().isEmpty())) missingValues.append("description ");
+			if(!(article.getShortUrl() != null && !article.getShortUrl().isEmpty())) missingValues.append("link ");
+			if(!(article.getImagePath() != null && !article.getImagePath().isEmpty())) missingValues.append("image ");
+			
+			if(missingValues.length() > 33)
+				return missingValues.toString();
+			else
+				return "";
 	}
 
 	/**
@@ -276,26 +285,6 @@ public class ContentFeedJob extends AbstractSMTJob {
 				// Post the message to Facebook and Linkedin
 				hoot.post(msg, profile.getValue(), post, post.getStandardFormattedString(), true);
 			}
-		}
-	}
-
-	/**
-	 * Resyncs the scheduler instance with the new database values
-	 * 
-	 * @param msg error/success message
-	 */
-	private void updateScheduler(StringBuilder msg) {
-		try {
-			// The connection needs to be a quarts connection
-			SMTDBConnection smtDB = new SMTDBConnection(conn);
-			ScheduleJobInstanceFacadeAction s = new ScheduleJobInstanceFacadeAction(smtDB, attributes);
-			s.updateScheduler((String) attributes.get("scheduleJobInstanceId"));
-		} catch (Exception e) {
-			success = false;
-			ByteArrayOutputStream baos = new ByteArrayOutputStream();
-			PrintStream ps = new PrintStream(baos);
-			e.printStackTrace(ps);
-			msg.append("| Update Scheduler Failure: ").append(new String(baos.toByteArray()) + " | ");
 		}
 	}
 
@@ -346,9 +335,10 @@ public class ContentFeedJob extends AbstractSMTJob {
 	 * @param baseUrl
 	 * @return
 	 * @throws com.siliconmtn.db.util.DatabaseException
+	 * @throws ApplicationException 
 	 */
 	private HootsuitePostsVO fillHootsuitePostVOs(ContentFeedVO docs, String baseUrl)
-			throws com.siliconmtn.db.util.DatabaseException {
+			throws com.siliconmtn.db.util.DatabaseException, ApplicationException {
 
 		HootsuitePostsVO hp = new HootsuitePostsVO();
 
@@ -360,6 +350,11 @@ public class ContentFeedJob extends AbstractSMTJob {
 
 			PostVO post = new PostVO();
 
+			// Validate article data
+			String missingValues = validateHootsuiteArticleData(article);
+			if(!missingValues.isEmpty())
+				throw new ApplicationException(missingValues);
+			
 			post.setTitle(article.getTitle());
 			post.setAuthor(article.getCreator());
 			post.setDescription(article.getDescription());
