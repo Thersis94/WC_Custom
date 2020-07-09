@@ -69,6 +69,7 @@ public class HootsuiteManager {
 					schedulePost(msg, socialId, post, postContent);
 				}
 			} catch (IOException | InterruptedException e) {
+				Thread.currentThread().interrupt();
 				throw new ApplicationException("Unable to connect to Hootsuite", e);
 			}
 	}

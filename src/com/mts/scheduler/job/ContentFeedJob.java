@@ -242,7 +242,7 @@ public class ContentFeedJob extends AbstractSMTJob {
 	 * @param article
 	 * @throws ApplicationException
 	 */
-	private String validateHootsuiteArticleData(ContentFeedItemVO article) throws ApplicationException {
+	private String validateHootsuiteArticleData(ContentFeedItemVO article) {
 		
 			StringBuilder missingValues = new StringBuilder();
 			missingValues.append("Article missing required fields: ");
