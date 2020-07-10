@@ -189,11 +189,12 @@ public class ContentFeedJob extends AbstractSMTJob {
 
 			// Set the docs to the array of medtechDocs
 			MTSDocs.setItems(medtechDocs);
-
-			String json = convertArticlesJson(MTSDocs);
-			// Save document if the file is Manual then save to a directory instead of to InfoDesk
-			if (isManualJob) saveFile(json, fileLoc, msg);
-			else saveFile(json, fileLoc, host, user, pwd, msg);
+			if (!MTSDocs.getItems().isEmpty()) {
+				String json = convertArticlesJson(MTSDocs);
+				// Save document if the file is Manual then save to a directory instead of to InfoDesk
+				if (isManualJob) saveFile(json, fileLoc, msg);
+				else saveFile(json, fileLoc, host, user, pwd, msg);
+			}
 		}
 
 		// Update the newly published articles data_feed_processed_flg database entry to
