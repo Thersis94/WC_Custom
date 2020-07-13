@@ -18,7 +18,7 @@ import org.apache.log4j.Logger;
 
 // Gson for parsing json data
 import com.google.gson.Gson;
-
+import com.siliconmtn.exception.ApplicationException;
 // Local Libs
 import com.siliconmtn.io.http.SMTHttpConnectionManager;
 import com.siliconmtn.io.http.SMTHttpConnectionManager.HttpConnectionType;
@@ -50,25 +50,28 @@ public class HootsuiteManager {
 	/**
 	 * Public main for interfacing with the command line
 	 * 
-	 * @param msg
+	 * @param msg java.net.UnknownHostException:
 	 * @param socialId
 	 * @param post
 	 * @param postContent
 	 * @param media
-	 * @throws IOException 
+	 * @throws ApplicationException 
 	 */
-	public void post(StringBuilder msg, String socialId, PostVO post, String postContent,
-			boolean media) throws IOException {
-		try {
+	public void post(StringBuilder msg, String socialId, PostVO post, String postContent, boolean media) 
+	throws ApplicationException {
 			post.setPostTime(9);
-			if (media) {
-				uploadHootsuiteMedia(msg, post);
-				schedulePost(msg, socialId, post, postContent);
-			} else
-				schedulePost(msg, socialId, post, postContent);
-		} catch(Exception e) {
-			throw new IOException("Hootsuite Post Failed: " + e);
-		}
+			
+			try {
+				if (media) {
+					uploadHootsuiteMedia(msg, post);
+					schedulePost(msg, socialId, post, postContent);
+				} else {
+					schedulePost(msg, socialId, post, postContent);
+				}
+			} catch (IOException | InterruptedException e) {
+				Thread.currentThread().interrupt();
+				throw new ApplicationException("Unable to connect to Hootsuite", e);
+			}
 	}
 
 	/**
