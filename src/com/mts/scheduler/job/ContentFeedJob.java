@@ -48,6 +48,7 @@ import com.smt.sitebuilder.scheduler.AbstractSMTJob;
 import ch.ethz.ssh2.Connection;
 import ch.ethz.ssh2.SFTPv3Client;
 import ch.ethz.ssh2.SFTPv3FileHandle;
+import io.netty.util.internal.StringUtil;
 
 /****************************************************************************
  * <b>Title</b>: ContentFeedJob.java <b>Project</b>: WC_Custom <b>Description:
@@ -66,6 +67,7 @@ public class ContentFeedJob extends AbstractSMTJob {
 	private Map<String, Object> attributes = new HashMap<>();
 	private boolean isManualJob = false;
 	private boolean success = true;
+	private String missingFields = "Article missing required fields: ";
 
 	/**
 	 * 
@@ -246,15 +248,17 @@ public class ContentFeedJob extends AbstractSMTJob {
 	private String validateHootsuiteArticleData(ContentFeedItemVO article) {
 		
 			StringBuilder missingValues = new StringBuilder();
-			missingValues.append("Article missing required fields: ");
+			missingValues.append(missingFields);
 			
-			if(article.getTitle() == null || article.getTitle().isEmpty()) missingValues.append("title ");
-			if(article.getCreator() == null || article.getCreator().isEmpty()) missingValues.append("author ");
-			if(article.getDescription() == null || article.getDescription().isEmpty()) missingValues.append("description ");
-			if(article.getShortUrl() == null || article.getShortUrl().isEmpty()) missingValues.append("link ");
-			if(article.getImagePath() == null || article.getImagePath().isEmpty()) missingValues.append("image ");
 			
-			if(missingValues.length() > 33)
+			
+			if(StringUtil.isNullOrEmpty(article.getTitle())) missingValues.append("title ");
+			if(StringUtil.isNullOrEmpty(article.getCreator())) missingValues.append("author ");
+			if(StringUtil.isNullOrEmpty(article.getDescription())) missingValues.append("description ");
+			if(StringUtil.isNullOrEmpty(article.getShortUrl())) missingValues.append("link ");
+			if(StringUtil.isNullOrEmpty(article.getImagePath())) missingValues.append("image ");
+			
+			if(missingValues.length() > missingFields.length())
 				return missingValues.toString();
 			else
 				return "";
