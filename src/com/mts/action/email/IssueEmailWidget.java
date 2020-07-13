@@ -131,9 +131,6 @@ public class IssueEmailWidget extends SimpleActionAdapter {
 		MTSDocumentAction mda = new MTSDocumentAction(getDBConnection(), getAttributes());
 		PublicationTeaserVO ptvo = mda.getLatestArticles((String)kv.getValue(), Convert.formatDate(new Date(), Calendar.DAY_OF_YEAR, (int)kv.getKey()));
 		
-		// Add to cache for 3 days
-		new CacheAdministrator(attributes).writeToCache(WC_CACHE_KEY, ptvo, 259200);
-		
 		return ptvo.getDocuments();
 	}
 }
