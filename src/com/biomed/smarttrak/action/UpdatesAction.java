@@ -17,6 +17,7 @@ import org.apache.solr.client.solrj.response.FacetField.Count;
 import org.apache.solr.common.SolrDocument;
 
 import com.biomed.smarttrak.action.AdminControllerAction.Section;
+import com.biomed.smarttrak.admin.SectionHierarchyAction;
 import com.biomed.smarttrak.security.SmarttrakRoleVO;
 import com.biomed.smarttrak.util.BiomedLinkCheckerUtil;
 import com.biomed.smarttrak.util.SmarttrakTree;
@@ -28,6 +29,7 @@ import com.siliconmtn.action.ActionInitVO;
 import com.siliconmtn.action.ActionRequest;
 import com.siliconmtn.common.http.CookieUtil;
 import com.siliconmtn.data.Node;
+import com.siliconmtn.data.Tree;
 import com.siliconmtn.http.session.SMTSession;
 import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
@@ -95,6 +97,10 @@ public class UpdatesAction extends SBActionAdapter {
 		//Sort Facet Hierarchy.
 		mod = (ModuleVO)attributes.get(Constants.MODULE_DATA);
 		SolrResponseVO resp = (SolrResponseVO) mod.getActionData();
+		
+		if (!req.getBooleanParameter("loadSolrUpdates")) {
+			loadPermissionsHierarchy(req);
+		}
 
 		if (resp != null && !resp.getResultDocuments().isEmpty()) {
 			List<Node> sections = loadSections(req);
@@ -116,6 +122,30 @@ public class UpdatesAction extends SBActionAdapter {
 			}
 		}
 
+	}
+	
+	/**
+	 * Load the allowed market sections that the user is allowed to see
+	 * so that the faceted list of updates can be pruned to only what they are subscrined to
+	 * @param req
+	 */
+	private void loadPermissionsHierarchy(ActionRequest req) {
+		// load the section hierarchy Tree from the hierarchy action
+		SectionHierarchyAction sha = new SectionHierarchyAction();
+		sha.setAttributes(getAttributes());
+		sha.setDBConnection(getDBConnection());
+		Tree hierarchy = sha.loadDefaultTree();
+		SmarttrakRoleVO role = (SmarttrakRoleVO)req.getSession().getAttribute(Constants.ROLE_DATA);
+		String acls = role.getAccessControlList(SmarttrakSolrAction.BROWSE_SECTION);
+		if (acls == null) return;
+		StringBuilder perms = new StringBuilder(500);
+		for (Node n : hierarchy.preorderList()) {
+			SectionVO sec = (SectionVO) n.getUserObject();
+			if (acls.contains(sec.getSolrTokenTxt())) {
+				perms.append(sec.getSectionNm()).append("|");
+			}
+		}
+		req.setAttribute("allowedSections", perms.toString());
 	}
 
 	/**
