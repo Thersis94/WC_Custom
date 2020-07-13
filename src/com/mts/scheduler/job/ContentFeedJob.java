@@ -67,7 +67,7 @@ public class ContentFeedJob extends AbstractSMTJob {
 	private Map<String, Object> attributes = new HashMap<>();
 	private boolean isManualJob = false;
 	private boolean success = true;
-	private static final String missingFields = "Article missing required fields: ";
+	private static final String MISSING_FIELDS = "Article missing required fields: ";
 
 	/**
 	 * 
@@ -248,7 +248,7 @@ public class ContentFeedJob extends AbstractSMTJob {
 	private String validateHootsuiteArticleData(ContentFeedItemVO article) {
 		
 			StringBuilder missingValues = new StringBuilder();
-			missingValues.append(missingFields);
+			missingValues.append(MISSING_FIELDS);
 			
 			if(StringUtil.isEmpty(article.getTitle())) missingValues.append("title ");
 			if(StringUtil.isEmpty(article.getCreator())) missingValues.append("author ");
@@ -256,7 +256,7 @@ public class ContentFeedJob extends AbstractSMTJob {
 			if(StringUtil.isEmpty(article.getShortUrl())) missingValues.append("link ");
 			if(StringUtil.isEmpty(article.getImagePath())) missingValues.append("image ");
 			
-			if(missingValues.length() > missingFields.length())
+			if(missingValues.length() > MISSING_FIELDS.length())
 				return missingValues.toString();
 			else
 				return "";
