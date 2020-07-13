@@ -1,5 +1,14 @@
 WC_Custom Changelog (auto-generated)
 
+## [3.58.1](https://github.com/smtadmin/WC_Custom/compare/3.58.0...3.58.1) (2020-07-13)
+
+
+### Bug Fixes
+
+* **hotfix-dsemea-70:** fix a typo in a request parameter which prevents updates from succeeding ([2131186](https://github.com/smtadmin/WC_Custom/commit/2131186))
+* **st-438:** increase throtteling to prevent our ip from being tagged as bad ([f29e271](https://github.com/smtadmin/WC_Custom/commit/f29e271))
+* **st-438:** remove other test case ([0e0962a](https://github.com/smtadmin/WC_Custom/commit/0e0962a))
+
 # [3.58.0](https://github.com/smtadmin/WC_Custom/compare/3.57.4...3.58.0) (2020-07-07)
 
 
