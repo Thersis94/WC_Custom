@@ -408,6 +408,8 @@ public class MTSDocumentAction extends SimpleActionAdapter {
 		sql.append(DBUtil.LEFT_OUTER_JOIN).append("(select * from ").append(schema);
 		sql.append("mts_document_asset where asset_type_cd = 'TEASER_IMG') as im on a.document_id = im.object_key_id ");
 		sql.append("where p.publication_id = ? and date(publish_dt) > ? ");
+		sql.append("order by publish_dt desc");
+		
 		log.debug(sql + "|" + pubId + "|" + publishDate);
 		
 		PublicationTeaserVO ptvo = new PublicationTeaserVO();
