@@ -1,5 +1,18 @@
 WC_Custom Changelog (auto-generated)
 
+# [3.59.0](https://github.com/smtadmin/WC_Custom/compare/3.58.1...3.59.0) (2020-07-17)
+
+
+### Bug Fixes
+
+* **email:** email widget was caching data uisng the sam ekey.  Removed caching ([9db216d](https://github.com/smtadmin/WC_Custom/commit/9db216d))
+* **st-449:** ensure only subscribed markets show up in the updates filter ([e13e7f4](https://github.com/smtadmin/WC_Custom/commit/e13e7f4))
+
+
+### Features
+
+* **smarttrak user report:** changed the User List report to not duplicate certain data ([5ee0ed0](https://github.com/smtadmin/WC_Custom/commit/5ee0ed0))
+
 ## [3.58.1](https://github.com/smtadmin/WC_Custom/compare/3.58.0...3.58.1) (2020-07-13)
 
 
