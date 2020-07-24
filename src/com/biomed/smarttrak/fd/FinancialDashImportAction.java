@@ -235,7 +235,7 @@ public class FinancialDashImportAction extends FinancialDashBaseAction {
 		StringBuilder sql = new StringBuilder(1000);
 		String custom = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
 		
-		sql.append("select s2.section_nm as parent_nm, s1.section_nm, c.company_nm, c.company_id, r.year_no, r.region_cd, s1.section_id + c.company_id + region_cd as GROUP_ID, ");
+		sql.append("select s2.section_nm as parent_nm, s1.section_nm, c.company_nm, c.company_id, r.year_no, r.region_cd, s1.section_id + c.company_id + r.region_cd as GROUP_ID, ");
 		sql.append("o.overlay_id, r.revenue_id, ? as SCENARIO_ID, scenario_nm, coalesce(o.Q1_NO, r.Q1_NO) as Q1_NO, coalesce(o.Q2_NO, r.Q2_NO) as Q2_NO, ");
 		sql.append("coalesce(o.Q3_NO, r.Q3_NO) as Q3_NO, coalesce(o.Q4_NO, r.Q4_NO) as Q4_NO ");
 		

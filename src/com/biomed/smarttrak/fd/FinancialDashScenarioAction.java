@@ -101,6 +101,29 @@ public class FinancialDashScenarioAction extends SBActionAdapter {
 	}
 
 	/**
+	 * Gets a single scenario
+	 * 
+	 * @param scenarios
+	 */
+	public FinancialDashScenarioVO getScenario(String scenarioId) {
+		String sql = getSingleScenarioSql();
+		FinancialDashScenarioVO svo = null;
+
+		try (PreparedStatement ps = dbConn.prepareStatement(sql)) {
+			ps.setString(1, scenarioId);
+
+			ResultSet rs = ps.executeQuery();
+			while (rs.next()) {
+				svo = new FinancialDashScenarioVO(rs);
+			}
+		} catch (SQLException sqle) {
+			log.error("Unable to get financial dashboard scenario list ", sqle);
+		}
+
+		return svo;
+	}
+
+	/**
 	 * Gets all of the existing scenarios, for data updates & such.
 	 * This should never be used to display a list to a user!!
 	 * 
@@ -137,6 +160,22 @@ public class FinancialDashScenarioAction extends SBActionAdapter {
 			}
 		}
 		sql.append("order by lower(scenario_nm) asc ");
+		log.debug(sql);
+		
+		return sql.toString();
+	}
+
+	/**
+	 * Gets the sql to return a single scenario
+	 * 
+	 * @return
+	 */
+	private String getSingleScenarioSql() {
+		String custom = (String) attributes.get(Constants.CUSTOM_DB_SCHEMA);
+		StringBuilder sql = new StringBuilder(200);
+
+		sql.append(DBUtil.SELECT_FROM_STAR).append(custom).append("BIOMEDGPS_FD_SCENARIO s ");
+		sql.append("where scenario_id = ? ");
 		log.debug(sql);
 		
 		return sql.toString();

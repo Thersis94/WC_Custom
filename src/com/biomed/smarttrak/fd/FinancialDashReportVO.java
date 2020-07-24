@@ -12,6 +12,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import org.apache.poi.ss.usermodel.IndexedColors;
+import org.apache.poi.ss.usermodel.RichTextString;
 import org.apache.poi.hssf.usermodel.HSSFCellStyle;
 import org.apache.poi.hssf.usermodel.HSSFDataFormat;
 import org.apache.poi.hssf.usermodel.HSSFFont;
@@ -29,6 +30,7 @@ import org.apache.poi.ss.util.CellUtil;
 import com.biomed.smarttrak.fd.FinancialDashVO.CountryType;
 import com.biomed.smarttrak.util.SmarttrakTree;
 import com.siliconmtn.data.Node;
+import com.siliconmtn.util.Convert;
 import com.siliconmtn.util.StringUtil;
 import com.smt.sitebuilder.action.AbstractSBReportVO;
 
@@ -46,7 +48,7 @@ public class FinancialDashReportVO extends AbstractSBReportVO {
     private static final long serialVersionUID = 1l;
     
     private static final String NAME = "NAME";
-    private enum CellStyleName {TITLE, HEADER, GROUP_TITLE, PARENT_TITLE, RIGHT, LEFT, CURRENCY, PERCENT, PERCENT_POS, PERCENT_NEG}
+    private enum CellStyleName {TITLE, HEADER, GROUP_TITLE, PARENT_TITLE, RIGHT, LEFT, CURRENCY, PERCENT, PERCENT_POS, PERCENT_NEG, DESCRIPTION, BASIC_LEFT}
     private enum DataRowType {STANDARD, TOTAL, GROUP_TOTAL}
     private enum DataType {CURRENCY, PERCENT}
     
@@ -86,10 +88,13 @@ public class FinancialDashReportVO extends AbstractSBReportVO {
 		// Create Excel Object
 		wb = new HSSFWorkbook();
 		sheet = wb.createSheet();
+		sheet.setDefaultRowHeightInPoints((short) 20);
 		setCellStyles();
 		
 		// Add the rows
 		addTitleRow();
+		
+		addDescRow();
 		
 		if (!StringUtil.isEmpty(dash.getCompanyId())) {
 			// Company view groups data by parent markets
@@ -99,16 +104,21 @@ public class FinancialDashReportVO extends AbstractSBReportVO {
 			addDataRows(dash.getRows());
 		}
 		
-		// Format so everthing can be seen when opened
+		// Format so everything can be seen when opened
+		// This needs to happen while there is cell data for for each column utilized by the
+		// report, otherwise columns without any cells will not be resized
 		for (Cell cell : row) {
 			// Auto size to the non-formatted data
 			sheet.autoSizeColumn(cell.getColumnIndex(), false);
 			
 			// Add width for numerical cell formatting characters: $ % , .
-			// 256 equals a character's maximum width for the font
+			// 308 equals a character's maximum width for the font at size 12
 			int curWidth = sheet.getColumnWidth(cell.getColumnIndex());
-			sheet.setColumnWidth(cell.getColumnIndex(), curWidth + 512);
+			sheet.setColumnWidth(cell.getColumnIndex(), curWidth + 616);
 		}
+
+		// add the footer to the bottom of the report
+		addFooterRows();
 
 		// Stream the workbook back to the browser
 		try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
@@ -136,13 +146,15 @@ public class FinancialDashReportVO extends AbstractSBReportVO {
 		cellStyles.put(CellStyleName.TITLE, setTitleStyle());
 		cellStyles.put(CellStyleName.HEADER, setHeaderStyle());
 		cellStyles.put(CellStyleName.GROUP_TITLE, setGroupingTitleStyle((short) 12, (short) 0));
-		cellStyles.put(CellStyleName.PARENT_TITLE, setGroupingTitleStyle((short) 11, (short) 1));
+		cellStyles.put(CellStyleName.PARENT_TITLE, setGroupingTitleStyle((short) 12, (short) 1));
 		cellStyles.put(CellStyleName.RIGHT, setRightStyle());
 		cellStyles.put(CellStyleName.LEFT, setLeftStyle());
 		cellStyles.put(CellStyleName.CURRENCY, setCurrencyStyle());
 		cellStyles.put(CellStyleName.PERCENT, setPercentStyle(IndexedColors.BLACK.getIndex()));
 		cellStyles.put(CellStyleName.PERCENT_POS, setPercentStyle(IndexedColors.GREEN.getIndex()));
 		cellStyles.put(CellStyleName.PERCENT_NEG, setPercentStyle(IndexedColors.RED.getIndex()));
+		cellStyles.put(CellStyleName.DESCRIPTION, setDescriptionStyle());
+		cellStyles.put(CellStyleName.BASIC_LEFT, setBasicLeftStyle());
 	}
 	
 	/**
@@ -151,15 +163,10 @@ public class FinancialDashReportVO extends AbstractSBReportVO {
 	protected void addTitleRow() {		
 		row = sheet.createRow(rowCount++);
 		row.setHeightInPoints((short) 24);
-		List<CountryType> countryTypes = dash.getSelectedCountryTypes();
 		
 		//construct the title
 		StringBuilder title = new StringBuilder(50);
 		title.append(reportTitle);
-		if(!countryTypes.isEmpty()){
-			String region = countryTypes.get(0).toString();
-			title.append(" - Region : ").append(region);
-		}
 		
 		Cell cell = row.createCell(0);
 		cell.setCellType(Cell.CELL_TYPE_STRING);
@@ -169,6 +176,115 @@ public class FinancialDashReportVO extends AbstractSBReportVO {
 		// Merge the title cell across additional cells to display full title
 		int range = dash.getColHeaders().getColumns().size();
 		sheet.addMergedRegion(new CellRangeAddress(0,0,0,range));
+	}
+
+	/**
+	 * Adds a description row to the excel report detailing the segment this report is on
+	 */
+	protected void addDescRow() {	
+		List<Integer> boldIndexes = new ArrayList<>(); 
+
+		StringBuilder description = new StringBuilder(100);
+		//Here I build the description out and put all the things in there that it needs
+		List<CountryType> countryTypes = dash.getSelectedCountryTypes();
+
+		// Add note if this is a non-default scenario
+		if(!StringUtil.isEmpty(dash.getScenarioId())){
+			boldIndexes.add(description.length());
+			boldIndexes.add(description.length()+9);
+			description.append("Scenario: ").append(dash.getScenarioName()).append(", ");
+		}
+
+		// Check and note if this report is for a specific region
+		if(!countryTypes.isEmpty()){
+			boldIndexes.add(description.length());
+			boldIndexes.add(description.length() + 7);
+			String region = countryTypes.get(0).toString();
+			description.append("Region: ").append(region).append(", ");
+		}
+
+		// Note the company or market segment if this is not at the root level of the FD tree
+		if (dash.getSectionId() != "MASTER_ROOT") {
+			if (!StringUtil.isEmpty(dash.getCompanyId())) {
+				boldIndexes.add(description.length());
+				boldIndexes.add(description.length() + 8);
+				description.append("Company: ").append(dash.getCompanyName()).append(", ");
+			}
+			else {
+				boldIndexes.add(description.length());
+				boldIndexes.add(description.length() + 7);
+				description.append("Market: ").append(dash.getSectionName()).append(", ");
+			}
+		}
+		
+		// If there is no description, exit early
+		if (description.length() == 0) {
+			return;
+		}
+		
+		// Remove the trailing ", " from the string
+		description.setLength(description.length()-2);
+
+		row = sheet.createRow(rowCount++);
+
+		// Build a second font for bolding portions of the description
+		Font boldFont = getBaseFont(wb);
+		boldFont.setBoldweight(Font.BOLDWEIGHT_BOLD);
+
+		Cell cell = row.createCell(0);
+		cell.setCellType(Cell.CELL_TYPE_STRING);
+		cell.setCellStyle(cellStyles.get(CellStyleName.DESCRIPTION));
+
+		RichTextString formattedDescription = wb.getCreationHelper().createRichTextString(description.toString());
+		formattedDescription.applyFont(getBaseFont(wb));
+
+		// Bold only the static portions of the description
+		for (int i = 0; i < boldIndexes.size(); i += 2) {
+			formattedDescription.applyFont(boldIndexes.get(i), boldIndexes.get(i+1), boldFont);
+		}
+		cell.setCellValue(formattedDescription);
+
+		// Merge the title cell across all utilized cells within the report to display full description
+		int range = dash.getColHeaders().getColumns().size();
+		sheet.addMergedRegion(new CellRangeAddress(rowCount-1,rowCount-1,0,range));
+	}
+
+	/**
+	 * Adds a row to the excel report with clarifying notes and copyright information
+	 */
+	protected void addFooterRows() {
+		// skip the first row following the data table
+		++rowCount;
+		row = sheet.createRow(rowCount++);
+
+		// Set up Copyright and additional notes
+		String copyright = String.format("Copyright© %s SmartTRAK, LLC", Convert.getCurrentYear());
+		String note = "All numbers in thousands";
+		StringBuilder timeframe = new StringBuilder(50);
+		timeframe.append("Timeframe: ").append(dash.getDisplayName());
+
+		// Place the timeframe information and data note on this row, each in a merged 1x3 cell
+		Cell cellTimeframe = row.createCell(0);
+		cellTimeframe.setCellType(Cell.CELL_TYPE_STRING);
+		cellTimeframe.setCellValue(timeframe.toString());
+		cellTimeframe.setCellStyle(cellStyles.get(CellStyleName.BASIC_LEFT));
+		sheet.addMergedRegion(new CellRangeAddress(rowCount-1,rowCount-1,0,2));
+
+		Cell cellNote = row.createCell(3);
+		cellNote.setCellType(Cell.CELL_TYPE_STRING);
+		cellNote.setCellValue(note);
+		cellNote.setCellStyle(cellStyles.get(CellStyleName.RIGHT));
+		sheet.addMergedRegion(new CellRangeAddress(rowCount-1,rowCount-1,3,5));
+		
+		// skip another row before placing the copyright
+		++rowCount;
+		row = sheet.createRow(rowCount++);
+
+		Cell cellCopyright = row.createCell(0);
+		cellCopyright.setCellType(Cell.CELL_TYPE_STRING);
+		cellCopyright.setCellValue(copyright);
+		cellCopyright.setCellStyle(cellStyles.get(CellStyleName.BASIC_LEFT));
+		sheet.addMergedRegion(new CellRangeAddress(rowCount-1,rowCount-1,0,2));
 	}
 	
 	/**
@@ -467,32 +583,26 @@ public class FinancialDashReportVO extends AbstractSBReportVO {
 	}
 	
 	/**
-	 * Creates the Report Title style
+	 * Creates the Report Title style.
 	 * 
 	 * @return
 	 */
 	protected CellStyle setTitleStyle() {
 		HSSFFont font = getBaseFont(wb);
 		font.setColor(HSSFColor.BLACK.index);
-		font.setBold(true);
-		font.setFontHeightInPoints((short)14);
+		font.setFontHeightInPoints((short)16);
 
 		HSSFCellStyle style = getBaseStyle(wb);
 		style.setFont(font);
 		style.setAlignment(CellStyle.ALIGN_LEFT);
 		style.setVerticalAlignment(CellStyle.VERTICAL_CENTER);
-		
-		HSSFPalette palette = wb.getCustomPalette();
-		short backColor = palette.findSimilarColor(208, 208, 208).getIndex();
-		style.setFillForegroundColor(backColor);
-		style.setFillPattern(CellStyle.SOLID_FOREGROUND);
-		style.setIndention((short) 1);
+		style.setIndention((short) 0);
 		
 		return style;
 	}
 	
 	/**
-	 * Creates the Header style
+	 * Creates the Header style for the column names for the tables
 	 * 
 	 * @return
 	 */
@@ -553,9 +663,41 @@ public class FinancialDashReportVO extends AbstractSBReportVO {
 	 * @return
 	 */
 	protected CellStyle setLeftStyle() {
-		HSSFCellStyle style= getBaseStyle(wb);
+		HSSFCellStyle style = getBaseStyle(wb);
+
 		style.setAlignment(HSSFCellStyle.ALIGN_LEFT);
 		HSSFFont font = getBaseFont(wb);
+		style.setFont(font);
+		
+		return style;
+	}
+	
+	/**
+	 * Creates the Left Aligned style without bold formatting
+	 * 
+	 * @return
+	 */
+	protected CellStyle setBasicLeftStyle() {
+		HSSFCellStyle style = getBaseStyle(wb);
+
+		style.setAlignment(HSSFCellStyle.ALIGN_LEFT);
+		HSSFFont font = getBaseFont(wb);
+		style.setFont(font);
+		
+		return style;
+	}
+	
+	/**
+	 * Creates a style for the description of the file contents
+	 * 
+	 * @return
+	 */
+	protected CellStyle setDescriptionStyle() {
+		HSSFCellStyle style = getBaseStyle(wb);
+		HSSFFont font = getBaseFont(wb);
+
+		style.setAlignment(HSSFCellStyle.ALIGN_LEFT);
+		style.setIndention((short) 0);
 		style.setFont(font);
 		
 		return style;
@@ -587,6 +729,7 @@ public class FinancialDashReportVO extends AbstractSBReportVO {
 		Font font = wb.createFont();
 		font.setBoldweight(Font.BOLDWEIGHT_BOLD);
 		font.setColor(color);
+		font.setFontHeightInPoints((short)12);
 		style.setFont(font);
 		
 		return style;
@@ -633,21 +776,20 @@ public class FinancialDashReportVO extends AbstractSBReportVO {
 	}
 	
 	/**
-	 * Applies additional celll formatting required by a group total row
+	 * Applies additional cell formatting required by a group total row
 	 * 
 	 * @param cell
 	 */
 	protected void applyGroupTotalRowStyle(Cell cell) {
 		// Create a bold font using the original font's color
-		// If color was black, reverse out to white
 		HSSFCellStyle style = (HSSFCellStyle) cell.getCellStyle();
-		HSSFFont oldFont = style.getFont(wb);
-		HSSFFont newFont = getBaseFont(wb);
-		newFont.setColor(oldFont.getColor() == HSSFColor.BLACK.index ? HSSFColor.WHITE.index : oldFont.getColor());
+		HSSFFont newFont = style.getFont(wb);
 		newFont.setBold(true);
 
 		// Apply the new properties
-		CellUtil.setCellStyleProperty(cell, wb, CellUtil.FILL_FOREGROUND_COLOR, HSSFColor.BLACK.index);
+		HSSFPalette palette = wb.getCustomPalette();
+		short backColor = palette.findSimilarColor(204, 255, 255).getIndex();
+		CellUtil.setCellStyleProperty(cell, wb, CellUtil.FILL_FOREGROUND_COLOR, backColor);
 		CellUtil.setCellStyleProperty(cell, wb, CellUtil.FILL_PATTERN, CellStyle.SOLID_FOREGROUND);
 		CellUtil.setFont(cell, wb, newFont);
 	}
@@ -673,7 +815,7 @@ public class FinancialDashReportVO extends AbstractSBReportVO {
 	 */
 	private HSSFFont getBaseFont(HSSFWorkbook workbook) {
 		HSSFFont font = workbook.createFont();
-		font.setFontHeightInPoints((short)10);
+		font.setFontHeightInPoints((short)12);
 		font.setFontName("Arial");
 		font.setBold(false);
 		font.setItalic(false);

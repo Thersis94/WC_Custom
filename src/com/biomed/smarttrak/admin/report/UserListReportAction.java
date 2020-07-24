@@ -161,7 +161,6 @@ public class UserListReportAction extends SimpleActionAdapter {
 
 			List<UserVO> users = account.getUsers();
 			for (UserVO user : users) {
-
 				// now add auth attributes if they exist.
 				userAttribs = authAttribs.get(user.getAuthenticationId());
 				if (userAttribs == null || userAttribs.isEmpty()) continue;
