@@ -11,7 +11,7 @@ import com.siliconmtn.data.parser.BeanDataVO;
 /****************************************************************************
  * <b>Title</b>: EmailEventVO.java
  * <b>Project</b>: WC_Custom
- * <b>Description: </b> CHANGE ME!!
+ * <b>Description: </b> This VO holds information for a event pulled from the MTS Squarespace events page. 
  * <b>Copyright:</b> Copyright (c) 2020
  * <b>Company:</b> Silicon Mountain Technologies
  * 
@@ -150,14 +150,14 @@ public class EmailEventVO extends BeanDataVO {
 	 * @return the startDate
 	 */
 	public long getStartDate() {
-		return startDate;
+		return startDate - 25200;//This reduces the timeStamp by 7 hours to convert it from UTC to PT for MTS
 	}
 
 	/**
 	 * @return the endDate
 	 */
 	public long getEndDate() {
-		return endDate;
+		return endDate - 25200;//This reduces the timeStamp by 7 hours to convert it from UTC to PT for MTS
 	}
 
 	/**
