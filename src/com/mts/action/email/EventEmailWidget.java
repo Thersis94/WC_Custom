@@ -132,13 +132,19 @@ public class EventEmailWidget extends SimpleActionAdapter {
 		
 		// Parse into a Java Object
 		Gson g = new Gson();
-		EventVO event = g.fromJson(new String(data), EventVO.class);
+		EventVO events = g.fromJson(new String(data), EventVO.class);
+		
+		//Change the start and end dates from UTC to PST for MTS
+		for(EmailEventVO event : events.getUpcoming()) {
+			event.setStartDate(event.getStartDate() - 25200000);
+			event.setEndDate(event.getEndDate() - 25200000);
+		}
 		
 		// Add to cache for 3 days
-		new CacheAdministrator(attributes).writeToCache(WC_CACHE_KEY, event, 259200);
+		new CacheAdministrator(attributes).writeToCache(WC_CACHE_KEY, events, 259200);
 		
 		// Return the newly retrieved element
-		return event;
+		return events;
 
 	}
 

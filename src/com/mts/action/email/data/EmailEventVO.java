@@ -150,16 +150,15 @@ public class EmailEventVO extends BeanDataVO {
 	 * @return the startDate
 	 */
 	public long getStartDate() {
-		return startDate - 25200;//This reduces the timeStamp by 7 hours to convert it from UTC to PT for MTS
+		return startDate;
 	}
 
 	/**
 	 * @return the endDate
 	 */
 	public long getEndDate() {
-		return endDate - 25200;//This reduces the timeStamp by 7 hours to convert it from UTC to PT for MTS
+		return endDate;
 	}
-
 	/**
 	 * @param id the id to set
 	 */
