@@ -1,9 +1,12 @@
 package com.mts.hootsuite;
 
+//JDK 1.8.x
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
+
+//SMT Base Libs
+import com.siliconmtn.data.parser.BeanDataVO;
 
 /****************************************************************************
  * <b>Title</b>: TwitterMessageVO.java
@@ -17,24 +20,15 @@ import java.util.Map;
  * @since May 11, 2020
  * @updates:
  ****************************************************************************/
-public class ScheduleMessageVO {
+public class ScheduleMessageVO extends BeanDataVO {
 
+	// This has to be named 'text' Hootsuite throws a fit if it is named anything else
 	private String text;
 	private List<String> socialProfileIds = new ArrayList<>();
 	private String scheduledSendTime;
 	private List<Map<String, String>> media = new ArrayList<>();
-	/**
-	 * @return the text
-	 */
-	public String getText() {
-		return text;
-	}
-	/**
-	 * @param text the text to set
-	 */
-	public void setText(String text) {
-		this.text = text;
-	}
+	private List<Map<String, String>> mediaUrls = new ArrayList<>();
+	
 	/**
 	 * @return the socialProfiles
 	 */
@@ -61,12 +55,6 @@ public class ScheduleMessageVO {
 		this.media = mediaList;
 	}
 	/**
-	 * @return the socialProfileIds
-	 */
-	public List<String> getSocialProfileIds() {
-		return socialProfileIds;
-	}
-	/**
 	 * @param socialProfileIds the socialProfileIds to set
 	 */
 	public void setSocialProfileIds(List<String> socialProfileIds) {
@@ -84,8 +72,29 @@ public class ScheduleMessageVO {
 	public void setScheduledSendTime(String scheduledSendTime) {
 		this.scheduledSendTime = scheduledSendTime;
 	}
-	
-	
-	
+	/**
+	 * @return the mediaUrls
+	 */
+	public List<Map<String, String>> getMediaUrls() {
+		return mediaUrls;
+	}
+	/**
+	 * @param mediaUrls the mediaUrls to set
+	 */
+	public void setMediaUrls(List<Map<String, String>> mediaUrls) {
+		this.mediaUrls = mediaUrls;
+	}
+	/**
+	 * @return the hootsuiteMessageText
+	 */
+	public String getHootsuiteMessageText() {
+		return text;
+	}
+	/**
+	 * @param hootsuiteMessageText the hootsuiteMessageText to set
+	 */
+	public void setHootsuiteMessageText(String hootsuiteMessageText) {
+		this.text = hootsuiteMessageText;
+	}
 	
 }

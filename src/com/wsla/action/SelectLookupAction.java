@@ -130,6 +130,7 @@ public class SelectLookupAction extends SBActionAdapter {
 		keyMap.put("gender", new GenericVO("getGenders", Boolean.TRUE));
 		keyMap.put("prefix", new GenericVO("getPrefix", Boolean.TRUE));
 		keyMap.put("defect", new GenericVO("getDefects", Boolean.TRUE));
+		keyMap.put("repair", new GenericVO("getRepairs", Boolean.TRUE));
 		keyMap.put("product", new GenericVO("getProducts", Boolean.TRUE));
 		keyMap.put("productSetParts", new GenericVO("getProductSetParts", Boolean.TRUE));
 		keyMap.put("warranty", new GenericVO("getWarrantyList", Boolean.TRUE));
@@ -685,6 +686,41 @@ public class SelectLookupAction extends SBActionAdapter {
 
 		sql.append(") order by value");
 		log.debug("defects SQL " + sql + "|" + params);
+
+		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
+		return db.executeSelect(sql.toString(), params, new GenericVO());
+	}
+	
+
+	/**
+	 * Gets the list of defects adds the 
+	 * @return
+	 */
+	public List<GenericVO> getRepairs(ActionRequest req) {
+
+		// Get the Locale to pull correct language and add to the DB params
+		Locale locale = new ResourceBundleManagerAction().getUserLocale(req);
+		List<Object> params = new ArrayList<>();
+		params.add(locale.getLanguage());
+		params.add(locale.getCountry());
+		params.add(req.getStringParameter("defectType", "REPAIR_CODE"));
+
+		StringBuilder sql = new StringBuilder(64);
+		sql.append("select defect_cd as key, ");
+		sql.append("case when value_txt is null then defect_nm else value_txt end as value ");
+		sql.append(DBUtil.FROM_CLAUSE).append(getCustomSchema()).append("wsla_defect a ");
+		sql.append("left outer join resource_bundle_key c on a.defect_cd = c.key_id ");
+		sql.append("left outer join resource_bundle_data d on c.key_id = d.key_id ");
+		sql.append("and language_cd = ? and country_cd = ? ");
+		sql.append("where a.active_flg = 1 and defect_type_cd in ('BOTH', ?) ");
+		sql.append("and (a.provider_id is null ");
+		if (req.hasParameter(REQ_PROVIDER_ID)) {
+			sql.append("or a.provider_id = ? ");
+			params.add(req.getParameter(REQ_PROVIDER_ID));
+		}
+
+		sql.append(") order by value");
+		log.debug("Repairs SQL " + sql + "|" + params);
 
 		DBProcessor db = new DBProcessor(getDBConnection(), getCustomSchema());
 		return db.executeSelect(sql.toString(), params, new GenericVO());

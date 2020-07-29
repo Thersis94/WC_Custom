@@ -1,6 +1,11 @@
 package com.mts.hootsuite;
 
+//JDK 1.8.x
 import java.util.HashMap;
+import java.util.Map;
+
+//SMT Base Libs
+import com.siliconmtn.data.parser.BeanDataVO;
 
 /****************************************************************************
  * <b>Title</b>: MediaUploadStatusResponseVO.java
@@ -14,11 +19,9 @@ import java.util.HashMap;
  * @since May 20, 2020
  * @updates:
  ****************************************************************************/
-public class MediaUploadStatusResponseVO {
+public class MediaUploadStatusResponseVO extends BeanDataVO {
 
-	HashMap<String, String> data = new HashMap<>();
-	private String error;
-	private String error_description;
+	private Map<String, String> data = new HashMap<>();
 	
 	public String getId() {
 		return data.get("id");
@@ -39,38 +42,14 @@ public class MediaUploadStatusResponseVO {
 	/**
 	 * @return the data
 	 */
-	public HashMap<String, String> getData() {
+	public Map<String, String> getData() {
 		return data;
 	}
 	/**
 	 * @param data the data to set
 	 */
-	public void setData(HashMap<String, String> data) {
+	public void setData(Map<String, String> data) {
 		this.data = data;
-	}
-	/**
-	 * @return the error
-	 */
-	public String getError() {
-		return error;
-	}
-	/**
-	 * @param error the error to set
-	 */
-	public void setError(String error) {
-		this.error = error;
-	}
-	/**
-	 * @return the error_description
-	 */
-	public String getError_description() {
-		return error_description;
-	}
-	/**
-	 * @param error_description the error_description to set
-	 */
-	public void setError_description(String error_description) {
-		this.error_description = error_description;
 	}
 	
 }

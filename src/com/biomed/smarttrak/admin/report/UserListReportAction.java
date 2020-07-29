@@ -113,7 +113,7 @@ public class UserListReportAction extends SimpleActionAdapter {
 	 * @return
 	 */
 	protected String[] getRetrieveAccountUsersParams() {
-		return new String [0];
+		return new String[] { PhoneVO.HOME_PHONE, PhoneVO.MOBILE_PHONE };
 	}
 
 	/**
@@ -161,7 +161,6 @@ public class UserListReportAction extends SimpleActionAdapter {
 
 			List<UserVO> users = account.getUsers();
 			for (UserVO user : users) {
-
 				// now add auth attributes if they exist.
 				userAttribs = authAttribs.get(user.getAuthenticationId());
 				if (userAttribs == null || userAttribs.isEmpty()) continue;
@@ -196,18 +195,20 @@ public class UserListReportAction extends SimpleActionAdapter {
 		sql.append("us.status_cd, us.expiration_dt, us.fd_auth_flg, us.create_dt, us.active_flg as active_flg, ");
 		sql.append("pf.profile_id, pf.authentication_id, pf.first_nm, pf.last_nm, pf.email_address_txt, ");
 		sql.append("pfa.address_txt, pfa.address2_txt, pfa.city_nm, pfa.state_cd, pfa.zip_cd, pfa.country_cd, ");
-		sql.append("ph.phone_number_txt, ph.phone_type_cd, us.create_dt as user_create_dt, us.entry_source, ");
+		sql.append("ph.phone_number_txt as main_phone, phm.phone_number_txt as mobile_phone, ");
+		sql.append("us.create_dt as user_create_dt, us.entry_source, ");
 		sql.append("rd.register_field_id, rd.value_txt, us.user_id, rfo.option_desc ");
 		sql.append("from ").append(schema).append("biomedgps_account ac ");
 		sql.append("inner join ").append(schema).append("biomedgps_user us on ac.account_id = us.account_id ");
 		sql.append("inner join profile pf on us.profile_id = pf.profile_id ");
 		sql.append("left join profile_address pfa on pf.profile_id = pfa.profile_id ");
-		sql.append("left join phone_number ph on pf.profile_id = ph.profile_id ");
+		sql.append("left join phone_number ph on pf.profile_id = ph.profile_id and ph.phone_type_cd = ? ");
+		sql.append("left join phone_number phm on pf.profile_id = phm.profile_id and phm.phone_type_cd = ? ");
 		sql.append("inner join register_submittal rs on pf.profile_id = rs.profile_id ");
 		sql.append("left join register_data rd on rs.register_submittal_id = rd.register_submittal_id ");
 		sql.append("left join register_field_option rfo on rd.register_field_id = rfo.register_field_id ");  
 		sql.append("and rd.value_txt = rfo.option_value_txt ");
-		sql.append("order by ac.account_id, us.user_id, us.profile_id, phone_type_cd ");
+		sql.append("order by ac.account_id, us.user_id, us.profile_id ");
 		log.debug("user retrieval SQL: " + sql.toString());
 		return sql;
 	}
@@ -239,10 +240,8 @@ public class UserListReportAction extends SimpleActionAdapter {
 		log.debug("parseAccountsUsers...");
 		String prevAcctId = null;
 		String prevPid = null;
-		String prevPhoneCd =  null;
 		String currAcctId;
 		String currPid;
-		String currPhoneCd;
 
 		UserVO user = new UserVO();
 		AccountUsersVO account = new AccountUsersVO();
@@ -251,7 +250,6 @@ public class UserListReportAction extends SimpleActionAdapter {
 		while (rs.next()) {
 			currAcctId = rs.getString("account_id");
 			currPid = rs.getString("profile_id");
-			currPhoneCd = StringUtil.checkVal(rs.getString("phone_type_cd"));
 
 			if (! currAcctId.equals(prevAcctId)) {
 				// acct changed, capture 'previous' user and account
@@ -276,9 +274,6 @@ public class UserListReportAction extends SimpleActionAdapter {
 					// now create new user
 					user = createBaseUser(se,rs);
 
-				} else {
-					// same user, check to see if phone type changed.
-					checkUserPhoneType(se,user,rs.getString("phone_number_txt"),prevPhoneCd,currPhoneCd);
 				}
 			}
 
@@ -291,7 +286,6 @@ public class UserListReportAction extends SimpleActionAdapter {
 
 			prevAcctId = currAcctId;
 			prevPid = currPid;
-			prevPhoneCd = currPhoneCd;
 		}
 
 		// pick up the dangler
@@ -378,12 +372,9 @@ public class UserListReportAction extends SimpleActionAdapter {
 			// address txt
 			user.setAddress(decrypt(se, rs.getString("address_txt")));
 			
-			//main or mobile phone
-			if (PhoneVO.HOME_PHONE.equals(rs.getString("phone_type_cd"))) {
-				user.setMainPhone(decrypt(se, rs.getString("phone_number_txt")));
-			} else {
-				user.setMobilePhone(decrypt(se, rs.getString("phone_number_txt")));
-			}
+			//set phone numbers
+			user.setMainPhone(decrypt(se, rs.getString("main_phone")));
+			user.setMobilePhone(decrypt(se, rs.getString("mobile_phone")));
 		} catch (Exception e) {
 			log.warn("Warning: Unable to decrypt profile fields for profile ID " + user.getProfileId(), e);
 		}

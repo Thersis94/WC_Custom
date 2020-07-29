@@ -1,5 +1,57 @@
 WC_Custom Changelog (auto-generated)
 
+# [3.60.0](https://github.com/smtadmin/WC_Custom/compare/3.59.0...3.60.0) (2020-07-24)
+
+
+### Bug Fixes
+
+* 🐛 Added data validation for articles ([77386ad](https://github.com/smtadmin/WC_Custom/commit/77386ad))
+* 🐛 Attempting to remove any of the change I made to gitigno ([0d88ca1](https://github.com/smtadmin/WC_Custom/commit/0d88ca1))
+* 🐛 Fixed a bug that cause quartz to rerun the job ([f9184e6](https://github.com/smtadmin/WC_Custom/commit/f9184e6))
+* 🐛 Fixed an issue with the Quartz scheduler update feature ([322e84e](https://github.com/smtadmin/WC_Custom/commit/322e84e))
+* 🐛 I was using .isEmpty() improperly ([951a0af](https://github.com/smtadmin/WC_Custom/commit/951a0af))
+* 🐛 Rolling back to master because of db sync issue ([8a52665](https://github.com/smtadmin/WC_Custom/commit/8a52665))
+* **st-453:** add missing column to sql query ([d48bca3](https://github.com/smtadmin/WC_Custom/commit/d48bca3))
+
+
+### Features
+
+* 🎸 Added automatic hashtags ([9b2c148](https://github.com/smtadmin/WC_Custom/commit/9b2c148))
+* 🎸 Adding the Hootsuite Dev Repo to WC_Custom ([a79f87a](https://github.com/smtadmin/WC_Custom/commit/a79f87a))
+* 🎸 Initial changes for Hootsuite Integration ([1fbe03c](https://github.com/smtadmin/WC_Custom/commit/1fbe03c))
+* 🎸 Testing out the data that is automatically passed ([2c9dde2](https://github.com/smtadmin/WC_Custom/commit/2c9dde2))
+* **smarttrak fd:** added row to Financial Dashboard export describing the data source ([51aaac0](https://github.com/smtadmin/WC_Custom/commit/51aaac0))
+* **smarttrak fd:** revised Financial Dashboard export to match UI requirements ([00f9875](https://github.com/smtadmin/WC_Custom/commit/00f9875))
+
+# [3.59.0](https://github.com/smtadmin/WC_Custom/compare/3.58.1...3.59.0) (2020-07-17)
+
+
+### Bug Fixes
+
+* **email:** email widget was caching data uisng the sam ekey.  Removed caching ([9db216d](https://github.com/smtadmin/WC_Custom/commit/9db216d))
+* **st-449:** ensure only subscribed markets show up in the updates filter ([e13e7f4](https://github.com/smtadmin/WC_Custom/commit/e13e7f4))
+
+
+### Features
+
+* **smarttrak user report:** changed the User List report to not duplicate certain data ([5ee0ed0](https://github.com/smtadmin/WC_Custom/commit/5ee0ed0))
+
+## [3.58.1](https://github.com/smtadmin/WC_Custom/compare/3.58.0...3.58.1) (2020-07-13)
+
+
+### Bug Fixes
+
+* **hotfix-dsemea-70:** fix a typo in a request parameter which prevents updates from succeeding ([2131186](https://github.com/smtadmin/WC_Custom/commit/2131186))
+* **st-438:** increase throtteling to prevent our ip from being tagged as bad ([f29e271](https://github.com/smtadmin/WC_Custom/commit/f29e271))
+* **st-438:** remove other test case ([0e0962a](https://github.com/smtadmin/WC_Custom/commit/0e0962a))
+
+# [3.58.0](https://github.com/smtadmin/WC_Custom/compare/3.57.4...3.58.0) (2020-07-07)
+
+
+### Features
+
+* **feature-wsla-i110:** add defect and repair codes to diagnostic run ([0bc5857](https://github.com/smtadmin/WC_Custom/commit/0bc5857))
+
 ## [3.57.4](https://github.com/smtadmin/WC_Custom/compare/3.57.3...3.57.4) (2020-06-23)
 
 

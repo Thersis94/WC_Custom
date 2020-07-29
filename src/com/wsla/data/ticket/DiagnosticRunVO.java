@@ -47,6 +47,8 @@ public class DiagnosticRunVO extends BeanDataVO {
 	private String ticketId;
 	private String dispositionedBy;
 	private String diagComments;
+	private String diagnosticDefectCode;
+	private String diagnosticRepairCode;
 	private Date createDate;
 	private Date updateDate;
 	
@@ -85,7 +87,7 @@ public class DiagnosticRunVO extends BeanDataVO {
 		// Assign the user who is submitting the request
 		UserDataVO userData = ((UserDataVO) req.getSession().getAttribute(Constants.USER_DATA));
 		dispositionedBy = ((UserVO)userData.getUserExtendedInfo()).getUserId();
-		
+
 		// Since the runs will be insert only, assign the uuid so it can be 
 		// assigned to the dt 
 		this.setDiagnosticRunId(new UUIDGenerator().getUUID());
@@ -172,6 +174,32 @@ public class DiagnosticRunVO extends BeanDataVO {
 	 */
 	public List<DiagnosticTicketVO> getDiagnostics() {
 		return diagnostics;
+	}
+
+	/**
+	 * 
+	 * @return
+	 */
+	@Column(name="diagnotic_defect_cd")
+	public String getDiagnosticDefectCode() {
+		return diagnosticDefectCode;
+	}
+
+	/**
+	 * 
+	 * @return
+	 */
+	@Column(name="diagnotic_repair_cd")
+	public String getDiagnosticRepairCode() {
+		return diagnosticRepairCode;
+	}
+
+	public void setDiagnosticRepairCode(String diagnosticRepairCode) {
+		this.diagnosticRepairCode = diagnosticRepairCode;
+	}
+
+	public void setDiagnosticDefectCode(String diagnosticDefectCode) {
+		this.diagnosticDefectCode = diagnosticDefectCode;
 	}
 
 	/**

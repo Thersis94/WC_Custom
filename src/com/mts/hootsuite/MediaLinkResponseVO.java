@@ -1,6 +1,8 @@
 package com.mts.hootsuite;
 
+//JDK 1.8.x
 import java.util.HashMap;
+import java.util.Map;
 
 /****************************************************************************
  * <b>Title</b>: MediaLinkResponseVO.java <b>Project</b>: Hootsuite
@@ -12,23 +14,21 @@ import java.util.HashMap;
  * @since May 18, 2020
  * @updates:
  ****************************************************************************/
-public class MediaLinkResponseVO {
+public class MediaLinkResponseVO extends HootsuiteResponseVO {
 
-	HashMap<String, String> data = new HashMap<>();
-	private String error;
-	private String error_description;
+	private Map<String, String> data = new HashMap<>();
 	
 	/**
 	 * @return the data
 	 */
-	public HashMap<String, String> getData() {
+	public Map<String, String> getData() {
 		return data;
 	}
 
 	/**
 	 * @param data the data to set
 	 */
-	public void setData(HashMap<String, String> data) {
+	public void setData(Map<String, String> data) {
 		this.data = data;
 	}
 
@@ -56,39 +56,8 @@ public class MediaLinkResponseVO {
 		return Integer.parseInt(data.get("uploadUrlDurationSeconds"));
 	}
 
-	public boolean successfulRequest() {
-		if (data.get("uploadUrl") != null && data.get("id") != null && data.get("uploadUrlDurationSeconds") != null) {
-			return true;
-		} else
-			return false;
-	}
-
-	/**
-	 * @return the error
-	 */
-	public String getError() {
-		return error;
-	}
-
-	/**
-	 * @param error the error to set
-	 */
-	public void setError(String error) {
-		this.error = error;
-	}
-
-	/**
-	 * @return the error_description
-	 */
-	public String getError_description() {
-		return error_description;
-	}
-
-	/**
-	 * @param error_description the error_description to set
-	 */
-	public void setError_description(String error_description) {
-		this.error_description = error_description;
+	public boolean isSuccessfulRequest() {
+		return data.get("uploadUrl") != null && data.get("id") != null && data.get("uploadUrlDurationSeconds") != null;
 	}
 
 }

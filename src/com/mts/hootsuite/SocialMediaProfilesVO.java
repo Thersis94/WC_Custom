@@ -1,7 +1,13 @@
 package com.mts.hootsuite;
 
+//JDK 1.8.x
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+//SMT Base Libs
+import com.siliconmtn.data.parser.BeanDataVO;
 
 /****************************************************************************
  * <b>Title</b>: SocialMediaProfiles.java
@@ -15,11 +21,12 @@ import java.util.HashMap;
  * @since May 19, 2020
  * @updates:
  ****************************************************************************/
-public class SocialMediaProfilesVO {
+public class SocialMediaProfilesVO extends BeanDataVO {
 	
-	ArrayList<SocialMediaProfileVO> data = new ArrayList<>();
-	String error;
-	String error_description;
+	private List<SocialMediaProfileVO> data = new ArrayList<>();
+	private String error;
+	// The underscore is Hootsuite specific
+	private String error_description;
 	
 	/**
 	 * Returns the social profile id of the profile name passed into it.
@@ -40,7 +47,7 @@ public class SocialMediaProfilesVO {
 	 * Used for getting a hashmap of all of the social media profiles.
 	 * @returna HashMap with all of the social media profiles
 	 */
-	public HashMap<String, String> getAllSocialIds() {
+	public Map<String, String> getAllSocialIds() {
 		HashMap<String, String> ids = new HashMap<>();
 		for (SocialMediaProfileVO profile: data) {
 			ids.put(profile.getType(), profile.getId());
@@ -51,14 +58,14 @@ public class SocialMediaProfilesVO {
 	/**
 	 * @return the data
 	 */
-	public ArrayList<SocialMediaProfileVO> getData() {
+	public List<SocialMediaProfileVO> getData() {
 		return data;
 	}
 
 	/**
 	 * @param data the data to set
 	 */
-	public void setData(ArrayList<SocialMediaProfileVO> data) {
+	public void setData(List<SocialMediaProfileVO> data) {
 		this.data = data;
 	}
 
@@ -78,6 +85,7 @@ public class SocialMediaProfilesVO {
 
 	/**
 	 * @return the error_description
+	 * The underscore is Hootsuite specific
 	 */
 	public String getError_description() {
 		return error_description;
@@ -85,6 +93,7 @@ public class SocialMediaProfilesVO {
 
 	/**
 	 * @param error_description the error_description to set
+	 * The underscore is Hootsuite specific
 	 */
 	public void setError_description(String error_description) {
 		this.error_description = error_description;

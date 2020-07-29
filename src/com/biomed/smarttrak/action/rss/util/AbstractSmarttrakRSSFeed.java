@@ -78,7 +78,7 @@ public abstract class AbstractSmarttrakRSSFeed {
 	private String storeArticleQuery;
 	private String storeHistoryQuery;
 	private Map<String, Long> accessTimes;
-	private static final long LAG_TIME_MS = 2000;
+	private static final long LAG_TIME_MS = 5000;
 
 	private SMTIndexIntfc index;
 

@@ -1,7 +1,8 @@
 package com.mts.hootsuite;
 
+//JDK 1.8.x
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.List;
 
 /****************************************************************************
  * <b>Title</b>: SchedulePostResponseVO.java
@@ -15,48 +16,30 @@ import java.util.HashMap;
  * @since May 22, 2020
  * @updates:
  ****************************************************************************/
-public class SchedulePostResponseVO {
+public class SchedulePostResponseVO extends HootsuiteResponseVO {
 
-	ArrayList<SocialMediaProfileVO> data = new ArrayList<>();
-	ArrayList<HashMap<String, String>> errors = new ArrayList<>();
+	private List<SocialMediaProfileVO> data = new ArrayList<>();
+	
 	/**
 	 * @return the data
 	 */
-	public ArrayList<SocialMediaProfileVO> getData() {
+	public List<SocialMediaProfileVO> getData() {
 		return data;
 	}
 
 	/**
 	 * @param data the data to set
 	 */
-	public void setData(ArrayList<SocialMediaProfileVO> data) {
+	public void setData(List<SocialMediaProfileVO> data) {
 		this.data = data;
 	}
 	
+	/**
+	 * 
+	 * @return the Id
+	 */
 	public String getId() {
 		return data.get(0).getId();
-	}
-
-	/**
-	 * @return the errors
-	 */
-	public ArrayList<HashMap<String, String>> getErrors() {
-		return errors;
-	}
-
-	/**
-	 * @param errors the errors to set
-	 */
-	public void setErrors(ArrayList<HashMap<String, String>> errors) {
-		this.errors = errors;
-	}
-	
-	public String getErrorMessage() {
-		String errorMessage = "";
-		for(HashMap<String, String> error: errors) {
-			errorMessage = errorMessage + " | " + "Error code: " + error.get("code") + ". Error Message: " + error.get("message");
-		}
-		return errorMessage;
 	}
 	
 }

@@ -136,6 +136,12 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 			dash.setCompanyName(companyName);
 		}
 
+		// Gets the scenario name if one has been selected
+		if (!StringUtil.isEmpty(dash.getScenarioId())) {
+			String scenarioName = getScenarioName(dash.getScenarioId());
+			dash.setScenarioName(scenarioName);
+		}
+
 		this.putModuleData(dash);
 	}
 
@@ -235,6 +241,22 @@ public class FinancialDashBaseAction extends SBActionAdapter {
 
 		CompanyVO company = compAct.getCompany(companyId);
 		return company.getCompanyName();
+	}
+
+	/**
+	 * Returns the scenario name for the scenario displayed on the dashboard
+	 * 
+	 * @param companyId
+	 * @return
+	 * @throws ActionException
+	 */
+	protected String getScenarioName(String scenarioId) throws ActionException {
+		FinancialDashScenarioAction finDashScenAct = new FinancialDashScenarioAction(getActionInit());
+		finDashScenAct.setAttributes(getAttributes());
+		finDashScenAct.setDBConnection(dbConn);
+
+		FinancialDashScenarioVO scenario = finDashScenAct.getScenario(scenarioId);
+		return scenario.getScenarioNm();
 	}
 
 	/**
